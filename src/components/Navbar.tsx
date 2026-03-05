@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, ShoppingBag, User, Menu, X, Plus, LogOut } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut } from "lucide-react";
+import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,9 +38,9 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="hidden text-muted-foreground hover:text-foreground md:flex">
             <Heart className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden text-muted-foreground hover:text-foreground md:flex">
-            <ShoppingBag className="h-5 w-5" />
-          </Button>
+          <span className="hidden md:flex">
+            <CartDrawer />
+          </span>
           <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={() => navigate(user ? "/create-listing" : "/auth")}>
             <Plus className="h-4 w-4" /> Sell
           </Button>

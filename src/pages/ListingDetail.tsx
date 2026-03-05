@@ -3,8 +3,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/contexts/CartContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
 
@@ -40,6 +41,8 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
 
 const ListingDetail = () => {
   const { id } = useParams();
+  const { items, addItem } = useCart();
+  const inCart = items.some((i) => i.listing.id === id);
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", id],
@@ -99,8 +102,8 @@ const ListingDetail = () => {
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
             <div className="mt-8 flex gap-3">
-              <Button size="lg" className="flex-1 gap-2">
-                <ShoppingBag className="h-4 w-4" /> Add to Cart
+              <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
+                {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
               </Button>
               <Button variant="outline" size="lg">
                 <Heart className="h-4 w-4" />

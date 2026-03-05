@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,22 +8,53 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORIES, CONDITIONS, SIZES } from "@/lib/constants";
-import { Camera, Upload } from "lucide-react";
+import { Camera, Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreateListing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
     category: "", condition: "", size: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth", { replace: true });
+  }, [user, authLoading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Listing submitted!", description: "Your listing is under review." });
-    navigate("/listings");
+    if (!user) return;
+    setSubmitting(true);
+
+    const { error } = await supabase.from("listings").insert({
+      title: form.title,
+      description: form.description,
+      price: parseInt(form.price),
+      brand: form.brand,
+      category: form.category,
+      condition: form.condition,
+      size: form.size,
+      seller_id: user.id,
+      images: [],
+      status: "approved", // auto-approve for MVP
+    });
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Listing created!", description: "Your item is now live." });
+      navigate("/listings");
+    }
+    setSubmitting(false);
   };
+
+  if (authLoading) return null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -33,7 +64,6 @@ const CreateListing = () => {
         <p className="mt-2 text-muted-foreground">List your pre-loved fashion for sale</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {/* Photo Upload */}
           <div>
             <Label>Photos</Label>
             <div className="mt-2 flex gap-3">
@@ -48,6 +78,7 @@ const CreateListing = () => {
                 </button>
               ))}
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">Photo upload coming soon</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -101,8 +132,9 @@ const CreateListing = () => {
             </Select>
           </div>
 
-          <Button type="submit" size="lg" className="w-full">
-            Submit Listing for Review
+          <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Submit Listing
           </Button>
         </form>
       </main>

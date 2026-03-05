@@ -1,40 +1,35 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, ShoppingBag, User, Menu, X, Plus } from "lucide-react";
+import { Search, Heart, ShoppingBag, User, Menu, X, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-16 items-center justify-between gap-4">
-        {/* Logo */}
         <Link to="/" className="font-heading text-2xl font-bold tracking-tight text-foreground">
           RESALE
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="hidden items-center gap-8 md:flex">
-          <Link to="/listings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            Browse
-          </Link>
-          <Link to="/listings?category=women" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            Women
-          </Link>
-          <Link to="/listings?category=men" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            Men
-          </Link>
-          <Link to="/listings?category=shoes" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            Shoes
-          </Link>
-          <Link to="/listings?category=bags" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            Bags
-          </Link>
+          <Link to="/listings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Browse</Link>
+          <Link to="/listings?category=women" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Women</Link>
+          <Link to="/listings?category=men" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Men</Link>
+          <Link to="/listings?category=shoes" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Shoes</Link>
+          <Link to="/listings?category=bags" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Bags</Link>
         </nav>
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate("/listings")} className="text-muted-foreground hover:text-foreground">
             <Search className="h-5 w-5" />
@@ -45,30 +40,38 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="hidden text-muted-foreground hover:text-foreground md:flex">
             <ShoppingBag className="h-5 w-5" />
           </Button>
-          <Button
-            variant="default"
-            size="sm"
-            className="hidden gap-1 md:flex"
-            onClick={() => navigate("/create-listing")}
-          >
-            <Plus className="h-4 w-4" />
-            Sell
+          <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={() => navigate(user ? "/create-listing" : "/auth")}>
+            <Plus className="h-4 w-4" /> Sell
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate("/auth")} className="text-muted-foreground hover:text-foreground">
-            <User className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
+
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
+                  {user.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
+                  <LogOut className="mr-2 h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="icon" onClick={() => navigate("/auth")} className="text-muted-foreground hover:text-foreground">
+              <User className="h-5 w-5" />
+            </Button>
+          )}
+
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile Nav */}
       {mobileOpen && (
         <div className="border-t border-border bg-background p-4 md:hidden">
           <nav className="flex flex-col gap-3">
@@ -77,7 +80,7 @@ const Navbar = () => {
             <Link to="/listings?category=men" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Men</Link>
             <Link to="/listings?category=shoes" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Shoes</Link>
             <Link to="/listings?category=bags" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Bags</Link>
-            <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate("/create-listing"); setMobileOpen(false); }}>
+            <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate(user ? "/create-listing" : "/auth"); setMobileOpen(false); }}>
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>
           </nav>

@@ -3,11 +3,61 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import type { Listing } from "@/lib/constants";
+
+const fetchListing = async (id: string): Promise<Listing | null> => {
+  // Check mock data first
+  const mock = MOCK_LISTINGS.find(l => l.id === id);
+  if (mock) return mock;
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description,
+    price: data.price,
+    images: (data.images as string[])?.length ? (data.images as string[]) : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+    category: data.category,
+    condition: data.condition,
+    size: data.size,
+    brand: data.brand,
+    seller_id: data.seller_id,
+    seller_name: "Seller",
+    created_at: data.created_at,
+    status: data.status as Listing["status"],
+  };
+};
 
 const ListingDetail = () => {
   const { id } = useParams();
-  const listing = MOCK_LISTINGS.find(l => l.id === id);
+
+  const { data: listing, isLoading } = useQuery({
+    queryKey: ["listing", id],
+    queryFn: () => fetchListing(id!),
+    enabled: !!id,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="container flex flex-1 items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!listing) {
     return (
@@ -31,27 +81,19 @@ const ListingDetail = () => {
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {/* Image */}
           <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
             <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
           </div>
 
-          {/* Details */}
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>
             <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{listing.title}</h1>
             <p className="mt-4 text-3xl font-bold text-foreground">R {listing.price.toLocaleString()}</p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                Size {listing.size}
-              </span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
-                {listing.condition.replace("_", " ")}
-              </span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
-                {listing.category}
-              </span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Size {listing.size}</span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.condition.replace("_", " ")}</span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.category}</span>
             </div>
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
@@ -65,7 +107,7 @@ const ListingDetail = () => {
               </Button>
             </div>
 
-            <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-surface-warm p-4">
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
               <Shield className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium text-foreground">Buyer Protection</p>

@@ -44,12 +44,23 @@ const Auth = () => {
         toast({ title: "Account created!", description: "Please check your email to verify your account." });
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Welcome back!" });
-        navigate("/");
+        // Check if user has completed onboarding
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("onboarding_completed")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (!prefs?.onboarding_completed) {
+          navigate("/preferences");
+        } else {
+          toast({ title: "Welcome back!" });
+          navigate("/");
+        }
       }
     }
     setLoading(false);

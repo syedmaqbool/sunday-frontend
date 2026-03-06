@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          brands: string[] | null
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string | null
+          id: string
+          onboarding_completed: boolean | null
+          preferred_fit: string | null
+          styles: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          brands?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          id?: string
+          onboarding_completed?: boolean | null
+          preferred_fit?: string | null
+          styles?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          brands?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          id?: string
+          onboarding_completed?: boolean | null
+          preferred_fit?: string | null
+          styles?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

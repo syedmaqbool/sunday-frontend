@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/preferences" element={<Preferences />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

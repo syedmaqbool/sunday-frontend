@@ -42,7 +42,7 @@ const Auth = () => {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Account created!", description: "Please check your email to verify your account." });
-      }
+        // After email verification and login, they'll be redirected to preferences
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {

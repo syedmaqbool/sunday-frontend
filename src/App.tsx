@@ -10,6 +10,7 @@ import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
 import CreateListing from "./pages/CreateListing";
 import Auth from "./pages/Auth";
+import Preferences from "./pages/Preferences";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/preferences" element={<Preferences />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

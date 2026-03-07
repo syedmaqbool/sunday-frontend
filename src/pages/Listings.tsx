@@ -11,6 +11,7 @@ import { Search, Grid3X3, List, SlidersHorizontal, Loader2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
+import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase

@@ -51,6 +51,7 @@ const Listings = () => {
   const [sort, setSort] = useState("newest");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const { data: prefs } = useUserPreferences();
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings"],
@@ -64,9 +65,12 @@ const Listings = () => {
     if (condition !== "all") items = items.filter(i => i.condition === condition);
     if (sort === "price_asc") items.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") items.sort((a, b) => b.price - a.price);
-    else items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    else {
+      items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      items = personalizeListings(items, prefs);
+    }
     return items;
-  }, [listings, search, category, condition, sort]);
+  }, [listings, search, category, condition, sort, prefs]);
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -10,6 +10,7 @@ import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
 import CreateListing from "./pages/CreateListing";
 import MyListings from "./pages/MyListings";
+import MyOffers from "./pages/MyOffers";
 import Auth from "./pages/Auth";
 import Preferences from "./pages/Preferences";
 import Checkout from "./pages/Checkout";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/edit-listing/:id" element={<CreateListing />} />
             <Route path="/my-listings" element={<MyListings />} />
+            <Route path="/my-offers" element={<MyOffers />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
             <Route path="/auth" element={<Auth />} />

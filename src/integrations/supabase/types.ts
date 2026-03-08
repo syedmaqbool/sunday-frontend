@@ -65,6 +65,56 @@ export type Database = {
         }
         Relationships: []
       }
+      offers: {
+        Row: {
+          amount: number
+          buyer_id: string
+          counter_amount: number | null
+          created_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          seller_id: string
+          seller_message: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          counter_amount?: number | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          message?: string | null
+          seller_id: string
+          seller_message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          counter_amount?: number | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          message?: string | null
+          seller_id?: string
+          seller_message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

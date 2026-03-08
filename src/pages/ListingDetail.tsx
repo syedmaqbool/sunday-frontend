@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
 import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
+import { MakeOfferButton } from "@/components/MakeOfferButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -228,6 +229,12 @@ const ListingDetail = () => {
                 <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
                   {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
                 </Button>
+                <MakeOfferButton
+                  listingId={listing.id}
+                  sellerId={listing.seller_id}
+                  listingPrice={listing.price}
+                  listingTitle={listing.title}
+                />
                 <Button variant="outline" size="lg">
                   <Heart className="h-4 w-4" />
                 </Button>

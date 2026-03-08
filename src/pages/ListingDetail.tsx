@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";

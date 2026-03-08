@@ -34,6 +34,8 @@ const App = () => (
             <Route path="/listings" element={<Listings />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/create-listing" element={<CreateListing />} />
+            <Route path="/edit-listing/:id" element={<CreateListing />} />
+            <Route path="/my-listings" element={<MyListings />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
             <Route path="/auth" element={<Auth />} />

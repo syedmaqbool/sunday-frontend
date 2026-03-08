@@ -36,6 +36,7 @@ export type Listing = {
   seller_name: string;
   created_at: string;
   status: "pending" | "approved" | "rejected";
+  weight?: number | null;
 };
 
 // Mock data for initial UI

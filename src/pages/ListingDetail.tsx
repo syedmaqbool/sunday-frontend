@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +51,63 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
     status: data.status as Listing["status"],
     weight: data.weight,
   };
+};
+
+const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
+  const [selected, setSelected] = useState(0);
+
+  return (
+    <div className="space-y-3">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
+        <img
+          src={images[selected]}
+          alt={`${title} - photo ${selected + 1}`}
+          className="h-full w-full object-cover transition-opacity duration-300"
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() => setSelected((p) => (p - 1 + images.length) % images.length)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setSelected((p) => (p + 1) % images.length)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelected(i)}
+                  className={`h-2 w-2 rounded-full transition ${i === selected ? "bg-primary scale-125" : "bg-background/70"}`}
+                  aria-label={`Photo ${i + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setSelected(i)}
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition ${i === selected ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
+            >
+              <img src={img} alt={`${title} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const ListingDetail = () => {
@@ -115,9 +173,7 @@ const ListingDetail = () => {
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-            <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
-          </div>
+          <ImageGallery images={listing.images} title={listing.title} />
 
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>

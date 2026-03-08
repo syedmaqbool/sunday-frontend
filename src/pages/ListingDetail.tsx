@@ -116,9 +116,7 @@ const ListingDetail = () => {
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-            <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
-          </div>
+          <ImageGallery images={listing.images} title={listing.title} />
 
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>

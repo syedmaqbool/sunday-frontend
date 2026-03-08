@@ -229,6 +229,12 @@ const ListingDetail = () => {
                 <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
                   {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
                 </Button>
+                <MakeOfferButton
+                  listingId={listing.id}
+                  sellerId={listing.seller_id}
+                  listingPrice={listing.price}
+                  listingTitle={listing.title}
+                />
                 <Button variant="outline" size="lg">
                   <Heart className="h-4 w-4" />
                 </Button>

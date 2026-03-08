@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, User, Menu, X, Plus, LogOut } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -55,6 +55,9 @@ const Navbar = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
                   {user.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/my-listings")}>
+                  <Package className="mr-2 h-4 w-4" /> My Listings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out

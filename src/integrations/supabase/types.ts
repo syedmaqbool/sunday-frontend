@@ -29,6 +29,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          weight: number | null
         }
         Insert: {
           brand?: string
@@ -44,6 +45,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          weight?: number | null
         }
         Update: {
           brand?: string
@@ -59,6 +61,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          weight?: number | null
         }
         Relationships: []
       }

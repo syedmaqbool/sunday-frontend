@@ -1,16 +1,28 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { Listing } from "@/lib/constants";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const fetchListing = async (id: string): Promise<Listing | null> => {
-  // Check mock data first
   const mock = MOCK_LISTINGS.find(l => l.id === id);
   if (mock) return mock;
 
@@ -36,18 +48,37 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
     seller_name: "Seller",
     created_at: data.created_at,
     status: data.status as Listing["status"],
+    weight: data.weight,
   };
 };
 
 const ListingDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { items, addItem } = useCart();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const inCart = items.some((i) => i.listing.id === id);
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", id],
     queryFn: () => fetchListing(id!),
     enabled: !!id,
+  });
+
+  const isOwner = listing && user && listing.seller_id === user.id;
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("listings").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Listing deleted");
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      navigate("/my-listings");
+    },
+    onError: () => toast.error("Failed to delete"),
   });
 
   if (isLoading) {
@@ -97,18 +128,55 @@ const ListingDetail = () => {
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Size {listing.size}</span>
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.condition.replace("_", " ")}</span>
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.category}</span>
+              {listing.weight && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                  <Weight className="h-3 w-3" /> {listing.weight}kg
+                </span>
+              )}
             </div>
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
-            <div className="mt-8 flex gap-3">
-              <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
-                {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
-              </Button>
-              <Button variant="outline" size="lg">
-                <Heart className="h-4 w-4" />
-              </Button>
-            </div>
+            {isOwner ? (
+              <div className="mt-8 flex gap-3">
+                <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
+                  <Pencil className="h-4 w-4" /> Edit Listing
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="lg" variant="outline" className="gap-2 text-destructive">
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove "{listing.title}" and cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate()}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ) : (
+              <div className="mt-8 flex gap-3">
+                <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
+                  {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
+                </Button>
+                <Button variant="outline" size="lg">
+                  <Heart className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
 
             <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
               <Shield className="h-5 w-5 text-primary" />

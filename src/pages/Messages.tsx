@@ -10,8 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Send, ArrowLeft, MessageSquare, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const CONTACT_PATTERNS = [
+  { regex: /\+?\d[\d\s\-\.]{7,}\d/g, label: "phone number" },
+  { regex: /@[a-zA-Z0-9_\.]{3,30}/g, label: "social media handle" },
+  { regex: /(instagram|insta|whatsapp|telegram|signal|snapchat|tiktok|facebook|fb|twitter|watsapp|wattsapp)/gi, label: "social media platform" },
+  { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: "email address" },
+];
+
+const detectContactInfo = (text: string): string | null => {
+  for (const p of CONTACT_PATTERNS) {
+    if (p.regex.test(text)) {
+      p.regex.lastIndex = 0;
+      return p.label;
+    }
+  }
+  return null;
+};
 
 interface Conversation {
   id: string;

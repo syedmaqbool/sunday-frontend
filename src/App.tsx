@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import Preferences from "./pages/Preferences";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
+import Messages from "./pages/Messages";
 import AdminDashboard from "./pages/AdminDashboard";
 import Overview from "./pages/admin/Overview";
 import ListingModeration from "./pages/admin/ListingModeration";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/my-offers" element={<MyOffers />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<Overview />} />

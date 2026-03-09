@@ -111,9 +111,25 @@ const MyOffers = () => {
       if (seller_message) update.seller_message = seller_message;
       const { error } = await supabase.from("offers").update(update).eq("id", id);
       if (error) throw error;
+
+      // Create conversation on acceptance
+      if (status === "accepted") {
+        const offer = received.find((o) => o.id === id);
+        if (offer) {
+          await supabase.from("conversations").insert({
+            offer_id: offer.id,
+            listing_id: offer.listing_id,
+            buyer_id: offer.buyer_id,
+            seller_id: offer.seller_id,
+          });
+        }
+      }
     },
     onSuccess: (_, { status }) => {
       toast.success(`Offer ${status}`);
+      if (status === "accepted") {
+        toast.info("A conversation has been started — check your Messages!");
+      }
       queryClient.invalidateQueries({ queryKey: ["offers-received"] });
       setCounterDialog(null);
       setCounterAmount("");

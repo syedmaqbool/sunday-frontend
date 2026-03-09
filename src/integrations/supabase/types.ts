@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversations: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          listing_id: string
+          offer_id: string
+          seller_id: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          offer_id: string
+          seller_id: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          offer_id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: true
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           brand: string
@@ -64,6 +106,41 @@ export type Database = {
           weight?: number | null
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read: boolean
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       offers: {
         Row: {

@@ -80,9 +80,17 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
         .update({ status: "accepted", updated_at: new Date().toISOString() })
         .eq("id", offerId);
       if (error) throw error;
+
+      // Create conversation on acceptance
+      await supabase.from("conversations").insert({
+        offer_id: offerId,
+        listing_id: listingId,
+        buyer_id: user!.id,
+        seller_id: sellerId,
+      });
     },
     onSuccess: () => {
-      toast.success("Counter-offer accepted!");
+      toast.success("Counter-offer accepted! Check your Messages to chat with the seller.");
       queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
     },
   });

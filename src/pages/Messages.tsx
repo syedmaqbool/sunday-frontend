@@ -344,6 +344,12 @@ const Messages = () => {
 
                 {/* Input */}
                 <div className="p-3 border-t border-border">
+                  {detectContactInfo(newMessage) && (
+                    <div className="flex items-center gap-2 mb-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span>Your message appears to contain a {detectContactInfo(newMessage)}. Sharing contact info is discouraged to keep transactions safe.</span>
+                    </div>
+                  )}
                   <form
                     className="flex gap-2"
                     onSubmit={(e) => {

@@ -10,8 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Send, ArrowLeft, MessageSquare, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const CONTACT_PATTERNS = [
+  { regex: /\+?\d[\d\s\-\.]{7,}\d/g, label: "phone number" },
+  { regex: /@[a-zA-Z0-9_\.]{3,30}/g, label: "social media handle" },
+  { regex: /(instagram|insta|whatsapp|telegram|signal|snapchat|tiktok|facebook|fb|twitter|watsapp|wattsapp)/gi, label: "social media platform" },
+  { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: "email address" },
+];
+
+const detectContactInfo = (text: string): string | null => {
+  for (const p of CONTACT_PATTERNS) {
+    if (p.regex.test(text)) {
+      p.regex.lastIndex = 0;
+      return p.label;
+    }
+  }
+  return null;
+};
 
 interface Conversation {
   id: string;
@@ -35,6 +53,8 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+  flagged?: boolean;
+  flag_reason?: string;
 }
 
 const Messages = () => {
@@ -290,21 +310,29 @@ const Messages = () => {
                             key={m.id}
                             className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                           >
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                                isMine
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-foreground"
-                              }`}
-                            >
-                              <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                              <p
-                                className={`text-[10px] mt-1 ${
-                                  isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                            <div className="flex flex-col gap-1 max-w-[75%]">
+                              <div
+                                className={`rounded-2xl px-4 py-2 ${
+                                  isMine
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-foreground"
                                 }`}
                               >
-                                {format(new Date(m.created_at), "MMM d, h:mm a")}
-                              </p>
+                                <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                                <p
+                                  className={`text-[10px] mt-1 ${
+                                    isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {format(new Date(m.created_at), "MMM d, h:mm a")}
+                                </p>
+                              </div>
+                              {m.flagged && (
+                                <div className={`flex items-center gap-1 text-[10px] text-amber-600 ${isMine ? "justify-end" : "justify-start"}`}>
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span>⚠ {m.flag_reason || "Contact info detected"} – keep chats on-platform</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -316,6 +344,12 @@ const Messages = () => {
 
                 {/* Input */}
                 <div className="p-3 border-t border-border">
+                  {detectContactInfo(newMessage) && (
+                    <div className="flex items-center gap-2 mb-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span>Your message appears to contain a {detectContactInfo(newMessage)}. Sharing contact info is discouraged to keep transactions safe.</span>
+                    </div>
+                  )}
                   <form
                     className="flex gap-2"
                     onSubmit={(e) => {

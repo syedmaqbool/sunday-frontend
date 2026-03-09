@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/my-offers" element={<MyOffers />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<Overview />} />

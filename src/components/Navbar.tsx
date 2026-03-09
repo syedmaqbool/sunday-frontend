@@ -62,6 +62,9 @@ const Navbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/my-offers")}>
                   <MessageSquare className="mr-2 h-4 w-4" /> My Offers
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/messages")}>
+                  <Mail className="mr-2 h-4 w-4" /> Messages
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>

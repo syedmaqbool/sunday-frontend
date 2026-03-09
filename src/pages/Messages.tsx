@@ -310,21 +310,29 @@ const Messages = () => {
                             key={m.id}
                             className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                           >
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                                isMine
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-foreground"
-                              }`}
-                            >
-                              <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                              <p
-                                className={`text-[10px] mt-1 ${
-                                  isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                            <div className="flex flex-col gap-1 max-w-[75%]">
+                              <div
+                                className={`rounded-2xl px-4 py-2 ${
+                                  isMine
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-foreground"
                                 }`}
                               >
-                                {format(new Date(m.created_at), "MMM d, h:mm a")}
-                              </p>
+                                <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                                <p
+                                  className={`text-[10px] mt-1 ${
+                                    isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {format(new Date(m.created_at), "MMM d, h:mm a")}
+                                </p>
+                              </div>
+                              {m.flagged && (
+                                <div className={`flex items-center gap-1 text-[10px] text-amber-600 ${isMine ? "justify-end" : "justify-start"}`}>
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span>⚠ {m.flag_reason || "Contact info detected"} – keep chats on-platform</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );

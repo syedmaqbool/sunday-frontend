@@ -112,6 +112,8 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          flag_reason: string | null
+          flagged: boolean
           id: string
           read: boolean
           sender_id: string
@@ -120,6 +122,8 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          flag_reason?: string | null
+          flagged?: boolean
           id?: string
           read?: boolean
           sender_id: string
@@ -128,6 +132,8 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          flag_reason?: string | null
+          flagged?: boolean
           id?: string
           read?: boolean
           sender_id?: string

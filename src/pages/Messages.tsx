@@ -53,6 +53,8 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+  flagged?: boolean;
+  flag_reason?: string;
 }
 
 const Messages = () => {

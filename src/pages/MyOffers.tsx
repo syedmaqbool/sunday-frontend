@@ -13,9 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRightLeft, Inbox } from "lucide-react";
+import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRightLeft, Inbox, Star } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ReviewForm } from "@/components/ReviewForm";
 
 interface OfferWithListing {
   id: string;
@@ -46,6 +47,7 @@ const MyOffers = () => {
   const [counterDialog, setCounterDialog] = useState<OfferWithListing | null>(null);
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
+  const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -87,6 +89,20 @@ const MyOffers = () => {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as OfferWithListing[];
+    },
+    enabled: !!user,
+  });
+
+  // Existing reviews by this user
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ["reviews", "mine", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("offer_id")
+        .eq("reviewer_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.offer_id as string);
     },
     enabled: !!user,
   });
@@ -244,6 +260,27 @@ const MyOffers = () => {
                           </Button>
                         </div>
                       )}
+                      {offer.status === "accepted" && !myReviews.includes(offer.id) && (
+                        reviewingOffer === offer.id ? (
+                          <div className="mt-3 w-full border-t border-border pt-3">
+                            <p className="mb-2 text-xs font-medium text-foreground">Rate this buyer</p>
+                            <ReviewForm
+                              offerId={offer.id}
+                              listingId={offer.listing_id}
+                              reviewedId={offer.buyer_id}
+                              role="seller"
+                              onSuccess={() => setReviewingOffer(null)}
+                            />
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => setReviewingOffer(offer.id)}>
+                            <Star className="h-3.5 w-3.5" /> Leave Review
+                          </Button>
+                        )
+                      )}
+                      {offer.status === "accepted" && myReviews.includes(offer.id) && (
+                        <span className="text-xs text-muted-foreground italic">✓ Reviewed</span>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -294,6 +331,27 @@ const MyOffers = () => {
                               <p className="text-xs text-muted-foreground">"{offer.seller_message}"</p>
                             )}
                           </div>
+                        )}
+                        {offer.status === "accepted" && !myReviews.includes(offer.id) && (
+                          reviewingOffer === offer.id ? (
+                            <div className="mt-3 w-full border-t border-border pt-3">
+                              <p className="mb-2 text-xs font-medium text-foreground">Rate this seller</p>
+                              <ReviewForm
+                                offerId={offer.id}
+                                listingId={offer.listing_id}
+                                reviewedId={offer.seller_id}
+                                role="buyer"
+                                onSuccess={() => setReviewingOffer(null)}
+                              />
+                            </div>
+                          ) : (
+                            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => setReviewingOffer(offer.id)}>
+                              <Star className="h-3.5 w-3.5" /> Leave Review
+                            </Button>
+                          )
+                        )}
+                        {offer.status === "accepted" && myReviews.includes(offer.id) && (
+                          <span className="text-xs text-muted-foreground italic">✓ Reviewed</span>
                         )}
                       </div>
                     </CardContent>

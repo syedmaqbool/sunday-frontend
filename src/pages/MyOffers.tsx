@@ -13,9 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRightLeft, Inbox } from "lucide-react";
+import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRightLeft, Inbox, Star } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ReviewForm } from "@/components/ReviewForm";
+import { useQuery } from "@tanstack/react-query";
 
 interface OfferWithListing {
   id: string;

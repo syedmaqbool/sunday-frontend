@@ -8,17 +8,19 @@ const Overview = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [listings, profiles, pending, approved] = await Promise.all([
+      const [listings, profiles, pending, approved, flagged] = await Promise.all([
         supabase.from("listings").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "approved"),
+        supabase.from("messages").select("id", { count: "exact", head: true }).eq("flagged", true),
       ]);
       return {
         totalListings: listings.count ?? 0,
         totalUsers: profiles.count ?? 0,
         pendingListings: pending.count ?? 0,
         approvedListings: approved.count ?? 0,
+        flaggedMessages: flagged.count ?? 0,
       };
     },
   });

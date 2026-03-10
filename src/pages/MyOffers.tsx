@@ -332,6 +332,27 @@ const MyOffers = () => {
                             )}
                           </div>
                         )}
+                        {offer.status === "accepted" && !myReviews.includes(offer.id) && (
+                          reviewingOffer === offer.id ? (
+                            <div className="mt-3 w-full border-t border-border pt-3">
+                              <p className="mb-2 text-xs font-medium text-foreground">Rate this seller</p>
+                              <ReviewForm
+                                offerId={offer.id}
+                                listingId={offer.listing_id}
+                                reviewedId={offer.seller_id}
+                                role="buyer"
+                                onSuccess={() => setReviewingOffer(null)}
+                              />
+                            </div>
+                          ) : (
+                            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => setReviewingOffer(offer.id)}>
+                              <Star className="h-3.5 w-3.5" /> Leave Review
+                            </Button>
+                          )
+                        )}
+                        {offer.status === "accepted" && myReviews.includes(offer.id) && (
+                          <span className="text-xs text-muted-foreground italic">✓ Reviewed</span>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

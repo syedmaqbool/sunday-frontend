@@ -47,6 +47,7 @@ const MyOffers = () => {
   const [counterDialog, setCounterDialog] = useState<OfferWithListing | null>(null);
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
+  const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");

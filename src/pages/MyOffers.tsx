@@ -93,6 +93,20 @@ const MyOffers = () => {
     enabled: !!user,
   });
 
+  // Existing reviews by this user
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ["reviews", "mine", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("offer_id")
+        .eq("reviewer_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.offer_id as string);
+    },
+    enabled: !!user,
+  });
+
   // Realtime subscription for offers
   useEffect(() => {
     if (!user) return;

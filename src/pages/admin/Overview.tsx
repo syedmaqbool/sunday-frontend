@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Users, Clock, CheckCircle } from "lucide-react";
+import { Package, Users, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Overview = () => {

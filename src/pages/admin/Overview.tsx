@@ -1,24 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Users, Clock, CheckCircle } from "lucide-react";
+import { Package, Users, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Overview = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [listings, profiles, pending, approved] = await Promise.all([
+      const [listings, profiles, pending, approved, flagged] = await Promise.all([
         supabase.from("listings").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "approved"),
+        supabase.from("messages").select("id", { count: "exact", head: true }).eq("flagged", true),
       ]);
       return {
         totalListings: listings.count ?? 0,
         totalUsers: profiles.count ?? 0,
         pendingListings: pending.count ?? 0,
         approvedListings: approved.count ?? 0,
+        flaggedMessages: flagged.count ?? 0,
       };
     },
   });
@@ -35,6 +37,7 @@ const Overview = () => {
     { label: "Total Listings", value: stats?.totalListings ?? 0, icon: Package, color: "text-primary" },
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary" },
     { label: "Pending Review", value: stats?.pendingListings ?? 0, icon: Clock, color: "text-destructive" },
+    { label: "Flagged Messages", value: stats?.flaggedMessages ?? 0, icon: AlertTriangle, color: "text-destructive" },
     { label: "Approved", value: stats?.approvedListings ?? 0, icon: CheckCircle, color: "text-primary" },
   ];
 

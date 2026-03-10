@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Overview from "./pages/admin/Overview";
 import ListingModeration from "./pages/admin/ListingModeration";
 import UserManagement from "./pages/admin/UserManagement";
+import MessageModeration from "./pages/admin/MessageModeration";
 
 const queryClient = new QueryClient();
 

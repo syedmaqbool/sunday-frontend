@@ -17,7 +17,6 @@ import { CheckCircle, XCircle, MessageSquare, Loader2, ArrowRightLeft, Inbox, St
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ReviewForm } from "@/components/ReviewForm";
-import { useQuery } from "@tanstack/react-query";
 
 interface OfferWithListing {
   id: string;

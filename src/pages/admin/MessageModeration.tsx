@@ -45,36 +45,24 @@ const MessageModeration = () => {
   const { data: flaggedMessages = [], isLoading } = useQuery({
     queryKey: ["admin-flagged-messages"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: msgs, error } = await supabase
         .from("messages")
-        .select("*, sender_profile:profiles!messages_sender_id_fkey(full_name)")
+        .select("*")
         .eq("flagged", true)
         .order("created_at", { ascending: false });
+      if (error) throw error;
 
-      if (error) {
-        // Fallback without join if FK doesn't exist
-        const { data: fallback, error: err2 } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("flagged", true)
-          .order("created_at", { ascending: false });
-        if (err2) throw err2;
-        
-        // Fetch profiles separately
-        const senderIds = [...new Set((fallback ?? []).map((m: any) => m.sender_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", senderIds);
-        
-        const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-        
-        return (fallback ?? []).map((m: any) => ({
-          ...m,
-          sender_profile: profileMap.get(m.sender_id) ?? null,
-        })) as FlaggedMessage[];
-      }
-      return (data ?? []) as FlaggedMessage[];
+      const senderIds = [...new Set((msgs ?? []).map((m) => m.sender_id))];
+      const { data: profiles } = senderIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", senderIds)
+        : { data: [] };
+
+      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+      return (msgs ?? []).map((m) => ({
+        ...m,
+        sender_profile: profileMap.get(m.sender_id) ?? null,
+      })) as FlaggedMessage[];
     },
   });
 

@@ -47,6 +47,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<Overview />} />
               <Route path="listings" element={<ListingModeration />} />
+              <Route path="messages" element={<MessageModeration />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
             <Route path="*" element={<NotFound />} />

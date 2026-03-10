@@ -37,6 +37,7 @@ const Overview = () => {
     { label: "Total Listings", value: stats?.totalListings ?? 0, icon: Package, color: "text-primary" },
     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, color: "text-primary" },
     { label: "Pending Review", value: stats?.pendingListings ?? 0, icon: Clock, color: "text-destructive" },
+    { label: "Flagged Messages", value: stats?.flaggedMessages ?? 0, icon: AlertTriangle, color: "text-destructive" },
     { label: "Approved", value: stats?.approvedListings ?? 0, icon: CheckCircle, color: "text-primary" },
   ];
 

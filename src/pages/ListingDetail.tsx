@@ -254,6 +254,12 @@ const ListingDetail = () => {
               <p className="text-sm text-muted-foreground">
                 Sold by <span className="font-medium text-foreground">{listing.seller_name}</span>
               </p>
+              {listing.seller_id && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Seller Reviews</p>
+                  <ReviewsList userId={listing.seller_id} limit={5} />
+                </div>
+              )}
             </div>
           </div>
         </div>

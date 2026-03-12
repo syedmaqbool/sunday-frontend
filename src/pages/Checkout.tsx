@@ -6,22 +6,118 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, ShoppingBag, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowLeft, CheckCircle2, Tag, X, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface AppliedDiscount {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  min_order_amount: number;
+}
 
 const Checkout = () => {
   const { items, removeItem, totalPrice, clearCart, totalItems } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [placed, setPlaced] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [applyingCode, setApplyingCode] = useState(false);
 
-  const handlePlaceOrder = () => {
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.discount_type === "percentage"
+      ? Math.round(totalPrice * appliedDiscount.discount_value / 100)
+      : Math.min(appliedDiscount.discount_value, totalPrice)
+    : 0;
+
+  const finalPrice = totalPrice - discountAmount;
+
+  const handleApplyDiscount = async () => {
+    const code = discountCode.trim().toUpperCase();
+    if (!code) return;
+
+    setApplyingCode(true);
+    try {
+      const { data, error } = await supabase
+        .from("discount_codes")
+        .select("*")
+        .eq("code", code)
+        .eq("active", true)
+        .single();
+
+      if (error || !data) {
+        toast({ title: "Invalid code", description: "This discount code is not valid.", variant: "destructive" });
+        return;
+      }
+
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({ title: "Code expired", description: "This discount code has expired.", variant: "destructive" });
+        return;
+      }
+
+      if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+        toast({ title: "Code exhausted", description: "This discount code has reached its usage limit.", variant: "destructive" });
+        return;
+      }
+
+      if (totalPrice < (data.min_order_amount || 0)) {
+        toast({ title: "Minimum not met", description: `Order must be at least R ${data.min_order_amount} to use this code.`, variant: "destructive" });
+        return;
+      }
+
+      setAppliedDiscount({
+        id: data.id,
+        code: data.code,
+        discount_type: data.discount_type,
+        discount_value: Number(data.discount_value),
+        min_order_amount: Number(data.min_order_amount || 0),
+      });
+      setDiscountCode("");
+      toast({ title: "Discount applied!", description: `Code "${data.code}" has been applied.` });
+    } catch {
+      toast({ title: "Error", description: "Could not validate discount code.", variant: "destructive" });
+    } finally {
+      setApplyingCode(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+  };
+
+  const handlePlaceOrder = async () => {
     if (!user) {
       navigate("/auth");
       return;
     }
+
+    // Increment discount code usage
+    if (appliedDiscount) {
+      await supabase
+        .from("discount_codes")
+        .update({ current_uses: undefined as any }) // we use rpc-style or raw
+        .eq("id", appliedDiscount.id);
+      
+      // Use a simple increment via raw SQL isn't available, so fetch and update
+      const { data: codeData } = await supabase
+        .from("discount_codes")
+        .select("current_uses")
+        .eq("id", appliedDiscount.id)
+        .single();
+      
+      if (codeData) {
+        await supabase
+          .from("discount_codes")
+          .update({ current_uses: codeData.current_uses + 1 })
+          .eq("id", appliedDiscount.id);
+      }
+    }
+
     setPlaced(true);
     clearCart();
     toast({ title: "Order placed!", description: "Your order has been confirmed." });
@@ -121,11 +217,52 @@ const Checkout = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Discount code input */}
+              <Separator />
+              <div className="py-3">
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium text-foreground">{appliedDiscount.code}</span>
+                      <span className="text-xs text-primary">
+                        {appliedDiscount.discount_type === "percentage"
+                          ? `−${appliedDiscount.discount_value}%`
+                          : `−R ${appliedDiscount.discount_value.toLocaleString()}`}
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={handleRemoveDiscount}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Discount code"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyDiscount()}
+                      className="flex-1 uppercase"
+                    />
+                    <Button variant="outline" size="default" onClick={handleApplyDiscount} disabled={applyingCode || !discountCode.trim()}>
+                      {applyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
                 <span className="font-medium text-foreground">R {totalPrice.toLocaleString()}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-primary">Discount</span>
+                  <span className="text-sm font-medium text-primary">−R {discountAmount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between pb-3">
                 <span className="text-sm text-muted-foreground">Shipping</span>
                 <span className="text-sm text-muted-foreground">Free</span>
@@ -133,7 +270,7 @@ const Checkout = () => {
               <Separator />
               <div className="flex items-center justify-between py-4">
                 <span className="font-heading text-base font-semibold text-foreground">Total</span>
-                <span className="font-heading text-xl font-bold text-foreground">R {totalPrice.toLocaleString()}</span>
+                <span className="font-heading text-xl font-bold text-foreground">R {finalPrice.toLocaleString()}</span>
               </div>
               <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
                 Place Order

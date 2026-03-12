@@ -11,6 +11,7 @@ const navItems = [
   { label: "Listings", path: "/admin/listings", icon: ShieldCheck },
   { label: "Messages", path: "/admin/messages", icon: MessageSquareWarning },
   { label: "Users", path: "/admin/users", icon: Users },
+  { label: "Discounts", path: "/admin/discounts", icon: Tag },
 ];
 
 const AdminDashboard = () => {

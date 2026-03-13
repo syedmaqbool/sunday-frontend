@@ -65,6 +65,9 @@ const Navbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/messages")}>
                   <Mail className="mr-2 h-4 w-4" /> Messages
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/seller-analytics")}>
+                  <BarChart3 className="mr-2 h-4 w-4" /> Analytics
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>

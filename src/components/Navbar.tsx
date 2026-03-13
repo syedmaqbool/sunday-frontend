@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3 } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";

@@ -123,7 +123,7 @@ const CreateListing = () => {
             description: form.description,
             price: parseFloat(form.price),
             brand: form.brand,
-            category: form.category,
+            category: `${form.parentCategory}-${form.subCategory}`,
             condition: form.condition,
             size: form.size,
             weight: form.weight ? parseFloat(form.weight) : null,

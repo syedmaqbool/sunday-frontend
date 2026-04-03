@@ -251,6 +251,27 @@ const CreateListing = () => {
             <Textarea id="description" placeholder="Describe the item, its condition, and any flaws..." rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v, subCategory: "" }))}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Subcategory</Label>
+              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))} disabled={!form.parentCategory}>
+                <SelectTrigger><SelectValue placeholder={form.parentCategory ? "Select type" : "Choose category first"} /></SelectTrigger>
+                <SelectContent>
+                  {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price (ZAR)</Label>
@@ -259,24 +280,6 @@ const CreateListing = () => {
             <div className="space-y-2">
               <Label htmlFor="weight">Weight (kg)</Label>
               <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v }))}>
-                <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
-                <SelectContent>
-                  {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))}>
-                <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                <SelectContent>
-                  {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label>Condition</Label>

@@ -25,7 +25,7 @@ const CreateListing = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
-    category: "", condition: "", size: "", weight: "",
+    parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
   });
 
   // Load existing listing if editing

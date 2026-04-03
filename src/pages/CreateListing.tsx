@@ -54,12 +54,14 @@ const CreateListing = () => {
         navigate("/listings", { replace: true });
         return;
       }
+      const parts = (existingListing.category || "").split("-");
       setForm({
         title: existingListing.title,
         description: existingListing.description || "",
         price: String(existingListing.price),
         brand: existingListing.brand || "",
-        category: existingListing.category,
+        parentCategory: parts[0] || "",
+        subCategory: parts[1] || "",
         condition: existingListing.condition,
         size: existingListing.size,
         weight: existingListing.weight ? String(existingListing.weight) : "",

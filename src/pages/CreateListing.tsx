@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES, CONDITIONS, SIZES } from "@/lib/constants";
+import { PARENT_CATEGORIES, SUBCATEGORIES, CONDITIONS, SIZES } from "@/lib/constants";
 import { Camera, Upload, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";

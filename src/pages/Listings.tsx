@@ -6,7 +6,7 @@ import ListingCard from "@/components/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
+import { PARENT_CATEGORIES, SUBCATEGORIES, CATEGORIES, CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
 import { Search, Grid3X3, List, SlidersHorizontal, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +22,6 @@ const fetchListings = async (): Promise<Listing[]> => {
 
   if (error) throw error;
 
-  // Map DB rows to Listing type
   const dbListings: Listing[] = (data || []).map((row: any) => ({
     id: row.id,
     title: row.title,
@@ -39,14 +38,18 @@ const fetchListings = async (): Promise<Listing[]> => {
     status: row.status,
   }));
 
-  // Combine with mock listings for now
   return [...dbListings, ...MOCK_LISTINGS];
 };
 
 const Listings = () => {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState(searchParams.get("category") || "all");
+  const initialCategory = searchParams.get("category") || "all";
+  const initialParent = searchParams.get("parent") || (initialCategory !== "all" ? initialCategory.split("-")[0] : "all");
+  const initialSub = initialCategory !== "all" && initialCategory.includes("-") ? initialCategory.split("-")[1] : "all";
+
+  const [parentCat, setParentCat] = useState(initialParent);
+  const [subCat, setSubCat] = useState(initialSub);
   const [condition, setCondition] = useState("all");
   const [sort, setSort] = useState("newest");
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -61,7 +64,12 @@ const Listings = () => {
   const filtered = useMemo(() => {
     let items = [...listings];
     if (search) items = items.filter(i => i.title.toLowerCase().includes(search.toLowerCase()) || i.brand.toLowerCase().includes(search.toLowerCase()));
-    if (category !== "all") items = items.filter(i => i.category === category);
+    if (parentCat !== "all") {
+      items = items.filter(i => i.category.startsWith(parentCat + "-"));
+    }
+    if (subCat !== "all") {
+      items = items.filter(i => i.category.endsWith("-" + subCat));
+    }
     if (condition !== "all") items = items.filter(i => i.condition === condition);
     if (sort === "price_asc") items.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") items.sort((a, b) => b.price - a.price);
@@ -70,7 +78,39 @@ const Listings = () => {
       items = personalizeListings(items, prefs);
     }
     return items;
-  }, [listings, search, category, condition, sort, prefs]);
+  }, [listings, search, parentCat, subCat, condition, sort, prefs]);
+
+  const filterSelects = (
+    <>
+      <Select value={parentCat} onValueChange={v => { setParentCat(v); if (v === "all") setSubCat("all"); }}>
+        <SelectTrigger className="w-[130px]"><SelectValue placeholder="Gender" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={subCat} onValueChange={setSubCat}>
+        <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={condition} onValueChange={setCondition}>
+        <SelectTrigger className="w-[140px]"><SelectValue placeholder="Condition" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Conditions</SelectItem>
+          {CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={sort} onValueChange={setSort}>
+        <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </>
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -86,26 +126,7 @@ const Listings = () => {
               <SlidersHorizontal className="h-4 w-4" /> Filters
             </Button>
             <div className="hidden gap-2 md:flex">
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Category" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={condition} onValueChange={setCondition}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Condition" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Conditions</SelectItem>
-                  {CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {filterSelects}
             </div>
             <div className="flex rounded-md border border-border">
               <Button variant={view === "grid" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-none rounded-l-md" onClick={() => setView("grid")}>
@@ -120,26 +141,7 @@ const Listings = () => {
 
         {showFilters && (
           <div className="mt-4 flex flex-wrap gap-2 md:hidden">
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={condition} onValueChange={setCondition}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Condition" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Conditions</SelectItem>
-                {CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {filterSelects}
           </div>
         )}
 

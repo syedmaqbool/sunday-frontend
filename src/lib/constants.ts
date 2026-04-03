@@ -1,11 +1,26 @@
-export const CATEGORIES = [
+export const PARENT_CATEGORIES = [
   { label: "Women", value: "women", icon: "👗" },
   { label: "Men", value: "men", icon: "🧥" },
+  { label: "Children", value: "children", icon: "🧒" },
+] as const;
+
+export const SUBCATEGORIES = [
+  { label: "Clothes", value: "clothes", icon: "👔" },
   { label: "Shoes", value: "shoes", icon: "👟" },
   { label: "Bags", value: "bags", icon: "👜" },
   { label: "Accessories", value: "accessories", icon: "💍" },
-  { label: "Jewelry", value: "jewelry", icon: "✨" },
 ] as const;
+
+/** Combined category value used in DB, e.g. "women-shoes" */
+export const CATEGORIES = PARENT_CATEGORIES.flatMap(p =>
+  SUBCATEGORIES.map(s => ({
+    label: `${p.label} · ${s.label}`,
+    value: `${p.value}-${s.value}`,
+    parent: p.value,
+    sub: s.value,
+    icon: s.icon,
+  }))
+);
 
 export const CONDITIONS = [
   { label: "New with tags", value: "new_with_tags" },
@@ -47,7 +62,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "Authentic vintage Chanel tweed jacket in excellent condition. Classic silhouette with gold button details.",
     price: 2450,
     images: ["https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=600"],
-    category: "women",
+    category: "women-clothes",
     condition: "like_new",
     size: "M",
     brand: "Chanel",
@@ -62,7 +77,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "Brand new with tags. Limited edition colorway, never worn.",
     price: 320,
     images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600"],
-    category: "shoes",
+    category: "men-shoes",
     condition: "new_with_tags",
     size: "42",
     brand: "Nike",
@@ -77,7 +92,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "Iconic GG Marmont mini bag in dusty pink. Comes with dust bag and box.",
     price: 1180,
     images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600"],
-    category: "bags",
+    category: "women-bags",
     condition: "good",
     size: "One Size",
     brand: "Gucci",
@@ -92,7 +107,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "Minimalist oversized hoodie in stone grey. Barely worn, perfect condition.",
     price: 185,
     images: ["https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600"],
-    category: "men",
+    category: "men-clothes",
     condition: "like_new",
     size: "L",
     brand: "Acne Studios",
@@ -107,7 +122,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "18k rose gold Cartier Love bracelet. Size 17. Includes screwdriver and original box.",
     price: 5200,
     images: ["https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600"],
-    category: "jewelry",
+    category: "women-accessories",
     condition: "good",
     size: "One Size",
     brand: "Cartier",
@@ -122,7 +137,7 @@ export const MOCK_LISTINGS: Listing[] = [
     description: "Classic gold-frame aviators with green lenses. Like new condition.",
     price: 95,
     images: ["https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600"],
-    category: "accessories",
+    category: "men-accessories",
     condition: "like_new",
     size: "One Size",
     brand: "Ray-Ban",

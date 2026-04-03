@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES, CONDITIONS, SIZES } from "@/lib/constants";
+import { PARENT_CATEGORIES, SUBCATEGORIES, CONDITIONS, SIZES } from "@/lib/constants";
 import { Camera, Upload, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +25,7 @@ const CreateListing = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
-    category: "", condition: "", size: "", weight: "",
+    parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
   });
 
   // Load existing listing if editing
@@ -54,12 +54,14 @@ const CreateListing = () => {
         navigate("/listings", { replace: true });
         return;
       }
+      const parts = (existingListing.category || "").split("-");
       setForm({
         title: existingListing.title,
         description: existingListing.description || "",
         price: String(existingListing.price),
         brand: existingListing.brand || "",
-        category: existingListing.category,
+        parentCategory: parts[0] || "",
+        subCategory: parts[1] || "",
         condition: existingListing.condition,
         size: existingListing.size,
         weight: existingListing.weight ? String(existingListing.weight) : "",
@@ -121,7 +123,7 @@ const CreateListing = () => {
             description: form.description,
             price: parseFloat(form.price),
             brand: form.brand,
-            category: form.category,
+            category: `${form.parentCategory}-${form.subCategory}`,
             condition: form.condition,
             size: form.size,
             weight: form.weight ? parseFloat(form.weight) : null,
@@ -142,7 +144,7 @@ const CreateListing = () => {
             description: form.description,
             price: parseFloat(form.price),
             brand: form.brand,
-            category: form.category,
+            category: `${form.parentCategory}-${form.subCategory}`,
             condition: form.condition,
             size: form.size,
             weight: form.weight ? parseFloat(form.weight) : null,
@@ -260,10 +262,19 @@ const CreateListing = () => {
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+              <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v }))}>
+                <SelectTrigger><SelectValue placeholder="Gender" /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))}>
+                <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -21,6 +21,8 @@ const CreateListing = () => {
   const isEditing = !!id;
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const { data: parentCategories = [] } = useCategories();
+  const { data: subCategories = [] } = useSubcategories();
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);

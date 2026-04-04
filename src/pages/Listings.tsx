@@ -56,6 +56,8 @@ const Listings = () => {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const { data: prefs } = useUserPreferences();
+  const { data: parentCategories = [] } = useCategories();
+  const { data: subCategoriesList = [] } = useSubcategories();
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings"],

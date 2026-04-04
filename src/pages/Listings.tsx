@@ -96,7 +96,7 @@ const Listings = () => {
         <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          {subCategoriesList.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={condition} onValueChange={setCondition}>

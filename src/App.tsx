@@ -53,6 +53,7 @@ const App = () => (
               <Route path="listings" element={<ListingModeration />} />
               <Route path="messages" element={<MessageModeration />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="categories" element={<CategoryManagement />} />
               <Route path="discounts" element={<DiscountCodes />} />
             </Route>
             <Route path="*" element={<NotFound />} />

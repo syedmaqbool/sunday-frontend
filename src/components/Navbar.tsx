@@ -4,6 +4,7 @@ import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCategories } from "@/hooks/useCategories";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { data: categories = [] } = useCategories();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -25,9 +27,11 @@ const Navbar = () => {
 
         <nav className="hidden items-center gap-8 md:flex">
           <Link to="/listings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Browse</Link>
-          <Link to="/listings?parent=women" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Women</Link>
-          <Link to="/listings?parent=men" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Men</Link>
-          <Link to="/listings?parent=children" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Children</Link>
+          {categories.map(cat => (
+            <Link key={cat.id} to={`/listings?parent=${cat.value}`} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              {cat.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -88,9 +92,11 @@ const Navbar = () => {
         <div className="border-t border-border bg-background p-4 md:hidden">
           <nav className="flex flex-col gap-3">
             <Link to="/listings" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Browse All</Link>
-            <Link to="/listings?parent=women" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Women</Link>
-            <Link to="/listings?parent=men" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Men</Link>
-            <Link to="/listings?parent=children" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Children</Link>
+            {categories.map(cat => (
+              <Link key={cat.id} to={`/listings?parent=${cat.value}`} className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>
+                {cat.label}
+              </Link>
+            ))}
             <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate(user ? "/create-listing" : "/auth"); setMobileOpen(false); }}>
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>

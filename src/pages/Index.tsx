@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import CategoryGrid from "@/components/CategoryGrid";
+import TrendingProducts from "@/components/TrendingProducts";
 import FeaturedListings from "@/components/FeaturedListings";
 import Footer from "@/components/Footer";
 
@@ -10,6 +11,7 @@ const Index = () => (
     <main className="flex-1">
       <HeroSection />
       <CategoryGrid />
+      <TrendingProducts />
       <FeaturedListings />
     </main>
     <Footer />

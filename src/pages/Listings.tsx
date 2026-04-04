@@ -6,7 +6,8 @@ import ListingCard from "@/components/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { PARENT_CATEGORIES, SUBCATEGORIES, CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
+import { CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
+import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Search, Grid3X3, List, SlidersHorizontal, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -55,6 +56,8 @@ const Listings = () => {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const { data: prefs } = useUserPreferences();
+  const { data: parentCategories = [] } = useCategories();
+  const { data: subCategoriesList = [] } = useSubcategories();
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings"],
@@ -86,14 +89,14 @@ const Listings = () => {
         <SelectTrigger className="w-[130px]"><SelectValue placeholder="Gender" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
-          {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          {parentCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={subCat} onValueChange={setSubCat}>
         <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {SUBCATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          {subCategoriesList.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={condition} onValueChange={setCondition}>

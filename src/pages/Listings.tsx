@@ -89,7 +89,7 @@ const Listings = () => {
         <SelectTrigger className="w-[130px]"><SelectValue placeholder="Gender" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
-          {PARENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          {parentCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={subCat} onValueChange={setSubCat}>

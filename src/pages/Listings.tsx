@@ -166,7 +166,7 @@ const Listings = () => {
               </div>
             ) : view === "grid" ? (
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {filtered.map((l, i) => <ListingCard key={l.id} listing={l} index={i} />)}
+                {filtered.map((l, i) => <ListingCard key={l.id} listing={l} index={i} sellerRating={sellerRatingsMap?.get(l.seller_id)} />)}
               </div>
             ) : (
               <div className="mt-4 space-y-4">

@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
 import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerProfile from "./pages/SellerProfile";
+import UserProfile from "./pages/UserProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import Overview from "./pages/admin/Overview";
 import ListingModeration from "./pages/admin/ListingModeration";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/messages" element={<Messages />} />
             <Route path="/seller-analytics" element={<SellerAnalytics />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
+            <Route path="/profile" element={<UserProfile />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<Overview />} />

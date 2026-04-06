@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3 } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -58,6 +58,9 @@ const Navbar = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
                   {user.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <UserCircle className="mr-2 h-4 w-4" /> My Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/my-listings")}>
                   <Package className="mr-2 h-4 w-4" /> My Listings

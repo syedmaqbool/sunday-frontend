@@ -252,7 +252,14 @@ const ListingDetail = () => {
 
             <div className="mt-6 border-t border-border pt-4">
               <p className="text-sm text-muted-foreground">
-                Sold by <span className="font-medium text-foreground">{listing.seller_name}</span>
+                Sold by{" "}
+                {listing.seller_id ? (
+                  <Link to={`/seller/${listing.seller_id}`} className="font-medium text-primary hover:underline">
+                    {listing.seller_name}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-foreground">{listing.seller_name}</span>
+                )}
               </p>
               {listing.seller_id && (
                 <div className="mt-3">

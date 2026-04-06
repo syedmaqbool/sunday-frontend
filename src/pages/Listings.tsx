@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
+import { useSellerRatings } from "@/hooks/useSellerRating";
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
@@ -63,6 +64,9 @@ const Listings = () => {
     queryKey: ["listings"],
     queryFn: fetchListings,
   });
+
+  const sellerIds = useMemo(() => listings.map((l) => l.seller_id), [listings]);
+  const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
 
   const filtered = useMemo(() => {
     let items = [...listings];
@@ -162,7 +166,7 @@ const Listings = () => {
               </div>
             ) : view === "grid" ? (
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {filtered.map((l, i) => <ListingCard key={l.id} listing={l} index={i} />)}
+                {filtered.map((l, i) => <ListingCard key={l.id} listing={l} index={i} sellerRating={sellerRatingsMap?.get(l.seller_id)} />)}
               </div>
             ) : (
               <div className="mt-4 space-y-4">

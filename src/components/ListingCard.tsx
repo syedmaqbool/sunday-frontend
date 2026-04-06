@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/constants";
 import { motion } from "framer-motion";
@@ -7,9 +7,10 @@ import { motion } from "framer-motion";
 interface ListingCardProps {
   listing: Listing;
   index?: number;
+  sellerRating?: { avgRating: number; totalReviews: number } | null;
 }
 
-const ListingCard = ({ listing, index = 0 }: ListingCardProps) => (
+const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => (
   <motion.div
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
@@ -41,7 +42,15 @@ const ListingCard = ({ listing, index = 0 }: ListingCardProps) => (
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{listing.brand}</p>
         <h3 className="text-sm font-medium leading-tight text-foreground line-clamp-1">{listing.title}</h3>
         <p className="text-sm font-semibold text-foreground">R {listing.price.toLocaleString()}</p>
-        <p className="text-xs text-muted-foreground">Size {listing.size}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">Size {listing.size}</p>
+          {sellerRating && sellerRating.totalReviews > 0 && (
+            <div className="flex items-center gap-0.5">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              <span className="text-xs font-medium text-foreground">{sellerRating.avgRating.toFixed(1)}</span>
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   </motion.div>

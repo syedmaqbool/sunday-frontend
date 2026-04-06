@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
+import { useSellerRatings } from "@/hooks/useSellerRating";
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase

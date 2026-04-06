@@ -65,6 +65,9 @@ const Listings = () => {
     queryFn: fetchListings,
   });
 
+  const sellerIds = useMemo(() => listings.map((l) => l.seller_id), [listings]);
+  const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
+
   const filtered = useMemo(() => {
     let items = [...listings];
     if (search) items = items.filter(i => i.title.toLowerCase().includes(search.toLowerCase()) || i.brand.toLowerCase().includes(search.toLowerCase()));

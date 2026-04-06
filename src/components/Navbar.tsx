@@ -59,6 +59,9 @@ const Navbar = () => {
                 <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
                   {user.email}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <UserCircle className="mr-2 h-4 w-4" /> My Profile
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/my-listings")}>
                   <Package className="mr-2 h-4 w-4" /> My Listings
                 </DropdownMenuItem>

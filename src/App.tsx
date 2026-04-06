@@ -17,6 +17,7 @@ import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
 import SellerAnalytics from "./pages/SellerAnalytics";
+import SellerProfile from "./pages/SellerProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import Overview from "./pages/admin/Overview";
 import ListingModeration from "./pages/admin/ListingModeration";

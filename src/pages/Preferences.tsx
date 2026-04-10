@@ -6,22 +6,15 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Flame, Clock, Minus, Gem, Flower2, type LucideIcon } from "lucide-react";
 
-import styleCasual from "@/assets/style-casual.jpg";
-import styleStreetwear from "@/assets/style-streetwear.jpg";
-import styleVintage from "@/assets/style-vintage.jpg";
-import styleMinimalist from "@/assets/style-minimalist.jpg";
-import styleLuxury from "@/assets/style-luxury.jpg";
-import styleBohemian from "@/assets/style-bohemian.jpg";
-
-const STYLES = [
-  { id: "casual", label: "Casual", image: styleCasual },
-  { id: "streetwear", label: "Streetwear", image: styleStreetwear },
-  { id: "vintage", label: "Vintage", image: styleVintage },
-  { id: "minimalist", label: "Minimalist", image: styleMinimalist },
-  { id: "luxury", label: "Luxury", image: styleLuxury },
-  { id: "bohemian", label: "Bohemian", image: styleBohemian },
+const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = [
+  { id: "casual", label: "Casual", icon: Sun, desc: "Laid-back everyday wear" },
+  { id: "streetwear", label: "Streetwear", icon: Flame, desc: "Bold urban fashion" },
+  { id: "vintage", label: "Vintage", icon: Clock, desc: "Retro & timeless pieces" },
+  { id: "minimalist", label: "Minimalist", icon: Minus, desc: "Clean & simple lines" },
+  { id: "luxury", label: "Luxury", icon: Gem, desc: "Premium designer goods" },
+  { id: "bohemian", label: "Bohemian", icon: Flower2, desc: "Free-spirited & eclectic" },
 ];
 
 const BRANDS = [
@@ -140,36 +133,33 @@ const Preferences = () => {
               <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
                 {STYLES.map((s) => {
                   const selected = selectedStyles.includes(s.id);
+                  const Icon = s.icon;
                   return (
                     <motion.button
                       key={s.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => toggleStyle(s.id)}
-                      className={`group relative overflow-hidden rounded-xl border-2 transition-colors ${
+                      className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors ${
                         selected
-                          ? "border-primary shadow-lg"
-                          : "border-border hover:border-muted-foreground/30"
+                          ? "border-primary bg-primary/5 shadow-lg"
+                          : "border-border bg-card hover:border-muted-foreground/30"
                       }`}
                     >
-                      <div className="aspect-[3/4] overflow-hidden">
-                        <img
-                          src={s.image}
-                          alt={s.label}
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        />
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-full ${selected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        <Icon className="h-7 w-7" />
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
-                      <span className="absolute bottom-3 left-3 font-heading text-lg font-bold text-background">
+                      <span className="font-heading text-base font-bold text-foreground">
                         {s.label}
                       </span>
+                      <span className="text-xs text-muted-foreground">{s.desc}</span>
                       {selected && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-primary"
+                          className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
                         >
-                          <Check className="h-4 w-4 text-primary-foreground" />
+                          <Check className="h-3.5 w-3.5 text-primary-foreground" />
                         </motion.div>
                       )}
                     </motion.button>

@@ -122,6 +122,38 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_feedback: {
+        Row: {
+          admin_id: string
+          created_at: string
+          feedback: string
+          id: string
+          listing_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          feedback: string
+          id?: string
+          listing_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_feedback_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           admin_feedback: string | null

@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,8 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Pencil, Trash2, Plus, Package, MessageSquare, RotateCcw } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw } from "lucide-react";
+import { ListingFeedbackInline } from "@/components/ListingFeedbackWidgets";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -57,7 +58,7 @@ const MyListings = () => {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("listings")
-        .update({ status: "pending", admin_feedback: null } as any)
+        .update({ status: "pending" } as any)
         .eq("id", id);
       if (error) throw error;
     },
@@ -126,15 +127,7 @@ const MyListings = () => {
                       {listing.brand} · R {listing.price.toLocaleString()}
                       {listing.weight ? ` · ${listing.weight}kg` : ""}
                     </p>
-                    {listing.status === "rejected" && (listing as any).admin_feedback && (
-                      <div className="mt-2 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
-                        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-                        <div>
-                          <p className="text-xs font-medium text-destructive">Admin Feedback</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">{(listing as any).admin_feedback}</p>
-                        </div>
-                      </div>
-                    )}
+                    <ListingFeedbackInline listingId={listing.id} />
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button

@@ -4,7 +4,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
 import { ReviewsList } from "@/components/ReviewsList";
 import { MakeOfferButton } from "@/components/MakeOfferButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,15 +197,7 @@ const ListingDetail = () => {
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
-            {isOwner && listing.status === "rejected" && listing.admin_feedback && (
-              <div className="mt-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-                <div>
-                  <p className="text-sm font-semibold text-destructive">Admin Feedback</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{listing.admin_feedback}</p>
-                </div>
-              </div>
-            )}
+            {isOwner && <ListingFeedbackSection listingId={listing.id} />}
 
             {isOwner ? (
               <div className="mt-8 flex gap-3">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,9 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Pencil, Trash2, Plus, Package, MessageSquare, RotateCcw } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw } from "lucide-react";
+import FeedbackHistory from "@/components/FeedbackHistory";
+import { useListingFeedback } from "@/hooks/useListingFeedback";
 import { toast } from "sonner";
 import {
   AlertDialog,

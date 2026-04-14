@@ -282,13 +282,27 @@ const ListingModeration = () => {
                     Seller ID: {reviewListing.seller_id.slice(0, 8)}…
                   </div>
 
+                  {/* Feedback */}
+                  <div className="space-y-2 border-t border-border pt-4">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin Feedback</p>
+                    </div>
+                    <Textarea
+                      placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
+                      rows={3}
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                    />
+                  </div>
+
                   {/* Moderation actions */}
-                  <div className="flex gap-3 border-t border-border pt-4">
+                  <div className="flex gap-3">
                     {reviewListing.status !== "approved" && (
                       <Button
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "approved" });
+                          updateStatus.mutate({ id: reviewListing.id, status: "approved", admin_feedback: feedback || undefined });
                           goToNext();
                         }}
                         disabled={updateStatus.isPending}
@@ -301,7 +315,7 @@ const ListingModeration = () => {
                         variant="destructive"
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "rejected" });
+                          updateStatus.mutate({ id: reviewListing.id, status: "rejected", admin_feedback: feedback });
                           goToNext();
                         }}
                         disabled={updateStatus.isPending}

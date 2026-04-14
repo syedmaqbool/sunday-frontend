@@ -126,15 +126,7 @@ const MyListings = () => {
                       {listing.brand} · R {listing.price.toLocaleString()}
                       {listing.weight ? ` · ${listing.weight}kg` : ""}
                     </p>
-                    {listing.status === "rejected" && (listing as any).admin_feedback && (
-                      <div className="mt-2 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
-                        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-                        <div>
-                          <p className="text-xs font-medium text-destructive">Admin Feedback</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">{(listing as any).admin_feedback}</p>
-                        </div>
-                      </div>
-                    )}
+                    <ListingFeedbackInline listingId={listing.id} />
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button

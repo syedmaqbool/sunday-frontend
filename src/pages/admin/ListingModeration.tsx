@@ -91,16 +91,30 @@ const ListingModeration = () => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, admin_feedback }: { id: string; status: string; admin_feedback?: string }) => {
+      // Update listing status (also keep admin_feedback column for quick access)
       const updateData: Record<string, unknown> = { status };
       if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;
       if (status === "approved") updateData.admin_feedback = null;
       const { error } = await supabase.from("listings").update(updateData).eq("id", id);
       if (error) throw error;
+
+      // Insert into feedback history if feedback provided
+      if (admin_feedback) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("listing_feedback").insert({
+            listing_id: id,
+            admin_id: user.id,
+            feedback: admin_feedback,
+          } as any);
+        }
+      }
     },
     onSuccess: (_, { status }) => {
       toast.success(`Listing ${status}`);
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["listing-feedback"] });
       setReviewListing(null);
       setFeedback("");
     },
@@ -282,11 +296,14 @@ const ListingModeration = () => {
                     Seller ID: {reviewListing.seller_id.slice(0, 8)}…
                   </div>
 
-                  {/* Feedback */}
+                  {/* Previous feedback history */}
+                  {reviewListing && <FeedbackHistorySection listingId={reviewListing.id} />}
+
+                  {/* New Feedback */}
                   <div className="space-y-2 border-t border-border pt-4">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin Feedback</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New Feedback</p>
                     </div>
                     <Textarea
                       placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."

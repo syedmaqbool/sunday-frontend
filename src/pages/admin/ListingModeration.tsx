@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -74,6 +75,7 @@ const DetailGallery = ({ images }: { images: string[] }) => {
 const ListingModeration = () => {
   const [filter, setFilter] = useState("pending");
   const [reviewListing, setReviewListing] = useState<ListingRow | null>(null);
+  const [feedback, setFeedback] = useState("");
   const queryClient = useQueryClient();
 
   const { data: listings = [], isLoading } = useQuery({

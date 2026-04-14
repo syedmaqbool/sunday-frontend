@@ -198,7 +198,14 @@ const ListingDetail = () => {
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
-            {isOwner && <ListingFeedbackSection listingId={listing.id} />}
+            {isOwner && (() => {
+              const { data: feedbackList = [] } = useListingFeedback(listing.id);
+              return feedbackList.length > 0 ? (
+                <div className="mt-4">
+                  <FeedbackHistory feedbackList={feedbackList} />
+                </div>
+              ) : null;
+            })()}
 
             {isOwner ? (
               <div className="mt-8 flex gap-3">

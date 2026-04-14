@@ -205,6 +205,8 @@ const ListingDetail = () => {
                 </div>
               </div>
             )}
+
+            {isOwner ? (
               <div className="mt-8 flex gap-3">
                 <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
                   <Pencil className="h-4 w-4" /> Edit Listing

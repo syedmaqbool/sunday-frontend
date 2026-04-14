@@ -196,7 +196,15 @@ const ListingDetail = () => {
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
-            {isOwner ? (
+            {isOwner && listing.status === "rejected" && listing.admin_feedback && (
+              <div className="mt-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                <div>
+                  <p className="text-sm font-semibold text-destructive">Admin Feedback</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{listing.admin_feedback}</p>
+                </div>
+              </div>
+            )}
               <div className="mt-8 flex gap-3">
                 <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
                   <Pencil className="h-4 w-4" /> Edit Listing

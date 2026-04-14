@@ -52,6 +52,7 @@ export type Listing = {
   created_at: string;
   status: "pending" | "approved" | "rejected";
   weight?: number | null;
+  admin_feedback?: string | null;
 };
 
 // Mock data for initial UI

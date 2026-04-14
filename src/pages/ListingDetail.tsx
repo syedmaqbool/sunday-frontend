@@ -5,8 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MOCK_LISTINGS } from "@/lib/constants";
 import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
-import FeedbackHistory from "@/components/FeedbackHistory";
-import { useListingFeedback } from "@/hooks/useListingFeedback";
+import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
 import { ReviewsList } from "@/components/ReviewsList";
 import { MakeOfferButton } from "@/components/MakeOfferButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,14 +197,7 @@ const ListingDetail = () => {
 
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
 
-            {isOwner && (() => {
-              const { data: feedbackList = [] } = useListingFeedback(listing.id);
-              return feedbackList.length > 0 ? (
-                <div className="mt-4">
-                  <FeedbackHistory feedbackList={feedbackList} />
-                </div>
-              ) : null;
-            })()}
+            {isOwner && <ListingFeedbackSection listingId={listing.id} />}
 
             {isOwner ? (
               <div className="mt-8 flex gap-3">

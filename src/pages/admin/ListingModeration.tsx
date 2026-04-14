@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -74,6 +75,7 @@ const DetailGallery = ({ images }: { images: string[] }) => {
 const ListingModeration = () => {
   const [filter, setFilter] = useState("pending");
   const [reviewListing, setReviewListing] = useState<ListingRow | null>(null);
+  const [feedback, setFeedback] = useState("");
   const queryClient = useQueryClient();
 
   const { data: listings = [], isLoading } = useQuery({
@@ -88,8 +90,11 @@ const ListingModeration = () => {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("listings").update({ status }).eq("id", id);
+    mutationFn: async ({ id, status, admin_feedback }: { id: string; status: string; admin_feedback?: string }) => {
+      const updateData: Record<string, unknown> = { status };
+      if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;
+      if (status === "approved") updateData.admin_feedback = null;
+      const { error } = await supabase.from("listings").update(updateData).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, { status }) => {
@@ -97,6 +102,7 @@ const ListingModeration = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       setReviewListing(null);
+      setFeedback("");
     },
     onError: () => toast.error("Failed to update listing"),
   });
@@ -276,13 +282,27 @@ const ListingModeration = () => {
                     Seller ID: {reviewListing.seller_id.slice(0, 8)}…
                   </div>
 
+                  {/* Feedback */}
+                  <div className="space-y-2 border-t border-border pt-4">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin Feedback</p>
+                    </div>
+                    <Textarea
+                      placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
+                      rows={3}
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                    />
+                  </div>
+
                   {/* Moderation actions */}
-                  <div className="flex gap-3 border-t border-border pt-4">
+                  <div className="flex gap-3">
                     {reviewListing.status !== "approved" && (
                       <Button
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "approved" });
+                          updateStatus.mutate({ id: reviewListing.id, status: "approved", admin_feedback: feedback || undefined });
                           goToNext();
                         }}
                         disabled={updateStatus.isPending}
@@ -295,7 +315,7 @@ const ListingModeration = () => {
                         variant="destructive"
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "rejected" });
+                          updateStatus.mutate({ id: reviewListing.id, status: "rejected", admin_feedback: feedback });
                           goToNext();
                         }}
                         disabled={updateStatus.isPending}

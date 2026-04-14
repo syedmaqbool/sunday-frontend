@@ -124,6 +124,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          admin_feedback: string | null
           brand: string
           category: string
           condition: string
@@ -140,6 +141,7 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          admin_feedback?: string | null
           brand?: string
           category: string
           condition: string
@@ -156,6 +158,7 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          admin_feedback?: string | null
           brand?: string
           category?: string
           condition?: string

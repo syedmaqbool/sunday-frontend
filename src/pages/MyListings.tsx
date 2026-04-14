@@ -58,7 +58,7 @@ const MyListings = () => {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("listings")
-        .update({ status: "pending", admin_feedback: null } as any)
+        .update({ status: "pending" } as any)
         .eq("id", id);
       if (error) throw error;
     },

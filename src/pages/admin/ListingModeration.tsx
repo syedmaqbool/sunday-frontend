@@ -90,8 +90,11 @@ const ListingModeration = () => {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("listings").update({ status }).eq("id", id);
+    mutationFn: async ({ id, status, admin_feedback }: { id: string; status: string; admin_feedback?: string }) => {
+      const updateData: Record<string, unknown> = { status };
+      if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;
+      if (status === "approved") updateData.admin_feedback = null;
+      const { error } = await supabase.from("listings").update(updateData).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, { status }) => {
@@ -99,6 +102,7 @@ const ListingModeration = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       setReviewListing(null);
+      setFeedback("");
     },
     onError: () => toast.error("Failed to update listing"),
   });

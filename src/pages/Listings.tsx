@@ -6,7 +6,7 @@ import ListingCard from "@/components/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
+import { CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS, SIZES } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Search, Grid3X3, List, SlidersHorizontal, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +53,7 @@ const Listings = () => {
   const [parentCat, setParentCat] = useState(initialParent);
   const [subCat, setSubCat] = useState(initialSub);
   const [condition, setCondition] = useState("all");
+  const [size, setSize] = useState("all");
   const [sort, setSort] = useState("newest");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
@@ -78,6 +79,7 @@ const Listings = () => {
       items = items.filter(i => i.category.endsWith("-" + subCat));
     }
     if (condition !== "all") items = items.filter(i => i.condition === condition);
+    if (size !== "all") items = items.filter(i => i.size === size);
     if (sort === "price_asc") items.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") items.sort((a, b) => b.price - a.price);
     else {
@@ -85,7 +87,7 @@ const Listings = () => {
       items = personalizeListings(items, prefs);
     }
     return items;
-  }, [listings, search, parentCat, subCat, condition, sort, prefs]);
+  }, [listings, search, parentCat, subCat, condition, size, sort, prefs]);
 
   const filterSelects = (
     <>
@@ -108,6 +110,13 @@ const Listings = () => {
         <SelectContent>
           <SelectItem value="all">All Conditions</SelectItem>
           {CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={size} onValueChange={setSize}>
+        <SelectTrigger className="w-[120px]"><SelectValue placeholder="Size" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sizes</SelectItem>
+          {SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={sort} onValueChange={setSort}>

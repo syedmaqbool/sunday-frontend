@@ -49,9 +49,9 @@ const UserProfile = () => {
     enabled: !!user,
   });
 
-  // Items sold: accepted offers where user is seller, joined with listing
-  const { data: soldItems = [], isLoading: soldLoading } = useQuery({
-    queryKey: ["sold-items", user?.id],
+  // Items sold via accepted offers (negotiations)
+  const { data: offerSales = [], isLoading: offerSalesLoading } = useQuery({
+    queryKey: ["sold-offers", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("offers")
@@ -64,6 +64,46 @@ const UserProfile = () => {
     },
     enabled: !!user,
   });
+
+  // Items sold via direct checkout (orders containing this seller's items)
+  const { data: orderSales = [], isLoading: orderSalesLoading } = useQuery({
+    queryKey: ["sold-orders", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, created_at, items, shipping_first_name, shipping_last_name, shipping_city")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // Flatten: one row per item belonging to this seller
+      const flat: any[] = [];
+      (data ?? []).forEach((order: any) => {
+        const items: any[] = Array.isArray(order.items) ? order.items : [];
+        items
+          .filter((it) => it.seller_id === user!.id)
+          .forEach((it, idx) => {
+            flat.push({
+              id: `${order.id}-${idx}`,
+              order_id: order.id,
+              listing_id: it.listing_id,
+              title: it.title,
+              brand: it.brand,
+              image: it.image,
+              price: it.price,
+              quantity: it.quantity,
+              amount: Number(it.price) * Number(it.quantity),
+              created_at: order.created_at,
+              buyer_name: `${order.shipping_first_name ?? ""} ${order.shipping_last_name ?? ""}`.trim(),
+              shipping_city: order.shipping_city,
+            });
+          });
+      });
+      return flat;
+    },
+    enabled: !!user,
+  });
+
+  const soldItems = [...orderSales, ...offerSales];
+  const soldLoading = offerSalesLoading || orderSalesLoading;
 
   const { data: rating } = useSellerRating(user?.id);
 
@@ -172,11 +212,19 @@ const UserProfile = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {orders.map((order: any) => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+                      <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                      <p>
+                        Tap <span className="font-medium">Details</span> on any order to leave a review for each item you bought.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {orders.map((order: any) => (
+                        <OrderCard key={order.id} order={order} />
+                      ))}
+                    </div>
+                  </>
                 )}
               </TabsContent>
 
@@ -192,13 +240,13 @@ const UserProfile = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {soldItems.map((item: any) => (
-                      <TransactionCard
-                        key={item.id}
-                        item={item}
-                        label="Sold"
-                      />
-                    ))}
+                    {soldItems.map((item: any) =>
+                      item.order_id ? (
+                        <SoldOrderCard key={item.id} item={item} />
+                      ) : (
+                        <TransactionCard key={item.id} item={item} label="Sold" />
+                      ),
+                    )}
                   </div>
                 )}
               </TabsContent>
@@ -377,6 +425,45 @@ function OrderCard({ order }: { order: any }) {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SoldOrderCard({ item }: { item: any }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <Link to={item.listing_id ? `/listing/${item.listing_id}` : "#"}>
+          <img
+            src={item.image || "/placeholder.svg"}
+            alt={item.title}
+            className="h-20 w-20 rounded-md object-cover"
+          />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {item.listing_id ? (
+              <Link
+                to={`/listing/${item.listing_id}`}
+                className="truncate font-semibold text-foreground hover:underline"
+              >
+                {item.title}
+              </Link>
+            ) : (
+              <span className="truncate font-semibold text-foreground">{item.title}</span>
+            )}
+            <Badge variant="secondary">Sold</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {item.brand ? `${item.brand} · ` : ""}Qty {item.quantity} · R {Number(item.amount).toLocaleString()}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {format(new Date(item.created_at), "dd MMM yyyy")}
+            {item.buyer_name ? ` · Buyer: ${item.buyer_name}` : ""}
+            {item.shipping_city ? ` · ${item.shipping_city}` : ""}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

@@ -392,7 +392,8 @@ export type Database = {
           created_at: string
           id: string
           listing_id: string
-          offer_id: string
+          offer_id: string | null
+          order_id: string | null
           rating: number
           reviewed_id: string
           reviewer_id: string
@@ -403,7 +404,8 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id: string
-          offer_id: string
+          offer_id?: string | null
+          order_id?: string | null
           rating: number
           reviewed_id: string
           reviewer_id: string
@@ -414,7 +416,8 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string
-          offer_id?: string
+          offer_id?: string | null
+          order_id?: string | null
           rating?: number
           reviewed_id?: string
           reviewer_id?: string

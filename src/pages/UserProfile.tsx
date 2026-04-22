@@ -34,16 +34,15 @@ const UserProfile = () => {
     enabled: !!user,
   });
 
-  // Items bought: accepted offers where user is buyer, joined with listing
-  const { data: boughtItems = [], isLoading: boughtLoading } = useQuery({
-    queryKey: ["bought-items", user?.id],
+  // Orders placed by this user
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["my-orders", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("offers")
-        .select("id, amount, status, created_at, updated_at, listing_id, listings(id, title, images, brand, category, condition, size, price)")
+        .from("orders")
+        .select("*")
         .eq("buyer_id", user!.id)
-        .eq("status", "accepted")
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

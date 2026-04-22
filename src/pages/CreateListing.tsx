@@ -139,19 +139,8 @@ const CreateListing = () => {
   const totalPhotos = imageFiles.length + existingImages.length;
   const hasVideo = !!videoFile || !!existingVideo;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const performSubmit = async () => {
     if (!user) return;
-
-    if (totalPhotos === 0) {
-      toast({ title: "At least 1 photo is required", variant: "destructive" });
-      return;
-    }
-    if (!hasVideo) {
-      toast({ title: "A video is required", description: "Please upload 1 video of the item.", variant: "destructive" });
-      return;
-    }
-
     setSubmitting(true);
 
     try {

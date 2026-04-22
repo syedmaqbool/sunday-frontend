@@ -174,7 +174,10 @@ const Checkout = () => {
           <CheckCircle2 className="h-16 w-16 text-primary mb-4" />
           <h1 className="font-heading text-3xl font-bold text-foreground">Order Confirmed</h1>
           <p className="mt-2 text-muted-foreground">Thank you for your purchase. You'll receive a confirmation email shortly.</p>
-          <Button className="mt-6" onClick={() => navigate("/listings")}>Continue Shopping</Button>
+          <div className="mt-6 flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/listings")}>Continue Shopping</Button>
+            <Button onClick={() => navigate("/profile")}>View My Orders</Button>
+          </div>
         </main>
         <Footer />
       </div>

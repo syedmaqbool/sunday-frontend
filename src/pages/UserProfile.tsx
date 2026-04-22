@@ -136,7 +136,7 @@ const UserProfile = () => {
                   )}
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <ShoppingBag className="h-4 w-4" />
-                    {boughtItems.length} bought
+                    {boughtCount} bought
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Package className="h-4 w-4" />
@@ -157,12 +157,12 @@ const UserProfile = () => {
             {/* Tabs */}
             <Tabs defaultValue="bought" className="mt-6">
               <TabsList>
-                <TabsTrigger value="bought">Bought ({boughtItems.length})</TabsTrigger>
+                <TabsTrigger value="bought">Bought ({orders.length})</TabsTrigger>
                 <TabsTrigger value="sold">Sold ({soldItems.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="bought" className="mt-4">
-                {boughtItems.length === 0 ? (
+                {orders.length === 0 ? (
                   <div className="flex flex-col items-center py-12 text-center">
                     <ShoppingBag className="h-12 w-12 text-muted-foreground" />
                     <p className="mt-4 font-heading text-lg font-semibold text-foreground">No purchases yet</p>
@@ -173,12 +173,8 @@ const UserProfile = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {boughtItems.map((item: any) => (
-                      <TransactionCard
-                        key={item.id}
-                        item={item}
-                        label="Purchased"
-                      />
+                    {orders.map((order: any) => (
+                      <OrderCard key={order.id} order={order} />
                     ))}
                   </div>
                 )}

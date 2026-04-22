@@ -10,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Package, ShoppingBag, Settings } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
 
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();

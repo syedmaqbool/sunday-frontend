@@ -306,6 +306,7 @@ export type Database = {
           discount_amount: number
           discount_code: string | null
           id: string
+          item_status: Json
           items: Json
           shipping_address: string | null
           shipping_city: string | null
@@ -323,6 +324,7 @@ export type Database = {
           discount_amount?: number
           discount_code?: string | null
           id?: string
+          item_status?: Json
           items?: Json
           shipping_address?: string | null
           shipping_city?: string | null
@@ -340,6 +342,7 @@ export type Database = {
           discount_amount?: number
           discount_code?: string | null
           id?: string
+          item_status?: Json
           items?: Json
           shipping_address?: string | null
           shipping_city?: string | null

@@ -25,9 +25,13 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [placed, setPlaced] = useState(false);
+  const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  const [shipping, setShipping] = useState({
+    firstName: "", lastName: "", address: "", city: "", postal: "", phone: "",
+  });
 
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"

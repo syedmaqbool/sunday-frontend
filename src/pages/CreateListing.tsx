@@ -37,6 +37,8 @@ const CreateListing = () => {
     title: "", description: "", price: "", brand: "",
     parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
   });
+  const [bankModalOpen, setBankModalOpen] = useState(false);
+  const [pendingSubmitEvent, setPendingSubmitEvent] = useState(false);
 
   // Load existing listing if editing
   const { data: existingListing, isLoading: loadingListing } = useQuery({

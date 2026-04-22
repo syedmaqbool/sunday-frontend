@@ -232,13 +232,13 @@ const UserProfile = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {soldItems.map((item: any) => (
-                      <TransactionCard
-                        key={item.id}
-                        item={item}
-                        label="Sold"
-                      />
-                    ))}
+                    {soldItems.map((item: any) =>
+                      item.order_id ? (
+                        <SoldOrderCard key={item.id} item={item} />
+                      ) : (
+                        <TransactionCard key={item.id} item={item} label="Sold" />
+                      ),
+                    )}
                   </div>
                 )}
               </TabsContent>

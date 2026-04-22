@@ -25,9 +25,13 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [placed, setPlaced] = useState(false);
+  const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  const [shipping, setShipping] = useState({
+    firstName: "", lastName: "", address: "", city: "", postal: "", phone: "",
+  });
 
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"
@@ -96,31 +100,70 @@ const Checkout = () => {
       return;
     }
 
-    // Increment discount code usage
-    if (appliedDiscount) {
-      await supabase
-        .from("discount_codes")
-        .update({ current_uses: undefined as any }) // we use rpc-style or raw
-        .eq("id", appliedDiscount.id);
-      
-      // Use a simple increment via raw SQL isn't available, so fetch and update
-      const { data: codeData } = await supabase
-        .from("discount_codes")
-        .select("current_uses")
-        .eq("id", appliedDiscount.id)
-        .single();
-      
-      if (codeData) {
-        await supabase
-          .from("discount_codes")
-          .update({ current_uses: codeData.current_uses + 1 })
-          .eq("id", appliedDiscount.id);
+    // Basic shipping validation
+    const required = ["firstName", "lastName", "address", "city", "postal", "phone"] as const;
+    for (const k of required) {
+      if (!shipping[k].trim()) {
+        toast({ title: "Missing details", description: "Please fill in all shipping information.", variant: "destructive" });
+        return;
       }
     }
 
-    setPlaced(true);
-    clearCart();
-    toast({ title: "Order placed!", description: "Your order has been confirmed." });
+    setPlacing(true);
+    try {
+      // Snapshot items for the order record
+      const itemsSnapshot = items.map(({ listing, quantity }) => ({
+        listing_id: listing.id,
+        title: listing.title,
+        brand: listing.brand,
+        image: listing.images?.[0] ?? null,
+        price: listing.price,
+        quantity,
+      }));
+
+      const { error: orderError } = await supabase.from("orders").insert({
+        buyer_id: user.id,
+        items: itemsSnapshot,
+        subtotal: totalPrice,
+        discount_code: appliedDiscount?.code ?? null,
+        discount_amount: discountAmount,
+        total: finalPrice,
+        shipping_first_name: shipping.firstName,
+        shipping_last_name: shipping.lastName,
+        shipping_address: shipping.address,
+        shipping_city: shipping.city,
+        shipping_postal: shipping.postal,
+        shipping_phone: shipping.phone,
+        status: "confirmed",
+      });
+
+      if (orderError) {
+        toast({ title: "Order failed", description: orderError.message, variant: "destructive" });
+        setPlacing(false);
+        return;
+      }
+
+      // Increment discount code usage
+      if (appliedDiscount) {
+        const { data: codeData } = await supabase
+          .from("discount_codes")
+          .select("current_uses")
+          .eq("id", appliedDiscount.id)
+          .single();
+        if (codeData) {
+          await supabase
+            .from("discount_codes")
+            .update({ current_uses: codeData.current_uses + 1 })
+            .eq("id", appliedDiscount.id);
+        }
+      }
+
+      setPlaced(true);
+      clearCart();
+      toast({ title: "Order placed!", description: "Your order has been confirmed." });
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (placed) {
@@ -131,7 +174,10 @@ const Checkout = () => {
           <CheckCircle2 className="h-16 w-16 text-primary mb-4" />
           <h1 className="font-heading text-3xl font-bold text-foreground">Order Confirmed</h1>
           <p className="mt-2 text-muted-foreground">Thank you for your purchase. You'll receive a confirmation email shortly.</p>
-          <Button className="mt-6" onClick={() => navigate("/listings")}>Continue Shopping</Button>
+          <div className="mt-6 flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/listings")}>Continue Shopping</Button>
+            <Button onClick={() => navigate("/profile")}>View My Orders</Button>
+          </div>
         </main>
         <Footer />
       </div>
@@ -170,27 +216,27 @@ const Checkout = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" placeholder="Jane" />
+                  <Input id="firstName" placeholder="Jane" value={shipping.firstName} onChange={(e) => setShipping({ ...shipping, firstName: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" placeholder="Doe" />
+                  <Input id="lastName" placeholder="Doe" value={shipping.lastName} onChange={(e) => setShipping({ ...shipping, lastName: e.target.value })} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input id="address" placeholder="123 Main St" />
+                  <Input id="address" placeholder="123 Main St" value={shipping.address} onChange={(e) => setShipping({ ...shipping, address: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="Cape Town" />
+                  <Input id="city" placeholder="Cape Town" value={shipping.city} onChange={(e) => setShipping({ ...shipping, city: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal">Postal code</Label>
-                  <Input id="postal" placeholder="8001" />
+                  <Input id="postal" placeholder="8001" value={shipping.postal} onChange={(e) => setShipping({ ...shipping, postal: e.target.value })} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="+27 12 345 6789" />
+                  <Input id="phone" placeholder="+27 12 345 6789" value={shipping.phone} onChange={(e) => setShipping({ ...shipping, phone: e.target.value })} />
                 </div>
               </div>
             </div>
@@ -272,8 +318,8 @@ const Checkout = () => {
                 <span className="font-heading text-base font-semibold text-foreground">Total</span>
                 <span className="font-heading text-xl font-bold text-foreground">R {finalPrice.toLocaleString()}</span>
               </div>
-              <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                Place Order
+              <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+                {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Place Order"}
               </Button>
             </div>
           </div>

@@ -10,8 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Package, ShoppingBag, Settings } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
 
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();
@@ -31,16 +33,15 @@ const UserProfile = () => {
     enabled: !!user,
   });
 
-  // Items bought: accepted offers where user is buyer, joined with listing
-  const { data: boughtItems = [], isLoading: boughtLoading } = useQuery({
-    queryKey: ["bought-items", user?.id],
+  // Orders placed by this user
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["my-orders", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("offers")
-        .select("id, amount, status, created_at, updated_at, listing_id, listings(id, title, images, brand, category, condition, size, price)")
+        .from("orders")
+        .select("*")
         .eq("buyer_id", user!.id)
-        .eq("status", "accepted")
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -71,7 +72,11 @@ const UserProfile = () => {
     return null;
   }
 
-  const isLoading = profileLoading || boughtLoading || soldLoading;
+  const isLoading = profileLoading || ordersLoading || soldLoading;
+  const boughtCount = orders.reduce(
+    (sum: number, o: any) => sum + (Array.isArray(o.items) ? o.items.reduce((s: number, it: any) => s + (it.quantity || 0), 0) : 0),
+    0,
+  );
 
   const initials = (profile?.full_name || user.email || "U")
     .split(/[\s@]/)
@@ -130,7 +135,7 @@ const UserProfile = () => {
                   )}
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <ShoppingBag className="h-4 w-4" />
-                    {boughtItems.length} bought
+                    {boughtCount} bought
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Package className="h-4 w-4" />
@@ -151,12 +156,12 @@ const UserProfile = () => {
             {/* Tabs */}
             <Tabs defaultValue="bought" className="mt-6">
               <TabsList>
-                <TabsTrigger value="bought">Bought ({boughtItems.length})</TabsTrigger>
+                <TabsTrigger value="bought">Bought ({orders.length})</TabsTrigger>
                 <TabsTrigger value="sold">Sold ({soldItems.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="bought" className="mt-4">
-                {boughtItems.length === 0 ? (
+                {orders.length === 0 ? (
                   <div className="flex flex-col items-center py-12 text-center">
                     <ShoppingBag className="h-12 w-12 text-muted-foreground" />
                     <p className="mt-4 font-heading text-lg font-semibold text-foreground">No purchases yet</p>
@@ -167,12 +172,8 @@ const UserProfile = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {boughtItems.map((item: any) => (
-                      <TransactionCard
-                        key={item.id}
-                        item={item}
-                        label="Purchased"
-                      />
+                    {orders.map((order: any) => (
+                      <OrderCard key={order.id} order={order} />
                     ))}
                   </div>
                 )}
@@ -240,6 +241,131 @@ function TransactionCard({ item, label }: { item: any; label: string }) {
             {format(new Date(item.updated_at), "dd MMM yyyy")}
           </p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OrderCard({ order }: { order: any }) {
+  const [open, setOpen] = useState(false);
+  const items: any[] = Array.isArray(order.items) ? order.items : [];
+  const itemCount = items.reduce((s, it) => s + (it.quantity || 0), 0);
+  const firstImage = items[0]?.image || "/placeholder.svg";
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <img
+            src={firstImage}
+            alt="Order"
+            className="h-20 w-20 flex-shrink-0 rounded-md object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-foreground">
+                Order #{String(order.id).slice(0, 8).toUpperCase()}
+              </span>
+              <Badge variant="secondary">{order.status}</Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {itemCount} item{itemCount !== 1 ? "s" : ""} · R {Number(order.total).toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(order.created_at), "dd MMM yyyy, HH:mm")}
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1">
+            <Receipt className="h-4 w-4" />
+            {open ? "Hide" : "Details"}
+            <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+          </Button>
+        </div>
+
+        {open && (
+          <div className="mt-4 space-y-4 border-t border-border pt-4">
+            {/* Items */}
+            <div>
+              <h4 className="mb-2 text-sm font-semibold text-foreground">Items</h4>
+              <div className="space-y-2">
+                {items.map((it, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <img
+                      src={it.image || "/placeholder.svg"}
+                      alt={it.title}
+                      className="h-12 w-12 rounded object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      {it.listing_id ? (
+                        <Link to={`/listing/${it.listing_id}`} className="truncate text-sm font-medium text-foreground hover:underline">
+                          {it.title}
+                        </Link>
+                      ) : (
+                        <p className="truncate text-sm font-medium text-foreground">{it.title}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
+                      </p>
+                    </div>
+                    <p className="whitespace-nowrap text-sm font-semibold text-foreground">
+                      R {(Number(it.price) * Number(it.quantity)).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Billing summary */}
+            <div>
+              <h4 className="mb-2 text-sm font-semibold text-foreground">Billing summary</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-foreground">R {Number(order.subtotal).toLocaleString()}</span>
+                </div>
+                {Number(order.discount_amount) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-primary">
+                      Discount{order.discount_code ? ` (${order.discount_code})` : ""}
+                    </span>
+                    <span className="text-primary">−R {Number(order.discount_amount).toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="text-muted-foreground">Free</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex justify-between font-semibold">
+                  <span className="text-foreground">Total</span>
+                  <span className="text-foreground">R {Number(order.total).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Shipping details */}
+            <div>
+              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <MapPin className="h-4 w-4" /> Shipping address
+              </h4>
+              <div className="text-sm text-muted-foreground">
+                <p className="text-foreground">
+                  {order.shipping_first_name} {order.shipping_last_name}
+                </p>
+                <p>{order.shipping_address}</p>
+                <p>
+                  {order.shipping_city}
+                  {order.shipping_postal ? `, ${order.shipping_postal}` : ""}
+                </p>
+                <p>{order.shipping_phone}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

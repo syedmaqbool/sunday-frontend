@@ -299,6 +299,60 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          discount_amount: number
+          discount_code: string | null
+          id: string
+          items: Json
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_phone: string | null
+          shipping_postal: string | null
+          status: string
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          discount_amount?: number
+          discount_code?: string | null
+          id?: string
+          items?: Json
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_phone?: string | null
+          shipping_postal?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          discount_amount?: number
+          discount_code?: string | null
+          id?: string
+          items?: Json
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_phone?: string | null
+          shipping_postal?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

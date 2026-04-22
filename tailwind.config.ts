@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ['Playfair Display', 'serif'],
-        body: ['DM Sans', 'sans-serif'],
+        heading: ['Radio Canada Big', 'sans-serif'],
+        body: ['Radio Canada Big', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

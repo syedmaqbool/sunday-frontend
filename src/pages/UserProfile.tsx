@@ -73,7 +73,11 @@ const UserProfile = () => {
     return null;
   }
 
-  const isLoading = profileLoading || boughtLoading || soldLoading;
+  const isLoading = profileLoading || ordersLoading || soldLoading;
+  const boughtCount = orders.reduce(
+    (sum: number, o: any) => sum + (Array.isArray(o.items) ? o.items.reduce((s: number, it: any) => s + (it.quantity || 0), 0) : 0),
+    0,
+  );
 
   const initials = (profile?.full_name || user.email || "U")
     .split(/[\s@]/)

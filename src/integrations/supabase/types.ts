@@ -391,6 +391,7 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          image_urls: string[]
           listing_id: string
           offer_id: string | null
           order_id: string | null
@@ -398,11 +399,13 @@ export type Database = {
           reviewed_id: string
           reviewer_id: string
           role: string
+          video_url: string | null
         }
         Insert: {
           comment?: string | null
           created_at?: string
           id?: string
+          image_urls?: string[]
           listing_id: string
           offer_id?: string | null
           order_id?: string | null
@@ -410,11 +413,13 @@ export type Database = {
           reviewed_id: string
           reviewer_id: string
           role: string
+          video_url?: string | null
         }
         Update: {
           comment?: string | null
           created_at?: string
           id?: string
+          image_urls?: string[]
           listing_id?: string
           offer_id?: string | null
           order_id?: string | null
@@ -422,6 +427,7 @@ export type Database = {
           reviewed_id?: string
           reviewer_id?: string
           role?: string
+          video_url?: string | null
         }
         Relationships: [
           {

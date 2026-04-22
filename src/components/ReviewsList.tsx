@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Star } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ReviewsListProps {
   userId: string;
@@ -14,11 +16,15 @@ interface Review {
   comment: string;
   role: string;
   created_at: string;
+  image_urls: string[] | null;
+  video_url: string | null;
   reviewer_profile: { full_name: string | null } | null;
   listing: { title: string } | null;
 }
 
 export const ReviewsList = ({ userId, limit = 10 }: ReviewsListProps) => {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["reviews", userId],
     queryFn: async () => {
@@ -30,7 +36,6 @@ export const ReviewsList = ({ userId, limit = 10 }: ReviewsListProps) => {
         .limit(limit);
       if (error) throw error;
 
-      // Fetch reviewer profiles and listing titles
       const reviewerIds = [...new Set((data ?? []).map((r: any) => r.reviewer_id))];
       const listingIds = [...new Set((data ?? []).map((r: any) => r.listing_id))];
 
@@ -104,12 +109,44 @@ export const ReviewsList = ({ userId, limit = 10 }: ReviewsListProps) => {
             {review.comment && (
               <p className="mt-1.5 text-sm text-muted-foreground">{review.comment}</p>
             )}
+
+            {review.image_urls && review.image_urls.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                {review.image_urls.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setLightbox(url)}
+                    className="aspect-square overflow-hidden rounded-md border border-border transition-opacity hover:opacity-90"
+                  >
+                    <img src={url} alt="Review" className="h-full w-full object-cover" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {review.video_url && (
+              <video
+                controls
+                src={review.video_url}
+                className="mt-2 max-h-[280px] w-full rounded-md border border-border bg-black"
+              />
+            )}
+
             {review.listing && (
-              <p className="mt-1 text-xs text-muted-foreground/70">Re: {review.listing.title}</p>
+              <p className="mt-1.5 text-xs text-muted-foreground/70">Re: {review.listing.title}</p>
             )}
           </div>
         ))}
       </div>
+
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-3xl border-0 bg-transparent p-0 shadow-none">
+          {lightbox && (
+            <img src={lightbox} alt="Review" className="h-auto w-full rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

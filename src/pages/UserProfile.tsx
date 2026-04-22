@@ -430,4 +430,43 @@ function OrderCard({ order }: { order: any }) {
   );
 }
 
+function SoldOrderCard({ item }: { item: any }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <Link to={item.listing_id ? `/listing/${item.listing_id}` : "#"}>
+          <img
+            src={item.image || "/placeholder.svg"}
+            alt={item.title}
+            className="h-20 w-20 rounded-md object-cover"
+          />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {item.listing_id ? (
+              <Link
+                to={`/listing/${item.listing_id}`}
+                className="truncate font-semibold text-foreground hover:underline"
+              >
+                {item.title}
+              </Link>
+            ) : (
+              <span className="truncate font-semibold text-foreground">{item.title}</span>
+            )}
+            <Badge variant="secondary">Sold</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {item.brand ? `${item.brand} · ` : ""}Qty {item.quantity} · R {Number(item.amount).toLocaleString()}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {format(new Date(item.created_at), "dd MMM yyyy")}
+            {item.buyer_name ? ` · Buyer: ${item.buyer_name}` : ""}
+            {item.shipping_city ? ` · ${item.shipping_city}` : ""}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default UserProfile;

@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
+import { OrderItemReview } from "@/components/OrderItemReview";
 
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();

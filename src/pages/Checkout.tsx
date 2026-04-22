@@ -318,8 +318,8 @@ const Checkout = () => {
                 <span className="font-heading text-base font-semibold text-foreground">Total</span>
                 <span className="font-heading text-xl font-bold text-foreground">R {finalPrice.toLocaleString()}</span>
               </div>
-              <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                Place Order
+              <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
+                {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Place Order"}
               </Button>
             </div>
           </div>

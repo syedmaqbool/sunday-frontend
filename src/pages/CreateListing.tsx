@@ -9,11 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONDITIONS, SIZES } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import { Camera, Upload, Loader2, X } from "lucide-react";
+import { Camera, Upload, Loader2, X, Video as VideoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+
+const MAX_PHOTOS = 20;
+
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -26,6 +30,8 @@ const CreateListing = () => {
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
     parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
@@ -69,13 +75,16 @@ const CreateListing = () => {
         size: existingListing.size,
         weight: existingListing.weight ? String(existingListing.weight) : "",
       });
-      setExistingImages(existingListing.images || []);
+      const media = existingListing.images || [];
+      setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
+      const vid = media.find((u: string) => isVideoUrl(u));
+      setExistingVideo(vid || null);
     }
   }, [existingListing, user, navigate]);
 
-  const uploadImages = async (listingId: string): Promise<string[]> => {
+  const uploadFiles = async (listingId: string, files: File[]): Promise<string[]> => {
     const urls: string[] = [];
-    for (const file of imageFiles) {
+    for (const file of files) {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/${listingId}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
@@ -93,11 +102,22 @@ const CreateListing = () => {
   const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const total = imageFiles.length + existingImages.length + files.length;
-    if (total > 6) {
-      toast({ title: "Max 6 photos allowed", variant: "destructive" });
+    if (total > MAX_PHOTOS) {
+      toast({ title: `Max ${MAX_PHOTOS} photos allowed`, variant: "destructive" });
       return;
     }
     setImageFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleAddVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "Video must be under 50MB", variant: "destructive" });
+      return;
+    }
+    setVideoFile(file);
+    setExistingVideo(null);
   };
 
   const removeNewImage = (index: number) => {
@@ -108,16 +128,35 @@ const CreateListing = () => {
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removeVideo = () => {
+    setVideoFile(null);
+    setExistingVideo(null);
+  };
+
+  const totalPhotos = imageFiles.length + existingImages.length;
+  const hasVideo = !!videoFile || !!existingVideo;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (totalPhotos === 0) {
+      toast({ title: "At least 1 photo is required", variant: "destructive" });
+      return;
+    }
+    if (!hasVideo) {
+      toast({ title: "A video is required", description: "Please upload 1 video of the item.", variant: "destructive" });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       if (isEditing) {
-        // Upload new images
-        const newUrls = imageFiles.length > 0 ? await uploadImages(id!) : [];
-        const allImages = [...existingImages, ...newUrls];
+        const newImageUrls = imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
+        const newVideoUrls = videoFile ? await uploadFiles(id!, [videoFile]) : [];
+        const videoUrl = newVideoUrls[0] || existingVideo;
+        const allMedia = [...existingImages, ...newImageUrls, ...(videoUrl ? [videoUrl] : [])];
 
         const { error } = await supabase
           .from("listings")
@@ -130,7 +169,7 @@ const CreateListing = () => {
             condition: form.condition,
             size: form.size,
             weight: form.weight ? parseFloat(form.weight) : null,
-            images: allImages,
+            images: allMedia,
           })
           .eq("id", id!)
           .eq("seller_id", user.id);
@@ -139,7 +178,6 @@ const CreateListing = () => {
         toast({ title: "Listing updated!", description: "Your changes have been saved." });
         navigate(`/listing/${id}`);
       } else {
-        // Create new listing first to get ID
         const { data: newListing, error: insertError } = await supabase
           .from("listings")
           .insert({
@@ -160,14 +198,14 @@ const CreateListing = () => {
 
         if (insertError) throw insertError;
 
-        // Upload images and update listing
-        if (imageFiles.length > 0) {
-          const urls = await uploadImages(newListing.id);
-          await supabase
-            .from("listings")
-            .update({ images: urls })
-            .eq("id", newListing.id);
-        }
+        const imageUrls = imageFiles.length > 0 ? await uploadFiles(newListing.id, imageFiles) : [];
+        const videoUrls = videoFile ? await uploadFiles(newListing.id, [videoFile]) : [];
+        const allMedia = [...imageUrls, ...videoUrls];
+
+        await supabase
+          .from("listings")
+          .update({ images: allMedia })
+          .eq("id", newListing.id);
 
         toast({ title: "Listing created!", description: "Your item is pending review." });
         navigate("/listings");
@@ -185,6 +223,8 @@ const CreateListing = () => {
     ...imageFiles.map((file, i) => ({ type: "new" as const, url: URL.createObjectURL(file), index: i })),
   ];
 
+  const videoPreviewUrl = videoFile ? URL.createObjectURL(videoFile) : existingVideo;
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -199,7 +239,7 @@ const CreateListing = () => {
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
-            <Label>Photos (up to 6)</Label>
+            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span></Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, i) => (
                 <div key={i} className="relative h-24 w-24 rounded-lg overflow-hidden border border-border">
@@ -222,7 +262,7 @@ const CreateListing = () => {
                   )}
                 </div>
               ))}
-              {allPreviews.length < 6 && (
+              {allPreviews.length < MAX_PHOTOS && (
                 <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition hover:border-primary hover:text-primary">
                   <input
                     type="file"
@@ -233,6 +273,39 @@ const CreateListing = () => {
                   />
                   {allPreviews.length === 0 ? <Camera className="h-5 w-5" /> : <Upload className="h-4 w-4" />}
                   <span className="mt-1 text-[10px]">Add photo</span>
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Video upload (mandatory) */}
+          <div>
+            <Label>
+              Video <span className="text-destructive">*</span>{" "}
+              <span className="text-muted-foreground font-normal">— 1 short video required (max 50MB)</span>
+            </Label>
+            <div className="mt-2 flex flex-wrap gap-3">
+              {videoPreviewUrl ? (
+                <div className="relative h-32 w-44 rounded-lg overflow-hidden border border-border bg-muted">
+                  <video src={videoPreviewUrl} className="h-full w-full object-cover" controls />
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"
+                    onClick={removeVideo}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-32 w-44 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition hover:border-primary hover:text-primary">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleAddVideo}
+                  />
+                  <VideoIcon className="h-5 w-5" />
+                  <span className="mt-1 text-[10px]">Add video</span>
                 </label>
               )}
             </div>

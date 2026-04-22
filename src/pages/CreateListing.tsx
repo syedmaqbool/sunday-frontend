@@ -417,6 +417,15 @@ const CreateListing = () => {
         </form>
       </main>
       <Footer />
+
+      <BankDetailsModal
+        open={bankModalOpen}
+        onCancel={() => setBankModalOpen(false)}
+        onSaved={async () => {
+          setBankModalOpen(false);
+          await performSubmit();
+        }}
+      />
     </div>
   );
 };

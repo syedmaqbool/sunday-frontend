@@ -1,50 +1,41 @@
 
 
-## Add Photos & Video to Reviews
+## Fix: Sellers can't see their sold items from older orders
 
-Let buyers attach up to 5 images and 1 short video when leaving a review. Media renders in the seller's review section.
+### Root cause
 
-### Database
+The RLS policy on `orders` only allows a seller to view an order when `items[*].seller_id` in the JSON snapshot equals their `auth.uid()`. Older orders (created before we started writing `seller_id` into the snapshot) don't have that field, so the policy returns zero rows for the seller. The client-side fallback that resolves `seller_id` from the `listings` table never runs because the rows are filtered out by RLS first.
 
-Migration to extend `reviews`:
-- `image_urls text[] not null default '{}'`
-- `video_url text` (nullable)
+### Fix
 
-Migration to create a public storage bucket `review-media` with RLS:
-- Anyone can read (public bucket)
-- Authenticated users can upload only to a path prefixed with their `auth.uid()`
-- Users can delete only their own files
+**Migration** — replace the `Sellers can view orders containing their items` SELECT policy with one that also matches via the `listings` table:
 
-### Upload UI (`src/components/OrderItemReview.tsx`)
+```sql
+DROP POLICY "Sellers can view orders containing their items" ON public.orders;
 
-Below the comment textarea, add two controls:
-- **Photos**: file input (`accept="image/*"`, multiple), max 5, ~5MB each. Shows thumbnail previews with remove (X) button per image.
-- **Video**: file input (`accept="video/*"`), max 1, ~30MB, ~60s. Shows preview with remove button.
+CREATE POLICY "Sellers can view orders containing their items"
+ON public.orders FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(orders.items) AS item(value)
+    WHERE
+      ((item.value ->> 'seller_id')::uuid = auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM public.listings l
+        WHERE l.id = (item.value ->> 'listing_id')::uuid
+          AND l.seller_id = auth.uid()
+      )
+  )
+);
+```
 
-Submission flow:
-1. Upload selected files to `review-media/{user.id}/{reviewId-or-uuid}/...` via `supabase.storage`.
-2. Collect public URLs.
-3. Insert review row with `image_urls` and `video_url`.
-4. Toast errors on oversize / wrong type / upload failure; rollback uploaded files if insert fails.
-
-State: `images: File[]`, `video: File | null`, `uploading: boolean`. Disable Submit while uploading.
-
-### Display (`src/components/ReviewsList.tsx`)
-
-After the comment text, render media when present:
-- Image grid (2–3 columns of square thumbnails). Click opens full image in a `Dialog` lightbox.
-- Video below images with native `<video controls>` (max-height ~280px).
-
-Update the `Review` interface and select query to include `image_urls` and `video_url`.
+This lets sellers see legacy orders by joining back to `listings.seller_id` when the snapshot is missing the field. New orders (which now embed `seller_id`) continue to work via the fast path.
 
 ### Files
 
-- `supabase/migrations/<ts>_review_media.sql` — add columns + create bucket + RLS policies
-- `src/components/OrderItemReview.tsx` — upload UI + storage upload logic
-- `src/components/ReviewsList.tsx` — render images + video
+- `supabase/migrations/<ts>_sellers_view_orders_legacy.sql` — drop + recreate the policy
 
-### Limits (enforced client-side, validated by size in storage)
-
-- Images: up to 5, JPEG/PNG/WebP, ≤5MB each
-- Video: 1, MP4/WebM/MOV, ≤30MB
+No client changes needed — `UserProfile.tsx` already has the `buildListingSellerMap` fallback that will populate the missing seller info once the rows are visible.
 

@@ -386,40 +386,56 @@ function OrderCard({ order }: { order: any }) {
             <div>
               <h4 className="mb-2 text-sm font-semibold text-foreground">Items</h4>
               <div className="space-y-2">
-                {items.map((it, idx) => (
-                  <div key={idx} className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={it.image || "/placeholder.svg"}
-                        alt={it.title}
-                        className="h-12 w-12 rounded object-cover"
-                      />
-                      <div className="min-w-0 flex-1">
-                        {it.listing_id ? (
-                          <Link to={`/listing/${it.listing_id}`} className="truncate text-sm font-medium text-foreground hover:underline">
-                            {it.title}
-                          </Link>
-                        ) : (
-                          <p className="truncate text-sm font-medium text-foreground">{it.title}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
+                {items.map((it, idx) => {
+                  const status = it.listing_id ? getItemStatus(order.item_status, it.listing_id) : { status: "confirmed" as const };
+                  return (
+                    <div key={idx} className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={it.image || "/placeholder.svg"}
+                          alt={it.title}
+                          className="h-12 w-12 rounded object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          {it.listing_id ? (
+                            <Link to={`/listing/${it.listing_id}`} className="truncate text-sm font-medium text-foreground hover:underline">
+                              {it.title}
+                            </Link>
+                          ) : (
+                            <p className="truncate text-sm font-medium text-foreground">{it.title}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
+                          </p>
+                          <div className="mt-1">
+                            {status.status === "shipped" ? (
+                              <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
+                                <Truck className="h-3 w-3" />
+                                Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Confirmed
+                              </Badge>
+                            )}
+                          </div>
+                          {it.listing_id && it.seller_id && (
+                            <OrderItemReview
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              sellerId={it.seller_id}
+                              sellerName={it.seller_name}
+                            />
+                          )}
+                        </div>
+                        <p className="whitespace-nowrap text-sm font-semibold text-foreground">
+                          R {(Number(it.price) * Number(it.quantity)).toLocaleString()}
                         </p>
-                        {it.listing_id && it.seller_id && (
-                          <OrderItemReview
-                            orderId={order.id}
-                            listingId={it.listing_id}
-                            sellerId={it.seller_id}
-                            sellerName={it.seller_name}
-                          />
-                        )}
                       </div>
-                      <p className="whitespace-nowrap text-sm font-semibold text-foreground">
-                        R {(Number(it.price) * Number(it.quantity)).toLocaleString()}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

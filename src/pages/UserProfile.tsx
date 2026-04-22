@@ -49,9 +49,9 @@ const UserProfile = () => {
     enabled: !!user,
   });
 
-  // Items sold: accepted offers where user is seller, joined with listing
-  const { data: soldItems = [], isLoading: soldLoading } = useQuery({
-    queryKey: ["sold-items", user?.id],
+  // Items sold via accepted offers (negotiations)
+  const { data: offerSales = [], isLoading: offerSalesLoading } = useQuery({
+    queryKey: ["sold-offers", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("offers")
@@ -64,6 +64,46 @@ const UserProfile = () => {
     },
     enabled: !!user,
   });
+
+  // Items sold via direct checkout (orders containing this seller's items)
+  const { data: orderSales = [], isLoading: orderSalesLoading } = useQuery({
+    queryKey: ["sold-orders", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, created_at, items, shipping_first_name, shipping_last_name, shipping_city")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // Flatten: one row per item belonging to this seller
+      const flat: any[] = [];
+      (data ?? []).forEach((order: any) => {
+        const items: any[] = Array.isArray(order.items) ? order.items : [];
+        items
+          .filter((it) => it.seller_id === user!.id)
+          .forEach((it, idx) => {
+            flat.push({
+              id: `${order.id}-${idx}`,
+              order_id: order.id,
+              listing_id: it.listing_id,
+              title: it.title,
+              brand: it.brand,
+              image: it.image,
+              price: it.price,
+              quantity: it.quantity,
+              amount: Number(it.price) * Number(it.quantity),
+              created_at: order.created_at,
+              buyer_name: `${order.shipping_first_name ?? ""} ${order.shipping_last_name ?? ""}`.trim(),
+              shipping_city: order.shipping_city,
+            });
+          });
+      });
+      return flat;
+    },
+    enabled: !!user,
+  });
+
+  const soldItems = [...orderSales, ...offerSales];
+  const soldLoading = offerSalesLoading || orderSalesLoading;
 
   const { data: rating } = useSellerRating(user?.id);
 

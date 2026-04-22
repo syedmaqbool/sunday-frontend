@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import BankDetailsModal from "@/components/BankDetailsModal";
 
 const MAX_PHOTOS = 20;
 

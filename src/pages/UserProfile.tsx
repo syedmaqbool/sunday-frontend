@@ -212,11 +212,19 @@ const UserProfile = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {orders.map((order: any) => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+                      <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                      <p>
+                        Tap <span className="font-medium">Details</span> on any order to leave a review for each item you bought.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {orders.map((order: any) => (
+                        <OrderCard key={order.id} order={order} />
+                      ))}
+                    </div>
+                  </>
                 )}
               </TabsContent>
 

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import sundayLogo from "@/assets/sunday-logo.png";
 import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,8 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-16 items-center justify-between gap-4">
-        <Link to="/" className="font-heading text-2xl font-bold tracking-tight text-foreground">
-          RESALE
+        <Link to="/" className="flex items-center">
+          <img src={sundayLogo} alt="Sunday" className="h-10 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

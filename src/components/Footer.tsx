@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import sundayLogo from "@/assets/sunday-logo.png";
 
 const Footer = () => (
   <footer className="border-t border-border bg-surface-dark text-surface-dark-foreground">
     <div className="container py-12">
       <div className="grid gap-8 md:grid-cols-4">
         <div>
-          <h3 className="font-heading text-xl font-bold">RESALE</h3>
+          <img src={sundayLogo} alt="Sunday" className="h-10 w-auto brightness-0 invert" />
           <p className="mt-2 text-sm opacity-70">
             The fashion marketplace for pre-loved luxury & streetwear.
           </p>
@@ -37,7 +38,7 @@ const Footer = () => (
         </div>
       </div>
       <div className="mt-10 border-t border-border/20 pt-6 text-center text-xs opacity-50">
-        © 2026 RESALE. All rights reserved.
+        © 2026 Sunday. All rights reserved.
       </div>
     </div>
   </footer>

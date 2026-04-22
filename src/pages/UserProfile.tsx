@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSellerRating } from "@/hooks/useSellerRating";
@@ -11,10 +11,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt } from "lucide-react";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
+import { toast } from "sonner";
+
+type ItemStatus = { status: "confirmed" | "shipped"; shipped_at?: string };
+const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
+  const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
+  if (entry && entry.status === "shipped") return { status: "shipped", shipped_at: entry.shipped_at };
+  return { status: "confirmed" };
+};
 
 const buildListingSellerMap = async (orders: any[]) => {
   const listingIds = Array.from(

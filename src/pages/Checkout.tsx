@@ -213,27 +213,27 @@ const Checkout = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" placeholder="Jane" />
+                  <Input id="firstName" placeholder="Jane" value={shipping.firstName} onChange={(e) => setShipping({ ...shipping, firstName: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" placeholder="Doe" />
+                  <Input id="lastName" placeholder="Doe" value={shipping.lastName} onChange={(e) => setShipping({ ...shipping, lastName: e.target.value })} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input id="address" placeholder="123 Main St" />
+                  <Input id="address" placeholder="123 Main St" value={shipping.address} onChange={(e) => setShipping({ ...shipping, address: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="Cape Town" />
+                  <Input id="city" placeholder="Cape Town" value={shipping.city} onChange={(e) => setShipping({ ...shipping, city: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal">Postal code</Label>
-                  <Input id="postal" placeholder="8001" />
+                  <Input id="postal" placeholder="8001" value={shipping.postal} onChange={(e) => setShipping({ ...shipping, postal: e.target.value })} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="+27 12 345 6789" />
+                  <Input id="phone" placeholder="+27 12 345 6789" value={shipping.phone} onChange={(e) => setShipping({ ...shipping, phone: e.target.value })} />
                 </div>
               </div>
             </div>

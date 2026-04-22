@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import BankDetailsModal from "@/components/BankDetailsModal";
 
 const MAX_PHOTOS = 20;
 
@@ -36,6 +37,7 @@ const CreateListing = () => {
     title: "", description: "", price: "", brand: "",
     parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
   });
+  const [bankModalOpen, setBankModalOpen] = useState(false);
 
   // Load existing listing if editing
   const { data: existingListing, isLoading: loadingListing } = useQuery({
@@ -149,6 +151,35 @@ const CreateListing = () => {
       return;
     }
 
+    // Before creating a NEW listing, ensure the seller has bank/payout details on file.
+    if (!isEditing) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("bank_account_holder, bank_name, bank_account_number")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        toast({ title: "Error", description: profileError.message, variant: "destructive" });
+        return;
+      }
+
+      const hasBankDetails =
+        !!profile?.bank_account_holder &&
+        !!profile?.bank_name &&
+        !!profile?.bank_account_number;
+
+      if (!hasBankDetails) {
+        setBankModalOpen(true);
+        return;
+      }
+    }
+
+    await performSubmit();
+  };
+
+  const performSubmit = async () => {
+    if (!user) return;
     setSubmitting(true);
 
     try {
@@ -385,6 +416,15 @@ const CreateListing = () => {
         </form>
       </main>
       <Footer />
+
+      <BankDetailsModal
+        open={bankModalOpen}
+        onCancel={() => setBankModalOpen(false)}
+        onSaved={async () => {
+          setBankModalOpen(false);
+          await performSubmit();
+        }}
+      />
     </div>
   );
 };

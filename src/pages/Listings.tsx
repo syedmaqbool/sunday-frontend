@@ -6,7 +6,7 @@ import ListingCard from "@/components/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS } from "@/lib/constants";
+import { CONDITIONS, SORT_OPTIONS, MOCK_LISTINGS, SIZES } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Search, Grid3X3, List, SlidersHorizontal, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

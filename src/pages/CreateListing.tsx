@@ -139,6 +139,46 @@ const CreateListing = () => {
   const totalPhotos = imageFiles.length + existingImages.length;
   const hasVideo = !!videoFile || !!existingVideo;
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (totalPhotos === 0) {
+      toast({ title: "At least 1 photo is required", variant: "destructive" });
+      return;
+    }
+    if (!hasVideo) {
+      toast({ title: "A video is required", description: "Please upload 1 video of the item.", variant: "destructive" });
+      return;
+    }
+
+    // Before creating a NEW listing, ensure the seller has bank/payout details on file.
+    if (!isEditing) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("bank_account_holder, bank_name, bank_account_number")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        toast({ title: "Error", description: profileError.message, variant: "destructive" });
+        return;
+      }
+
+      const hasBankDetails =
+        !!profile?.bank_account_holder &&
+        !!profile?.bank_name &&
+        !!profile?.bank_account_number;
+
+      if (!hasBankDetails) {
+        setBankModalOpen(true);
+        return;
+      }
+    }
+
+    await performSubmit();
+  };
+
   const performSubmit = async () => {
     if (!user) return;
     setSubmitting(true);

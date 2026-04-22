@@ -114,6 +114,8 @@ const Checkout = () => {
       // Snapshot items for the order record
       const itemsSnapshot = items.map(({ listing, quantity }) => ({
         listing_id: listing.id,
+        seller_id: listing.seller_id,
+        seller_name: listing.seller_name,
         title: listing.title,
         brand: listing.brand,
         image: listing.images?.[0] ?? null,

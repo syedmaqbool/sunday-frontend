@@ -16,6 +16,29 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
 
+const buildListingSellerMap = async (orders: any[]) => {
+  const listingIds = Array.from(
+    new Set(
+      orders.flatMap((order: any) =>
+        (Array.isArray(order.items) ? order.items : [])
+          .map((item: any) => item.listing_id)
+          .filter(Boolean),
+      ),
+    ),
+  );
+
+  if (listingIds.length === 0) return {} as Record<string, { seller_id: string }>;
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, seller_id")
+    .in("id", listingIds);
+
+  if (error) throw error;
+
+  return Object.fromEntries((data ?? []).map((listing) => [listing.id, { seller_id: listing.seller_id }]));
+};
+
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +67,17 @@ const UserProfile = () => {
         .eq("buyer_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+
+      const ordersData = data ?? [];
+      const listingSellerMap = await buildListingSellerMap(ordersData);
+
+      return ordersData.map((order: any) => ({
+        ...order,
+        items: (Array.isArray(order.items) ? order.items : []).map((item: any) => ({
+          ...item,
+          seller_id: item.seller_id ?? listingSellerMap[item.listing_id]?.seller_id ?? null,
+        })),
+      }));
     },
     enabled: !!user,
   });
@@ -74,12 +107,15 @@ const UserProfile = () => {
         .select("id, created_at, items, shipping_first_name, shipping_last_name, shipping_city")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Flatten: one row per item belonging to this seller
+
+      const ordersData = data ?? [];
+      const listingSellerMap = await buildListingSellerMap(ordersData);
       const flat: any[] = [];
-      (data ?? []).forEach((order: any) => {
+
+      ordersData.forEach((order: any) => {
         const items: any[] = Array.isArray(order.items) ? order.items : [];
         items
-          .filter((it) => it.seller_id === user!.id)
+          .filter((it) => (it.seller_id ?? listingSellerMap[it.listing_id]?.seller_id) === user!.id)
           .forEach((it, idx) => {
             flat.push({
               id: `${order.id}-${idx}`,
@@ -97,6 +133,7 @@ const UserProfile = () => {
             });
           });
       });
+
       return flat;
     },
     enabled: !!user,

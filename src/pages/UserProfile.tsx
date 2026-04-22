@@ -112,7 +112,7 @@ const UserProfile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, created_at, items, shipping_first_name, shipping_last_name, shipping_city")
+        .select("id, created_at, items, item_status, shipping_first_name, shipping_last_name, shipping_address, shipping_city, shipping_postal, shipping_phone")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -137,7 +137,11 @@ const UserProfile = () => {
               amount: Number(it.price) * Number(it.quantity),
               created_at: order.created_at,
               buyer_name: `${order.shipping_first_name ?? ""} ${order.shipping_last_name ?? ""}`.trim(),
+              shipping_address: order.shipping_address,
               shipping_city: order.shipping_city,
+              shipping_postal: order.shipping_postal,
+              shipping_phone: order.shipping_phone,
+              item_status: order.item_status,
             });
           });
       });

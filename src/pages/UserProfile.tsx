@@ -496,39 +496,120 @@ function OrderCard({ order }: { order: any }) {
 }
 
 function SoldOrderCard({ item }: { item: any }) {
+  const queryClient = useQueryClient();
+  const [shipping, setShipping] = useState(false);
+  const status = item.listing_id ? getItemStatus(item.item_status, item.listing_id) : { status: "confirmed" as const };
+  const isShipped = status.status === "shipped";
+
+  const handleMarkShipped = async () => {
+    if (!item.order_id || !item.listing_id) return;
+    setShipping(true);
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", item.order_id)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const merged = {
+        ...((current?.item_status as any) ?? {}),
+        [item.listing_id]: { status: "shipped", shipped_at: new Date().toISOString() },
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ item_status: merged })
+        .eq("id", item.order_id);
+      if (error) throw error;
+
+      toast.success("Marked as shipped");
+      queryClient.invalidateQueries({ queryKey: ["sold-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update status");
+    } finally {
+      setShipping(false);
+    }
+  };
+
   return (
     <Card>
-      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-        <Link to={item.listing_id ? `/listing/${item.listing_id}` : "#"}>
-          <img
-            src={item.image || "/placeholder.svg"}
-            alt={item.title}
-            className="h-20 w-20 rounded-md object-cover"
-          />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {item.listing_id ? (
-              <Link
-                to={`/listing/${item.listing_id}`}
-                className="truncate font-semibold text-foreground hover:underline"
-              >
-                {item.title}
-              </Link>
-            ) : (
-              <span className="truncate font-semibold text-foreground">{item.title}</span>
-            )}
-            <Badge variant="secondary">Sold</Badge>
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <Link to={item.listing_id ? `/listing/${item.listing_id}` : "#"}>
+            <img
+              src={item.image || "/placeholder.svg"}
+              alt={item.title}
+              className="h-20 w-20 rounded-md object-cover"
+            />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {item.listing_id ? (
+                <Link
+                  to={`/listing/${item.listing_id}`}
+                  className="truncate font-semibold text-foreground hover:underline"
+                >
+                  {item.title}
+                </Link>
+              ) : (
+                <span className="truncate font-semibold text-foreground">{item.title}</span>
+              )}
+              <Badge variant="secondary">Sold</Badge>
+              {isShipped ? (
+                <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
+                  <Truck className="h-3 w-3" />
+                  Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Confirmed
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {item.brand ? `${item.brand} · ` : ""}Qty {item.quantity} · R {Number(item.amount).toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(item.created_at), "dd MMM yyyy")}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {item.brand ? `${item.brand} · ` : ""}Qty {item.quantity} · R {Number(item.amount).toLocaleString()}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(item.created_at), "dd MMM yyyy")}
-            {item.buyer_name ? ` · Buyer: ${item.buyer_name}` : ""}
-            {item.shipping_city ? ` · ${item.shipping_city}` : ""}
-          </p>
+          {item.order_id && !isShipped && (
+            <Button size="sm" onClick={handleMarkShipped} disabled={shipping} className="gap-1.5">
+              {shipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+              Mark as Shipped
+            </Button>
+          )}
         </div>
+
+        {item.order_id && (item.buyer_name || item.shipping_address) && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <MapPin className="h-4 w-4" /> Ship to
+              </h4>
+              <div className="space-y-0.5 text-sm text-muted-foreground">
+                {item.buyer_name && <p className="font-medium text-foreground">{item.buyer_name}</p>}
+                {item.shipping_address && <p>{item.shipping_address}</p>}
+                {(item.shipping_city || item.shipping_postal) && (
+                  <p>
+                    {item.shipping_city}
+                    {item.shipping_postal ? `, ${item.shipping_postal}` : ""}
+                  </p>
+                )}
+                {item.shipping_phone && (
+                  <p className="flex items-center gap-1.5 pt-1">
+                    <Phone className="h-3.5 w-3.5" />
+                    {item.shipping_phone}
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

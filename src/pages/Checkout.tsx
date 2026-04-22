@@ -100,31 +100,70 @@ const Checkout = () => {
       return;
     }
 
-    // Increment discount code usage
-    if (appliedDiscount) {
-      await supabase
-        .from("discount_codes")
-        .update({ current_uses: undefined as any }) // we use rpc-style or raw
-        .eq("id", appliedDiscount.id);
-      
-      // Use a simple increment via raw SQL isn't available, so fetch and update
-      const { data: codeData } = await supabase
-        .from("discount_codes")
-        .select("current_uses")
-        .eq("id", appliedDiscount.id)
-        .single();
-      
-      if (codeData) {
-        await supabase
-          .from("discount_codes")
-          .update({ current_uses: codeData.current_uses + 1 })
-          .eq("id", appliedDiscount.id);
+    // Basic shipping validation
+    const required = ["firstName", "lastName", "address", "city", "postal", "phone"] as const;
+    for (const k of required) {
+      if (!shipping[k].trim()) {
+        toast({ title: "Missing details", description: "Please fill in all shipping information.", variant: "destructive" });
+        return;
       }
     }
 
-    setPlaced(true);
-    clearCart();
-    toast({ title: "Order placed!", description: "Your order has been confirmed." });
+    setPlacing(true);
+    try {
+      // Snapshot items for the order record
+      const itemsSnapshot = items.map(({ listing, quantity }) => ({
+        listing_id: listing.id,
+        title: listing.title,
+        brand: listing.brand,
+        image: listing.images?.[0] ?? null,
+        price: listing.price,
+        quantity,
+      }));
+
+      const { error: orderError } = await supabase.from("orders").insert({
+        buyer_id: user.id,
+        items: itemsSnapshot,
+        subtotal: totalPrice,
+        discount_code: appliedDiscount?.code ?? null,
+        discount_amount: discountAmount,
+        total: finalPrice,
+        shipping_first_name: shipping.firstName,
+        shipping_last_name: shipping.lastName,
+        shipping_address: shipping.address,
+        shipping_city: shipping.city,
+        shipping_postal: shipping.postal,
+        shipping_phone: shipping.phone,
+        status: "confirmed",
+      });
+
+      if (orderError) {
+        toast({ title: "Order failed", description: orderError.message, variant: "destructive" });
+        setPlacing(false);
+        return;
+      }
+
+      // Increment discount code usage
+      if (appliedDiscount) {
+        const { data: codeData } = await supabase
+          .from("discount_codes")
+          .select("current_uses")
+          .eq("id", appliedDiscount.id)
+          .single();
+        if (codeData) {
+          await supabase
+            .from("discount_codes")
+            .update({ current_uses: codeData.current_uses + 1 })
+            .eq("id", appliedDiscount.id);
+        }
+      }
+
+      setPlaced(true);
+      clearCart();
+      toast({ title: "Order placed!", description: "Your order has been confirmed." });
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (placed) {

@@ -406,6 +406,7 @@ export type Database = {
           brands: string[] | null
           budget_max: number | null
           budget_min: number | null
+          categories: string[] | null
           created_at: string | null
           id: string
           onboarding_completed: boolean | null
@@ -418,6 +419,7 @@ export type Database = {
           brands?: string[] | null
           budget_max?: number | null
           budget_min?: number | null
+          categories?: string[] | null
           created_at?: string | null
           id?: string
           onboarding_completed?: boolean | null
@@ -430,6 +432,7 @@ export type Database = {
           brands?: string[] | null
           budget_max?: number | null
           budget_min?: number | null
+          categories?: string[] | null
           created_at?: string | null
           id?: string
           onboarding_completed?: boolean | null

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCategories } from "@/hooks/useCategories";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Flame, Clock, Minus, Gem, Flower2, type LucideIcon } from "lucide-react";
 
@@ -31,10 +32,11 @@ const FITS = [
   { id: "oversized", label: "Oversized", desc: "Extra volume & drape" },
 ];
 
-const STEPS = ["Style", "Brands", "Fit", "Budget"];
+const STEPS = ["Category", "Style", "Brands", "Fit", "Budget"];
 
 const Preferences = () => {
   const [step, setStep] = useState(0);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedFit, setSelectedFit] = useState("regular");
@@ -43,6 +45,12 @@ const Preferences = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: categories = [] } = useCategories();
+
+  const toggleCategory = (id: string) =>
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
 
   const toggleStyle = (id: string) =>
     setSelectedStyles((prev) =>
@@ -55,8 +63,9 @@ const Preferences = () => {
     );
 
   const canProceed = () => {
-    if (step === 0) return selectedStyles.length > 0;
-    if (step === 1) return selectedBrands.length > 0;
+    if (step === 0) return selectedCategories.length > 0;
+    if (step === 1) return selectedStyles.length > 0;
+    if (step === 2) return selectedBrands.length > 0;
     return true;
   };
 
@@ -65,13 +74,14 @@ const Preferences = () => {
     setSaving(true);
     const { error } = await supabase.from("user_preferences").upsert({
       user_id: user.id,
+      categories: selectedCategories,
       styles: selectedStyles,
       brands: selectedBrands,
       preferred_fit: selectedFit,
       budget_min: budgetRange[0],
       budget_max: budgetRange[1],
       onboarding_completed: true,
-    }, { onConflict: "user_id" });
+    } as any, { onConflict: "user_id" });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -123,6 +133,51 @@ const Preferences = () => {
       <main className="container flex-1 py-8">
         <AnimatePresence mode="wait">
           {step === 0 && (
+            <StepWrapper key="category">
+              <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
+                What are you shopping for?
+              </h2>
+              <p className="mt-1 text-muted-foreground">
+                Pick the categories you're interested in
+              </p>
+              <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+                {categories.map((c) => {
+                  const selected = selectedCategories.includes(c.value);
+                  return (
+                    <motion.button
+                      key={c.id}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => toggleCategory(c.value)}
+                      className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors ${
+                        selected
+                          ? "border-primary bg-primary/5 shadow-lg"
+                          : "border-border bg-card hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-full text-3xl ${selected ? "bg-primary/10" : "bg-muted"}`}>
+                        {c.icon}
+                      </div>
+                      <span className="font-heading text-base font-bold text-foreground">
+                        {c.label}
+                      </span>
+                      {selected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                        >
+                          <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </StepWrapper>
+          )}
+
+          {step === 1 && (
             <StepWrapper key="style">
               <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
                 What's your style?
@@ -169,7 +224,7 @@ const Preferences = () => {
             </StepWrapper>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <StepWrapper key="brands">
               <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
                 Brands you love
@@ -201,7 +256,7 @@ const Preferences = () => {
             </StepWrapper>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <StepWrapper key="fit">
               <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
                 How do you like the fit?
@@ -254,7 +309,7 @@ const Preferences = () => {
             </StepWrapper>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <StepWrapper key="budget">
               <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl">
                 Set your budget range
@@ -300,7 +355,7 @@ const Preferences = () => {
           >
             <ChevronLeft className="mr-1 h-4 w-4" /> Back
           </Button>
-          {step < 3 ? (
+          {step < STEPS.length - 1 ? (
             <Button onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
               Continue <ChevronRight className="ml-1 h-4 w-4" />
             </Button>

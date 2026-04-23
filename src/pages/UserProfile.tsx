@@ -447,6 +447,13 @@ function OrderCard({ order }: { order: any }) {
                               </Badge>
                             )}
                           </div>
+                          {status.status === "shipped" && (status.shipping_method || status.tracking_number || status.expected_delivery) && (
+                            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                              {status.shipping_method && <p>Via {status.shipping_method}</p>}
+                              {status.tracking_number && <p>Tracking: <span className="font-medium text-foreground">{status.tracking_number}</span></p>}
+                              {status.expected_delivery && <p>ETA {format(new Date(status.expected_delivery), "dd MMM yyyy")}</p>}
+                            </div>
+                          )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview
                               orderId={order.id}

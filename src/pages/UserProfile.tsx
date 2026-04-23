@@ -11,18 +11,45 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone } from "lucide-react";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone, Calendar as CalendarIcon, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
-type ItemStatus = { status: "confirmed" | "shipped"; shipped_at?: string };
+type ItemStatus = {
+  status: "confirmed" | "shipped";
+  shipped_at?: string;
+  shipping_method?: string;
+  tracking_number?: string;
+  expected_delivery?: string;
+  proof_image_url?: string;
+};
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
-  if (entry && entry.status === "shipped") return { status: "shipped", shipped_at: entry.shipped_at };
+  if (entry && entry.status === "shipped") return { ...entry, status: "shipped" };
   return { status: "confirmed" };
 };
+
+const SHIPPING_METHODS = [
+  "PostNet",
+  "The Courier Guy",
+  "Aramex",
+  "PUDO (Pick Up Drop Off)",
+  "Pargo",
+  "Fastway",
+  "DHL",
+  "South African Post Office (SAPO)",
+  "Hand Delivery",
+  "Other",
+];
 
 const buildListingSellerMap = async (orders: any[]) => {
   const listingIds = Array.from(

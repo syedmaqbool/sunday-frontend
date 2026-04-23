@@ -11,18 +11,45 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone } from "lucide-react";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone, Calendar as CalendarIcon, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
-type ItemStatus = { status: "confirmed" | "shipped"; shipped_at?: string };
+type ItemStatus = {
+  status: "confirmed" | "shipped";
+  shipped_at?: string;
+  shipping_method?: string;
+  tracking_number?: string;
+  expected_delivery?: string;
+  proof_image_url?: string;
+};
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
-  if (entry && entry.status === "shipped") return { status: "shipped", shipped_at: entry.shipped_at };
+  if (entry && entry.status === "shipped") return { ...entry, status: "shipped" };
   return { status: "confirmed" };
 };
+
+const SHIPPING_METHODS = [
+  "PostNet",
+  "The Courier Guy",
+  "Aramex",
+  "PUDO (Pick Up Drop Off)",
+  "Pargo",
+  "Fastway",
+  "DHL",
+  "South African Post Office (SAPO)",
+  "Hand Delivery",
+  "Other",
+];
 
 const buildListingSellerMap = async (orders: any[]) => {
   const listingIds = Array.from(
@@ -420,6 +447,13 @@ function OrderCard({ order }: { order: any }) {
                               </Badge>
                             )}
                           </div>
+                          {status.status === "shipped" && (status.shipping_method || status.tracking_number || status.expected_delivery) && (
+                            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                              {status.shipping_method && <p>Via {status.shipping_method}</p>}
+                              {status.tracking_number && <p>Tracking: <span className="font-medium text-foreground">{status.tracking_number}</span></p>}
+                              {status.expected_delivery && <p>ETA {format(new Date(status.expected_delivery), "dd MMM yyyy")}</p>}
+                            </div>
+                          )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview
                               orderId={order.id}
@@ -497,14 +531,59 @@ function OrderCard({ order }: { order: any }) {
 
 function SoldOrderCard({ item }: { item: any }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [shipping, setShipping] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [method, setMethod] = useState<string>("");
+  const [tracking, setTracking] = useState("");
+  const [expectedDate, setExpectedDate] = useState<Date | undefined>(undefined);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+
   const status = item.listing_id ? getItemStatus(item.item_status, item.listing_id) : { status: "confirmed" as const };
   const isShipped = status.status === "shipped";
 
-  const handleMarkShipped = async () => {
+  const resetForm = () => {
+    setMethod("");
+    setTracking("");
+    setExpectedDate(undefined);
+    setProofFile(null);
+    setProofPreview(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setProofFile(file);
+    setProofPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async () => {
     if (!item.order_id || !item.listing_id) return;
+    if (!method) return toast.error("Please select a shipping method");
+    if (!expectedDate) return toast.error("Please select an expected delivery date");
+    if (!proofFile) return toast.error("Please upload a proof image");
+
     setShipping(true);
     try {
+      // Upload proof image
+      const ext = proofFile.name.split(".").pop() || "jpg";
+      const path = `${user!.id}/shipments/${item.order_id}-${item.listing_id}-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("review-media")
+        .upload(path, proofFile, { upsert: true, contentType: proofFile.type });
+      if (uploadErr) throw uploadErr;
+      const { data: pub } = supabase.storage.from("review-media").getPublicUrl(path);
+
+      // Merge into item_status
       const { data: current, error: fetchErr } = await supabase
         .from("orders")
         .select("item_status")
@@ -514,7 +593,14 @@ function SoldOrderCard({ item }: { item: any }) {
 
       const merged = {
         ...((current?.item_status as any) ?? {}),
-        [item.listing_id]: { status: "shipped", shipped_at: new Date().toISOString() },
+        [item.listing_id]: {
+          status: "shipped",
+          shipped_at: new Date().toISOString(),
+          shipping_method: method,
+          tracking_number: tracking.trim() || null,
+          expected_delivery: expectedDate.toISOString(),
+          proof_image_url: pub.publicUrl,
+        },
       };
 
       const { error } = await supabase
@@ -524,6 +610,8 @@ function SoldOrderCard({ item }: { item: any }) {
       if (error) throw error;
 
       toast.success("Marked as shipped");
+      setDialogOpen(false);
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["sold-orders"] });
       queryClient.invalidateQueries({ queryKey: ["my-orders"] });
     } catch (e: any) {
@@ -577,12 +665,39 @@ function SoldOrderCard({ item }: { item: any }) {
             </p>
           </div>
           {item.order_id && !isShipped && (
-            <Button size="sm" onClick={handleMarkShipped} disabled={shipping} className="gap-1.5">
-              {shipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+            <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-1.5">
+              <Truck className="h-4 w-4" />
               Mark as Shipped
             </Button>
           )}
         </div>
+
+        {isShipped && (status.shipping_method || status.tracking_number || status.expected_delivery || status.proof_image_url) && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Truck className="h-4 w-4" /> Shipment details
+              </h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                {status.shipping_method && (
+                  <p><span className="text-foreground font-medium">Method:</span> {status.shipping_method}</p>
+                )}
+                {status.tracking_number && (
+                  <p><span className="text-foreground font-medium">Tracking:</span> {status.tracking_number}</p>
+                )}
+                {status.expected_delivery && (
+                  <p><span className="text-foreground font-medium">Expected delivery:</span> {format(new Date(status.expected_delivery), "dd MMM yyyy")}</p>
+                )}
+                {status.proof_image_url && (
+                  <a href={status.proof_image_url} target="_blank" rel="noreferrer" className="mt-2 block">
+                    <img src={status.proof_image_url} alt="Shipping proof" className="h-24 w-24 rounded-md border border-border object-cover" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {item.order_id && (item.buyer_name || item.shipping_address) && (
           <>
@@ -611,6 +726,84 @@ function SoldOrderCard({ item }: { item: any }) {
           </>
         )}
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mark as Shipped</DialogTitle>
+            <DialogDescription>Provide shipment details so the buyer knows what to expect.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Shipping method *</Label>
+              <Select value={method} onValueChange={setMethod}>
+                <SelectTrigger><SelectValue placeholder="Select a courier" /></SelectTrigger>
+                <SelectContent>
+                  {SHIPPING_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="tracking">Tracking number (optional)</Label>
+              <Input id="tracking" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="e.g. CG1234567890" maxLength={100} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Expected delivery date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !expectedDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {expectedDate ? format(expectedDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={expectedDate}
+                    onSelect={setExpectedDate}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Proof of shipment image *</Label>
+              {proofPreview ? (
+                <div className="relative inline-block">
+                  <img src={proofPreview} alt="Proof preview" className="h-32 w-32 rounded-md border border-border object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setProofFile(null); setProofPreview(null); }}
+                    className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground hover:bg-muted/50">
+                  <Upload className="h-4 w-4" />
+                  Upload receipt or parcel photo
+                  <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                </label>
+              )}
+              <p className="text-xs text-muted-foreground">JPEG/PNG/WebP, max 5MB.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={shipping}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={shipping} className="gap-1.5">
+              {shipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+              Confirm Shipment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

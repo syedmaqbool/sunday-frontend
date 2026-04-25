@@ -216,7 +216,7 @@ const HelpManagement = () => {
         const { error } = await supabase.from("help_faqs").update(parsed.data).eq("id", faqEdit.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("help_faqs").insert(parsed.data);
+        const { error } = await supabase.from("help_faqs").insert(parsed.data as Faq);
         if (error) throw error;
       }
     },

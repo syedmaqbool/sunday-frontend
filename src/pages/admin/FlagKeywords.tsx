@@ -29,6 +29,17 @@ const keywordSchema = z.object({
   reason: z.string().trim().min(2, "Min 2 characters").max(120, "Max 120 characters"),
 });
 
+const SYSTEM_RULES: Array<{ keyword: string; reason: string; action: Action }> = [
+  { keyword: "Phone numbers", reason: "Possible phone number detected", action: "auto_delete" },
+  { keyword: "Email addresses", reason: "Possible email address detected", action: "auto_delete" },
+  { keyword: "Social handles (@username)", reason: "Possible social media handle detected", action: "review" },
+  {
+    keyword: "Platform mentions (instagram, whatsapp, telegram…)",
+    reason: "Social media platform mention detected",
+    action: "review",
+  },
+];
+
 const FlagKeywords = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();

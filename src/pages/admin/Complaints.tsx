@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,11 +206,9 @@ const ComplaintDetailDialog = ({
 }) => {
   const [notes, setNotes] = useState(complaint?.admin_notes ?? "");
 
-  // Reset notes when a different complaint is opened
-  useState(() => {
+  useEffect(() => {
     setNotes(complaint?.admin_notes ?? "");
-    return undefined;
-  });
+  }, [complaint?.id, complaint?.admin_notes]);
 
   if (!complaint) return null;
 

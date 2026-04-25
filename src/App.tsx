@@ -32,6 +32,7 @@ import Reports from "./pages/admin/Reports";
 import AdminOrders from "./pages/admin/Orders";
 import AdminComplaints from "./pages/admin/Complaints";
 import TaxSettings from "./pages/admin/TaxSettings";
+import EmailTemplates from "./pages/admin/EmailTemplates";
 import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();

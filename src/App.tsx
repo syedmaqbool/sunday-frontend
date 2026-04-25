@@ -27,6 +27,7 @@ import MessageModeration from "./pages/admin/MessageModeration";
 import DiscountCodes from "./pages/admin/DiscountCodes";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import FlagKeywords from "./pages/admin/FlagKeywords";
+import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/my-offers" element={<MyOffers />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
+            <Route path="/help" element={<HelpCenter />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/seller-analytics" element={<SellerAnalytics />} />
             <Route path="/seller/:id" element={<SellerProfile />} />

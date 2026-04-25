@@ -30,8 +30,9 @@ const Footer = () => (
         <div>
           <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Help</h4>
           <ul className="space-y-2 text-sm opacity-80">
-            <li><span className="cursor-pointer hover:opacity-100">FAQ</span></li>
-            <li><span className="cursor-pointer hover:opacity-100">Contact</span></li>
+            <li><Link to="/help" className="hover:opacity-100">Help Center</Link></li>
+            <li><Link to="/help" className="hover:opacity-100">FAQ</Link></li>
+            <li><a href="mailto:support@sunday.app" className="hover:opacity-100">Contact</a></li>
             <li><span className="cursor-pointer hover:opacity-100">Terms</span></li>
             <li><span className="cursor-pointer hover:opacity-100">Privacy</span></li>
           </ul>

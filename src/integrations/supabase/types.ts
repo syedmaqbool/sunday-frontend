@@ -550,6 +550,8 @@ export type Database = {
           shipping_postal: string | null
           status: string
           subtotal: number
+          tax_amount: number
+          tax_rate: number
           total: number
         }
         Insert: {
@@ -568,6 +570,8 @@ export type Database = {
           shipping_postal?: string | null
           status?: string
           subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
           total?: number
         }
         Update: {
@@ -586,6 +590,8 @@ export type Database = {
           shipping_postal?: string | null
           status?: string
           subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
           total?: number
         }
         Relationships: []
@@ -761,6 +767,33 @@ export type Database = {
           label?: string
           sort_order?: number
           value?: string
+        }
+        Relationships: []
+      }
+      tax_settings: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          rate: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          rate: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          rate?: number
+          updated_at?: string
         }
         Relationships: []
       }

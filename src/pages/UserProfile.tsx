@@ -754,7 +754,7 @@ function SoldOrderCard({ item }: { item: any }) {
               {format(new Date(item.created_at), "dd MMM yyyy")}
             </p>
           </div>
-          {item.order_id && !isShipped && (
+          {item.order_id && status.status === "confirmed" && (
             <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-1.5">
               <Truck className="h-4 w-4" />
               Mark as Shipped

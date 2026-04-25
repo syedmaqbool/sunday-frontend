@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard },
   { label: "Listings", path: "/admin/listings", icon: ShieldCheck },
+  { label: "Orders", path: "/admin/orders", icon: Package },
   { label: "Categories", path: "/admin/categories", icon: FolderTree },
   { label: "Messages", path: "/admin/messages", icon: MessageSquareWarning },
   { label: "Keywords", path: "/admin/flag-keywords", icon: Filter },

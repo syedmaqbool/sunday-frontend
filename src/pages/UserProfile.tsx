@@ -755,6 +755,9 @@ function SoldOrderCard({ item }: { item: any }) {
                   Confirmed
                 </Badge>
               )}
+              {item.order_id && item.listing_id && (
+                <SellerComplaintBadge orderId={item.order_id} listingId={item.listing_id} />
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               {item.brand ? `${item.brand} · ` : ""}Qty {item.quantity} · R {Number(item.amount).toLocaleString()}

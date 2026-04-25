@@ -6,7 +6,7 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { useSellerRating } from "@/hooks/useSellerRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Star, ArrowLeft, Package } from "lucide-react";
+import { Loader2, Star, ArrowLeft, Package, MapPin, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";

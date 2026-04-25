@@ -269,7 +269,7 @@ const HelpManagement = () => {
         const { error } = await supabase.from("help_tutorials").update(parsed.data).eq("id", tutEdit.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("help_tutorials").insert(parsed.data);
+        const { error } = await supabase.from("help_tutorials").insert(parsed.data as Tutorial);
         if (error) throw error;
       }
     },

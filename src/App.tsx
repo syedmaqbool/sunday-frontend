@@ -29,6 +29,7 @@ import CategoryManagement from "./pages/admin/CategoryManagement";
 import FlagKeywords from "./pages/admin/FlagKeywords";
 import HelpManagement from "./pages/admin/HelpManagement";
 import Reports from "./pages/admin/Reports";
+import AdminOrders from "./pages/admin/Orders";
 import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="flag-keywords" element={<FlagKeywords />} />
               <Route path="help" element={<HelpManagement />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="orders" element={<AdminOrders />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

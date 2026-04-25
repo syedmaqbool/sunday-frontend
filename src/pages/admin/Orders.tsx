@@ -25,6 +25,9 @@ type ItemStatusEntry = {
   eta?: string;
   proof_image_url?: string;
   updated_at?: string;
+  shipped_at?: string;
+  completed_at?: string;
+  received_at?: string;
 };
 
 type Order = {
@@ -54,8 +57,10 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped";
+type StatusFilter = "all" | "sold" | "shipped" | "completed";
 type DateFilter = "all" | "today" | "7d" | "month";
+
+const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
@@ -67,8 +72,18 @@ const dateFilterStart = (filter: DateFilter) => {
 
 const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
-  if (s === "shipped" || s === "delivered") return "shipped";
-  // Anything in a confirmed order that isn't shipped yet counts as "sold"
+  if (s === "completed" || s === "received") return "completed";
+  if (s === "shipped" || s === "delivered") {
+    // Auto-complete 48h after shipment
+    const shipTs = entry?.shipped_at ?? entry?.updated_at;
+    if (shipTs) {
+      const shippedAt = new Date(shipTs).getTime();
+      if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
+        return "completed";
+      }
+    }
+    return "shipped";
+  }
   if (orderStatus !== "cancelled") return "sold";
   return "cancelled";
 };
@@ -121,6 +136,7 @@ const AdminOrders = () => {
     const start = dateFilterStart(dateFilter);
     let sold = 0;
     let shipped = 0;
+    let completed = 0;
     for (const o of orders) {
       if (start && new Date(o.created_at) < start) continue;
       for (const item of o.items ?? []) {
@@ -128,9 +144,10 @@ const AdminOrders = () => {
         const eff = itemEffectiveStatus(o.status, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
+        else if (eff === "completed") completed++;
       }
     }
-    return { sold, shipped, total: sold + shipped };
+    return { sold, shipped, completed, total: sold + shipped + completed };
   }, [orders, dateFilter]);
 
   return (
@@ -140,7 +157,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -162,6 +179,12 @@ const AdminOrders = () => {
             <p className="font-heading text-2xl font-semibold">{counts.shipped}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Completed</p>
+            <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -170,6 +193,7 @@ const AdminOrders = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>

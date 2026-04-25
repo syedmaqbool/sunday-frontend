@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 type ItemStatus = {
-  status: "confirmed" | "shipped" | "received" | "not_received";
+  status: "confirmed" | "shipped" | "received" | "not_received" | "completed";
   shipped_at?: string;
   shipping_method?: string;
   tracking_number?: string;
@@ -36,13 +36,38 @@ type ItemStatus = {
   received_at?: string;
   not_received_at?: string;
   not_received_reason?: string;
+  completed_at?: string;
+  auto_completed?: boolean;
 };
+
+// Auto-complete window after shipment if buyer hasn't responded (48h)
+const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
+
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
   if (!entry) return { status: "confirmed" };
-  // Preserve the latest buyer-confirmed status if present, else fall back to seller-set status
-  if (entry.status === "received" || entry.status === "not_received" || entry.status === "shipped") {
+  // Final states win
+  if (entry.status === "completed" || entry.status === "received" || entry.status === "not_received") {
+    // Treat explicit "received" as completed for downstream UI
+    if (entry.status === "received") {
+      return { ...entry, status: "completed", completed_at: entry.completed_at ?? entry.received_at };
+    }
     return { ...entry, status: entry.status };
+  }
+  if (entry.status === "shipped") {
+    // Auto-complete 48h after shipment
+    if (entry.shipped_at) {
+      const shippedAt = new Date(entry.shipped_at).getTime();
+      if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
+        return {
+          ...entry,
+          status: "completed",
+          completed_at: new Date(shippedAt + AUTO_COMPLETE_MS).toISOString(),
+          auto_completed: true,
+        };
+      }
+    }
+    return { ...entry, status: "shipped" };
   }
   return { status: "confirmed" };
 };
@@ -461,10 +486,11 @@ function OrderCard({ order }: { order: any }) {
                             {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            {status.status === "received" ? (
+                            {status.status === "completed" ? (
                               <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" />
-                                Received{status.received_at ? ` · ${format(new Date(status.received_at), "dd MMM")}` : ""}
+                                Completed{status.completed_at ? ` · ${format(new Date(status.completed_at), "dd MMM")}` : ""}
+                                {status.auto_completed ? " (auto)" : ""}
                               </Badge>
                             ) : status.status === "not_received" ? (
                               <Badge variant="destructive" className="gap-1">
@@ -500,7 +526,7 @@ function OrderCard({ order }: { order: any }) {
                               Reason: <span className="text-foreground">{status.not_received_reason}</span>
                             </p>
                           )}
-                          {it.listing_id && status.status !== "received" && status.status !== "not_received" && (
+                          {it.listing_id && status.status === "shipped" && (
                             <BuyerReceiptActions
                               orderId={order.id}
                               listingId={it.listing_id}
@@ -698,7 +724,18 @@ function SoldOrderCard({ item }: { item: any }) {
                 <span className="truncate font-semibold text-foreground">{item.title}</span>
               )}
               <Badge variant="secondary">Sold</Badge>
-              {isShipped ? (
+              {status.status === "completed" ? (
+                <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Completed{status.completed_at ? ` · ${format(new Date(status.completed_at), "dd MMM")}` : ""}
+                  {status.auto_completed ? " (auto)" : ""}
+                </Badge>
+              ) : status.status === "not_received" ? (
+                <Badge variant="destructive" className="gap-1">
+                  <X className="h-3 w-3" />
+                  Not received
+                </Badge>
+              ) : isShipped ? (
                 <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
                   <Truck className="h-3 w-3" />
                   Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}
@@ -874,7 +911,7 @@ function BuyerReceiptActions({
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("");
 
-  const updateStatus = async (next: "received" | "not_received", extra: Record<string, any> = {}) => {
+  const updateStatus = async (next: "completed" | "not_received", extra: Record<string, any> = {}) => {
     setBusy(true);
     try {
       const { data: current, error: fetchErr } = await supabase
@@ -885,14 +922,15 @@ function BuyerReceiptActions({
       if (fetchErr) throw fetchErr;
 
       const existing = (current?.item_status as any) ?? {};
+      const now = new Date().toISOString();
       const merged = {
         ...existing,
         [listingId]: {
           ...(existing[listingId] ?? {}),
           status: next,
-          ...(next === "received"
-            ? { received_at: new Date().toISOString() }
-            : { not_received_at: new Date().toISOString(), ...extra }),
+          ...(next === "completed"
+            ? { received_at: now, completed_at: now }
+            : { not_received_at: now, ...extra }),
         },
       };
 
@@ -902,7 +940,7 @@ function BuyerReceiptActions({
         .eq("id", orderId);
       if (error) throw error;
 
-      toast.success(next === "received" ? "Marked as received" : "Reported as not received");
+      toast.success(next === "completed" ? "Order marked as completed" : "Reported as not received");
       setReportOpen(false);
       setReason("");
       onChanged();
@@ -921,7 +959,7 @@ function BuyerReceiptActions({
           variant="outline"
           className="h-7 gap-1 text-xs"
           disabled={busy}
-          onClick={() => updateStatus("received")}
+          onClick={() => updateStatus("completed")}
         >
           <CheckCircle2 className="h-3 w-3" />
           Mark as received

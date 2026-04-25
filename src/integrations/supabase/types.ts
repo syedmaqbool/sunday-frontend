@@ -743,6 +743,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_listings_sold: {
+        Args: { _listing_ids: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

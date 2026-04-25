@@ -57,6 +57,7 @@ const FlagKeywords = () => {
       const { error } = await supabase.from("flag_keywords").insert({
         keyword: parsed.data.keyword.toLowerCase(),
         reason: parsed.data.reason,
+        action,
         created_by: user?.id,
       });
       if (error) {
@@ -68,9 +69,22 @@ const FlagKeywords = () => {
       toast.success("Keyword added");
       setKeyword("");
       setReason("");
+      setAction("review");
       queryClient.invalidateQueries({ queryKey: ["admin-flag-keywords"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateAction = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: Action }) => {
+      const { error } = await supabase.from("flag_keywords").update({ action }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Behavior updated");
+      queryClient.invalidateQueries({ queryKey: ["admin-flag-keywords"] });
+    },
+    onError: () => toast.error("Failed to update behavior"),
   });
 
   const toggleActive = useMutation({

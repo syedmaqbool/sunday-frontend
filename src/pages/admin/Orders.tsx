@@ -136,6 +136,7 @@ const AdminOrders = () => {
     const start = dateFilterStart(dateFilter);
     let sold = 0;
     let shipped = 0;
+    let completed = 0;
     for (const o of orders) {
       if (start && new Date(o.created_at) < start) continue;
       for (const item of o.items ?? []) {
@@ -143,9 +144,10 @@ const AdminOrders = () => {
         const eff = itemEffectiveStatus(o.status, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
+        else if (eff === "completed") completed++;
       }
     }
-    return { sold, shipped, total: sold + shipped };
+    return { sold, shipped, completed, total: sold + shipped + completed };
   }, [orders, dateFilter]);
 
   return (

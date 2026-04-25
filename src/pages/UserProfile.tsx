@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,16 +27,23 @@ import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 type ItemStatus = {
-  status: "confirmed" | "shipped";
+  status: "confirmed" | "shipped" | "received" | "not_received";
   shipped_at?: string;
   shipping_method?: string;
   tracking_number?: string;
   expected_delivery?: string;
   proof_image_url?: string;
+  received_at?: string;
+  not_received_at?: string;
+  not_received_reason?: string;
 };
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
-  if (entry && entry.status === "shipped") return { ...entry, status: "shipped" };
+  if (!entry) return { status: "confirmed" };
+  // Preserve the latest buyer-confirmed status if present, else fall back to seller-set status
+  if (entry.status === "received" || entry.status === "not_received" || entry.status === "shipped") {
+    return { ...entry, status: entry.status };
+  }
   return { status: "confirmed" };
 };
 
@@ -393,6 +401,7 @@ function OrderCard({ order }: { order: any }) {
   const items: any[] = Array.isArray(order.items) ? order.items : [];
   const itemCount = items.reduce((s, it) => s + (it.quantity || 0), 0);
   const firstImage = items[0]?.image || "/placeholder.svg";
+  const queryClient = useQueryClient();
 
   return (
     <Card>
@@ -451,8 +460,18 @@ function OrderCard({ order }: { order: any }) {
                           <p className="text-xs text-muted-foreground">
                             {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
                           </p>
-                          <div className="mt-1">
-                            {status.status === "shipped" ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {status.status === "received" ? (
+                              <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Received{status.received_at ? ` · ${format(new Date(status.received_at), "dd MMM")}` : ""}
+                              </Badge>
+                            ) : status.status === "not_received" ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <X className="h-3 w-3" />
+                                Not received{status.not_received_at ? ` · ${format(new Date(status.not_received_at), "dd MMM")}` : ""}
+                              </Badge>
+                            ) : status.status === "shipped" ? (
                               <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
                                 <Truck className="h-3 w-3" />
                                 Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}
@@ -475,6 +494,18 @@ function OrderCard({ order }: { order: any }) {
                                 </a>
                               )}
                             </div>
+                          )}
+                          {status.status === "not_received" && status.not_received_reason && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Reason: <span className="text-foreground">{status.not_received_reason}</span>
+                            </p>
+                          )}
+                          {it.listing_id && status.status !== "received" && status.status !== "not_received" && (
+                            <BuyerReceiptActions
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
+                            />
                           )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview
@@ -827,6 +858,121 @@ function SoldOrderCard({ item }: { item: any }) {
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function BuyerReceiptActions({
+  orderId,
+  listingId,
+  onChanged,
+}: {
+  orderId: string;
+  listingId: string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const updateStatus = async (next: "received" | "not_received", extra: Record<string, any> = {}) => {
+    setBusy(true);
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const existing = (current?.item_status as any) ?? {};
+      const merged = {
+        ...existing,
+        [listingId]: {
+          ...(existing[listingId] ?? {}),
+          status: next,
+          ...(next === "received"
+            ? { received_at: new Date().toISOString() }
+            : { not_received_at: new Date().toISOString(), ...extra }),
+        },
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ item_status: merged })
+        .eq("id", orderId);
+      if (error) throw error;
+
+      toast.success(next === "received" ? "Marked as received" : "Reported as not received");
+      setReportOpen(false);
+      setReason("");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to update status");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          disabled={busy}
+          onClick={() => updateStatus("received")}
+        >
+          <CheckCircle2 className="h-3 w-3" />
+          Mark as received
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={busy}
+          onClick={() => setReportOpen(true)}
+        >
+          <X className="h-3 w-3" />
+          Not received
+        </Button>
+      </div>
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report not received</DialogTitle>
+            <DialogDescription>
+              Tell us what happened. The seller and admin team will be able to follow up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="not-received-reason">Reason</Label>
+            <Textarea
+              id="not-received-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Tracking shows delivered but I never got it…"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => updateStatus("not_received", { not_received_reason: reason.trim() })}
+              className="gap-1.5"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+              Submit report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

@@ -26,16 +26,23 @@ import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 type ItemStatus = {
-  status: "confirmed" | "shipped";
+  status: "confirmed" | "shipped" | "received" | "not_received";
   shipped_at?: string;
   shipping_method?: string;
   tracking_number?: string;
   expected_delivery?: string;
   proof_image_url?: string;
+  received_at?: string;
+  not_received_at?: string;
+  not_received_reason?: string;
 };
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
-  if (entry && entry.status === "shipped") return { ...entry, status: "shipped" };
+  if (!entry) return { status: "confirmed" };
+  // Preserve the latest buyer-confirmed status if present, else fall back to seller-set status
+  if (entry.status === "received" || entry.status === "not_received" || entry.status === "shipped") {
+    return { ...entry, status: entry.status };
+  }
   return { status: "confirmed" };
 };
 

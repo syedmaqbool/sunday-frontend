@@ -1,18 +1,40 @@
 import { useMemo } from "react";
-import { MOCK_LISTINGS } from "@/lib/constants";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import ListingCard from "./ListingCard";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
 import { Sparkles } from "lucide-react";
+import type { Listing } from "@/lib/constants";
 
 const FeaturedListings = () => {
   const { data: prefs } = useUserPreferences();
 
+  const { data: dbListings = [] } = useQuery({
+    queryKey: ["featured-listings"],
+    queryFn: async (): Promise<Listing[]> => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(12);
+      if (error) throw error;
+      return (data || []).map((row: any) => ({
+        ...row,
+        images: row.images?.length ? row.images : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+        seller_name: "Seller",
+      }));
+    },
+  });
+
   const listings = useMemo(
-    () => personalizeListings([...MOCK_LISTINGS], prefs),
-    [prefs]
+    () => personalizeListings([...dbListings], prefs),
+    [dbListings, prefs]
   );
 
   const isPersonalized = prefs?.onboarding_completed;
+
+  if (listings.length === 0) return null;
 
   return (
     <section className="container py-16">

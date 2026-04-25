@@ -30,6 +30,7 @@ import FlagKeywords from "./pages/admin/FlagKeywords";
 import HelpManagement from "./pages/admin/HelpManagement";
 import Reports from "./pages/admin/Reports";
 import AdminOrders from "./pages/admin/Orders";
+import AdminComplaints from "./pages/admin/Complaints";
 import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();

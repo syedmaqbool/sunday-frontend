@@ -204,7 +204,13 @@ const ComplaintDetailDialog = ({
   onClose: () => void;
   onUpdate: (id: string, status: string, notes?: string) => void;
 }) => {
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(complaint?.admin_notes ?? "");
+
+  // Reset notes when a different complaint is opened
+  useState(() => {
+    setNotes(complaint?.admin_notes ?? "");
+    return undefined;
+  });
 
   if (!complaint) return null;
 
@@ -284,12 +290,13 @@ const ComplaintDetailDialog = ({
           </div>
 
           <div>
-            <Label htmlFor="admin-notes">Admin notes</Label>
+            <Label htmlFor="admin-notes">Admin notes (visible to buyer & seller)</Label>
             <Textarea
               id="admin-notes"
               rows={3}
-              defaultValue={complaint.admin_notes}
+              value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              placeholder="Explain your decision. This message will be shown to both buyer and seller."
             />
           </div>
         </div>
@@ -299,10 +306,10 @@ const ComplaintDetailDialog = ({
             Mark return received
           </Button>
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "refunded", notes || undefined)}>
-            Mark refunded
+            Complete · Refund buyer
           </Button>
           <Button variant="ghost" onClick={() => onUpdate(complaint.id, "rejected", notes || undefined)}>
-            Reject complaint
+            Complete · Reject complaint
           </Button>
         </DialogFooter>
       </DialogContent>

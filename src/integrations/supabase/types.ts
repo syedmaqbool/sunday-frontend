@@ -41,6 +41,63 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          admin_notes: string
+          buyer_id: string
+          created_at: string
+          evidence_urls: string[]
+          id: string
+          listing_id: string
+          order_id: string
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          return_carrier: string | null
+          return_proof_urls: string[]
+          return_tracking: string | null
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string
+          buyer_id: string
+          created_at?: string
+          evidence_urls?: string[]
+          id?: string
+          listing_id: string
+          order_id: string
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          return_carrier?: string | null
+          return_proof_urls?: string[]
+          return_tracking?: string | null
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string
+          buyer_id?: string
+          created_at?: string
+          evidence_urls?: string[]
+          id?: string
+          listing_id?: string
+          order_id?: string
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          return_carrier?: string | null
+          return_proof_urls?: string[]
+          return_tracking?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           buyer_id: string

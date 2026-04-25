@@ -15,6 +15,8 @@ import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Rec
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
+import { ComplaintActions } from "@/components/ComplaintActions";
+import { SellerComplaintBadge } from "@/components/SellerComplaintBadge";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -533,6 +535,14 @@ function OrderCard({ order }: { order: any }) {
                               onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
                             />
                           )}
+                          {it.listing_id && it.seller_id && (status.status === "shipped" || status.status === "completed") && (
+                            <ComplaintActions
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              sellerId={it.seller_id}
+                              buyerId={order.buyer_id}
+                            />
+                          )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview
                               orderId={order.id}
@@ -745,6 +755,9 @@ function SoldOrderCard({ item }: { item: any }) {
                   <CheckCircle2 className="h-3 w-3" />
                   Confirmed
                 </Badge>
+              )}
+              {item.order_id && item.listing_id && (
+                <SellerComplaintBadge orderId={item.order_id} listingId={item.listing_id} />
               )}
             </div>
             <p className="text-sm text-muted-foreground">

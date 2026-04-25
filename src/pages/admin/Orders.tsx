@@ -25,6 +25,9 @@ type ItemStatusEntry = {
   eta?: string;
   proof_image_url?: string;
   updated_at?: string;
+  shipped_at?: string;
+  completed_at?: string;
+  received_at?: string;
 };
 
 type Order = {

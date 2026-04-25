@@ -31,6 +31,7 @@ import HelpManagement from "./pages/admin/HelpManagement";
 import Reports from "./pages/admin/Reports";
 import AdminOrders from "./pages/admin/Orders";
 import AdminComplaints from "./pages/admin/Complaints";
+import TaxSettings from "./pages/admin/TaxSettings";
 import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="reports" element={<Reports />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="complaints" element={<AdminComplaints />} />
+              <Route path="tax" element={<TaxSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

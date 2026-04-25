@@ -242,7 +242,198 @@ const AdminOrders = () => {
           )}
         </CardContent>
       </Card>
+
+      <OrderDetailDialog row={selected} onClose={() => setSelected(null)} />
     </div>
+  );
+};
+
+const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => void }) => {
+  const listingId = row?.item.listing_id;
+  const buyerId = row?.order.buyer_id;
+
+  const { data: listing } = useQuery({
+    queryKey: ["admin-order-listing", listingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id, title, seller_id, images, price, status")
+        .eq("id", listingId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!listingId,
+  });
+
+  const sellerId = listing?.seller_id ?? row?.item.seller_id;
+
+  const { data: profiles } = useQuery({
+    queryKey: ["admin-order-profiles", buyerId, sellerId],
+    queryFn: async () => {
+      const ids = [buyerId, sellerId].filter(Boolean) as string[];
+      if (ids.length === 0) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, phone, location")
+        .in("id", ids);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!buyerId && !!sellerId,
+  });
+
+  if (!row) return null;
+
+  const buyerProfile = profiles?.find((p) => p.id === buyerId);
+  const sellerProfile = profiles?.find((p) => p.id === sellerId);
+  const entry = row.entry;
+  const order = row.order;
+  const shippingAddr = [order.shipping_address, order.shipping_city, order.shipping_postal]
+    .filter(Boolean)
+    .join(", ");
+
+  return (
+    <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading">{row.item.title ?? "Order item"}</DialogTitle>
+          <DialogDescription>
+            Order #{row.orderId.slice(0, 8)} · {format(new Date(row.created_at), "PPp")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            {listing?.images?.[0] && (
+              <img src={listing.images[0]} alt="" className="h-24 w-24 rounded-md object-cover" />
+            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Badge variant={row.effective === "shipped" ? "default" : "secondary"}>{row.effective}</Badge>
+                {listing && (
+                  <Link
+                    to={`/listing/${listing.id}`}
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    View listing <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Price: Rs {Number(row.item.price ?? 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card>
+              <CardContent className="p-4">
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Buyer</p>
+                <p className="text-sm font-medium">{buyerProfile?.full_name ?? row.buyerName}</p>
+                {buyerProfile?.location && (
+                  <p className="text-xs text-muted-foreground">{buyerProfile.location}</p>
+                )}
+                {order.shipping_phone && (
+                  <p className="text-xs text-muted-foreground">{order.shipping_phone}</p>
+                )}
+                {buyerId && (
+                  <Link
+                    to={`/seller/${buyerId}`}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    View profile <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Seller</p>
+                <p className="text-sm font-medium">{sellerProfile?.full_name ?? "—"}</p>
+                {sellerProfile?.location && (
+                  <p className="text-xs text-muted-foreground">{sellerProfile.location}</p>
+                )}
+                {sellerProfile?.phone && (
+                  <p className="text-xs text-muted-foreground">{sellerProfile.phone}</p>
+                )}
+                {sellerId && (
+                  <Link
+                    to={`/seller/${sellerId}`}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    View profile <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardContent className="space-y-2 p-4 text-sm">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Timeline</p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sold (order placed)</span>
+                <span>{format(new Date(order.created_at), "PPp")}</span>
+              </div>
+              {entry?.updated_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {entry.status === "shipped" || entry.status === "delivered" ? "Shipped" : "Status updated"}
+                  </span>
+                  <span>{format(new Date(entry.updated_at), "PPp")}</span>
+                </div>
+              )}
+              {entry?.eta && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ETA</span>
+                  <span>{entry.eta}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {(entry?.tracking_number || entry?.shipping_method || entry?.proof_image_url) && (
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Shipping</p>
+                {entry.shipping_method && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Method</span>
+                    <span>{entry.shipping_method}</span>
+                  </div>
+                )}
+                {entry.tracking_number && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tracking</span>
+                    <span className="font-mono text-xs">{entry.tracking_number}</span>
+                  </div>
+                )}
+                {entry.proof_image_url && (
+                  <a href={entry.proof_image_url} target="_blank" rel="noreferrer">
+                    <img
+                      src={entry.proof_image_url}
+                      alt="Shipping proof"
+                      className="mt-2 h-24 w-24 rounded-md object-cover"
+                    />
+                  </a>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {shippingAddr && (
+            <Card>
+              <CardContent className="p-4 text-sm">
+                <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Shipping address</p>
+                <p>{shippingAddr}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

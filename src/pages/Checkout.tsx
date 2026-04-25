@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AppliedDiscount {
   id: string;
@@ -24,6 +25,7 @@ const Checkout = () => {
   const { items, removeItem, totalPrice, clearCart, totalItems } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
@@ -145,6 +147,12 @@ const Checkout = () => {
         return;
       }
 
+      // Mark purchased listings as sold so they disappear from browse
+      const listingIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
+      if (listingIds.length) {
+        await supabase.from("listings").update({ status: "sold" }).in("id", listingIds);
+      }
+
       // Increment discount code usage
       if (appliedDiscount) {
         const { data: codeData } = await supabase
@@ -162,6 +170,7 @@ const Checkout = () => {
 
       setPlaced(true);
       clearCart();
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
       toast({ title: "Order placed!", description: "Your order has been confirmed." });
     } finally {
       setPlacing(false);

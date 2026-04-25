@@ -34,6 +34,7 @@ const FlagKeywords = () => {
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState("");
   const [reason, setReason] = useState("");
+  const [action, setAction] = useState<Action>("review");
 
   const { data: keywords = [], isLoading } = useQuery({
     queryKey: ["admin-flag-keywords"],

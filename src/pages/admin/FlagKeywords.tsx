@@ -191,19 +191,57 @@ const FlagKeywords = () => {
         </CardContent>
       </Card>
 
-      {/* Keywords list */}
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      {/* Built-in detection rules */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Built-in detection
+          </h2>
+          <Badge variant="outline" className="gap-1 text-[10px]">
+            <Lock className="h-3 w-3" /> System
+          </Badge>
         </div>
-      ) : keywords.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
-          <Tag className="h-10 w-10" />
-          <p className="text-sm">No custom keywords yet</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {keywords.map((k) => (
+        {SYSTEM_RULES.map((r) => (
+          <Card key={r.keyword} className="border-dashed bg-muted/20">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">{r.keyword}</Badge>
+                  {r.action === "auto_delete" ? (
+                    <Badge variant="destructive" className="gap-1 text-[10px]">
+                      <ShieldAlert className="h-3 w-3" /> Auto-delete
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1 text-[10px]">
+                      <Eye className="h-3 w-3" /> Review required
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground truncate">{r.reason}</p>
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0">Always on</span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Custom keywords list */}
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Custom keywords
+        </h2>
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : keywords.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+            <Tag className="h-10 w-10" />
+            <p className="text-sm">No custom keywords yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {keywords.map((k) => (
             <Card key={k.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 <div className="flex-1 min-w-0">

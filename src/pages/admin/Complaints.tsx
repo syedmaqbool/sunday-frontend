@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +18,8 @@ const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
-  refunded: "Refunded",
-  rejected: "Rejected",
+  refunded: "Completed (Refunded)",
+  rejected: "Completed (Rejected)",
 };
 
 type StatusFilter = "all" | "raised" | "return_in_transit" | "return_received" | "refunded" | "rejected";
@@ -204,7 +204,11 @@ const ComplaintDetailDialog = ({
   onClose: () => void;
   onUpdate: (id: string, status: string, notes?: string) => void;
 }) => {
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(complaint?.admin_notes ?? "");
+
+  useEffect(() => {
+    setNotes(complaint?.admin_notes ?? "");
+  }, [complaint?.id, complaint?.admin_notes]);
 
   if (!complaint) return null;
 
@@ -284,12 +288,13 @@ const ComplaintDetailDialog = ({
           </div>
 
           <div>
-            <Label htmlFor="admin-notes">Admin notes</Label>
+            <Label htmlFor="admin-notes">Admin notes (visible to buyer & seller)</Label>
             <Textarea
               id="admin-notes"
               rows={3}
-              defaultValue={complaint.admin_notes}
+              value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              placeholder="Explain your decision. This message will be shown to both buyer and seller."
             />
           </div>
         </div>
@@ -299,10 +304,10 @@ const ComplaintDetailDialog = ({
             Mark return received
           </Button>
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "refunded", notes || undefined)}>
-            Mark refunded
+            Complete · Refund buyer
           </Button>
           <Button variant="ghost" onClick={() => onUpdate(complaint.id, "rejected", notes || undefined)}>
-            Reject complaint
+            Complete · Reject complaint
           </Button>
         </DialogFooter>
       </DialogContent>

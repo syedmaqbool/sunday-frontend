@@ -33,6 +33,7 @@ type Complaint = {
   return_proof_urls: string[];
   return_carrier: string | null;
   return_tracking: string | null;
+  admin_notes: string;
   created_at: string;
   updated_at: string;
 };
@@ -41,8 +42,8 @@ const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
-  refunded: "Refunded",
-  rejected: "Complaint Rejected",
+  refunded: "Completed · Refunded",
+  rejected: "Completed · Rejected",
 };
 
 const uploadFiles = async (files: File[], folder: string) => {
@@ -78,7 +79,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, created_at, updated_at")
+        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, updated_at")
         .eq("order_id", orderId)
         .eq("listing_id", listingId)
         .maybeSingle();
@@ -168,11 +169,16 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
   // Already-resolved states
   if (complaint && (complaint.status === "refunded" || complaint.status === "rejected" || complaint.status === "return_received")) {
     return (
-      <div className="mt-2">
+      <div className="mt-2 space-y-1">
         <Badge variant="outline" className="gap-1">
           <AlertTriangle className="h-3 w-3" />
           {STATUS_LABEL[complaint.status] ?? complaint.status}
         </Badge>
+        {(complaint.status === "refunded" || complaint.status === "rejected") && complaint.admin_notes && (
+          <p className="max-w-md text-xs text-muted-foreground">
+            <span className="font-semibold">Admin note:</span> {complaint.admin_notes}
+          </p>
+        )}
       </div>
     );
   }

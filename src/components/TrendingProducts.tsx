@@ -1,16 +1,29 @@
-import { useMemo } from "react";
-import { MOCK_LISTINGS } from "@/lib/constants";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import ListingCard from "./ListingCard";
 import { TrendingUp } from "lucide-react";
+import type { Listing } from "@/lib/constants";
 
 const TrendingProducts = () => {
-  const trending = useMemo(
-    () =>
-      [...MOCK_LISTINGS]
-        .sort((a, b) => b.price - a.price)
-        .slice(0, 6),
-    []
-  );
+  const { data: trending = [] } = useQuery({
+    queryKey: ["trending-listings"],
+    queryFn: async (): Promise<Listing[]> => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("status", "approved")
+        .order("price", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return (data || []).map((row: any) => ({
+        ...row,
+        images: row.images?.length ? row.images : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+        seller_name: "Seller",
+      }));
+    },
+  });
+
+  if (trending.length === 0) return null;
 
   return (
     <section className="container py-16">

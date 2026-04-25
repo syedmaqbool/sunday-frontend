@@ -168,7 +168,7 @@ const HelpManagement = () => {
         const { error } = await supabase.from("help_categories").update(parsed.data).eq("id", catEdit.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("help_categories").insert(parsed.data);
+        const { error } = await supabase.from("help_categories").insert(parsed.data as Category);
         if (error) {
           if (error.code === "23505") throw new Error("That key already exists");
           throw error;

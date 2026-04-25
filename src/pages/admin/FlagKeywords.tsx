@@ -120,7 +120,7 @@ const FlagKeywords = () => {
       {/* Add new keyword */}
       <Card>
         <CardContent className="p-5">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="keyword">Keyword or phrase</Label>
               <Input
@@ -141,18 +141,41 @@ const FlagKeywords = () => {
                 maxLength={120}
               />
             </div>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="action">When matched</Label>
+              <Select value={action} onValueChange={(v) => setAction(v as Action)}>
+                <SelectTrigger id="action">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="review">
+                    <span className="flex items-center gap-2">
+                      <Eye className="h-3.5 w-3.5" /> Review required — admin confirms before action
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="auto_delete">
+                    <span className="flex items-center gap-2">
+                      <ShieldAlert className="h-3.5 w-3.5" /> Auto-delete — remove message immediately
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               onClick={() => addKeyword.mutate()}
               disabled={addKeyword.isPending || !keyword.trim() || !reason.trim()}
               className="gap-2"
             >
               {addKeyword.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Add
+              Add Keyword
             </Button>
           </div>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             Matching is case-insensitive and applies to any message containing the keyword as a substring.
+            Auto-deleted messages still appear in admin messages for the original conversation.
           </p>
         </CardContent>
       </Card>

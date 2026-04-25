@@ -171,6 +171,9 @@ const Checkout = () => {
       setPlaced(true);
       clearCart();
       queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["featured-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["trending-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listing"] });
       toast({ title: "Order placed!", description: "Your order has been confirmed." });
     } finally {
       setPlacing(false);

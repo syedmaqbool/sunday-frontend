@@ -54,8 +54,10 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped";
+type StatusFilter = "all" | "sold" | "shipped" | "completed";
 type DateFilter = "all" | "today" | "7d" | "month";
+
+const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
@@ -67,8 +69,17 @@ const dateFilterStart = (filter: DateFilter) => {
 
 const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
-  if (s === "shipped" || s === "delivered") return "shipped";
-  // Anything in a confirmed order that isn't shipped yet counts as "sold"
+  if (s === "completed" || s === "received") return "completed";
+  if (s === "shipped" || s === "delivered") {
+    // Auto-complete 48h after shipment
+    if (entry?.updated_at) {
+      const shippedAt = new Date(entry.updated_at).getTime();
+      if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
+        return "completed";
+      }
+    }
+    return "shipped";
+  }
   if (orderStatus !== "cancelled") return "sold";
   return "cancelled";
 };

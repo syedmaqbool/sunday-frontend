@@ -124,6 +124,7 @@ export type Database = {
       }
       flag_keywords: {
         Row: {
+          action: string
           active: boolean
           created_at: string
           created_by: string | null
@@ -133,6 +134,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          action?: string
           active?: boolean
           created_at?: string
           created_by?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          action?: string
           active?: boolean
           created_at?: string
           created_by?: string | null

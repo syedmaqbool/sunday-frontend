@@ -8,15 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Loader2, Tag, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Loader2, Tag, AlertTriangle, ShieldAlert, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+
+type Action = "review" | "auto_delete";
 
 interface FlagKeyword {
   id: string;
   keyword: string;
   reason: string;
   active: boolean;
+  action: Action;
   created_at: string;
 }
 
@@ -30,6 +34,7 @@ const FlagKeywords = () => {
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState("");
   const [reason, setReason] = useState("");
+  const [action, setAction] = useState<Action>("review");
 
   const { data: keywords = [], isLoading } = useQuery({
     queryKey: ["admin-flag-keywords"],
@@ -52,6 +57,7 @@ const FlagKeywords = () => {
       const { error } = await supabase.from("flag_keywords").insert({
         keyword: parsed.data.keyword.toLowerCase(),
         reason: parsed.data.reason,
+        action,
         created_by: user?.id,
       });
       if (error) {
@@ -63,9 +69,22 @@ const FlagKeywords = () => {
       toast.success("Keyword added");
       setKeyword("");
       setReason("");
+      setAction("review");
       queryClient.invalidateQueries({ queryKey: ["admin-flag-keywords"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateAction = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: Action }) => {
+      const { error } = await supabase.from("flag_keywords").update({ action }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Behavior updated");
+      queryClient.invalidateQueries({ queryKey: ["admin-flag-keywords"] });
+    },
+    onError: () => toast.error("Failed to update behavior"),
   });
 
   const toggleActive = useMutation({
@@ -101,7 +120,7 @@ const FlagKeywords = () => {
       {/* Add new keyword */}
       <Card>
         <CardContent className="p-5">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="keyword">Keyword or phrase</Label>
               <Input
@@ -122,18 +141,41 @@ const FlagKeywords = () => {
                 maxLength={120}
               />
             </div>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="action">When matched</Label>
+              <Select value={action} onValueChange={(v) => setAction(v as Action)}>
+                <SelectTrigger id="action">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="review">
+                    <span className="flex items-center gap-2">
+                      <Eye className="h-3.5 w-3.5" /> Review required — admin confirms before action
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="auto_delete">
+                    <span className="flex items-center gap-2">
+                      <ShieldAlert className="h-3.5 w-3.5" /> Auto-delete — remove message immediately
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               onClick={() => addKeyword.mutate()}
               disabled={addKeyword.isPending || !keyword.trim() || !reason.trim()}
               className="gap-2"
             >
               {addKeyword.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Add
+              Add Keyword
             </Button>
           </div>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             Matching is case-insensitive and applies to any message containing the keyword as a substring.
+            Auto-deleted messages still appear in admin messages for the original conversation.
           </p>
         </CardContent>
       </Card>
@@ -158,11 +200,32 @@ const FlagKeywords = () => {
                     <Badge variant="secondary" className="font-mono text-xs">
                       {k.keyword}
                     </Badge>
+                    {k.action === "auto_delete" ? (
+                      <Badge variant="destructive" className="gap-1 text-[10px]">
+                        <ShieldAlert className="h-3 w-3" /> Auto-delete
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-[10px]">
+                        <Eye className="h-3 w-3" /> Review required
+                      </Badge>
+                    )}
                     {!k.active && <Badge variant="outline" className="text-[10px]">Disabled</Badge>}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground truncate">{k.reason}</p>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
+                  <Select
+                    value={k.action}
+                    onValueChange={(v) => updateAction.mutate({ id: k.id, action: v as Action })}
+                  >
+                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="review">Review required</SelectItem>
+                      <SelectItem value="auto_delete">Auto-delete</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={k.active}

@@ -724,7 +724,18 @@ function SoldOrderCard({ item }: { item: any }) {
                 <span className="truncate font-semibold text-foreground">{item.title}</span>
               )}
               <Badge variant="secondary">Sold</Badge>
-              {isShipped ? (
+              {status.status === "completed" ? (
+                <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Completed{status.completed_at ? ` · ${format(new Date(status.completed_at), "dd MMM")}` : ""}
+                  {status.auto_completed ? " (auto)" : ""}
+                </Badge>
+              ) : status.status === "not_received" ? (
+                <Badge variant="destructive" className="gap-1">
+                  <X className="h-3 w-3" />
+                  Not received
+                </Badge>
+              ) : isShipped ? (
                 <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
                   <Truck className="h-3 w-3" />
                   Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}

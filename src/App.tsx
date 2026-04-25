@@ -60,6 +60,7 @@ const App = () => (
               <Route path="users" element={<UserManagement />} />
               <Route path="categories" element={<CategoryManagement />} />
               <Route path="discounts" element={<DiscountCodes />} />
+              <Route path="flag-keywords" element={<FlagKeywords />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

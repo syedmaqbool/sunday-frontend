@@ -861,4 +861,119 @@ function SoldOrderCard({ item }: { item: any }) {
   );
 }
 
+function BuyerReceiptActions({
+  orderId,
+  listingId,
+  onChanged,
+}: {
+  orderId: string;
+  listingId: string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const updateStatus = async (next: "received" | "not_received", extra: Record<string, any> = {}) => {
+    setBusy(true);
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const existing = (current?.item_status as any) ?? {};
+      const merged = {
+        ...existing,
+        [listingId]: {
+          ...(existing[listingId] ?? {}),
+          status: next,
+          ...(next === "received"
+            ? { received_at: new Date().toISOString() }
+            : { not_received_at: new Date().toISOString(), ...extra }),
+        },
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ item_status: merged })
+        .eq("id", orderId);
+      if (error) throw error;
+
+      toast.success(next === "received" ? "Marked as received" : "Reported as not received");
+      setReportOpen(false);
+      setReason("");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to update status");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          disabled={busy}
+          onClick={() => updateStatus("received")}
+        >
+          <CheckCircle2 className="h-3 w-3" />
+          Mark as received
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={busy}
+          onClick={() => setReportOpen(true)}
+        >
+          <X className="h-3 w-3" />
+          Not received
+        </Button>
+      </div>
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report not received</DialogTitle>
+            <DialogDescription>
+              Tell us what happened. The seller and admin team will be able to follow up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="not-received-reason">Reason</Label>
+            <Textarea
+              id="not-received-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Tracking shows delivered but I never got it…"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => updateStatus("not_received", { not_received_reason: reason.trim() })}
+              className="gap-1.5"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+              Submit report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export default UserProfile;

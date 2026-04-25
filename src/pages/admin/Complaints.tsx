@@ -135,6 +135,7 @@ const AdminComplaints = () => {
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="raised">Raised</TabsTrigger>
+          <TabsTrigger value="under_review">Under Review</TabsTrigger>
           <TabsTrigger value="return_in_transit">Return in transit</TabsTrigger>
           <TabsTrigger value="return_received">Received</TabsTrigger>
           <TabsTrigger value="refunded">Refunded</TabsTrigger>

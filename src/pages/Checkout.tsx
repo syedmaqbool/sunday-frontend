@@ -150,7 +150,7 @@ const Checkout = () => {
       // Mark purchased listings as sold so they disappear from browse
       const listingIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
       if (listingIds.length) {
-        await supabase.from("listings").update({ status: "sold" }).in("id", listingIds);
+        await supabase.rpc("mark_listings_sold", { _listing_ids: listingIds });
       }
 
       // Increment discount code usage

@@ -76,12 +76,18 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      {/* Mobile header */}
+      {/* Main column */}
       <div className="flex flex-1 flex-col">
+        {/* Desktop header */}
+        <header className="hidden h-14 items-center justify-end border-b border-border px-6 md:flex">
+          <NotificationBell audience="admin" />
+        </header>
+        {/* Mobile header */}
         <header className="flex h-14 items-center gap-2 border-b border-border px-4 md:hidden">
           <ShieldCheck className="h-5 w-5 text-primary" />
           <span className="font-heading text-lg font-semibold text-foreground">Admin</span>
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell audience="admin" />
             {navItems.map((item) => (
               <Button
                 key={item.path}

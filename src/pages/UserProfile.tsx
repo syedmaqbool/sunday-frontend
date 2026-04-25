@@ -400,6 +400,7 @@ function OrderCard({ order }: { order: any }) {
   const items: any[] = Array.isArray(order.items) ? order.items : [];
   const itemCount = items.reduce((s, it) => s + (it.quantity || 0), 0);
   const firstImage = items[0]?.image || "/placeholder.svg";
+  const queryClient = useQueryClient();
 
   return (
     <Card>

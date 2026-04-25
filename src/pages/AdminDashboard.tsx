@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const navItems = [
   { label: "Listings", path: "/admin/listings", icon: ShieldCheck },
   { label: "Categories", path: "/admin/categories", icon: FolderTree },
   { label: "Messages", path: "/admin/messages", icon: MessageSquareWarning },
+  { label: "Keywords", path: "/admin/flag-keywords", icon: Filter },
   { label: "Users", path: "/admin/users", icon: Users },
   { label: "Discounts", path: "/admin/discounts", icon: Tag },
 ];

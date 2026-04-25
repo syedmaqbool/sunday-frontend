@@ -526,7 +526,7 @@ function OrderCard({ order }: { order: any }) {
                               Reason: <span className="text-foreground">{status.not_received_reason}</span>
                             </p>
                           )}
-                          {it.listing_id && status.status !== "received" && status.status !== "not_received" && (
+                          {it.listing_id && status.status === "shipped" && (
                             <BuyerReceiptActions
                               orderId={order.id}
                               listingId={it.listing_id}

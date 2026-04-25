@@ -26,6 +26,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import MessageModeration from "./pages/admin/MessageModeration";
 import DiscountCodes from "./pages/admin/DiscountCodes";
 import CategoryManagement from "./pages/admin/CategoryManagement";
+import FlagKeywords from "./pages/admin/FlagKeywords";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="users" element={<UserManagement />} />
               <Route path="categories" element={<CategoryManagement />} />
               <Route path="discounts" element={<DiscountCodes />} />
+              <Route path="flag-keywords" element={<FlagKeywords />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

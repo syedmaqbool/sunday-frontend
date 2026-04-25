@@ -459,8 +459,18 @@ function OrderCard({ order }: { order: any }) {
                           <p className="text-xs text-muted-foreground">
                             {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
                           </p>
-                          <div className="mt-1">
-                            {status.status === "shipped" ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {status.status === "received" ? (
+                              <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Received{status.received_at ? ` · ${format(new Date(status.received_at), "dd MMM")}` : ""}
+                              </Badge>
+                            ) : status.status === "not_received" ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <X className="h-3 w-3" />
+                                Not received{status.not_received_at ? ` · ${format(new Date(status.not_received_at), "dd MMM")}` : ""}
+                              </Badge>
+                            ) : status.status === "shipped" ? (
                               <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/15">
                                 <Truck className="h-3 w-3" />
                                 Shipped{status.shipped_at ? ` · ${format(new Date(status.shipped_at), "dd MMM")}` : ""}
@@ -483,6 +493,18 @@ function OrderCard({ order }: { order: any }) {
                                 </a>
                               )}
                             </div>
+                          )}
+                          {status.status === "not_received" && status.not_received_reason && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Reason: <span className="text-foreground">{status.not_received_reason}</span>
+                            </p>
+                          )}
+                          {it.listing_id && status.status !== "received" && status.status !== "not_received" && (
+                            <BuyerReceiptActions
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
+                            />
                           )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import sundayLogo from "@/assets/sunday-logo.png";
 import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +46,7 @@ const Navbar = () => {
           <span className="hidden md:flex">
             <CartDrawer />
           </span>
+          {user && <NotificationBell audience="user" />}
           <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={() => navigate(user ? "/create-listing" : "/auth")}>
             <Plus className="h-4 w-4" /> Sell
           </Button>

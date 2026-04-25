@@ -200,11 +200,32 @@ const FlagKeywords = () => {
                     <Badge variant="secondary" className="font-mono text-xs">
                       {k.keyword}
                     </Badge>
+                    {k.action === "auto_delete" ? (
+                      <Badge variant="destructive" className="gap-1 text-[10px]">
+                        <ShieldAlert className="h-3 w-3" /> Auto-delete
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-[10px]">
+                        <Eye className="h-3 w-3" /> Review required
+                      </Badge>
+                    )}
                     {!k.active && <Badge variant="outline" className="text-[10px]">Disabled</Badge>}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground truncate">{k.reason}</p>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
+                  <Select
+                    value={k.action}
+                    onValueChange={(v) => updateAction.mutate({ id: k.id, action: v as Action })}
+                  >
+                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="review">Review required</SelectItem>
+                      <SelectItem value="auto_delete">Auto-delete</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={k.active}

@@ -302,6 +302,9 @@ const ComplaintDetailDialog = ({
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
+          <Button variant="outline" onClick={() => onUpdate(complaint.id, "under_review", notes || undefined)}>
+            Mark as Under Review
+          </Button>
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "return_received", notes || undefined)}>
             Mark return received
           </Button>

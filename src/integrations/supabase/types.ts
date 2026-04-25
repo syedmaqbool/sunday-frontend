@@ -155,6 +155,114 @@ export type Database = {
         }
         Relationships: []
       }
+      help_categories: {
+        Row: {
+          active: boolean
+          blurb: string
+          created_at: string
+          icon: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          blurb?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          blurb?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_faqs: {
+        Row: {
+          answer: string
+          category_key: string
+          created_at: string
+          id: string
+          published: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category_key: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category_key?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_tutorials: {
+        Row: {
+          created_at: string
+          cta_label: string
+          cta_to: string
+          icon: string
+          id: string
+          published: boolean
+          sort_order: number
+          steps: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string
+          cta_to?: string
+          icon?: string
+          id?: string
+          published?: boolean
+          sort_order?: number
+          steps?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string
+          cta_to?: string
+          icon?: string
+          id?: string
+          published?: boolean
+          sort_order?: number
+          steps?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listing_feedback: {
         Row: {
           admin_id: string

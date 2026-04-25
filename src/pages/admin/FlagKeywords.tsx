@@ -8,15 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Loader2, Tag, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Loader2, Tag, AlertTriangle, ShieldAlert, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+
+type Action = "review" | "auto_delete";
 
 interface FlagKeyword {
   id: string;
   keyword: string;
   reason: string;
   active: boolean;
+  action: Action;
   created_at: string;
 }
 

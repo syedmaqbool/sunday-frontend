@@ -20,6 +20,7 @@ const navItems = [
   { label: "Users", path: "/admin/users", icon: Users },
   { label: "Discounts", path: "/admin/discounts", icon: Tag },
   { label: "Tax Settings", path: "/admin/tax", icon: Percent },
+  { label: "Email Templates", path: "/admin/email-templates", icon: Mail },
 ];
 
 const AdminDashboard = () => {

@@ -486,10 +486,11 @@ function OrderCard({ order }: { order: any }) {
                             {it.brand ? `${it.brand} · ` : ""}Qty {it.quantity}
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            {status.status === "received" ? (
+                            {status.status === "completed" ? (
                               <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" />
-                                Received{status.received_at ? ` · ${format(new Date(status.received_at), "dd MMM")}` : ""}
+                                Completed{status.completed_at ? ` · ${format(new Date(status.completed_at), "dd MMM")}` : ""}
+                                {status.auto_completed ? " (auto)" : ""}
                               </Badge>
                             ) : status.status === "not_received" ? (
                               <Badge variant="destructive" className="gap-1">

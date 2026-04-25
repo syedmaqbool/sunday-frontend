@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree, Filter, LifeBuoy, Flag, Package, AlertTriangle, Percent } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree, Filter, LifeBuoy, Flag, Package, AlertTriangle, Percent, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";

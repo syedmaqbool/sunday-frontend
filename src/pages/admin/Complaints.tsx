@@ -18,8 +18,8 @@ const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
-  refunded: "Refunded",
-  rejected: "Rejected",
+  refunded: "Completed (Refunded)",
+  rejected: "Completed (Rejected)",
 };
 
 type StatusFilter = "all" | "raised" | "return_in_transit" | "return_received" | "refunded" | "rejected";

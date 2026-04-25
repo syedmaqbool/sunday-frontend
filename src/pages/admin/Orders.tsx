@@ -204,7 +204,11 @@ const AdminOrders = () => {
               </TableHeader>
               <TableBody>
                 {rows.map((r, i) => (
-                  <TableRow key={`${r.orderId}-${r.item.listing_id}-${i}`}>
+                  <TableRow
+                    key={`${r.orderId}-${r.item.listing_id}-${i}`}
+                    className="cursor-pointer"
+                    onClick={() => setSelected(r)}
+                  >
                     <TableCell className="font-medium">{r.item.title ?? "—"}</TableCell>
                     <TableCell>
                       <div className="text-sm">{r.buyerName}</div>

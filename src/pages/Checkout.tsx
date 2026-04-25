@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActiveTax } from "@/hooks/useActiveTax";
 
 interface AppliedDiscount {
   id: string;
@@ -26,6 +27,7 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: activeTax } = useActiveTax();
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
@@ -41,7 +43,10 @@ const Checkout = () => {
       : Math.min(appliedDiscount.discount_value, totalPrice)
     : 0;
 
-  const finalPrice = totalPrice - discountAmount;
+  const taxableAmount = totalPrice - discountAmount;
+  const taxRate = activeTax?.rate ?? 0;
+  const taxAmount = Math.round(taxableAmount * taxRate) / 100;
+  const finalPrice = taxableAmount + taxAmount;
 
   const handleApplyDiscount = async () => {
     const code = discountCode.trim().toUpperCase();
@@ -131,6 +136,8 @@ const Checkout = () => {
         subtotal: totalPrice,
         discount_code: appliedDiscount?.code ?? null,
         discount_amount: discountAmount,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
         total: finalPrice,
         shipping_first_name: shipping.firstName,
         shipping_last_name: shipping.lastName,
@@ -327,6 +334,12 @@ const Checkout = () => {
                 <span className="text-sm text-muted-foreground">Shipping</span>
                 <span className="text-sm text-muted-foreground">Free</span>
               </div>
+              {taxAmount > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-muted-foreground">{activeTax?.name} ({taxRate}%)</span>
+                  <span className="text-sm text-foreground">R {taxAmount.toLocaleString()}</span>
+                </div>
+              )}
               <Separator />
               <div className="flex items-center justify-between py-4">
                 <span className="font-heading text-base font-semibold text-foreground">Total</span>

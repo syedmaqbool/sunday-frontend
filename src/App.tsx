@@ -27,6 +27,7 @@ import MessageModeration from "./pages/admin/MessageModeration";
 import DiscountCodes from "./pages/admin/DiscountCodes";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import FlagKeywords from "./pages/admin/FlagKeywords";
+import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
 

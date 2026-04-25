@@ -37,7 +37,21 @@ type Order = {
   created_at: string;
   shipping_first_name: string | null;
   shipping_last_name: string | null;
+  shipping_address: string | null;
   shipping_city: string | null;
+  shipping_postal: string | null;
+  shipping_phone: string | null;
+};
+
+type Row = {
+  orderId: string;
+  created_at: string;
+  buyerName: string;
+  city: string | null;
+  item: OrderItem;
+  effective: string;
+  entry?: ItemStatusEntry;
+  order: Order;
 };
 
 type StatusFilter = "all" | "sold" | "shipped";

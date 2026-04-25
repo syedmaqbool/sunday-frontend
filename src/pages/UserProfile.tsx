@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 type ItemStatus = {
-  status: "confirmed" | "shipped" | "received" | "not_received";
+  status: "confirmed" | "shipped" | "received" | "not_received" | "completed";
   shipped_at?: string;
   shipping_method?: string;
   tracking_number?: string;
@@ -36,13 +36,38 @@ type ItemStatus = {
   received_at?: string;
   not_received_at?: string;
   not_received_reason?: string;
+  completed_at?: string;
+  auto_completed?: boolean;
 };
+
+// Auto-complete window after shipment if buyer hasn't responded (48h)
+const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
+
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
   const entry = itemStatus && typeof itemStatus === "object" ? itemStatus[listingId] : null;
   if (!entry) return { status: "confirmed" };
-  // Preserve the latest buyer-confirmed status if present, else fall back to seller-set status
-  if (entry.status === "received" || entry.status === "not_received" || entry.status === "shipped") {
+  // Final states win
+  if (entry.status === "completed" || entry.status === "received" || entry.status === "not_received") {
+    // Treat explicit "received" as completed for downstream UI
+    if (entry.status === "received") {
+      return { ...entry, status: "completed", completed_at: entry.completed_at ?? entry.received_at };
+    }
     return { ...entry, status: entry.status };
+  }
+  if (entry.status === "shipped") {
+    // Auto-complete 48h after shipment
+    if (entry.shipped_at) {
+      const shippedAt = new Date(entry.shipped_at).getTime();
+      if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
+        return {
+          ...entry,
+          status: "completed",
+          completed_at: new Date(shippedAt + AUTO_COMPLETE_MS).toISOString(),
+          auto_completed: true,
+        };
+      }
+    }
+    return { ...entry, status: "shipped" };
   }
   return { status: "confirmed" };
 };

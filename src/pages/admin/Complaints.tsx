@@ -16,13 +16,14 @@ import { toast } from "sonner";
 
 const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
+  under_review: "Under Review",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
   refunded: "Completed (Refunded)",
   rejected: "Completed (Rejected)",
 };
 
-type StatusFilter = "all" | "raised" | "return_in_transit" | "return_received" | "refunded" | "rejected";
+type StatusFilter = "all" | "raised" | "under_review" | "return_in_transit" | "return_received" | "refunded" | "rejected";
 
 type ComplaintRow = {
   id: string;

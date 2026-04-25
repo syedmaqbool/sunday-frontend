@@ -900,7 +900,7 @@ function BuyerReceiptActions({
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("");
 
-  const updateStatus = async (next: "received" | "not_received", extra: Record<string, any> = {}) => {
+  const updateStatus = async (next: "completed" | "not_received", extra: Record<string, any> = {}) => {
     setBusy(true);
     try {
       const { data: current, error: fetchErr } = await supabase
@@ -911,14 +911,15 @@ function BuyerReceiptActions({
       if (fetchErr) throw fetchErr;
 
       const existing = (current?.item_status as any) ?? {};
+      const now = new Date().toISOString();
       const merged = {
         ...existing,
         [listingId]: {
           ...(existing[listingId] ?? {}),
           status: next,
-          ...(next === "received"
-            ? { received_at: new Date().toISOString() }
-            : { not_received_at: new Date().toISOString(), ...extra }),
+          ...(next === "completed"
+            ? { received_at: now, completed_at: now }
+            : { not_received_at: now, ...extra }),
         },
       };
 
@@ -928,7 +929,7 @@ function BuyerReceiptActions({
         .eq("id", orderId);
       if (error) throw error;
 
-      toast.success(next === "received" ? "Marked as received" : "Reported as not received");
+      toast.success(next === "completed" ? "Order marked as completed" : "Reported as not received");
       setReportOpen(false);
       setReason("");
       onChanged();

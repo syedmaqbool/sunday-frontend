@@ -128,7 +128,7 @@ const MyOffers = () => {
       const { error } = await supabase.from("offers").update(update).eq("id", id);
       if (error) throw error;
 
-      // Create conversation on acceptance
+      // Create conversation on acceptance + mark listing sold
       if (status === "accepted") {
         const offer = received.find((o) => o.id === id);
         if (offer) {
@@ -138,6 +138,7 @@ const MyOffers = () => {
             buyer_id: offer.buyer_id,
             seller_id: offer.seller_id,
           });
+          await supabase.from("listings").update({ status: "sold" }).eq("id", offer.listing_id);
         }
       }
     },

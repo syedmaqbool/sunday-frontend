@@ -25,6 +25,7 @@ const Checkout = () => {
   const { items, removeItem, totalPrice, clearCart, totalItems } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");

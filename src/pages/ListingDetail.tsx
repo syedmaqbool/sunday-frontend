@@ -244,6 +244,15 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {!isOwner && (
+              <div className="mt-3 flex justify-end gap-2">
+                <ReportDialog targetType="listing" targetId={listing.id} label="Report listing" />
+                {listing.seller_id && (
+                  <ReportDialog targetType="user" targetId={listing.seller_id} label="Report seller" />
+                )}
+              </div>
+            )}
+
             <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
               <Shield className="h-5 w-5 text-primary" />
               <div>

@@ -157,7 +157,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -179,6 +179,12 @@ const AdminOrders = () => {
             <p className="font-heading text-2xl font-semibold">{counts.shipped}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Completed</p>
+            <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -187,6 +193,7 @@ const AdminOrders = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>

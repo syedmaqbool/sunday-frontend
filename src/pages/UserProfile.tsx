@@ -948,7 +948,7 @@ function BuyerReceiptActions({
           variant="outline"
           className="h-7 gap-1 text-xs"
           disabled={busy}
-          onClick={() => updateStatus("received")}
+          onClick={() => updateStatus("completed")}
         >
           <CheckCircle2 className="h-3 w-3" />
           Mark as received

@@ -74,6 +74,7 @@ const App = () => (
               <Route path="orders" element={<AdminOrders />} />
               <Route path="complaints" element={<AdminComplaints />} />
               <Route path="tax" element={<TaxSettings />} />
+              <Route path="email-templates" element={<EmailTemplates />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
+import { ReportDialog } from "@/components/ReportDialog";
 import { ReviewsList } from "@/components/ReviewsList";
 import { MakeOfferButton } from "@/components/MakeOfferButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -240,6 +241,15 @@ const ListingDetail = () => {
                 <Button variant="outline" size="lg">
                   <Heart className="h-4 w-4" />
                 </Button>
+              </div>
+            )}
+
+            {!isOwner && (
+              <div className="mt-3 flex justify-end gap-2">
+                <ReportDialog targetType="listing" targetId={listing.id} label="Report listing" />
+                {listing.seller_id && (
+                  <ReportDialog targetType="user" targetId={listing.seller_id} label="Report seller" />
+                )}
               </div>
             )}
 

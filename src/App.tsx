@@ -28,6 +28,7 @@ import DiscountCodes from "./pages/admin/DiscountCodes";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import FlagKeywords from "./pages/admin/FlagKeywords";
 import HelpManagement from "./pages/admin/HelpManagement";
+import Reports from "./pages/admin/Reports";
 import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="discounts" element={<DiscountCodes />} />
               <Route path="flag-keywords" element={<FlagKeywords />} />
               <Route path="help" element={<HelpManagement />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

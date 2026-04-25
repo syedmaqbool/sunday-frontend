@@ -145,6 +145,12 @@ const Checkout = () => {
         return;
       }
 
+      // Mark purchased listings as sold so they disappear from browse
+      const listingIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
+      if (listingIds.length) {
+        await supabase.from("listings").update({ status: "sold" }).in("id", listingIds);
+      }
+
       // Increment discount code usage
       if (appliedDiscount) {
         const { data: codeData } = await supabase

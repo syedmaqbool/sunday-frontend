@@ -464,11 +464,16 @@ function OrderCard({ order }: { order: any }) {
                               </Badge>
                             )}
                           </div>
-                          {status.status === "shipped" && (status.shipping_method || status.tracking_number || status.expected_delivery) && (
-                            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                          {status.status === "shipped" && (status.shipping_method || status.tracking_number || status.expected_delivery || status.proof_image_url) && (
+                            <div className="mt-1 space-y-1 text-xs text-muted-foreground">
                               {status.shipping_method && <p>Via {status.shipping_method}</p>}
                               {status.tracking_number && <p>Tracking: <span className="font-medium text-foreground">{status.tracking_number}</span></p>}
                               {status.expected_delivery && <p>ETA {format(new Date(status.expected_delivery), "dd MMM yyyy")}</p>}
+                              {status.proof_image_url && (
+                                <a href={status.proof_image_url} target="_blank" rel="noreferrer" className="mt-1 inline-block">
+                                  <img src={status.proof_image_url} alt="Shipping proof" className="h-20 w-20 rounded-md border border-border object-cover" />
+                                </a>
+                              )}
                             </div>
                           )}
                           {it.listing_id && it.seller_id && (

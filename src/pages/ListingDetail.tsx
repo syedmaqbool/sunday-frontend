@@ -197,6 +197,14 @@ const ListingDetail = () => {
 
             {isOwner && <ListingFeedbackSection listingId={listing.id} />}
 
+            {listing.status === "sold" && !isOwner && (
+              <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
+                <p className="font-heading text-lg font-semibold text-foreground">Sold</p>
+                <p className="mt-1 text-sm text-muted-foreground">This item has already been purchased and is no longer available.</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate("/listings")}>Browse other listings</Button>
+              </div>
+            )}
+
             {isOwner ? (
               <div className="mt-8 flex gap-3">
                 <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
@@ -227,7 +235,7 @@ const ListingDetail = () => {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            ) : (
+            ) : listing.status !== "sold" ? (
               <div className="mt-8 flex gap-3">
                 <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
                   {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
@@ -242,7 +250,7 @@ const ListingDetail = () => {
                   <Heart className="h-4 w-4" />
                 </Button>
               </div>
-            )}
+            ) : null}
 
             {!isOwner && (
               <div className="mt-3 flex justify-end gap-2">

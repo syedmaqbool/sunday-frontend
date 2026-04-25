@@ -362,9 +362,12 @@ export type Database = {
           bank_account_holder: string | null
           bank_account_number: string | null
           bank_name: string | null
+          bio: string | null
           created_at: string
           full_name: string | null
           id: string
+          location: string | null
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -372,9 +375,12 @@ export type Database = {
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          location?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -382,9 +388,12 @@ export type Database = {
           bank_account_holder?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          location?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []

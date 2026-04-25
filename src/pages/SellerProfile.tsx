@@ -6,7 +6,7 @@ import { ReviewsList } from "@/components/ReviewsList";
 import { useSellerRating } from "@/hooks/useSellerRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Star, ArrowLeft, Package } from "lucide-react";
+import { Loader2, Star, ArrowLeft, Package, MapPin, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -138,6 +138,15 @@ const SellerProfile = () => {
                 {listings.length} listing{listings.length !== 1 ? "s" : ""}
               </div>
             </div>
+            {(profile.bio || profile.location || profile.phone) && (
+              <div className="mt-3 space-y-1 text-sm">
+                {profile.bio && <p className="text-card-foreground">{profile.bio}</p>}
+                <div className="flex flex-wrap items-center justify-center gap-3 text-muted-foreground sm:justify-start">
+                  {profile.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {profile.location}</span>}
+                  {profile.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {profile.phone}</span>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

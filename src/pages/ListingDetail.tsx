@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MOCK_LISTINGS } from "@/lib/constants";
+
 import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
 import { ReviewsList } from "@/components/ReviewsList";
@@ -27,9 +27,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const fetchListing = async (id: string): Promise<Listing | null> => {
-  const mock = MOCK_LISTINGS.find(l => l.id === id);
-  if (mock) return mock;
-
   const { data, error } = await supabase
     .from("listings")
     .select("*")

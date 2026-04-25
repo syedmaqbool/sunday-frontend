@@ -170,6 +170,7 @@ const Checkout = () => {
 
       setPlaced(true);
       clearCart();
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
       toast({ title: "Order placed!", description: "Your order has been confirmed." });
     } finally {
       setPlacing(false);

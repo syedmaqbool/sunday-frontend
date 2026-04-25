@@ -5,6 +5,7 @@ import { AlertTriangle, PackageCheck, CheckCircle2 } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
+  under_review: "Under Review",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
   refunded: "Completed · Refunded",

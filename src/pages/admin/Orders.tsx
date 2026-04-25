@@ -76,6 +76,7 @@ const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
 const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [selected, setSelected] = useState<Row | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],
@@ -89,17 +90,9 @@ const AdminOrders = () => {
     },
   });
 
-  const rows = useMemo(() => {
+  const rows = useMemo<Row[]>(() => {
     const start = dateFilterStart(dateFilter);
-    const flat: Array<{
-      orderId: string;
-      created_at: string;
-      buyerName: string;
-      city: string | null;
-      item: OrderItem;
-      effective: string;
-      entry?: ItemStatusEntry;
-    }> = [];
+    const flat: Row[] = [];
 
     for (const o of orders) {
       if (start && new Date(o.created_at) < start) continue;
@@ -117,6 +110,7 @@ const AdminOrders = () => {
           item,
           effective,
           entry,
+          order: o,
         });
       }
     }

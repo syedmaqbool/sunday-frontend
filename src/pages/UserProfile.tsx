@@ -15,6 +15,7 @@ import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Rec
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
+import { ComplaintActions } from "@/components/ComplaintActions";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";

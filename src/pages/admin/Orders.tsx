@@ -75,8 +75,9 @@ const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
   if (s === "completed" || s === "received") return "completed";
   if (s === "shipped" || s === "delivered") {
     // Auto-complete 48h after shipment
-    if (entry?.updated_at) {
-      const shippedAt = new Date(entry.updated_at).getTime();
+    const shipTs = entry?.shipped_at ?? entry?.updated_at;
+    if (shipTs) {
+      const shippedAt = new Date(shipTs).getTime();
       if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
         return "completed";
       }

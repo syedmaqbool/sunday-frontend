@@ -295,8 +295,9 @@ const FlagKeywords = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

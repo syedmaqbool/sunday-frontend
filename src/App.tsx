@@ -68,6 +68,7 @@ const App = () => (
               <Route path="flag-keywords" element={<FlagKeywords />} />
               <Route path="help" element={<HelpManagement />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="orders" element={<AdminOrders />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

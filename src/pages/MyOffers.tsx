@@ -148,6 +148,7 @@ const MyOffers = () => {
         toast.info("A conversation has been started — check your Messages!");
       }
       queryClient.invalidateQueries({ queryKey: ["offers-received"] });
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
       setCounterDialog(null);
       setCounterAmount("");
       setCounterMessage("");

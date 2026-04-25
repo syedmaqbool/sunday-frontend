@@ -122,6 +122,36 @@ export type Database = {
         }
         Relationships: []
       }
+      flag_keywords: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          keyword: string
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          keyword: string
+          reason?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          keyword?: string
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listing_feedback: {
         Row: {
           admin_id: string

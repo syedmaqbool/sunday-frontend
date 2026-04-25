@@ -534,6 +534,14 @@ function OrderCard({ order }: { order: any }) {
                               onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
                             />
                           )}
+                          {it.listing_id && it.seller_id && (status.status === "shipped" || status.status === "completed") && (
+                            <ComplaintActions
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              sellerId={it.seller_id}
+                              buyerId={order.buyer_id}
+                            />
+                          )}
                           {it.listing_id && it.seller_id && (
                             <OrderItemReview
                               orderId={order.id}

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import sundayLogo from "@/assets/sunday-logo.png";
-import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,9 @@ const Navbar = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/seller-analytics")}>
                   <BarChart3 className="mr-2 h-4 w-4" /> Analytics
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/support")}>
+                  <LifeBuoy className="mr-2 h-4 w-4" /> Support
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out

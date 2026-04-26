@@ -35,6 +35,8 @@ import TaxSettings from "./pages/admin/TaxSettings";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import HelpCenter from "./pages/HelpCenter";
 import Unsubscribe from "./pages/Unsubscribe";
+import Support from "./pages/Support";
+import AdminSupport from "./pages/admin/Support";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
             <Route path="/help" element={<HelpCenter />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/seller-analytics" element={<SellerAnalytics />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
@@ -76,6 +79,7 @@ const App = () => (
               <Route path="complaints" element={<AdminComplaints />} />
               <Route path="tax" element={<TaxSettings />} />
               <Route path="email-templates" element={<EmailTemplates />} />
+              <Route path="support" element={<AdminSupport />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

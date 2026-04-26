@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree, Filter, LifeBuoy, Flag, Package, AlertTriangle, Percent, Mail } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, Loader2, ArrowLeft, MessageSquareWarning, Tag, FolderTree, Filter, LifeBuoy, Flag, Package, AlertTriangle, Percent, Mail, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const navItems = [
   { label: "Messages", path: "/admin/messages", icon: MessageSquareWarning },
   { label: "Keywords", path: "/admin/flag-keywords", icon: Filter },
   { label: "Reports", path: "/admin/reports", icon: Flag },
+  { label: "Support", path: "/admin/support", icon: Headphones },
   { label: "Help Center", path: "/admin/help", icon: LifeBuoy },
   { label: "Users", path: "/admin/users", icon: Users },
   { label: "Discounts", path: "/admin/discounts", icon: Tag },

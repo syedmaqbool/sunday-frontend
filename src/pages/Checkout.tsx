@@ -130,28 +130,72 @@ const Checkout = () => {
         quantity,
       }));
 
-      const { error: orderError } = await supabase.from("orders").insert({
-        buyer_id: user.id,
-        items: itemsSnapshot,
-        subtotal: totalPrice,
-        discount_code: appliedDiscount?.code ?? null,
-        discount_amount: discountAmount,
-        tax_rate: taxRate,
-        tax_amount: taxAmount,
-        total: finalPrice,
-        shipping_first_name: shipping.firstName,
-        shipping_last_name: shipping.lastName,
-        shipping_address: shipping.address,
-        shipping_city: shipping.city,
-        shipping_postal: shipping.postal,
-        shipping_phone: shipping.phone,
-        status: "confirmed",
-      });
+      const { data: orderRow, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          buyer_id: user.id,
+          items: itemsSnapshot,
+          subtotal: totalPrice,
+          discount_code: appliedDiscount?.code ?? null,
+          discount_amount: discountAmount,
+          tax_rate: taxRate,
+          tax_amount: taxAmount,
+          total: finalPrice,
+          shipping_first_name: shipping.firstName,
+          shipping_last_name: shipping.lastName,
+          shipping_address: shipping.address,
+          shipping_city: shipping.city,
+          shipping_postal: shipping.postal,
+          shipping_phone: shipping.phone,
+          status: "confirmed",
+        })
+        .select("id")
+        .single();
 
-      if (orderError) {
-        toast({ title: "Order failed", description: orderError.message, variant: "destructive" });
+      if (orderError || !orderRow) {
+        toast({ title: "Order failed", description: orderError?.message ?? "Unknown error", variant: "destructive" });
         setPlacing(false);
         return;
+      }
+
+      // Send invoice email (fire-and-forget — don't block the UI)
+      if (user.email) {
+        supabase.functions
+          .invoke("send-transactional-email", {
+            body: {
+              templateName: "order-invoice",
+              recipientEmail: user.email,
+              idempotencyKey: `order-invoice-${orderRow.id}`,
+              templateData: {
+                buyerName: shipping.firstName,
+                orderId: orderRow.id,
+                orderDate: new Date().toLocaleDateString("en-ZA", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                }),
+                items: itemsSnapshot.map((i) => ({
+                  title: i.title,
+                  brand: i.brand,
+                  quantity: i.quantity,
+                  price: i.price,
+                })),
+                subtotal: totalPrice,
+                discountCode: appliedDiscount?.code ?? null,
+                discountAmount,
+                taxName: activeTax?.name,
+                taxRate,
+                taxAmount,
+                total: finalPrice,
+                shippingName: `${shipping.firstName} ${shipping.lastName}`,
+                shippingAddress: shipping.address,
+                shippingCity: shipping.city,
+                shippingPostal: shipping.postal,
+                shippingPhone: shipping.phone,
+              },
+            },
+          })
+          .catch((err) => console.error("Failed to enqueue invoice email", err));
       }
 
       // Mark purchased listings as sold so they disappear from browse

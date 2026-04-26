@@ -34,6 +34,7 @@ import AdminComplaints from "./pages/admin/Complaints";
 import TaxSettings from "./pages/admin/TaxSettings";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import HelpCenter from "./pages/HelpCenter";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="tax" element={<TaxSettings />} />
               <Route path="email-templates" element={<EmailTemplates />} />
             </Route>
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

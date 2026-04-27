@@ -291,7 +291,7 @@ const CreateListing = () => {
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
-            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span></Label>
+            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span><FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image will be your cover. Show any flaws or details up close. Up to 20 images." /></Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, i) => (
                 <div key={i} className="relative h-24 w-24 rounded-lg overflow-hidden border border-border">

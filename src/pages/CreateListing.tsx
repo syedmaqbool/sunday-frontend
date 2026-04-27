@@ -335,6 +335,7 @@ const CreateListing = () => {
             <Label>
               Video <span className="text-destructive">*</span>{" "}
               <span className="text-muted-foreground font-normal">— 1 short video required (max 50MB)</span>
+              <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {videoPreviewUrl ? (

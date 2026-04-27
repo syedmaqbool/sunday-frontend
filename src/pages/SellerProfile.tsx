@@ -36,7 +36,7 @@ const SellerProfile = () => {
         .from("listings")
         .select("*")
         .eq("seller_id", id!)
-        .eq("status", "approved")
+        .in("status", ["approved", "sold"])
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []).map((row: any) => ({

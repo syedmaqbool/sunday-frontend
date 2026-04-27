@@ -21,6 +21,26 @@ const MAX_PHOTOS = 20;
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
+const FieldTip = ({ tip }: { tip: string }) => (
+  <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Field help"
+          className="ml-1.5 inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
+          onClick={(e) => e.preventDefault()}
+        >
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 const CreateListing = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // if editing

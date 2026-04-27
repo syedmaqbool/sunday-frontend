@@ -192,6 +192,7 @@ const MyListings = () => {
             <TabsList>
               <TabsTrigger value="approved">Approved ({approvedListings.length})</TabsTrigger>
               <TabsTrigger value="pending">Pending ({pendingListings.length})</TabsTrigger>
+              <TabsTrigger value="sold">Sold ({soldListings.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="approved" className="mt-4">
@@ -223,6 +224,22 @@ const MyListings = () => {
                 </div>
               ) : (
                 <div className="space-y-3">{pendingListings.map(renderListingCard)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="sold" className="mt-4">
+              {soldListings.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <Package className="h-10 w-10 text-muted-foreground" />
+                  <p className="mt-3 font-heading text-base font-semibold text-foreground">
+                    No sold listings yet
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Sold items will appear here. They can no longer be edited.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">{soldListings.map(renderListingCard)}</div>
               )}
             </TabsContent>
           </Tabs>

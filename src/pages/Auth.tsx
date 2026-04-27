@@ -16,6 +16,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -30,11 +32,30 @@ const Auth = () => {
     setLoading(true);
 
     if (mode === "register") {
+      // Validate DOB (must be a valid past date, age >= 13)
+      const dobDate = new Date(dob);
+      if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
+        toast({ title: "Invalid date of birth", description: "Please enter a valid date.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      if (age < 13) {
+        toast({ title: "Age requirement", description: "You must be at least 13 years old.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
+        toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: name },
+          data: { full_name: name, phone: phone.trim(), date_of_birth: dob },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -86,10 +107,20 @@ const Auth = () => {
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               {mode === "register" && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} required />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" type="tel" placeholder="+27 ..." value={phone} onChange={e => setPhone(e.target.value)} required maxLength={20} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input id="dob" type="date" value={dob} onChange={e => setDob(e.target.value)} required max={new Date().toISOString().split("T")[0]} />
+                  </div>
+                </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

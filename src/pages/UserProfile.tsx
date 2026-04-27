@@ -115,6 +115,8 @@ const buildListingSellerMap = async (orders: any[]) => {
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["my-profile", user?.id],

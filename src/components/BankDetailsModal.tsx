@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,32 +18,74 @@ const bankSchema = z.object({
     .min(4, "Account number must be at least 4 digits")
     .max(20, "Account number must be at most 20 digits")
     .regex(/^\d+$/, "Account number must contain digits only"),
+  bank_iban: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .min(15, "IBAN must be 15–34 characters")
+        .max(34, "IBAN must be 15–34 characters")
+        .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/, "Invalid IBAN format")
+    ),
+  bank_swift: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .regex(/^([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)?$/, "Invalid SWIFT/BIC format")
+    )
+    .optional(),
 });
+
+export type BankFormValues = {
+  bank_account_holder: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_iban: string;
+  bank_swift: string;
+};
 
 interface BankDetailsModalProps {
   open: boolean;
   onSaved: () => void;
   onCancel: () => void;
+  initialValues?: Partial<BankFormValues>;
 }
 
-const BankDetailsModal = ({ open, onSaved, onCancel }: BankDetailsModalProps) => {
+const empty: BankFormValues = {
+  bank_account_holder: "",
+  bank_name: "",
+  bank_account_number: "",
+  bank_iban: "",
+  bank_swift: "",
+};
+
+const BankDetailsModal = ({ open, onSaved, onCancel, initialValues }: BankDetailsModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    bank_account_holder: "",
-    bank_name: "",
-    bank_account_number: "",
-  });
-  const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+  const isEditing = !!(initialValues && (initialValues.bank_iban || initialValues.bank_account_number));
+  const [form, setForm] = useState<BankFormValues>({ ...empty, ...initialValues });
+  const [errors, setErrors] = useState<Partial<Record<keyof BankFormValues, string>>>({});
+
+  useEffect(() => {
+    if (open) {
+      setForm({ ...empty, ...initialValues });
+      setErrors({});
+    }
+  }, [open, initialValues]);
 
   const handleSave = async () => {
     if (!user) return;
     const result = bankSchema.safeParse(form);
     if (!result.success) {
-      const fieldErrors: Partial<Record<keyof typeof form, string>> = {};
+      const fieldErrors: Partial<Record<keyof BankFormValues, string>> = {};
       result.error.issues.forEach((i) => {
-        const key = i.path[0] as keyof typeof form;
+        const key = i.path[0] as keyof BankFormValues;
         if (!fieldErrors[key]) fieldErrors[key] = i.message;
       });
       setErrors(fieldErrors);
@@ -53,7 +95,13 @@ const BankDetailsModal = ({ open, onSaved, onCancel }: BankDetailsModalProps) =>
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update(result.data)
+      .update({
+        bank_account_holder: result.data.bank_account_holder,
+        bank_name: result.data.bank_name,
+        bank_account_number: result.data.bank_account_number,
+        bank_iban: result.data.bank_iban,
+        bank_swift: result.data.bank_swift || null,
+      })
       .eq("id", user.id);
     setSaving(false);
 
@@ -61,21 +109,25 @@ const BankDetailsModal = ({ open, onSaved, onCancel }: BankDetailsModalProps) =>
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Payout details saved", description: "We'll use these for your future sales." });
+    toast({
+      title: isEditing ? "Payout details updated" : "Payout details saved",
+      description: "We'll use these for your future sales.",
+    });
     onSaved();
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <Landmark className="h-5 w-5 text-primary" />
           </div>
-          <DialogTitle>Add your payout details</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit payout details" : "Add your payout details"}</DialogTitle>
           <DialogDescription>
-            We need your bank account so we can pay you out when your items sell.
-            This is only asked once and saved securely to your profile.
+            {isEditing
+              ? "Update the bank account we use to pay you out."
+              : "We need your bank account so we can pay you out when your items sell. Saved securely to your profile."}
           </DialogDescription>
         </DialogHeader>
 
@@ -122,6 +174,40 @@ const BankDetailsModal = ({ open, onSaved, onCancel }: BankDetailsModalProps) =>
               <p className="text-xs text-destructive">{errors.bank_account_number}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bank_iban">IBAN</Label>
+            <Input
+              id="bank_iban"
+              placeholder="e.g. NL91 ABNA 0417 1643 00"
+              value={form.bank_iban}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, bank_iban: e.target.value.toUpperCase() }))
+              }
+              maxLength={42}
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            {errors.bank_iban && <p className="text-xs text-destructive">{errors.bank_iban}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bank_swift">
+              SWIFT / BIC <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="bank_swift"
+              placeholder="e.g. ABNANL2A"
+              value={form.bank_swift}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, bank_swift: e.target.value.toUpperCase() }))
+              }
+              maxLength={11}
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            {errors.bank_swift && <p className="text-xs text-destructive">{errors.bank_swift}</p>}
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
@@ -130,7 +216,7 @@ const BankDetailsModal = ({ open, onSaved, onCancel }: BankDetailsModalProps) =>
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save & continue
+            {isEditing ? "Save changes" : "Save & continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -724,6 +724,7 @@ export type Database = {
           bank_name: string | null
           bio: string | null
           created_at: string
+          date_of_birth: string | null
           full_name: string | null
           id: string
           location: string | null
@@ -737,6 +738,7 @@ export type Database = {
           bank_name?: string | null
           bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           id: string
           location?: string | null
@@ -750,6 +752,7 @@ export type Database = {
           bank_name?: string | null
           bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           id?: string
           location?: string | null

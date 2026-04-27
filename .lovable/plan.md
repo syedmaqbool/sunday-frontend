@@ -1,57 +1,44 @@
+# Add IBAN to Bank Details
 
+Extend the existing payout details (currently: account holder, bank name, account number) to also collect **IBAN** and optional **SWIFT/BIC**, and show/manage them from the user profile.
 
-## Show buyer details to seller + allow "Mark as Shipped"
+## Database
 
-### Goal
+Add two columns to `public.profiles`:
+- `bank_iban` (text, nullable)
+- `bank_swift` (text, nullable)
 
-When someone buys an item, the seller sees the buyer's full shipping details on their **Sold** card and can update the order's status from **Confirmed → Shipped** with one click. The buyer sees the updated status in their **Bought** tab.
+No backfill needed — existing rows stay null.
 
-### Database
+## BankDetailsModal changes (`src/components/BankDetailsModal.tsx`)
 
-Migration to support per-seller status tracking on a multi-seller order (an order may contain items from several sellers, each with their own shipment):
+- Add two new fields to the form: **IBAN** (required) and **SWIFT/BIC** (optional).
+- Extend zod schema:
+  - `bank_iban`: trimmed, uppercased, spaces stripped, 15–34 chars, regex `^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$`.
+  - `bank_swift`: optional; if provided, 8 or 11 chars, regex `^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$`.
+- Keep `bank_account_number` required (some local payouts still need it).
+- Save all five fields to `profiles` on submit.
 
-1. Add `item_status jsonb not null default '{}'` to `public.orders`. Shape: `{ "<listing_id>": { "status": "shipped", "shipped_at": "..." } }`. Keeps the existing top-level `orders.status` untouched for backward compatibility.
-2. Add an UPDATE policy on `orders` so a seller can update **only** the `item_status` column for orders containing one of their listings:
+## Profile UI (`src/pages/UserProfile.tsx`)
 
-```sql
-CREATE POLICY "Sellers can update item_status on their orders"
-ON public.orders FOR UPDATE TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM jsonb_array_elements(orders.items) AS item(value)
-    WHERE ((item.value->>'seller_id')::uuid = auth.uid())
-       OR EXISTS (SELECT 1 FROM public.listings l
-                  WHERE l.id = (item.value->>'listing_id')::uuid
-                    AND l.seller_id = auth.uid())
-  )
-)
-WITH CHECK (true);
-```
+Add a **Payout details** card visible only to the logged-in owner (own profile view), in the same area as other personal info (Settings tab or near phone/DOB):
 
-(Column-level safety is enforced client-side; we only ever send `item_status` in the update payload.)
+- Shows: Account holder, Bank name, Account number (masked, e.g. `••••1234`), IBAN (masked, e.g. `NL•• •••• •••• 1234`), SWIFT.
+- Empty state: "No payout details on file" with an **Add payout details** button that opens `BankDetailsModal`.
+- When details exist: an **Edit** button opens the same modal pre-filled with current values.
 
-### Seller view — `src/pages/UserProfile.tsx` (`SoldOrderCard`)
+Modal updates needed to support edit mode:
+- Accept optional `initialValues` prop and seed `form` state from it.
+- Title/description swap to "Edit payout details" when editing.
 
-Expand the Sold card to show full buyer details and a status action:
+## Files to change
 
-- **Buyer details block** (already partially shown): name, full shipping address, postal, city, phone.
-- **Status badge**: reads `order.item_status[listing_id].status` (defaults to `confirmed`).
-- **"Mark as Shipped" button**: visible only when status is `confirmed`. On click, updates `orders.item_status` by merging `{ [listing_id]: { status: 'shipped', shipped_at: now } }`, then invalidates `sold-orders` and `my-orders` queries.
-- After shipping, button is replaced with a green "Shipped on …" label.
+- New migration: add `bank_iban` and `bank_swift` to `profiles`.
+- `src/components/BankDetailsModal.tsx` — new fields, validation, optional `initialValues` prop, edit-mode copy.
+- `src/pages/UserProfile.tsx` — fetch bank fields for own profile, render Payout details card, wire Add/Edit modal.
+- `src/integrations/supabase/types.ts` — auto-regenerated.
 
-Update the `sold-orders` query to also select `shipping_address`, `shipping_postal`, `shipping_phone`, and `item_status`, and pass them through into the flat list.
+## Out of scope
 
-### Buyer view — `OrderCard` in same file
-
-For each item row inside the order details, show the per-item shipment status badge (Confirmed / Shipped + date) read from `order.item_status[listing_id]`. No new actions for buyers.
-
-### Files
-
-- `supabase/migrations/<ts>_order_item_status.sql` — add `item_status` column + seller UPDATE policy
-- `src/pages/UserProfile.tsx` — extend `sold-orders` query, expand `SoldOrderCard` with buyer details + ship action, show item status in `OrderCard`
-
-### Out of scope
-
-- Email/SMS notifications to buyer on shipment (can be added later via edge function)
-- Tracking numbers / carrier selection (can be a follow-up)
-
+- No changes to `CreateListing` flow (it keeps using the same modal; will now also collect IBAN at first listing).
+- No verification/validation against real bank registries — format validation only.

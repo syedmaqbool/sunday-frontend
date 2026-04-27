@@ -27,6 +27,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
+import BankDetailsModal from "@/components/BankDetailsModal";
+import { Landmark } from "lucide-react";
 
 type ItemStatus = {
   status: "confirmed" | "shipped" | "received" | "not_received" | "completed";
@@ -113,6 +115,8 @@ const buildListingSellerMap = async (orders: any[]) => {
 const UserProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["my-profile", user?.id],
@@ -322,6 +326,69 @@ const UserProfile = () => {
               </div>
             </div>
 
+            {/* Payout details */}
+            <Card className="mt-6">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Landmark className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-base font-semibold text-foreground">Payout details</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Bank account we use to pay you out when your items sell.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={profile?.bank_iban || profile?.bank_account_number ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => setBankModalOpen(true)}
+                  >
+                    {profile?.bank_iban || profile?.bank_account_number ? "Edit" : "Add details"}
+                  </Button>
+                </div>
+
+                {(profile?.bank_iban || profile?.bank_account_number) ? (
+                  <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Account holder</dt>
+                      <dd className="text-foreground">{profile?.bank_account_holder || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Bank</dt>
+                      <dd className="text-foreground">{profile?.bank_name || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Account number</dt>
+                      <dd className="font-mono text-foreground">
+                        {profile?.bank_account_number
+                          ? `•••• ${profile.bank_account_number.slice(-4)}`
+                          : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">IBAN</dt>
+                      <dd className="font-mono text-foreground">
+                        {profile?.bank_iban
+                          ? `${profile.bank_iban.slice(0, 4)} •••• •••• ${profile.bank_iban.slice(-4)}`
+                          : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">SWIFT / BIC</dt>
+                      <dd className="font-mono text-foreground">{profile?.bank_swift || "—"}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    No payout details on file yet. Add them now or you'll be asked when you create your first listing.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Tabs */}
             <Tabs defaultValue="bought" className="mt-6">
               <TabsList>
@@ -383,6 +450,22 @@ const UserProfile = () => {
         )}
       </main>
       <Footer />
+
+      <BankDetailsModal
+        open={bankModalOpen}
+        onCancel={() => setBankModalOpen(false)}
+        onSaved={() => {
+          setBankModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        }}
+        initialValues={{
+          bank_account_holder: profile?.bank_account_holder ?? "",
+          bank_name: profile?.bank_name ?? "",
+          bank_account_number: profile?.bank_account_number ?? "",
+          bank_iban: profile?.bank_iban ?? "",
+          bank_swift: profile?.bank_swift ?? "",
+        }}
+      />
     </div>
   );
 };

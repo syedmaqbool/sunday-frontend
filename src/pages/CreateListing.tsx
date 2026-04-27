@@ -382,7 +382,7 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label>Category<FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." /></Label>
               <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v, subCategory: "" }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>

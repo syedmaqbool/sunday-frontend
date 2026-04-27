@@ -411,7 +411,7 @@ const CreateListing = () => {
               <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>Condition</Label>
+              <Label>Condition<FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." /></Label>
               <Select value={form.condition} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>

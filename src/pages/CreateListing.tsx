@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONDITIONS, SIZES } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import { Camera, Upload, Loader2, X, Video as VideoIcon } from "lucide-react";
+import { Camera, Upload, Loader2, X, Video as VideoIcon, Eye } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,26 @@ import BankDetailsModal from "@/components/BankDetailsModal";
 const MAX_PHOTOS = 20;
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+
+const FieldTip = ({ tip }: { tip: string }) => (
+  <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Field help"
+          className="ml-1.5 inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
+          onClick={(e) => e.preventDefault()}
+        >
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -270,7 +291,7 @@ const CreateListing = () => {
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
-            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span></Label>
+            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span><FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image will be your cover. Show any flaws or details up close. Up to 20 images." /></Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, i) => (
                 <div key={i} className="relative h-24 w-24 rounded-lg overflow-hidden border border-border">
@@ -314,6 +335,7 @@ const CreateListing = () => {
             <Label>
               Video <span className="text-destructive">*</span>{" "}
               <span className="text-muted-foreground font-normal">— 1 short video required (max 50MB)</span>
+              <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {videoPreviewUrl ? (
@@ -344,23 +366,23 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">Title<FieldTip tip="A concise, descriptive title shoppers can search for. Include brand, item type, and a key detail (e.g. 'Vintage Levi's 501 high-waist jeans')." /></Label>
               <Input id="title" placeholder="e.g. Vintage Levi's 501 Jeans" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand</Label>
+              <Label htmlFor="brand">Brand<FieldTip tip="The original maker of the item. Use the official brand name as it appears on the label (e.g. Nike, Zara, Gucci)." /></Label>
               <Input id="brand" placeholder="e.g. Levi's" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} required />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description<FieldTip tip="Describe size fit, materials, measurements, condition, and any flaws or signs of wear. Honest detailed descriptions reduce returns and complaints." /></Label>
             <Textarea id="description" placeholder="Describe the item, its condition, and any flaws..." rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label>Category<FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." /></Label>
               <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v, subCategory: "" }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
@@ -369,7 +391,7 @@ const CreateListing = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subcategory</Label>
+              <Label>Subcategory<FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." /></Label>
               <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))} disabled={!form.parentCategory}>
                 <SelectTrigger><SelectValue placeholder={form.parentCategory ? "Select type" : "Choose category first"} /></SelectTrigger>
                 <SelectContent>
@@ -381,15 +403,15 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price (ZAR)</Label>
+              <Label htmlFor="price">Price (ZAR)<FieldTip tip="Set a fair selling price in South African Rand. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." /></Label>
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
+              <Label htmlFor="weight">Weight (kg)<FieldTip tip="Approximate packed weight in kilograms. Used to estimate shipping cost. If unsure, weigh on a kitchen scale with the item in its packaging." /></Label>
               <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>Condition</Label>
+              <Label>Condition<FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." /></Label>
               <Select value={form.condition} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
@@ -400,7 +422,7 @@ const CreateListing = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Size</Label>
+            <Label>Size<FieldTip tip="Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')." /></Label>
             <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))}>
               <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Select size" /></SelectTrigger>
               <SelectContent>

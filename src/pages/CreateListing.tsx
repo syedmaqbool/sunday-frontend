@@ -391,7 +391,7 @@ const CreateListing = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subcategory</Label>
+              <Label>Subcategory<FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." /></Label>
               <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))} disabled={!form.parentCategory}>
                 <SelectTrigger><SelectValue placeholder={form.parentCategory ? "Select type" : "Choose category first"} /></SelectTrigger>
                 <SelectContent>

@@ -407,7 +407,7 @@ const CreateListing = () => {
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
+              <Label htmlFor="weight">Weight (kg)<FieldTip tip="Approximate packed weight in kilograms. Used to estimate shipping cost. If unsure, weigh on a kitchen scale with the item in its packaging." /></Label>
               <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
             </div>
             <div className="space-y-2">

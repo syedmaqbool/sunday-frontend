@@ -450,6 +450,22 @@ const UserProfile = () => {
         )}
       </main>
       <Footer />
+
+      <BankDetailsModal
+        open={bankModalOpen}
+        onCancel={() => setBankModalOpen(false)}
+        onSaved={() => {
+          setBankModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        }}
+        initialValues={{
+          bank_account_holder: profile?.bank_account_holder ?? "",
+          bank_name: profile?.bank_name ?? "",
+          bank_account_number: profile?.bank_account_number ?? "",
+          bank_iban: profile?.bank_iban ?? "",
+          bank_swift: profile?.bank_swift ?? "",
+        }}
+      />
     </div>
   );
 };

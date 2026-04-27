@@ -32,11 +32,30 @@ const Auth = () => {
     setLoading(true);
 
     if (mode === "register") {
+      // Validate DOB (must be a valid past date, age >= 13)
+      const dobDate = new Date(dob);
+      if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
+        toast({ title: "Invalid date of birth", description: "Please enter a valid date.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      if (age < 13) {
+        toast({ title: "Age requirement", description: "You must be at least 13 years old.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
+        toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: name },
+          data: { full_name: name, phone: phone.trim(), date_of_birth: dob },
           emailRedirectTo: window.location.origin,
         },
       });

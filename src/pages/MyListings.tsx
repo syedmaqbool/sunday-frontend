@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw } from "lucide-react";
 import { ListingFeedbackInline } from "@/components/ListingFeedbackWidgets";
 import { toast } from "sonner";
@@ -81,6 +82,77 @@ const MyListings = () => {
     return "secondary";
   };
 
+  const approvedListings = listings.filter((l: any) => l.status === "approved");
+  const pendingListings = listings.filter((l: any) => l.status !== "approved");
+
+  const renderListingCard = (listing: any) => (
+    <Card key={listing.id}>
+      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <img
+          src={listing.images?.[0] || "/placeholder.svg"}
+          alt={listing.title}
+          className="h-20 w-20 rounded-md object-cover"
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate font-semibold text-foreground">{listing.title}</h3>
+            <Badge variant={statusColor(listing.status)}>{listing.status}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {listing.brand} · R {listing.price.toLocaleString()}
+            {listing.weight ? ` · ${listing.weight}kg` : ""}
+          </p>
+          <ListingFeedbackInline listingId={listing.id} />
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => navigate(`/edit-listing/${listing.id}`)}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+          {listing.status === "rejected" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1 text-primary"
+              onClick={() => resubmitMutation.mutate(listing.id)}
+              disabled={resubmitMutation.isPending}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Resubmit
+            </Button>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1 text-destructive">
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove "{listing.title}" and cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate(listing.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -109,75 +181,44 @@ const MyListings = () => {
             </Button>
           </div>
         ) : (
-          <div className="mt-6 space-y-3">
-            {listings.map((listing) => (
-              <Card key={listing.id}>
-                <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-                  <img
-                    src={listing.images?.[0] || "/placeholder.svg"}
-                    alt={listing.title}
-                    className="h-20 w-20 rounded-md object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate font-semibold text-foreground">{listing.title}</h3>
-                      <Badge variant={statusColor(listing.status)}>{listing.status}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {listing.brand} · R {listing.price.toLocaleString()}
-                      {listing.weight ? ` · ${listing.weight}kg` : ""}
-                    </p>
-                    <ListingFeedbackInline listingId={listing.id} />
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1"
-                      onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Button>
-                    {listing.status === "rejected" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-primary"
-                        onClick={() => resubmitMutation.mutate(listing.id)}
-                        disabled={resubmitMutation.isPending}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" /> Resubmit
-                      </Button>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1 text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently remove "{listing.title}" and cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(listing.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Tabs defaultValue="approved" className="mt-6">
+            <TabsList>
+              <TabsTrigger value="approved">Approved ({approvedListings.length})</TabsTrigger>
+              <TabsTrigger value="pending">Pending ({pendingListings.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="approved" className="mt-4">
+              {approvedListings.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <Package className="h-10 w-10 text-muted-foreground" />
+                  <p className="mt-3 font-heading text-base font-semibold text-foreground">
+                    No approved listings yet
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Approved listings will appear here once reviewed.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">{approvedListings.map(renderListingCard)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="pending" className="mt-4">
+              {pendingListings.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-center">
+                  <Package className="h-10 w-10 text-muted-foreground" />
+                  <p className="mt-3 font-heading text-base font-semibold text-foreground">
+                    Nothing pending review
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Listings awaiting review or needing changes will show up here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">{pendingListings.map(renderListingCard)}</div>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
       </main>
       <Footer />

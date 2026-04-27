@@ -83,7 +83,12 @@ const MyListings = () => {
   };
 
   const approvedListings = listings.filter((l: any) => l.status === "approved");
-  const pendingListings = listings.filter((l: any) => l.status !== "approved");
+  const soldListings = listings.filter((l: any) => l.status === "sold");
+  const pendingListings = listings.filter(
+    (l: any) => l.status !== "approved" && l.status !== "sold"
+  );
+
+  const isReadOnly = (status: string) => status === "approved" || status === "sold";
 
   const renderListingCard = (listing: any) => (
     <Card key={listing.id}>
@@ -105,14 +110,16 @@ const MyListings = () => {
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1"
-            onClick={() => navigate(`/edit-listing/${listing.id}`)}
-          >
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </Button>
+          {!isReadOnly(listing.status) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => navigate(`/edit-listing/${listing.id}`)}
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Button>
+          )}
           {listing.status === "rejected" && (
             <Button
               variant="outline"

@@ -21,17 +21,28 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
         <img
           src={listing.images[0]}
           alt={listing.title}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+            listing.status === "sold" ? "opacity-60" : ""
+          }`}
           loading="lazy"
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-primary group-hover:opacity-100"
-          onClick={(e) => { e.preventDefault(); }}
-        >
-          <Heart className="h-4 w-4" />
-        </Button>
+        {listing.status === "sold" && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="rounded-md bg-foreground/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-background backdrop-blur">
+              Sold
+            </span>
+          </div>
+        )}
+        {listing.status !== "sold" && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-primary group-hover:opacity-100"
+            onClick={(e) => { e.preventDefault(); }}
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
+        )}
         <div className="absolute bottom-2 left-2">
           <span className="rounded-sm bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">
             {listing.condition.replace("_", " ")}

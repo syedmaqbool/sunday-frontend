@@ -422,7 +422,7 @@ const CreateListing = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Size</Label>
+            <Label>Size<FieldTip tip="Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')." /></Label>
             <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))}>
               <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Select size" /></SelectTrigger>
               <SelectContent>

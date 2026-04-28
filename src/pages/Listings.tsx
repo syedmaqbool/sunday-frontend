@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
 import { useSellerRatings } from "@/hooks/useSellerRating";
+import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase

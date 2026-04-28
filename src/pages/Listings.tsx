@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Listing } from "@/lib/constants";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
 import { useSellerRatings } from "@/hooks/useSellerRating";
+import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
@@ -68,6 +69,7 @@ const Listings = () => {
 
   const sellerIds = useMemo(() => listings.map((l) => l.seller_id), [listings]);
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
+  const searchBoostMap = useBoostScoreMap("search");
 
   const filtered = useMemo(() => {
     let items = [...listings];
@@ -86,8 +88,10 @@ const Listings = () => {
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       items = personalizeListings(items, prefs);
     }
+    // Boosted listings always surface first within the current sort
+    items = applyBoostRanking(items, searchBoostMap);
     return items;
-  }, [listings, search, parentCat, subCat, condition, size, sort, prefs]);
+  }, [listings, search, parentCat, subCat, condition, size, sort, prefs, searchBoostMap]);
 
   const filterSelects = (
     <>

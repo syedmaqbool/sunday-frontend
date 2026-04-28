@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      boost_packages: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          duration_days: number
+          id: string
+          name: string
+          placement: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          duration_days: number
+          id?: string
+          name: string
+          placement: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          duration_days?: number
+          id?: string
+          name?: string
+          placement?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -436,6 +472,48 @@ export type Database = {
           sort_order?: number
           steps?: string[]
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      listing_boosts: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          listing_id: string
+          package_id: string | null
+          payment_status: string
+          placement: string
+          price_paid: number
+          seller_id: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          listing_id: string
+          package_id?: string | null
+          payment_status?: string
+          placement: string
+          price_paid?: number
+          seller_id: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          listing_id?: string
+          package_id?: string | null
+          payment_status?: string
+          placement?: string
+          price_paid?: number
+          seller_id?: string
+          starts_at?: string
           updated_at?: string
         }
         Relationships: []

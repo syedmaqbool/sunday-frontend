@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw, Rocket } from "lucide-react";
 import { ListingFeedbackInline } from "@/components/ListingFeedbackWidgets";
+import BoostDialog from "@/components/BoostDialog";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -110,6 +111,17 @@ const MyListings = () => {
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
+          {listing.status === "approved" && (
+            <BoostDialog
+              listingId={listing.id}
+              listingTitle={listing.title}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1 text-primary">
+                  <Rocket className="h-3.5 w-3.5" /> Boost
+                </Button>
+              }
+            />
+          )}
           {!isReadOnly(listing.status) && (
             <Button
               variant="outline"
@@ -169,9 +181,14 @@ const MyListings = () => {
             <h1 className="font-heading text-3xl font-bold text-foreground">My Listings</h1>
             <p className="mt-1 text-muted-foreground">{listings.length} items listed</p>
           </div>
-          <Button className="gap-1" onClick={() => navigate("/create-listing")}>
-            <Plus className="h-4 w-4" /> New Listing
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-1" onClick={() => navigate("/boost")}>
+              <Rocket className="h-4 w-4" /> Boost
+            </Button>
+            <Button className="gap-1" onClick={() => navigate("/create-listing")}>
+              <Plus className="h-4 w-4" /> New Listing
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (

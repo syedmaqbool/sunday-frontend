@@ -3,11 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ListingCard from "./ListingCard";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
+import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import { Sparkles } from "lucide-react";
 import type { Listing } from "@/lib/constants";
 
 const FeaturedListings = () => {
   const { data: prefs } = useUserPreferences();
+  const boostMap = useBoostScoreMap("for_you");
 
   const { data: dbListings = [] } = useQuery({
     queryKey: ["featured-listings"],
@@ -28,8 +30,8 @@ const FeaturedListings = () => {
   });
 
   const listings = useMemo(
-    () => personalizeListings([...dbListings], prefs),
-    [dbListings, prefs]
+    () => applyBoostRanking(personalizeListings([...dbListings], prefs), boostMap),
+    [dbListings, prefs, boostMap]
   );
 
   const isPersonalized = prefs?.onboarding_completed;

@@ -38,6 +38,7 @@ import HelpCenter from "./pages/HelpCenter";
 import Unsubscribe from "./pages/Unsubscribe";
 import Support from "./pages/Support";
 import AdminSupport from "./pages/admin/Support";
+import BoostManagement from "./pages/admin/BoostManagement";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="tax" element={<TaxSettings />} />
               <Route path="email-templates" element={<EmailTemplates />} />
               <Route path="support" element={<AdminSupport />} />
+              <Route path="boosts" element={<BoostManagement />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

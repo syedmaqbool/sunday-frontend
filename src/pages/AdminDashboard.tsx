@@ -19,6 +19,7 @@ import {
   Percent,
   Mail,
   Headphones,
+  Rocket,
   Menu,
   X,
 } from "lucide-react";
@@ -50,6 +51,7 @@ const navSections: NavSection[] = [
       { label: "Categories", path: "/admin/categories", icon: FolderTree },
       { label: "Discounts", path: "/admin/discounts", icon: Tag },
       { label: "Tax Settings", path: "/admin/tax", icon: Percent },
+      { label: "Boosts", path: "/admin/boosts", icon: Rocket },
     ],
   },
   {

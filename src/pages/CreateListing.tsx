@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONDITIONS, SIZES } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import { Camera, Upload, Loader2, X, Video as VideoIcon, Eye } from "lucide-react";
+import { Camera, Upload, Loader2, X, Video as VideoIcon, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +31,7 @@ const FieldTip = ({ tip }: { tip: string }) => (
           className="ml-1.5 inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
           onClick={(e) => e.preventDefault()}
         >
-          <Eye className="h-3.5 w-3.5" />
+          <Info className="h-3.5 w-3.5" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">

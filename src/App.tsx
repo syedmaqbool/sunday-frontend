@@ -10,6 +10,7 @@ import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
 import CreateListing from "./pages/CreateListing";
 import MyListings from "./pages/MyListings";
+import Boost from "./pages/Boost";
 import MyOffers from "./pages/MyOffers";
 import Auth from "./pages/Auth";
 import Preferences from "./pages/Preferences";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/create-listing" element={<CreateListing />} />
             <Route path="/edit-listing/:id" element={<CreateListing />} />
             <Route path="/my-listings" element={<MyListings />} />
+            <Route path="/boost" element={<Boost />} />
             <Route path="/my-offers" element={<MyOffers />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />

@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw, Rocket } from "lucide-react";
 import { ListingFeedbackInline } from "@/components/ListingFeedbackWidgets";
+import BoostDialog from "@/components/BoostDialog";
 import { toast } from "sonner";
 import {
   AlertDialog,

@@ -1,11 +1,14 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ListingCard from "./ListingCard";
 import { TrendingUp } from "lucide-react";
+import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import type { Listing } from "@/lib/constants";
 
 const TrendingProducts = () => {
-  const { data: trending = [] } = useQuery({
+  const boostMap = useBoostScoreMap("trending");
+  const { data: dbTrending = [] } = useQuery({
     queryKey: ["trending-listings"],
     queryFn: async (): Promise<Listing[]> => {
       const { data, error } = await supabase
@@ -22,6 +25,8 @@ const TrendingProducts = () => {
       }));
     },
   });
+
+  const trending = useMemo(() => applyBoostRanking(dbTrending, boostMap), [dbTrending, boostMap]);
 
   if (trending.length === 0) return null;
 

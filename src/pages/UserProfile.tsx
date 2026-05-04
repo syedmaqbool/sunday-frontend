@@ -618,6 +618,13 @@ function OrderCard({ order }: { order: any }) {
                               onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
                             />
                           )}
+                          {it.listing_id && status.status === "completed" && !(status as any).quality_confirmed && (
+                            <BuyerQualityConfirm
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
+                            />
+                          )}
                           {it.listing_id && it.seller_id && (status.status === "shipped" || status.status === "completed") && (
                             <ComplaintActions
                               orderId={order.id}
@@ -626,7 +633,7 @@ function OrderCard({ order }: { order: any }) {
                               buyerId={order.buyer_id}
                             />
                           )}
-                          {it.listing_id && it.seller_id && (
+                          {it.listing_id && it.seller_id && status.status === "completed" && (status as any).quality_confirmed && (
                             <OrderItemReview
                               orderId={order.id}
                               listingId={it.listing_id}

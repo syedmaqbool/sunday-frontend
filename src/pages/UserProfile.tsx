@@ -1187,4 +1187,131 @@ function BuyerQualityConfirm({
   );
 }
 
+const RETURN_STATUS_LABEL: Record<string, string> = {
+  raised: "Complaint Raised",
+  under_review: "Under Review",
+  return_in_transit: "Return In Transit",
+  return_received: "Return Received",
+  refunded: "Completed · Refunded",
+  rejected: "Completed · Rejected",
+};
+
+function ReturnStatusBadge({ status }: { status: string }) {
+  const isCompleted = status === "refunded" || status === "rejected";
+  const isReturn = status === "return_in_transit" || status === "return_received";
+  const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
+  return (
+    <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20">
+      <Icon className="h-3 w-3" />
+      {RETURN_STATUS_LABEL[status] ?? status}
+    </Badge>
+  );
+}
+
+function ReturnsTab({ userId }: { userId: string }) {
+  const { data: myReturns = [], isLoading: loadingMine } = useQuery({
+    queryKey: ["my-returns", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("complaints")
+        .select("id, order_id, listing_id, status, reason, admin_notes, return_carrier, return_tracking, created_at, updated_at, listings(title, images, brand)")
+        .eq("buyer_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery({
+    queryKey: ["returns-to-me", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("complaints")
+        .select("id, order_id, listing_id, status, reason, admin_notes, return_carrier, return_tracking, created_at, updated_at, listings(title, images, brand)")
+        .eq("seller_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const renderList = (items: any[], emptyText: string) => {
+    if (items.length === 0) {
+      return (
+        <div className="flex flex-col items-center py-10 text-center">
+          <Undo2 className="h-10 w-10 text-muted-foreground" />
+          <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        {items.map((c: any) => {
+          const listing = c.listings;
+          const img = Array.isArray(listing?.images) ? listing.images[0] : null;
+          return (
+            <Card key={c.id}>
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row">
+                {img ? (
+                  <img src={img} alt={listing?.title ?? "Item"} className="h-20 w-20 flex-shrink-0 rounded-md object-cover" />
+                ) : (
+                  <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+                    <Package className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-foreground">{listing?.title ?? "Item"}</p>
+                      {listing?.brand && (
+                        <p className="text-xs text-muted-foreground">{listing.brand}</p>
+                      )}
+                    </div>
+                    <ReturnStatusBadge status={c.status} />
+                  </div>
+                  {c.reason && (
+                    <p className="text-sm text-foreground"><span className="font-medium">Reason:</span> {c.reason}</p>
+                  )}
+                  {(c.return_carrier || c.return_tracking) && (
+                    <p className="text-xs text-muted-foreground">
+                      Return: {c.return_carrier ?? "—"}{c.return_tracking ? ` · ${c.return_tracking}` : ""}
+                    </p>
+                  )}
+                  {c.admin_notes && (
+                    <p className="text-xs text-muted-foreground"><span className="font-medium">Admin note:</span> {c.admin_notes}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Opened {format(new Date(c.created_at), "MMM d, yyyy")}</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
+  if (loadingMine || loadingSeller) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <Tabs defaultValue="my-returns">
+      <TabsList>
+        <TabsTrigger value="my-returns">My Returns ({myReturns.length})</TabsTrigger>
+        <TabsTrigger value="returned-to-me">Returned to Me ({returnedToMe.length})</TabsTrigger>
+      </TabsList>
+      <TabsContent value="my-returns" className="mt-4">
+        {renderList(myReturns, "You haven't filed any returns yet.")}
+      </TabsContent>
+      <TabsContent value="returned-to-me" className="mt-4">
+        {renderList(returnedToMe, "No returns have been filed against your sales.")}
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 export default UserProfile;

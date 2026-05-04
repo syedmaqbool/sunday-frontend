@@ -396,6 +396,7 @@ const UserProfile = () => {
               <TabsList>
                 <TabsTrigger value="bought">Bought ({orders.length})</TabsTrigger>
                 <TabsTrigger value="sold">Sold ({soldItems.length})</TabsTrigger>
+                <TabsTrigger value="returns">Returns</TabsTrigger>
               </TabsList>
 
               <TabsContent value="bought" className="mt-4">

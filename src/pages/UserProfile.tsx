@@ -42,6 +42,8 @@ type ItemStatus = {
   not_received_reason?: string;
   completed_at?: string;
   auto_completed?: boolean;
+  quality_confirmed?: boolean;
+  quality_confirmed_at?: string;
 };
 
 // Auto-complete window after shipment if buyer hasn't responded (48h)
@@ -618,6 +620,13 @@ function OrderCard({ order }: { order: any }) {
                               onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
                             />
                           )}
+                          {it.listing_id && status.status === "completed" && !(status as any).quality_confirmed && (
+                            <BuyerQualityConfirm
+                              orderId={order.id}
+                              listingId={it.listing_id}
+                              onChanged={() => queryClient.invalidateQueries({ queryKey: ["my-orders"] })}
+                            />
+                          )}
                           {it.listing_id && it.seller_id && (status.status === "shipped" || status.status === "completed") && (
                             <ComplaintActions
                               orderId={order.id}
@@ -626,7 +635,7 @@ function OrderCard({ order }: { order: any }) {
                               buyerId={order.buyer_id}
                             />
                           )}
-                          {it.listing_id && it.seller_id && (
+                          {it.listing_id && it.seller_id && status.status === "completed" && (status as any).quality_confirmed && (
                             <OrderItemReview
                               orderId={order.id}
                               listingId={it.listing_id}
@@ -1107,6 +1116,69 @@ function BuyerReceiptActions({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function BuyerQualityConfirm({
+  orderId,
+  listingId,
+  onChanged,
+}: {
+  orderId: string;
+  listingId: string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const existing = (current?.item_status as any) ?? {};
+      const now = new Date().toISOString();
+      const merged = {
+        ...existing,
+        [listingId]: {
+          ...(existing[listingId] ?? {}),
+          quality_confirmed: true,
+          quality_confirmed_at: now,
+        },
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ item_status: merged })
+        .eq("id", orderId);
+      if (error) throw error;
+
+      toast.success("Quality confirmed — you can now leave a review");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to confirm quality");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 text-xs"
+        disabled={busy}
+        onClick={confirm}
+      >
+        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+        Mark as sufficient quality
+      </Button>
+    </div>
   );
 }
 

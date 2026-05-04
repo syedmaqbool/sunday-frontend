@@ -448,6 +448,10 @@ const UserProfile = () => {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="returns" className="mt-4">
+                <ReturnsTab userId={user.id} />
+              </TabsContent>
             </Tabs>
           </>
         )}

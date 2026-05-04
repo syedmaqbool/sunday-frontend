@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone, Calendar as CalendarIcon, Upload, X } from "lucide-react";
+import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone, Calendar as CalendarIcon, Upload, X, Undo2, AlertTriangle, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";

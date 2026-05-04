@@ -1119,4 +1119,67 @@ function BuyerReceiptActions({
   );
 }
 
+function BuyerQualityConfirm({
+  orderId,
+  listingId,
+  onChanged,
+}: {
+  orderId: string;
+  listingId: string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      const existing = (current?.item_status as any) ?? {};
+      const now = new Date().toISOString();
+      const merged = {
+        ...existing,
+        [listingId]: {
+          ...(existing[listingId] ?? {}),
+          quality_confirmed: true,
+          quality_confirmed_at: now,
+        },
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ item_status: merged })
+        .eq("id", orderId);
+      if (error) throw error;
+
+      toast.success("Quality confirmed — you can now leave a review");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to confirm quality");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1 text-xs"
+        disabled={busy}
+        onClick={confirm}
+      >
+        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+        Mark as sufficient quality
+      </Button>
+    </div>
+  );
+}
+
 export default UserProfile;

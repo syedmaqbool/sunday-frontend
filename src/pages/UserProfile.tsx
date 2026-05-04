@@ -42,6 +42,8 @@ type ItemStatus = {
   not_received_reason?: string;
   completed_at?: string;
   auto_completed?: boolean;
+  quality_confirmed?: boolean;
+  quality_confirmed_at?: string;
 };
 
 // Auto-complete window after shipment if buyer hasn't responded (48h)

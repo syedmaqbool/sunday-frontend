@@ -1209,30 +1209,34 @@ function ReturnStatusBadge({ status }: { status: string }) {
 }
 
 function ReturnsTab({ userId }: { userId: string }) {
+  const fetchComplaintsWithListings = async (column: "buyer_id" | "seller_id") => {
+    const { data, error } = await supabase
+      .from("complaints")
+      .select("id, order_id, listing_id, status, reason, admin_notes, return_carrier, return_tracking, created_at, updated_at")
+      .eq(column, userId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const rows = data ?? [];
+    const listingIds = Array.from(new Set(rows.map((r) => r.listing_id).filter(Boolean)));
+    let listingsMap: Record<string, any> = {};
+    if (listingIds.length > 0) {
+      const { data: listings } = await supabase
+        .from("listings")
+        .select("id, title, images, brand")
+        .in("id", listingIds);
+      listingsMap = Object.fromEntries((listings ?? []).map((l: any) => [l.id, l]));
+    }
+    return rows.map((r) => ({ ...r, listings: listingsMap[r.listing_id] ?? null }));
+  };
+
   const { data: myReturns = [], isLoading: loadingMine } = useQuery({
     queryKey: ["my-returns", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("complaints")
-        .select("id, order_id, listing_id, status, reason, admin_notes, return_carrier, return_tracking, created_at, updated_at, listings(title, images, brand)")
-        .eq("buyer_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => fetchComplaintsWithListings("buyer_id"),
   });
 
   const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery({
     queryKey: ["returns-to-me", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("complaints")
-        .select("id, order_id, listing_id, status, reason, admin_notes, return_carrier, return_tracking, created_at, updated_at, listings(title, images, brand)")
-        .eq("seller_id", userId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => fetchComplaintsWithListings("seller_id"),
   });
 
   const renderList = (items: any[], emptyText: string) => {

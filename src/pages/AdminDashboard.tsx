@@ -20,6 +20,7 @@ import {
   Mail,
   Headphones,
   Rocket,
+  BarChart3,
   Menu,
   X,
 } from "lucide-react";

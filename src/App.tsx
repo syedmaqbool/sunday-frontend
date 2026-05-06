@@ -85,6 +85,7 @@ const App = () => (
               <Route path="email-templates" element={<EmailTemplates />} />
               <Route path="support" element={<AdminSupport />} />
               <Route path="boosts" element={<BoostManagement />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

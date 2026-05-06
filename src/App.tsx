@@ -39,6 +39,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import Support from "./pages/Support";
 import AdminSupport from "./pages/admin/Support";
 import BoostManagement from "./pages/admin/BoostManagement";
+import AdminAnalytics from "./pages/admin/Analytics";
 
 const queryClient = new QueryClient();
 

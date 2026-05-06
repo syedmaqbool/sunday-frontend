@@ -39,6 +39,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import Support from "./pages/Support";
 import AdminSupport from "./pages/admin/Support";
 import BoostManagement from "./pages/admin/BoostManagement";
+import AdminAnalytics from "./pages/admin/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="email-templates" element={<EmailTemplates />} />
               <Route path="support" element={<AdminSupport />} />
               <Route path="boosts" element={<BoostManagement />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

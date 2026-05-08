@@ -63,6 +63,7 @@ const Auth = () => {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
+        trackEvent("sign_up", { method: "email" });
         toast({ title: "Account created!", description: "Please check your email to verify your account." });
       }
     } else {
@@ -70,6 +71,7 @@ const Auth = () => {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
+        trackEvent("login", { method: "email" });
         // Check if user has completed onboarding
         const { data: prefs } = await supabase
           .from("user_preferences")

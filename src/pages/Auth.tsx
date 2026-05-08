@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "register">("login");

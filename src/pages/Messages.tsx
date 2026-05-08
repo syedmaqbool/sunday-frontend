@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Send, ArrowLeft, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { trackEvent } from "@/lib/analytics";
 
 const CONTACT_PATTERNS = [
   { regex: /\+?\d[\d\s\-\.]{7,}\d/g, label: "phone number" },
@@ -186,6 +187,7 @@ const Messages = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      trackEvent("message_sent", { conversation_id: activeConvo });
       setNewMessage("");
       queryClient.invalidateQueries({ queryKey: ["messages", activeConvo] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MessageSquare, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { trackEvent } from "@/lib/analytics";
 
 interface Offer {
   id: string;
@@ -65,6 +66,12 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
       if (error) throw error;
     },
     onSuccess: () => {
+      trackEvent("make_offer", {
+        listing_id: listingId,
+        listing_title: listingTitle,
+        offer_amount: parseFloat(amount),
+        listing_price: listingPrice,
+      });
       toast.success("Offer sent!");
       queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
       setAmount("");

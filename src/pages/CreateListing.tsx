@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import BankDetailsModal from "@/components/BankDetailsModal";
+import { trackEvent } from "@/lib/analytics";
 
 const MAX_PHOTOS = 20;
 
@@ -259,6 +260,12 @@ const CreateListing = () => {
           .update({ images: allMedia })
           .eq("id", newListing.id);
 
+        trackEvent("listing_created", {
+          listing_id: newListing.id,
+          category: `${form.parentCategory}-${form.subCategory}`,
+          price: parseFloat(form.price),
+          brand: form.brand,
+        });
         toast({ title: "Listing created!", description: "Your item is pending review." });
         navigate("/listings");
       }

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { trackEvent } from "@/lib/analytics";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,16 @@ const ListingDetail = () => {
     queryFn: () => fetchListing(id!),
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (listing) {
+      trackEvent("view_item", {
+        currency: "ZAR",
+        value: listing.price,
+        items: [{ item_id: listing.id, item_name: listing.title, item_category: listing.category, item_brand: listing.brand, price: listing.price }],
+      });
+    }
+  }, [listing?.id]);
 
   const isOwner = listing && user && listing.seller_id === user.id;
 

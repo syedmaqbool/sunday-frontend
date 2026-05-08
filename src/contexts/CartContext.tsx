@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Listing } from "@/lib/constants";
+import { trackEvent } from "@/lib/analytics";
 
 export interface CartItem {
   listing: Listing;
@@ -35,6 +36,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.listing.id === listing.id);
       if (existing) return prev; // no duplicates for unique items
+      trackEvent("add_to_cart", {
+        currency: "ZAR",
+        value: listing.price,
+        items: [{ item_id: listing.id, item_name: listing.title, item_category: (listing as any).category, price: listing.price, quantity: 1 }],
+      });
       return [...prev, { listing, quantity: 1 }];
     });
   };

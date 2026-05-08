@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, ShoppingBag, ArrowLeft, CheckCircle2, Tag, X, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveTax } from "@/hooks/useActiveTax";
+import { trackEvent } from "@/lib/analytics";
 
 interface AppliedDiscount {
   id: string;
@@ -36,6 +37,22 @@ const Checkout = () => {
   const [shipping, setShipping] = useState({
     firstName: "", lastName: "", address: "", city: "", postal: "", phone: "",
   });
+
+  useEffect(() => {
+    if (items.length > 0) {
+      trackEvent("begin_checkout", {
+        currency: "ZAR",
+        value: totalPrice,
+        items: items.map((i) => ({
+          item_id: i.listing.id,
+          item_name: i.listing.title,
+          price: i.listing.price,
+          quantity: i.quantity,
+        })),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"
@@ -157,6 +174,21 @@ const Checkout = () => {
         setPlacing(false);
         return;
       }
+
+      trackEvent("purchase", {
+        transaction_id: orderRow.id,
+        currency: "ZAR",
+        value: finalPrice,
+        tax: taxAmount,
+        coupon: appliedDiscount?.code ?? undefined,
+        items: itemsSnapshot.map((i) => ({
+          item_id: i.listing_id,
+          item_name: i.title,
+          item_brand: i.brand,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
 
       // Send invoice email (fire-and-forget — don't block the UI)
       if (user.email) {

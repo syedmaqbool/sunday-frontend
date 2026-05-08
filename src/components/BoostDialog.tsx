@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, differenceInCalendarDays, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackEvent } from "@/lib/analytics";
 import { useBoostPackages, type BoostPackage, type BoostPlacement } from "@/hooks/useBoosts";
 import {
   Dialog,
@@ -110,6 +111,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
       if (error) throw error;
     },
     onSuccess: () => {
+      trackEvent("boost_purchased", { listing_id: listingId, type: "package", value: packagesTotal, currency: "ZAR" });
       toast.success("Boost activated! (Mock payment)");
       queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
       queryClient.invalidateQueries({ queryKey: ["active-boosts"] });
@@ -137,6 +139,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
       if (error) throw error;
     },
     onSuccess: () => {
+      trackEvent("boost_purchased", { listing_id: listingId, type: "campaign", placement, value: budget, currency: "ZAR" });
       toast.success("Campaign launched! (Mock payment)");
       queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
       queryClient.invalidateQueries({ queryKey: ["active-boosts"] });

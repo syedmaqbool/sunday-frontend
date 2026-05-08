@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
 
 interface ReviewFormProps {
   offerId: string;
@@ -37,6 +38,7 @@ export const ReviewForm = ({ offerId, listingId, reviewedId, role, onSuccess }: 
       if (error) throw error;
     },
     onSuccess: () => {
+      trackEvent("review_submitted", { listing_id: listingId, offer_id: offerId, role, rating });
       toast.success("Review submitted!");
       queryClient.invalidateQueries({ queryKey: ["reviews"] });
       onSuccess?.();

@@ -158,6 +158,21 @@ const Checkout = () => {
         return;
       }
 
+      trackEvent("purchase", {
+        transaction_id: orderRow.id,
+        currency: "ZAR",
+        value: finalPrice,
+        tax: taxAmount,
+        coupon: appliedDiscount?.code ?? undefined,
+        items: itemsSnapshot.map((i) => ({
+          item_id: i.listing_id,
+          item_name: i.title,
+          item_brand: i.brand,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+
       // Send invoice email (fire-and-forget — don't block the UI)
       if (user.email) {
         supabase.functions

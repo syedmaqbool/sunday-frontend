@@ -127,6 +127,16 @@ const ListingDetail = () => {
     enabled: !!id,
   });
 
+  useEffect(() => {
+    if (listing) {
+      trackEvent("view_item", {
+        currency: "ZAR",
+        value: listing.price,
+        items: [{ item_id: listing.id, item_name: listing.title, item_category: listing.category, item_brand: listing.brand, price: listing.price }],
+      });
+    }
+  }, [listing?.id]);
+
   const isOwner = listing && user && listing.seller_id === user.id;
 
   const deleteMutation = useMutation({

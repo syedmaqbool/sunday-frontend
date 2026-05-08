@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveTax } from "@/hooks/useActiveTax";
+import { trackEvent } from "@/lib/analytics";
 
 interface AppliedDiscount {
   id: string;

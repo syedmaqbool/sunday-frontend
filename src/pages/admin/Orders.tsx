@@ -59,10 +59,11 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped" | "completed";
+type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
+const SHIPPING_SLA_MS = 48 * 60 * 60 * 1000;
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
@@ -72,11 +73,15 @@ const dateFilterStart = (filter: DateFilter) => {
   return null;
 };
 
-const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
+const isShippedLike = (s?: string) => {
+  const v = s?.toLowerCase();
+  return v === "shipped" || v === "delivered" || v === "completed" || v === "received";
+};
+
+const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
   if (s === "completed" || s === "received") return "completed";
   if (s === "shipped" || s === "delivered") {
-    // Auto-complete 48h after shipment
     const shipTs = entry?.shipped_at ?? entry?.updated_at;
     if (shipTs) {
       const shippedAt = new Date(shipTs).getTime();
@@ -86,8 +91,12 @@ const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
     }
     return "shipped";
   }
-  if (orderStatus !== "cancelled") return "sold";
-  return "cancelled";
+  if (orderStatus === "cancelled") return "cancelled";
+  // Not shipped — check SLA
+  if (entry?.overdue_at) return "overdue";
+  const created = new Date(orderCreatedAt).getTime();
+  if (Number.isFinite(created) && Date.now() - created >= SHIPPING_SLA_MS) return "overdue";
+  return "sold";
 };
 
 const AdminOrders = () => {

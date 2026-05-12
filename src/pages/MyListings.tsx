@@ -211,6 +211,9 @@ const MyListings = () => {
               <TabsTrigger value="approved">Approved ({approvedListings.length})</TabsTrigger>
               <TabsTrigger value="pending">Pending ({pendingListings.length})</TabsTrigger>
               <TabsTrigger value="sold">Sold ({soldListings.length})</TabsTrigger>
+              <TabsTrigger value="offers" className="gap-1.5">
+                <Inbox className="h-4 w-4" /> Offers Received
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="approved" className="mt-4">

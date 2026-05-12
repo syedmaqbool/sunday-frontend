@@ -170,7 +170,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>

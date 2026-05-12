@@ -263,6 +263,10 @@ const MyListings = () => {
                 <div className="space-y-3">{soldListings.map(renderListingCard)}</div>
               )}
             </TabsContent>
+
+            <TabsContent value="offers" className="mt-4">
+              <ReceivedOffers />
+            </TabsContent>
           </Tabs>
         )}
       </main>

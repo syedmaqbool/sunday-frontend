@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const MyListings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -112,6 +113,21 @@ const MyListings = () => {
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
+          {(listing.status === "approved" || listing.status === "sold") && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Inbox className="h-3.5 w-3.5" /> Offers
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-heading">Offers · {listing.title}</DialogTitle>
+                </DialogHeader>
+                <ReceivedOffers listingId={listing.id} />
+              </DialogContent>
+            </Dialog>
+          )}
           {listing.status === "approved" && (
             <BoostDialog
               listingId={listing.id}

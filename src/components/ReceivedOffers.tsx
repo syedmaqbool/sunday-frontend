@@ -41,7 +41,11 @@ const statusBadge = (s: string) => {
   return map[s] ?? "secondary";
 };
 
-export const ReceivedOffers = () => {
+interface ReceivedOffersProps {
+  listingId?: string;
+}
+
+export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [counterDialog, setCounterDialog] = useState<OfferWithListing | null>(null);
@@ -50,13 +54,15 @@ export const ReceivedOffers = () => {
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
 
   const { data: received = [], isLoading } = useQuery({
-    queryKey: ["offers-received", user?.id],
+    queryKey: ["offers-received", user?.id, listingId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("offers")
         .select("*, listings(title, price, images, brand)")
         .eq("seller_id", user!.id)
         .order("created_at", { ascending: false });
+      if (listingId) query = query.eq("listing_id", listingId);
+      const { data, error } = await query;
       if (error) throw error;
       const buyerIds = [...new Set((data ?? []).map((o: any) => o.buyer_id))];
       const { data: profiles } = await supabase

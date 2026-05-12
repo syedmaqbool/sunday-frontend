@@ -126,7 +126,7 @@ const AdminOrders = () => {
       for (const item of o.items ?? []) {
         if (!item?.listing_id) continue;
         const entry = o.item_status?.[item.listing_id];
-        const effective = itemEffectiveStatus(o.status, entry);
+        const effective = itemEffectiveStatus(o.status, o.created_at, entry);
         if (statusFilter !== "all" && effective !== statusFilter) continue;
         flat.push({
           orderId: o.id,
@@ -148,17 +148,19 @@ const AdminOrders = () => {
     let sold = 0;
     let shipped = 0;
     let completed = 0;
+    let overdue = 0;
     for (const o of orders) {
       if (start && new Date(o.created_at) < start) continue;
       for (const item of o.items ?? []) {
         if (!item?.listing_id) continue;
-        const eff = itemEffectiveStatus(o.status, o.item_status?.[item.listing_id]);
+        const eff = itemEffectiveStatus(o.status, o.created_at, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
         else if (eff === "completed") completed++;
+        else if (eff === "overdue") overdue++;
       }
     }
-    return { sold, shipped, completed, total: sold + shipped + completed };
+    return { sold, shipped, completed, overdue, total: sold + shipped + completed + overdue };
   }, [orders, dateFilter]);
 
   return (

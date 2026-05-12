@@ -198,6 +198,12 @@ const AdminOrders = () => {
             <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
           </CardContent>
         </Card>
+        <Card className={counts.overdue > 0 ? "border-destructive/60" : undefined}>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Overdue (48h)</p>
+            <p className="font-heading text-2xl font-semibold text-destructive">{counts.overdue}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -207,6 +213,7 @@ const AdminOrders = () => {
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="overdue">Admin Review</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>

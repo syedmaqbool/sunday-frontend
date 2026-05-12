@@ -259,7 +259,7 @@ const AdminOrders = () => {
                       {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={r.effective === "shipped" ? "default" : "secondary"}>
+                      <Badge variant={r.effective === "overdue" ? "destructive" : r.effective === "shipped" ? "default" : "secondary"}>
                         {r.effective}
                       </Badge>
                     </TableCell>

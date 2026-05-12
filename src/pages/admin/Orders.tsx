@@ -28,6 +28,8 @@ type ItemStatusEntry = {
   shipped_at?: string;
   completed_at?: string;
   received_at?: string;
+  reminder_24h_sent_at?: string;
+  overdue_at?: string;
 };
 
 type Order = {
@@ -57,10 +59,11 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped" | "completed";
+type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
+const SHIPPING_SLA_MS = 48 * 60 * 60 * 1000;
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
@@ -70,11 +73,15 @@ const dateFilterStart = (filter: DateFilter) => {
   return null;
 };
 
-const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
+const isShippedLike = (s?: string) => {
+  const v = s?.toLowerCase();
+  return v === "shipped" || v === "delivered" || v === "completed" || v === "received";
+};
+
+const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
   if (s === "completed" || s === "received") return "completed";
   if (s === "shipped" || s === "delivered") {
-    // Auto-complete 48h after shipment
     const shipTs = entry?.shipped_at ?? entry?.updated_at;
     if (shipTs) {
       const shippedAt = new Date(shipTs).getTime();
@@ -84,8 +91,12 @@ const itemEffectiveStatus = (orderStatus: string, entry?: ItemStatusEntry) => {
     }
     return "shipped";
   }
-  if (orderStatus !== "cancelled") return "sold";
-  return "cancelled";
+  if (orderStatus === "cancelled") return "cancelled";
+  // Not shipped — check SLA
+  if (entry?.overdue_at) return "overdue";
+  const created = new Date(orderCreatedAt).getTime();
+  if (Number.isFinite(created) && Date.now() - created >= SHIPPING_SLA_MS) return "overdue";
+  return "sold";
 };
 
 const AdminOrders = () => {
@@ -115,7 +126,7 @@ const AdminOrders = () => {
       for (const item of o.items ?? []) {
         if (!item?.listing_id) continue;
         const entry = o.item_status?.[item.listing_id];
-        const effective = itemEffectiveStatus(o.status, entry);
+        const effective = itemEffectiveStatus(o.status, o.created_at, entry);
         if (statusFilter !== "all" && effective !== statusFilter) continue;
         flat.push({
           orderId: o.id,
@@ -137,17 +148,19 @@ const AdminOrders = () => {
     let sold = 0;
     let shipped = 0;
     let completed = 0;
+    let overdue = 0;
     for (const o of orders) {
       if (start && new Date(o.created_at) < start) continue;
       for (const item of o.items ?? []) {
         if (!item?.listing_id) continue;
-        const eff = itemEffectiveStatus(o.status, o.item_status?.[item.listing_id]);
+        const eff = itemEffectiveStatus(o.status, o.created_at, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
         else if (eff === "completed") completed++;
+        else if (eff === "overdue") overdue++;
       }
     }
-    return { sold, shipped, completed, total: sold + shipped + completed };
+    return { sold, shipped, completed, overdue, total: sold + shipped + completed + overdue };
   }, [orders, dateFilter]);
 
   return (
@@ -157,7 +170,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -185,6 +198,12 @@ const AdminOrders = () => {
             <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
           </CardContent>
         </Card>
+        <Card className={counts.overdue > 0 ? "border-destructive/60" : undefined}>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Overdue (48h)</p>
+            <p className="font-heading text-2xl font-semibold text-destructive">{counts.overdue}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -194,6 +213,7 @@ const AdminOrders = () => {
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="overdue">Admin Review</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
@@ -239,7 +259,7 @@ const AdminOrders = () => {
                       {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={r.effective === "shipped" ? "default" : "secondary"}>
+                      <Badge variant={r.effective === "overdue" ? "destructive" : r.effective === "shipped" ? "default" : "secondary"}>
                         {r.effective}
                       </Badge>
                     </TableCell>

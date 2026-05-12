@@ -28,6 +28,8 @@ type ItemStatusEntry = {
   shipped_at?: string;
   completed_at?: string;
   received_at?: string;
+  reminder_24h_sent_at?: string;
+  overdue_at?: string;
 };
 
 type Order = {

@@ -208,29 +208,17 @@ const Checkout = () => {
       const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
       const authoritativeTotal = authoritativeTaxable + authoritativeTax;
-      // Snapshot items for the order record
-      const itemsSnapshot = items.map(({ listing, quantity }) => ({
-        listing_id: listing.id,
-        seller_id: listing.seller_id,
-        seller_name: listing.seller_name,
-        title: listing.title,
-        brand: listing.brand,
-        image: listing.images?.[0] ?? null,
-        price: listing.price,
-        quantity,
-      }));
-
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({
           buyer_id: user.id,
           items: itemsSnapshot,
-          subtotal: totalPrice,
+          subtotal: authoritativeSubtotal,
           discount_code: appliedDiscount?.code ?? null,
-          discount_amount: discountAmount,
+          discount_amount: authoritativeDiscount,
           tax_rate: taxRate,
-          tax_amount: taxAmount,
-          total: finalPrice,
+          tax_amount: authoritativeTax,
+          total: authoritativeTotal,
           shipping_first_name: shipping.firstName,
           shipping_last_name: shipping.lastName,
           shipping_address: shipping.address,

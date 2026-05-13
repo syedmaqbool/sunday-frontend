@@ -11,7 +11,7 @@ export interface CartItem {
 
 interface CartCtx {
   items: CartItem[];
-  addItem: (listing: Listing) => void;
+  addItem: (listing: Listing, priceOverride?: number) => void;
   removeItem: (listingId: string) => void;
   updateQuantity: (listingId: string, quantity: number) => void;
   clearCart: () => void;
@@ -35,20 +35,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const { user } = useAuth();
 
-  const addItem = (listing: Listing) => {
+  const addItem = (listing: Listing, priceOverride?: number) => {
     if (listing.status === "reserved" && listing.reserved_for && listing.reserved_for !== user?.id) {
       toast.error("This item is currently reserved for another buyer.");
       return;
     }
+    const effectivePrice = typeof priceOverride === "number" && priceOverride > 0 ? priceOverride : listing.price;
+    const finalListing: Listing = effectivePrice !== listing.price ? { ...listing, price: effectivePrice } : listing;
     setItems((prev) => {
       const existing = prev.find((i) => i.listing.id === listing.id);
       if (existing) return prev; // no duplicates for unique items
       trackEvent("add_to_cart", {
         currency: "ZAR",
-        value: listing.price,
-        items: [{ item_id: listing.id, item_name: listing.title, item_category: (listing as any).category, price: listing.price, quantity: 1 }],
+        value: effectivePrice,
+        items: [{ item_id: listing.id, item_name: listing.title, item_category: (listing as any).category, price: effectivePrice, quantity: 1 }],
       });
-      return [...prev, { listing, quantity: 1 }];
+      return [...prev, { listing: finalListing, quantity: 1 }];
     });
   };
 

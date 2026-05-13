@@ -157,6 +157,26 @@ const ListingDetail = () => {
   }, [listing?.id]);
 
   const isOwner = listing && user && listing.seller_id === user.id;
+  const isReserved = listing?.status === "reserved";
+  const isReservedForMe = isReserved && !!user && listing?.reserved_for === user.id;
+  const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
+  const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
+
+  const cancelReservation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("expire_listing_reservation", {
+        _listing_id: listing!.id,
+        _force: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Reservation cancelled");
+      queryClient.invalidateQueries({ queryKey: ["listing", id] });
+      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to cancel"),
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {

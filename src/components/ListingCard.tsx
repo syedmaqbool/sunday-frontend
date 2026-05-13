@@ -33,6 +33,13 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
             </span>
           </div>
         )}
+        {listing.status === "reserved" && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="rounded-md bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground backdrop-blur">
+              Reserved
+            </span>
+          </div>
+        )}
         {listing.status !== "sold" && (
           <Button
             variant="ghost"

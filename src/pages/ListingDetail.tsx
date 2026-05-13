@@ -53,8 +53,27 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
     status: data.status as Listing["status"],
     weight: data.weight,
     admin_feedback: (data as any).admin_feedback,
+    reserved_for: (data as any).reserved_for,
+    reserved_until: (data as any).reserved_until,
+    reserved_offer_id: (data as any).reserved_offer_id,
   };
 };
+
+function useCountdown(target?: string | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!target) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [target]);
+  if (!target) return null;
+  const ms = new Date(target).getTime() - now;
+  if (ms <= 0) return "00:00:00";
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const s = Math.floor((ms % 60_000) / 1000);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
   const [selected, setSelected] = useState(0);
@@ -138,6 +157,26 @@ const ListingDetail = () => {
   }, [listing?.id]);
 
   const isOwner = listing && user && listing.seller_id === user.id;
+  const isReserved = listing?.status === "reserved";
+  const isReservedForMe = isReserved && !!user && listing?.reserved_for === user.id;
+  const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
+  const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
+
+  const cancelReservation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("expire_listing_reservation", {
+        _listing_id: listing!.id,
+        _force: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Reservation cancelled");
+      queryClient.invalidateQueries({ queryKey: ["listing", id] });
+      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to cancel"),
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -216,11 +255,43 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {isReserved && (
+              <div className={`mt-6 rounded-lg border px-4 py-3 text-sm ${isReservedForMe ? "border-primary/40 bg-primary/5 text-foreground" : "border-border bg-muted text-muted-foreground"}`}>
+                {isReservedForMe ? (
+                  <p>
+                    <span className="font-semibold text-primary">Reserved for you.</span>{" "}
+                    Complete your purchase within{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                ) : isOwner ? (
+                  <p>
+                    Reserved for an approved buyer · expires in{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                ) : (
+                  <p>
+                    Currently reserved for another buyer · available again in{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                )}
+              </div>
+            )}
+
             {isOwner ? (
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
                   <Pencil className="h-4 w-4" /> Edit Listing
                 </Button>
+                {isReserved && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => cancelReservation.mutate()}
+                    disabled={cancelReservation.isPending}
+                  >
+                    Cancel reservation
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="lg" variant="outline" className="gap-2 text-destructive">
@@ -248,15 +319,28 @@ const ListingDetail = () => {
               </div>
             ) : listing.status !== "sold" ? (
               <div className="mt-8 flex gap-3">
-                <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
-                  {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2"
+                  disabled={inCart || isReservedForOther}
+                  onClick={() => addItem(listing)}
+                >
+                  {inCart ? (
+                    <><Check className="h-4 w-4" /> In Cart</>
+                  ) : isReservedForOther ? (
+                    <>Currently Reserved</>
+                  ) : (
+                    <><ShoppingBag className="h-4 w-4" /> {isReservedForMe ? "Complete Purchase" : "Add to Cart"}</>
+                  )}
                 </Button>
-                <MakeOfferButton
-                  listingId={listing.id}
-                  sellerId={listing.seller_id}
-                  listingPrice={listing.price}
-                  listingTitle={listing.title}
-                />
+                {!isReserved && (
+                  <MakeOfferButton
+                    listingId={listing.id}
+                    sellerId={listing.seller_id}
+                    listingPrice={listing.price}
+                    listingTitle={listing.title}
+                  />
+                )}
                 <Button variant="outline" size="lg">
                   <Heart className="h-4 w-4" />
                 </Button>

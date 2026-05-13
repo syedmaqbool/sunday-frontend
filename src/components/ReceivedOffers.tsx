@@ -131,14 +131,14 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
             buyer_id: offer.buyer_id,
             seller_id: offer.seller_id,
           });
-          await supabase.from("listings").update({ status: "sold" }).eq("id", offer.listing_id);
+          // Listing status -> 'reserved' is handled automatically by DB trigger.
         }
       }
     },
     onSuccess: (_, { status }) => {
       toast.success(`Offer ${status}`);
       if (status === "accepted") {
-        toast.info("A conversation has been started — check your Messages!");
+        toast.info("Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.");
       }
       queryClient.invalidateQueries({ queryKey: ["offers-received"] });
       queryClient.invalidateQueries({ queryKey: ["my-listings"] });

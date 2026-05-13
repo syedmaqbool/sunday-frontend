@@ -1,54 +1,60 @@
-# Analytics Page Redesign
+## Reserved Purchase Flow (6h exclusive window)
 
-Rebuild `src/pages/admin/Analytics.tsx` to match the reference dashboard layout: KPI strip on top, paired chart cards in 2-column grids, a highlight stat card, and a styled leads table. Same data sources as today (orders, listings, profiles, complaints, offers) — only presentation changes.
+Add a "reserved" state to listings so an accepted offer gives the buyer 6 hours of exclusive purchase access, after which the listing reopens automatically.
 
-## Layout
+### Database changes
 
-```text
-┌─ Header: "Analytics Overview" + Export Report button ─────────────┐
-│                                                                    │
-├─ KPI strip (5 cards) ─────────────────────────────────────────────┤
-│ Revenue | Orders | Sales Vol | Refund Rate (red ring) | Conv Rate │
-│                                                                    │
-├─ Order Volume (bar chart) ───────┬─ Sales Volume (% bars) ────────┤
-│ Dim chips: Loc/Cat/Price/Age/Size│ Dim chips                      │
-│                                                                    │
-├─ Refunds (donut + legend) ───────┬─ Conversion Funnel ────────────┤
-│ Dim chips                         │ Engaged → Accepted → Purchased │
-│                                                                    │
-├─ Avg Offers tiles (4 stat boxes) ──────────┬─ Price Variation ────┤
-│ Dim chips                                   │ Big % delta (amber)  │
-│                                                                    │
-├─ Marketing Leads table ───────────────────────────────────────────┤
-│ Avatar · Name · WhatsApp · Location · Orders · Offers · Status    │
-└────────────────────────────────────────────────────────────────────┘
-```
+Migration on `listings`:
+- Add `reserved_for uuid` (buyer id), `reserved_until timestamptz`, `reserved_offer_id uuid`.
+- Extend allowed `status` values to include `reserved` (status is plain text — no enum change needed; update RLS public-view policy to also include `reserved` so other buyers can still see it).
+- Update `Anyone can view approved or sold listings` policy → include `reserved`.
 
-## Components & visuals
+Migration on `offers`:
+- Helper function `expire_reservation(listing_id uuid)` (SECURITY DEFINER) that, when called, if `reserved_until < now()`, resets the listing to `approved` and clears reservation fields, and notifies seller + buyer.
 
-- **KPI cards** — icon chip, label, big value, +/-% delta with up/down arrow. Refund Rate card gets a subtle red ring to mirror the reference.
-- **Dim chips** — pill-style toggle group inline in each card header (`Location / Category / Price Range / Age / Size`), so each chart is independently sliceable.
-- **Order Volume** — Recharts `BarChart`, rounded bars, one bar highlighted in primary, others muted.
-- **Sales Volume** — horizontal progress bars per bucket showing revenue share %.
-- **Refunds** — Recharts donut (`PieChart` with `innerRadius`) + legend column with counts.
-- **Funnel** — three stacked stages (Engaged · Offer Accepted · Purchased) for the top dim bucket; each stage = colored circle icon + label + count + thin progress bar.
-- **Avg Offers tiles** — 4 stat tiles showing the avg offers value and dim bucket label (matches mockup's "3.2 / 1.8 / 5.7 / 2.4" tiles).
-- **Price Variation** — amber-tinted card with large % delta (red if negative), R amount and sample count beneath.
-- **Marketing Leads** — table with avatar initials chip, monospace phone, status pill (Qualified / Hot Lead / Nurturing / At Risk derived from order/offer counts), search input + Download CSV.
+Trigger on `offers` update: when status flips to `accepted`, set listing.status='reserved', reserved_for=buyer_id, reserved_until=now()+6h, reserved_offer_id=offer.id; reject other pending offers on same listing (mark `expired`); send buyer a `reservation_started` notification.
 
-## Data mapping (unchanged tables)
+When listing becomes `sold` (checkout completes), close all remaining pending/countered offers as `expired`.
 
-- Revenue / Orders / Sales Vol → `orders` (sum total, count, sum item qty).
-- Refund Rate → refunded `complaints` ÷ orders.
-- Conv Rate → accepted `offers` ÷ all offers.
-- Funnel: Engaged = unique buyer-listing pairs with an offer; Accepted = same with `status='accepted'`; Purchased = unique buyer-listing pairs in orders.
-- Avg offers before order: per buyer-listing pair, count offers up to order date, average per dim bucket.
-- Price variation: avg of `(accepted_amount − listing.price) / listing.price`.
-- Lead status: ≥3 orders → Qualified, ≥1 order → Hot Lead, ≥1 offer → Nurturing, else At Risk.
+### Edge function update
 
-## Notes
+`check-shipping-deadlines` (rename concept or add second loop): also scan listings where `status='reserved' AND reserved_until < now()` → reset to `approved`, clear fields, notify both parties (`reservation_expired`).
 
-- Uses existing semantic tokens (`primary`, `muted`, `border`, `destructive`); accent tones (emerald/amber/rose/sky) are scoped to status pills and the price-variation card only — consistent with the warm editorial palette.
-- All five dims (location, category, price range, age, size) remain selectable on each chart via the chip group.
-- CSV exports preserved (per chart and for leads).
-- No schema/route changes; only `src/pages/admin/Analytics.tsx` is rewritten.
+### Frontend changes
+
+**ReceivedOffers.tsx accept handler**: keep as-is (DB trigger handles reservation). Toast text updates: "Offer accepted — buyer has 6h to pay."
+
+**ListingDetail.tsx**:
+- If `listing.status === 'reserved'`:
+  - If current user is `reserved_for` → show countdown banner "Reserved for you — complete purchase in HH:MM:SS", Buy/Add-to-cart enabled.
+  - Else → disable Buy/Add-to-cart/Make Offer, show banner "Reserved for another buyer — available again in HH:MM:SS".
+- Live countdown via `setInterval`.
+
+**CartContext / Checkout**: block adding/buying reserved listings unless `reserved_for === user.id`.
+
+**MyListings.tsx**: show "Reserved (expires in …)" badge; add "Cancel reservation" button that resets listing to approved + notifies buyer.
+
+**ListingCard.tsx**: small "Reserved" badge when status='reserved'.
+
+**Checkout success**: after order creation, listings already get marked sold via existing `mark_listings_sold`; add post-step to close other offers (handled by trigger on listings status change to 'sold').
+
+### Notifications
+
+Reuse existing `create_notification`:
+- `reservation_started` → buyer (link `/listings/{id}`)
+- `reservation_expired` → buyer + seller
+- `reservation_cancelled` → buyer (when seller cancels)
+- `reservation_completed` → seller (already covered by sale flow)
+
+### Files to create / edit
+
+- migration (listings columns + RLS update + triggers + functions)
+- `supabase/functions/check-shipping-deadlines/index.ts` — add reservation expiry sweep
+- `src/pages/ListingDetail.tsx` — reservation banner + countdown + button gating
+- `src/contexts/CartContext.tsx` — guard against reserved-for-other
+- `src/pages/Checkout.tsx` — same guard server-aware
+- `src/pages/MyListings.tsx` — reserved badge + cancel button
+- `src/components/ListingCard.tsx` — reserved badge
+- `src/components/ReceivedOffers.tsx` — toast copy
+
+No new pages. Cron already runs hourly; we'll piggyback. (Note: hourly cron means up to 1h slop on auto-expire — acceptable, plus client-side countdown enforces UX immediately and DB guard prevents bad purchases.)

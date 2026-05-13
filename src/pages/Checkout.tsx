@@ -135,6 +135,34 @@ const Checkout = () => {
 
     setPlacing(true);
     try {
+      // Re-validate listings server-side: block if any item is reserved for another buyer.
+      const listingIds = items.map((i) => i.listing.id);
+      const { data: freshListings, error: freshErr } = await supabase
+        .from("listings")
+        .select("id, title, status, reserved_for, reserved_until")
+        .in("id", listingIds);
+      if (freshErr) {
+        toast({ title: "Validation failed", description: freshErr.message, variant: "destructive" });
+        setPlacing(false);
+        return;
+      }
+      const blocked = (freshListings ?? []).find((l: any) => {
+        if (l.status === "sold") return true;
+        if (l.status === "reserved") {
+          const stillValid = l.reserved_until && new Date(l.reserved_until) > new Date();
+          return stillValid && l.reserved_for !== user.id;
+        }
+        return false;
+      });
+      if (blocked) {
+        toast({
+          title: "Item unavailable",
+          description: `"${blocked.title}" is reserved for another buyer or already sold.`,
+          variant: "destructive",
+        });
+        setPlacing(false);
+        return;
+      }
       // Snapshot items for the order record
       const itemsSnapshot = items.map(({ listing, quantity }) => ({
         listing_id: listing.id,
@@ -231,9 +259,9 @@ const Checkout = () => {
       }
 
       // Mark purchased listings as sold so they disappear from browse
-      const listingIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
-      if (listingIds.length) {
-        await supabase.rpc("mark_listings_sold", { _listing_ids: listingIds });
+      const soldIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
+      if (soldIds.length) {
+        await supabase.rpc("mark_listings_sold", { _listing_ids: soldIds });
       }
 
       // Increment discount code usage

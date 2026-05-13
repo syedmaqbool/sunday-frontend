@@ -187,6 +187,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ---- Reservation expiry sweep ----
+  let expiredReservations = 0;
+  const { data: expiredListings } = await supabase
+    .from("listings")
+    .select("id")
+    .eq("status", "reserved")
+    .lt("reserved_until", new Date().toISOString());
+  for (const l of expiredListings ?? []) {
+    const { error: rpcErr } = await supabase.rpc("expire_listing_reservation", {
+      _listing_id: l.id,
+      _force: false,
+    });
+    if (!rpcErr) expiredReservations++;
+  }
+
   return new Response(
     JSON.stringify({
       ok: true,
@@ -195,6 +210,7 @@ Deno.serve(async (req) => {
       escalations48,
       deliveryPrompts,
       autoCompletions,
+      expiredReservations,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

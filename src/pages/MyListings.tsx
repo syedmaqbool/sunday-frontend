@@ -79,19 +79,35 @@ const MyListings = () => {
     return null;
   }
 
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("expire_listing_reservation", {
+        _listing_id: id,
+        _force: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Reservation cancelled");
+      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
   const statusColor = (s: string) => {
     if (s === "approved") return "default";
     if (s === "rejected") return "destructive";
+    if (s === "reserved") return "default";
     return "secondary";
   };
 
-  const approvedListings = listings.filter((l: any) => l.status === "approved");
+  const approvedListings = listings.filter((l: any) => l.status === "approved" || l.status === "reserved");
   const soldListings = listings.filter((l: any) => l.status === "sold");
   const pendingListings = listings.filter(
-    (l: any) => l.status !== "approved" && l.status !== "sold"
+    (l: any) => l.status !== "approved" && l.status !== "reserved" && l.status !== "sold"
   );
 
-  const isReadOnly = (status: string) => status === "approved" || status === "sold";
+  const isReadOnly = (status: string) => status === "approved" || status === "sold" || status === "reserved";
 
   const renderListingCard = (listing: any) => (
     <Card key={listing.id}>
@@ -110,10 +126,15 @@ const MyListings = () => {
             {listing.brand} · R {listing.price.toLocaleString()}
             {listing.weight ? ` · ${listing.weight}kg` : ""}
           </p>
+          {listing.status === "reserved" && listing.reserved_until && (
+            <p className="mt-1 text-xs text-primary">
+              Reserved · expires {new Date(listing.reserved_until).toLocaleString()}
+            </p>
+          )}
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
-          {(listing.status === "approved" || listing.status === "sold") && (
+          {(listing.status === "approved" || listing.status === "sold" || listing.status === "reserved") && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
@@ -127,6 +148,17 @@ const MyListings = () => {
                 <ReceivedOffers listingId={listing.id} />
               </DialogContent>
             </Dialog>
+          )}
+          {listing.status === "reserved" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => cancelReservationMutation.mutate(listing.id)}
+              disabled={cancelReservationMutation.isPending}
+            >
+              Cancel reservation
+            </Button>
           )}
           {listing.status === "approved" && (
             <BoostDialog

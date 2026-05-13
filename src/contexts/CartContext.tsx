@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Listing } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface CartItem {
   listing: Listing;
@@ -31,8 +33,13 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
 
   const addItem = (listing: Listing) => {
+    if (listing.status === "reserved" && listing.reserved_for && listing.reserved_for !== user?.id) {
+      toast.error("This item is currently reserved for another buyer.");
+      return;
+    }
     setItems((prev) => {
       const existing = prev.find((i) => i.listing.id === listing.id);
       if (existing) return prev; // no duplicates for unique items

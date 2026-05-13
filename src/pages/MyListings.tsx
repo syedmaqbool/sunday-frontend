@@ -126,10 +126,15 @@ const MyListings = () => {
             {listing.brand} · R {listing.price.toLocaleString()}
             {listing.weight ? ` · ${listing.weight}kg` : ""}
           </p>
+          {listing.status === "reserved" && listing.reserved_until && (
+            <p className="mt-1 text-xs text-primary">
+              Reserved · expires {new Date(listing.reserved_until).toLocaleString()}
+            </p>
+          )}
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
-          {(listing.status === "approved" || listing.status === "sold") && (
+          {(listing.status === "approved" || listing.status === "sold" || listing.status === "reserved") && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
@@ -143,6 +148,17 @@ const MyListings = () => {
                 <ReceivedOffers listingId={listing.id} />
               </DialogContent>
             </Dialog>
+          )}
+          {listing.status === "reserved" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => cancelReservationMutation.mutate(listing.id)}
+              disabled={cancelReservationMutation.isPending}
+            >
+              Cancel reservation
+            </Button>
           )}
           {listing.status === "approved" && (
             <BoostDialog

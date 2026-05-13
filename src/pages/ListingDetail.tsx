@@ -53,8 +53,27 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
     status: data.status as Listing["status"],
     weight: data.weight,
     admin_feedback: (data as any).admin_feedback,
+    reserved_for: (data as any).reserved_for,
+    reserved_until: (data as any).reserved_until,
+    reserved_offer_id: (data as any).reserved_offer_id,
   };
 };
+
+function useCountdown(target?: string | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!target) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [target]);
+  if (!target) return null;
+  const ms = new Date(target).getTime() - now;
+  if (ms <= 0) return "00:00:00";
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const s = Math.floor((ms % 60_000) / 1000);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
   const [selected, setSelected] = useState(0);

@@ -50,8 +50,11 @@ export type Listing = {
   seller_id: string;
   seller_name: string;
   created_at: string;
-  status: "pending" | "approved" | "rejected" | "sold";
+  status: "pending" | "approved" | "rejected" | "sold" | "reserved" | "needs_revision";
   weight?: number | null;
   admin_feedback?: string | null;
+  reserved_for?: string | null;
+  reserved_until?: string | null;
+  reserved_offer_id?: string | null;
 };
 

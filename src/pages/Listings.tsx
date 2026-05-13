@@ -20,7 +20,7 @@ const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
     .from("listings")
     .select("*")
-    .eq("status", "approved")
+    .in("status", ["approved", "reserved"])
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -39,6 +39,8 @@ const fetchListings = async (): Promise<Listing[]> => {
     seller_name: "Seller",
     created_at: row.created_at,
     status: row.status,
+    reserved_for: row.reserved_for,
+    reserved_until: row.reserved_until,
   }));
 
   return dbListings;

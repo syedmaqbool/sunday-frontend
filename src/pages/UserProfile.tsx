@@ -46,7 +46,10 @@ type ItemStatus = {
   quality_confirmed_at?: string;
 };
 
-// Auto-complete window after shipment if buyer hasn't responded (48h)
+// Buyer has 12h after the expected delivery date to confirm receipt or
+// raise a quality concern; otherwise the order is auto-closed.
+const DELIVERY_CONFIRM_WINDOW_MS = 12 * 60 * 60 * 1000;
+// Fallback auto-complete window when no expected_delivery was set (48h after shipment)
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
 
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
@@ -61,8 +64,19 @@ const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
     return { ...entry, status: entry.status };
   }
   if (entry.status === "shipped") {
-    // Auto-complete 48h after shipment
-    if (entry.shipped_at) {
+    // Prefer expected_delivery + 12h window
+    if (entry.expected_delivery) {
+      const eta = new Date(entry.expected_delivery).getTime();
+      if (Number.isFinite(eta) && Date.now() >= eta + DELIVERY_CONFIRM_WINDOW_MS) {
+        return {
+          ...entry,
+          status: "completed",
+          completed_at: new Date(eta + DELIVERY_CONFIRM_WINDOW_MS).toISOString(),
+          auto_completed: true,
+        };
+      }
+    } else if (entry.shipped_at) {
+      // Fallback: 48h after shipment
       const shippedAt = new Date(entry.shipped_at).getTime();
       if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
         return {

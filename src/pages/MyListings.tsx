@@ -79,19 +79,35 @@ const MyListings = () => {
     return null;
   }
 
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("expire_listing_reservation", {
+        _listing_id: id,
+        _force: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Reservation cancelled");
+      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
   const statusColor = (s: string) => {
     if (s === "approved") return "default";
     if (s === "rejected") return "destructive";
+    if (s === "reserved") return "default";
     return "secondary";
   };
 
-  const approvedListings = listings.filter((l: any) => l.status === "approved");
+  const approvedListings = listings.filter((l: any) => l.status === "approved" || l.status === "reserved");
   const soldListings = listings.filter((l: any) => l.status === "sold");
   const pendingListings = listings.filter(
-    (l: any) => l.status !== "approved" && l.status !== "sold"
+    (l: any) => l.status !== "approved" && l.status !== "reserved" && l.status !== "sold"
   );
 
-  const isReadOnly = (status: string) => status === "approved" || status === "sold";
+  const isReadOnly = (status: string) => status === "approved" || status === "sold" || status === "reserved";
 
   const renderListingCard = (listing: any) => (
     <Card key={listing.id}>

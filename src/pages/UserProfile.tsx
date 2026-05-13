@@ -46,7 +46,10 @@ type ItemStatus = {
   quality_confirmed_at?: string;
 };
 
-// Auto-complete window after shipment if buyer hasn't responded (48h)
+// Buyer has 12h after the expected delivery date to confirm receipt or
+// raise a quality concern; otherwise the order is auto-closed.
+const DELIVERY_CONFIRM_WINDOW_MS = 12 * 60 * 60 * 1000;
+// Fallback auto-complete window when no expected_delivery was set (48h after shipment)
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
 
 const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {

@@ -64,8 +64,19 @@ const getItemStatus = (itemStatus: any, listingId: string): ItemStatus => {
     return { ...entry, status: entry.status };
   }
   if (entry.status === "shipped") {
-    // Auto-complete 48h after shipment
-    if (entry.shipped_at) {
+    // Prefer expected_delivery + 12h window
+    if (entry.expected_delivery) {
+      const eta = new Date(entry.expected_delivery).getTime();
+      if (Number.isFinite(eta) && Date.now() >= eta + DELIVERY_CONFIRM_WINDOW_MS) {
+        return {
+          ...entry,
+          status: "completed",
+          completed_at: new Date(eta + DELIVERY_CONFIRM_WINDOW_MS).toISOString(),
+          auto_completed: true,
+        };
+      }
+    } else if (entry.shipped_at) {
+      // Fallback: 48h after shipment
       const shippedAt = new Date(entry.shipped_at).getTime();
       if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
         return {

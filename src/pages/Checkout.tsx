@@ -139,7 +139,7 @@ const Checkout = () => {
       const listingIds = items.map((i) => i.listing.id);
       const { data: freshListings, error: freshErr } = await supabase
         .from("listings")
-        .select("id, title, status, reserved_for, reserved_until")
+        .select("id, title, status, reserved_for, reserved_until, reserved_offer_id, price")
         .in("id", listingIds);
       if (freshErr) {
         toast({ title: "Validation failed", description: freshErr.message, variant: "destructive" });
@@ -163,29 +163,62 @@ const Checkout = () => {
         setPlacing(false);
         return;
       }
-      // Snapshot items for the order record
-      const itemsSnapshot = items.map(({ listing, quantity }) => ({
-        listing_id: listing.id,
-        seller_id: listing.seller_id,
-        seller_name: listing.seller_name,
-        title: listing.title,
-        brand: listing.brand,
-        image: listing.images?.[0] ?? null,
-        price: listing.price,
-        quantity,
-      }));
 
+      // Authoritative price: when listing is reserved for this buyer, use the accepted offer amount.
+      const reservedOfferIds = (freshListings ?? [])
+        .filter((l: any) => l.status === "reserved" && l.reserved_for === user.id && l.reserved_offer_id)
+        .map((l: any) => l.reserved_offer_id as string);
+      const offerAmountByListing = new Map<string, number>();
+      if (reservedOfferIds.length) {
+        const { data: acceptedOffers } = await supabase
+          .from("offers")
+          .select("id, listing_id, amount, status, buyer_id")
+          .in("id", reservedOfferIds);
+        for (const o of acceptedOffers ?? []) {
+          if (o.status === "accepted" && o.buyer_id === user.id) {
+            offerAmountByListing.set(o.listing_id as string, Number(o.amount));
+          }
+        }
+      }
+
+      // Snapshot items for the order record (apply authoritative reserved price)
+      const itemsSnapshot = items.map(({ listing, quantity }) => {
+        const overridePrice = offerAmountByListing.get(listing.id);
+        const price = typeof overridePrice === "number" ? overridePrice : listing.price;
+        return {
+          listing_id: listing.id,
+          seller_id: listing.seller_id,
+          seller_name: listing.seller_name,
+          title: listing.title,
+          brand: listing.brand,
+          image: listing.images?.[0] ?? null,
+          price,
+          quantity,
+          ...(typeof overridePrice === "number" ? { reserved_offer_price: true } : {}),
+        };
+      });
+
+      // Recompute monetary totals from the authoritative snapshot
+      const authoritativeSubtotal = itemsSnapshot.reduce((s, i) => s + i.price * i.quantity, 0);
+      const authoritativeDiscount = appliedDiscount
+        ? appliedDiscount.discount_type === "percentage"
+          ? Math.round(authoritativeSubtotal * appliedDiscount.discount_value / 100)
+          : Math.min(appliedDiscount.discount_value, authoritativeSubtotal)
+        : 0;
+      const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
+      const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
+      const authoritativeTotal = authoritativeTaxable + authoritativeTax;
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({
           buyer_id: user.id,
           items: itemsSnapshot,
-          subtotal: totalPrice,
+          subtotal: authoritativeSubtotal,
           discount_code: appliedDiscount?.code ?? null,
-          discount_amount: discountAmount,
+          discount_amount: authoritativeDiscount,
           tax_rate: taxRate,
-          tax_amount: taxAmount,
-          total: finalPrice,
+          tax_amount: authoritativeTax,
+          total: authoritativeTotal,
           shipping_first_name: shipping.firstName,
           shipping_last_name: shipping.lastName,
           shipping_address: shipping.address,
@@ -206,8 +239,8 @@ const Checkout = () => {
       trackEvent("purchase", {
         transaction_id: orderRow.id,
         currency: "ZAR",
-        value: finalPrice,
-        tax: taxAmount,
+        value: authoritativeTotal,
+        tax: authoritativeTax,
         coupon: appliedDiscount?.code ?? undefined,
         items: itemsSnapshot.map((i) => ({
           item_id: i.listing_id,
@@ -240,13 +273,13 @@ const Checkout = () => {
                   quantity: i.quantity,
                   price: i.price,
                 })),
-                subtotal: totalPrice,
+                subtotal: authoritativeSubtotal,
                 discountCode: appliedDiscount?.code ?? null,
-                discountAmount,
+                discountAmount: authoritativeDiscount,
                 taxName: activeTax?.name,
                 taxRate,
-                taxAmount,
-                total: finalPrice,
+                taxAmount: authoritativeTax,
+                total: authoritativeTotal,
                 shippingName: `${shipping.firstName} ${shipping.lastName}`,
                 shippingAddress: shipping.address,
                 shippingCity: shipping.city,

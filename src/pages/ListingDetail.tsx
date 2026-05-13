@@ -162,6 +162,22 @@ const ListingDetail = () => {
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
 
+  const { data: reservedOfferAmount } = useQuery({
+    queryKey: ["reserved-offer-amount", listing?.reserved_offer_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("offers")
+        .select("amount")
+        .eq("id", listing!.reserved_offer_id!)
+        .maybeSingle();
+      if (error || !data) return null;
+      return Number(data.amount);
+    },
+    enabled: !!(isReservedForMe && listing?.reserved_offer_id),
+  });
+
+  const effectivePrice = isReservedForMe && reservedOfferAmount ? reservedOfferAmount : listing?.price ?? 0;
+
   const cancelReservation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("expire_listing_reservation", {
@@ -230,7 +246,15 @@ const ListingDetail = () => {
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>
             <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{listing.title}</h1>
-            <p className="mt-4 text-3xl font-bold text-foreground">R {listing.price.toLocaleString()}</p>
+            {isReservedForMe && reservedOfferAmount && reservedOfferAmount !== listing.price ? (
+              <div className="mt-4 flex items-baseline gap-3">
+                <p className="text-3xl font-bold text-foreground">R {reservedOfferAmount.toLocaleString()}</p>
+                <p className="text-lg text-muted-foreground line-through">R {listing.price.toLocaleString()}</p>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Your accepted offer</span>
+              </div>
+            ) : (
+              <p className="mt-4 text-3xl font-bold text-foreground">R {listing.price.toLocaleString()}</p>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Size {listing.size}</span>
@@ -323,7 +347,7 @@ const ListingDetail = () => {
                   size="lg"
                   className="flex-1 gap-2"
                   disabled={inCart || isReservedForOther}
-                  onClick={() => addItem(listing)}
+                  onClick={() => addItem(listing, isReservedForMe ? effectivePrice : undefined)}
                 >
                   {inCart ? (
                     <><Check className="h-4 w-4" /> In Cart</>

@@ -255,11 +255,43 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {isReserved && (
+              <div className={`mt-6 rounded-lg border px-4 py-3 text-sm ${isReservedForMe ? "border-primary/40 bg-primary/5 text-foreground" : "border-border bg-muted text-muted-foreground"}`}>
+                {isReservedForMe ? (
+                  <p>
+                    <span className="font-semibold text-primary">Reserved for you.</span>{" "}
+                    Complete your purchase within{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                ) : isOwner ? (
+                  <p>
+                    Reserved for an approved buyer · expires in{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                ) : (
+                  <p>
+                    Currently reserved for another buyer · available again in{" "}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                )}
+              </div>
+            )}
+
             {isOwner ? (
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
                   <Pencil className="h-4 w-4" /> Edit Listing
                 </Button>
+                {isReserved && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => cancelReservation.mutate()}
+                    disabled={cancelReservation.isPending}
+                  >
+                    Cancel reservation
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="lg" variant="outline" className="gap-2 text-destructive">
@@ -287,15 +319,28 @@ const ListingDetail = () => {
               </div>
             ) : listing.status !== "sold" ? (
               <div className="mt-8 flex gap-3">
-                <Button size="lg" className="flex-1 gap-2" disabled={inCart} onClick={() => addItem(listing)}>
-                  {inCart ? <><Check className="h-4 w-4" /> In Cart</> : <><ShoppingBag className="h-4 w-4" /> Add to Cart</>}
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2"
+                  disabled={inCart || isReservedForOther}
+                  onClick={() => addItem(listing)}
+                >
+                  {inCart ? (
+                    <><Check className="h-4 w-4" /> In Cart</>
+                  ) : isReservedForOther ? (
+                    <>Currently Reserved</>
+                  ) : (
+                    <><ShoppingBag className="h-4 w-4" /> {isReservedForMe ? "Complete Purchase" : "Add to Cart"}</>
+                  )}
                 </Button>
-                <MakeOfferButton
-                  listingId={listing.id}
-                  sellerId={listing.seller_id}
-                  listingPrice={listing.price}
-                  listingTitle={listing.title}
-                />
+                {!isReserved && (
+                  <MakeOfferButton
+                    listingId={listing.id}
+                    sellerId={listing.seller_id}
+                    listingPrice={listing.price}
+                    listingTitle={listing.title}
+                  />
+                )}
                 <Button variant="outline" size="lg">
                   <Heart className="h-4 w-4" />
                 </Button>

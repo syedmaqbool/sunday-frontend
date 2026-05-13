@@ -131,7 +131,7 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
             buyer_id: offer.buyer_id,
             seller_id: offer.seller_id,
           });
-          await supabase.from("listings").update({ status: "sold" }).eq("id", offer.listing_id);
+          // Listing status -> 'reserved' is handled automatically by DB trigger.
         }
       }
     },

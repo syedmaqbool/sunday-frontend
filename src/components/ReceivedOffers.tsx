@@ -138,7 +138,7 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
     onSuccess: (_, { status }) => {
       toast.success(`Offer ${status}`);
       if (status === "accepted") {
-        toast.info("A conversation has been started — check your Messages!");
+        toast.info("Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.");
       }
       queryClient.invalidateQueries({ queryKey: ["offers-received"] });
       queryClient.invalidateQueries({ queryKey: ["my-listings"] });

@@ -561,6 +561,9 @@ export type Database = {
           id: string
           images: string[]
           price: number
+          reserved_for: string | null
+          reserved_offer_id: string | null
+          reserved_until: string | null
           seller_id: string
           size: string
           status: string
@@ -578,6 +581,9 @@ export type Database = {
           id?: string
           images?: string[]
           price: number
+          reserved_for?: string | null
+          reserved_offer_id?: string | null
+          reserved_until?: string | null
           seller_id: string
           size: string
           status?: string
@@ -595,6 +601,9 @@ export type Database = {
           id?: string
           images?: string[]
           price?: number
+          reserved_for?: string | null
+          reserved_offer_id?: string | null
+          reserved_until?: string | null
           seller_id?: string
           size?: string
           status?: string
@@ -1185,6 +1194,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      expire_listing_reservation: {
+        Args: { _force?: boolean; _listing_id: string }
+        Returns: undefined
       }
       has_role: {
         Args: {

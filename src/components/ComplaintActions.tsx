@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Truck, Loader2, Upload, X, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
+import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
 
 
 interface ComplaintActionsProps {

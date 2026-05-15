@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Truck, Loader2, Upload, X, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
+import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
 
 
 interface ComplaintActionsProps {
@@ -169,19 +170,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
 
   // Already-resolved states
   if (complaint && (complaint.status === "refunded" || complaint.status === "rejected" || complaint.status === "return_received")) {
-    return (
-      <div className="mt-2 space-y-1">
-        <Badge variant="outline" className="gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          {STATUS_LABEL[complaint.status] ?? complaint.status}
-        </Badge>
-        {(complaint.status === "refunded" || complaint.status === "rejected") && complaint.admin_notes && (
-          <p className="max-w-md text-xs text-muted-foreground">
-            <span className="font-semibold">Admin note:</span> {complaint.admin_notes}
-          </p>
-        )}
-      </div>
-    );
+    return <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />;
   }
 
   // Active complaint
@@ -189,11 +178,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     const isRaised = complaint.status === "raised";
     return (
       <>
+        <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20">
-            <AlertTriangle className="h-3 w-3" />
-            {STATUS_LABEL[complaint.status] ?? complaint.status}
-          </Badge>
           {isRaised && (
             <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setReturnOpen(true)}>
               <Truck className="h-3 w-3" />

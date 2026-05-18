@@ -274,8 +274,6 @@ const Payouts = () => {
     const refundTotal = buyerRefunds.reduce((sum, r) => sum + r.amount, 0);
     return { ...sellerTotals, refunds: refundTotal };
   }, [summaries, buyerRefunds]);
-    );
-  }, [summaries]);
 
   const openRecord = (s: SellerSummary) => {
     setActiveSeller(s);

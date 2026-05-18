@@ -75,12 +75,15 @@ type Txn = {
   amount: number; // positive = credit to seller, negative = debit
   description: string;
   reference?: string;
+  refunded?: boolean; // sale later refunded — excluded from payout balance
 };
 
 type SellerSummary = {
   seller_id: string;
   name: string;
-  sales: number;
+  sales: number;          // net sales eligible for payout (excludes refunded)
+  refundedSales: number;  // gross value of refunded sales (excluded from payout)
+  refundedCount: number;
   paid: number;
   balance: number;
 };

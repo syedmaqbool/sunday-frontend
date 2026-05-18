@@ -111,6 +111,7 @@ const Payouts = () => {
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeSeller, setActiveSeller] = useState<SellerSummary | null>(null);
+  const [detailPayout, setDetailPayout] = useState<Payout | null>(null);
   const [form, setForm] = useState({
     amount: "",
     method: "bank_transfer",

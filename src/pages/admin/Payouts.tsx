@@ -81,9 +81,19 @@ type SellerSummary = {
   seller_id: string;
   name: string;
   sales: number;
-  refunds: number;
   paid: number;
   balance: number;
+};
+
+type BuyerRefund = {
+  id: string;
+  buyer_id: string;
+  buyer_name: string;
+  order_id: string;
+  listing_id: string;
+  title: string;
+  amount: number;
+  at: string;
 };
 
 const fmt = (n: number) =>
@@ -146,42 +156,44 @@ const Payouts = () => {
   const sellerIds = useMemo(() => {
     const s = new Set<string>();
     orders.forEach((o) => o.items?.forEach((it) => it.seller_id && s.add(it.seller_id)));
-    complaints.forEach((c) => c.seller_id && s.add(c.seller_id));
     payouts.forEach((p) => p.seller_id && s.add(p.seller_id));
     return Array.from(s);
-  }, [orders, complaints, payouts]);
+  }, [orders, payouts]);
+
+  const buyerIds = useMemo(() => {
+    const s = new Set<string>();
+    complaints.forEach((c) => c.buyer_id && s.add(c.buyer_id));
+    return Array.from(s);
+  }, [complaints]);
+
+  const profileIds = useMemo(
+    () => Array.from(new Set([...sellerIds, ...buyerIds])),
+    [sellerIds, buyerIds],
+  );
 
   const { data: profiles = [] } = useQuery({
-    queryKey: ["admin-payouts-profiles", sellerIds.sort().join(",")],
-    enabled: sellerIds.length > 0,
+    queryKey: ["admin-payouts-profiles", profileIds.sort().join(",")],
+    enabled: profileIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", sellerIds);
+        .in("id", profileIds);
       if (error) throw error;
       return (data ?? []) as Profile[];
     },
   });
 
   const nameOf = (id: string) =>
-    profiles.find((p) => p.id === id)?.full_name?.trim() || `Seller ${id.slice(0, 6)}`;
+    profiles.find((p) => p.id === id)?.full_name?.trim() || `User ${id.slice(0, 6)}`;
 
-  // Refund map: listing_id+order_id -> true
-  const refundedKey = (orderId: string, listingId: string) => `${orderId}::${listingId}`;
-  const refundSet = useMemo(() => {
-    const s = new Set<string>();
-    complaints.forEach((c) => s.add(refundedKey(c.order_id, c.listing_id)));
-    return s;
-  }, [complaints]);
-
-  const { transactions, summaries } = useMemo(() => {
+  const { transactions, summaries, buyerRefunds } = useMemo(() => {
     const txns: Txn[] = [];
     const map = new Map<string, SellerSummary>();
     const ensure = (sid: string): SellerSummary => {
       let s = map.get(sid);
       if (!s) {
-        s = { seller_id: sid, name: nameOf(sid), sales: 0, refunds: 0, paid: 0, balance: 0 };
+        s = { seller_id: sid, name: nameOf(sid), sales: 0, paid: 0, balance: 0 };
         map.set(sid, s);
       }
       return s;
@@ -205,24 +217,6 @@ const Payouts = () => {
       });
     });
 
-    complaints.forEach((c) => {
-      // find matching order item amount
-      const order = orders.find((o) => o.id === c.order_id);
-      const item = order?.items?.find((it) => it.listing_id === c.listing_id);
-      const amt = item ? itemTotal(item) : 0;
-      const s = ensure(c.seller_id);
-      s.refunds += amt;
-      txns.push({
-        id: `refund-${c.id}`,
-        kind: "refund",
-        at: c.resolved_at || c.updated_at || c.created_at,
-        seller_id: c.seller_id,
-        amount: -amt,
-        description: item?.title ? `Refunded: ${item.title}` : "Refunded item",
-        reference: `Complaint ${c.id.slice(0, 8)}`,
-      });
-    });
-
     payouts.forEach((p) => {
       const s = ensure(p.seller_id);
       s.paid += Number(p.amount);
@@ -237,13 +231,29 @@ const Payouts = () => {
       });
     });
 
+    const refunds: BuyerRefund[] = complaints.map((c) => {
+      const order = orders.find((o) => o.id === c.order_id);
+      const item = order?.items?.find((it) => it.listing_id === c.listing_id);
+      return {
+        id: c.id,
+        buyer_id: c.buyer_id,
+        buyer_name: nameOf(c.buyer_id),
+        order_id: c.order_id,
+        listing_id: c.listing_id,
+        title: item?.title || "Refunded item",
+        amount: item ? itemTotal(item) : 0,
+        at: c.resolved_at || c.updated_at || c.created_at,
+      };
+    });
+
     map.forEach((s) => {
-      s.balance = s.sales - s.refunds - s.paid;
+      s.balance = s.sales - s.paid;
     });
 
     const list = Array.from(map.values()).sort((a, b) => b.balance - a.balance);
     txns.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-    return { transactions: txns, summaries: list };
+    refunds.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return { transactions: txns, summaries: list, buyerRefunds: refunds };
   }, [orders, complaints, payouts, profiles]);
 
   const filteredTxns = useMemo(
@@ -252,17 +262,18 @@ const Payouts = () => {
   );
 
   const totals = useMemo(() => {
-    return summaries.reduce(
+    const sellerTotals = summaries.reduce(
       (acc, s) => {
         acc.sales += s.sales;
-        acc.refunds += s.refunds;
         acc.paid += s.paid;
         acc.due += Math.max(0, s.balance);
         return acc;
       },
-      { sales: 0, refunds: 0, paid: 0, due: 0 },
+      { sales: 0, paid: 0, due: 0 },
     );
-  }, [summaries]);
+    const refundTotal = buyerRefunds.reduce((sum, r) => sum + r.amount, 0);
+    return { ...sellerTotals, refunds: refundTotal };
+  }, [summaries, buyerRefunds]);
 
   const openRecord = (s: SellerSummary) => {
     setActiveSeller(s);
@@ -346,8 +357,8 @@ const Payouts = () => {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Gross sales" value={fmt(totals.sales)} icon={ArrowUpRight} tone="positive" />
-        <StatCard label="Refunds" value={fmt(totals.refunds)} icon={ArrowDownRight} tone="negative" />
-        <StatCard label="Paid out" value={fmt(totals.paid)} icon={Wallet} tone="muted" />
+        <StatCard label="Buyer refunds" value={fmt(totals.refunds)} icon={ArrowDownRight} tone="negative" />
+        <StatCard label="Paid to sellers" value={fmt(totals.paid)} icon={Wallet} tone="muted" />
         <StatCard label="Balance due" value={fmt(totals.due)} icon={CircleDollarSign} tone="accent" />
       </div>
 
@@ -360,6 +371,7 @@ const Payouts = () => {
           <TabsList>
             <TabsTrigger value="sellers">By seller</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
             <TabsTrigger value="history">Payout history</TabsTrigger>
           </TabsList>
 
@@ -371,7 +383,6 @@ const Payouts = () => {
                     <TableRow>
                       <TableHead>Seller</TableHead>
                       <TableHead className="text-right">Sales</TableHead>
-                      <TableHead className="text-right">Refunds</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Balance due</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -380,7 +391,7 @@ const Payouts = () => {
                   <TableBody>
                     {summaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                           No seller activity yet.
                         </TableCell>
                       </TableRow>
@@ -389,9 +400,6 @@ const Payouts = () => {
                       <TableRow key={s.seller_id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
                         <TableCell className="text-right">{fmt(s.sales)}</TableCell>
-                        <TableCell className="text-right text-destructive">
-                          {s.refunds > 0 ? `-${fmt(s.refunds)}` : fmt(0)}
-                        </TableCell>
                         <TableCell className="text-right">{fmt(s.paid)}</TableCell>
                         <TableCell className="text-right">
                           <span className={s.balance > 0 ? "font-semibold text-primary" : "text-muted-foreground"}>
@@ -467,6 +475,48 @@ const Payouts = () => {
                         >
                           {t.amount >= 0 ? "+" : "-"}
                           {fmt(Math.abs(t.amount))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="refunds">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {buyerRefunds.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                          No buyer refunds.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {buyerRefunds.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          {format(new Date(r.at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="font-medium">{r.buyer_name}</TableCell>
+                        <TableCell className="max-w-xs truncate">{r.title}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          Order {r.order_id.slice(0, 8)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-destructive">
+                          {fmt(r.amount)}
                         </TableCell>
                       </TableRow>
                     ))}

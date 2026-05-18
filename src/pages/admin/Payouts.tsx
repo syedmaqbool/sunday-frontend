@@ -503,6 +503,7 @@ const Payouts = () => {
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
             <TabsTrigger value="history">Payout history</TabsTrigger>
+            <TabsTrigger value="period">Period report</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sellers">

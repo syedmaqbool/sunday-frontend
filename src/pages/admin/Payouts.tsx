@@ -296,6 +296,115 @@ const Payouts = () => {
     return { ...sellerTotals, refunds: refundTotal };
   }, [summaries, buyerRefunds]);
 
+  type PeriodItem = {
+    id: string;
+    kind: "payout" | "refund";
+    at: string;
+    party: string;
+    description: string;
+    reference: string;
+    amount: number;
+  };
+
+  const periodItems = useMemo<PeriodItem[]>(() => {
+    if (!rangeStart || !rangeEnd) return [];
+    const start = new Date(rangeStart);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(rangeEnd);
+    end.setHours(23, 59, 59, 999);
+    const inRange = (iso: string) => {
+      const t = new Date(iso).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    };
+    const items: PeriodItem[] = [];
+    payouts.forEach((p) => {
+      if (!inRange(p.paid_at)) return;
+      items.push({
+        id: `payout-${p.id}`,
+        kind: "payout",
+        at: p.paid_at,
+        party: nameOf(p.seller_id),
+        description: `Payout · ${p.method.replace("_", " ")}`,
+        reference: p.reference || (p.period_start && p.period_end ? `${p.period_start} → ${p.period_end}` : ""),
+        amount: Number(p.amount),
+      });
+    });
+    buyerRefunds.forEach((r) => {
+      if (!inRange(r.at)) return;
+      items.push({
+        id: `refund-${r.id}`,
+        kind: "refund",
+        at: r.at,
+        party: r.buyer_name,
+        description: r.title,
+        reference: `Order ${r.order_id.slice(0, 8)}`,
+        amount: r.amount,
+      });
+    });
+    items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return items;
+  }, [rangeStart, rangeEnd, payouts, buyerRefunds, profiles]);
+
+  useEffect(() => {
+    if (!rangeStart || !rangeEnd) {
+      setSelectedIds(new Set());
+      setRangeInitialized(false);
+      return;
+    }
+    setSelectedIds(new Set(periodItems.map((i) => i.id)));
+    setRangeInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStart, rangeEnd, periodItems.length]);
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllSelected = () => {
+    if (selectedIds.size === periodItems.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(periodItems.map((i) => i.id)));
+  };
+
+  const periodTotals = useMemo(() => {
+    let payoutTotal = 0;
+    let refundTotal = 0;
+    periodItems.forEach((i) => {
+      if (!selectedIds.has(i.id)) return;
+      if (i.kind === "payout") payoutTotal += i.amount;
+      else refundTotal += i.amount;
+    });
+    return { payoutTotal, refundTotal, count: selectedIds.size };
+  }, [periodItems, selectedIds]);
+
+  const exportPeriodCsv = () => {
+    const rows = [
+      ["Date", "Type", "Party", "Description", "Reference", "Amount (PKR)"],
+      ...periodItems
+        .filter((i) => selectedIds.has(i.id))
+        .map((i) => [
+          format(new Date(i.at), "yyyy-MM-dd HH:mm"),
+          i.kind,
+          i.party,
+          i.description.replace(/"/g, '""'),
+          i.reference.replace(/"/g, '""'),
+          i.amount.toFixed(2),
+        ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payout-period-${rangeStart}_to_${rangeEnd}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const openRecord = (s: SellerSummary) => {
     setActiveSeller(s);
     setForm({

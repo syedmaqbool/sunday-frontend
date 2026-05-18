@@ -724,6 +724,129 @@ const Payouts = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="period">
+            <Card>
+              <CardContent className="space-y-4 p-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rs" className="text-xs text-muted-foreground">From</Label>
+                    <Input
+                      id="rs"
+                      type="date"
+                      className="h-9 w-44"
+                      value={rangeStart}
+                      onChange={(e) => setRangeStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="re" className="text-xs text-muted-foreground">To</Label>
+                    <Input
+                      id="re"
+                      type="date"
+                      className="h-9 w-44"
+                      value={rangeEnd}
+                      onChange={(e) => setRangeEnd(e.target.value)}
+                    />
+                  </div>
+                  {rangeStart && rangeEnd && (
+                    <>
+                      <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+                        <Badge variant="secondary">
+                          {periodTotals.count} of {periodItems.length} selected
+                        </Badge>
+                        <Badge variant="outline">Payouts {fmt(periodTotals.payoutTotal)}</Badge>
+                        <Badge variant="outline" className="text-destructive">
+                          Refunds {fmt(periodTotals.refundTotal)}
+                        </Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={exportPeriodCsv}
+                        disabled={periodTotals.count === 0}
+                      >
+                        <Download className="mr-2 h-4 w-4" /> Export selected
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {!rangeStart || !rangeEnd ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
+                    <CalendarRange className="h-8 w-8" />
+                    <p className="text-sm">Select a date range to view payouts and refunds for that period.</p>
+                  </div>
+                ) : periodItems.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    No payouts or refunds in this period.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={
+                              selectedIds.size === periodItems.length && periodItems.length > 0
+                            }
+                            onCheckedChange={toggleAllSelected}
+                            aria-label="Select all"
+                          />
+                        </TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Party</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {periodItems.map((i) => {
+                        const checked = selectedIds.has(i.id);
+                        return (
+                          <TableRow
+                            key={i.id}
+                            data-state={checked ? "selected" : undefined}
+                            className={!checked ? "opacity-60" : undefined}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleSelected(i.id)}
+                                aria-label={`Select ${i.description}`}
+                              />
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                              {format(new Date(i.at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {i.kind === "payout" ? (
+                                <Badge>Payout</Badge>
+                              ) : (
+                                <Badge variant="destructive">Refund</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{i.party}</TableCell>
+                            <TableCell className="max-w-xs truncate">{i.description}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{i.reference}</TableCell>
+                            <TableCell
+                              className={`text-right font-medium ${
+                                i.kind === "refund" ? "text-destructive" : ""
+                              }`}
+                            >
+                              {fmt(i.amount)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       )}
 

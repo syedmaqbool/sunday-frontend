@@ -81,9 +81,19 @@ type SellerSummary = {
   seller_id: string;
   name: string;
   sales: number;
-  refunds: number;
   paid: number;
   balance: number;
+};
+
+type BuyerRefund = {
+  id: string;
+  buyer_id: string;
+  buyer_name: string;
+  order_id: string;
+  listing_id: string;
+  title: string;
+  amount: number;
+  at: string;
 };
 
 const fmt = (n: number) =>

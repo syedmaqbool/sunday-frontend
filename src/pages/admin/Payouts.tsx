@@ -111,6 +111,7 @@ const Payouts = () => {
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeSeller, setActiveSeller] = useState<SellerSummary | null>(null);
+  const [detailPayout, setDetailPayout] = useState<Payout | null>(null);
   const [form, setForm] = useState({
     amount: "",
     method: "bank_transfer",
@@ -704,7 +705,11 @@ const Payouts = () => {
                       </TableRow>
                     )}
                     {payouts.map((p) => (
-                      <TableRow key={p.id}>
+                      <TableRow
+                        key={p.id}
+                        className="cursor-pointer"
+                        onClick={() => setDetailPayout(p)}
+                      >
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(p.paid_at), "MMM d, yyyy")}
                         </TableCell>
@@ -936,6 +941,14 @@ const Payouts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PayoutDetailDialog
+        payout={detailPayout}
+        onClose={() => setDetailPayout(null)}
+        orders={orders}
+        complaints={complaints}
+        nameOf={nameOf}
+      />
     </div>
   );
 };
@@ -979,5 +992,172 @@ const TxnBadge = ({ kind }: { kind: TxnKind }) => {
   if (kind === "refund") return <Badge variant="destructive">Refund</Badge>;
   return <Badge>Payout</Badge>;
 };
+
+const PayoutDetailDialog = ({
+  payout,
+  onClose,
+  orders,
+  complaints,
+  nameOf,
+}: {
+  payout: Payout | null;
+  onClose: () => void;
+  orders: Order[];
+  complaints: Complaint[];
+  nameOf: (id: string) => string;
+}) => {
+  const details = useMemo(() => {
+    if (!payout) return null;
+    const refundedSet = new Set(complaints.map((c) => `${c.order_id}|${c.listing_id}`));
+    const start = payout.period_start ? new Date(payout.period_start) : null;
+    const end = payout.period_end ? new Date(payout.period_end) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(23, 59, 59, 999);
+    const inRange = (iso: string) => {
+      if (!start || !end) return true;
+      const t = new Date(iso).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    };
+    const rows: Array<{
+      key: string;
+      order_id: string;
+      listing_id?: string;
+      title: string;
+      buyer_id: string;
+      amount: number;
+      at: string;
+      refunded: boolean;
+    }> = [];
+    orders.forEach((o) => {
+      if (!inRange(o.created_at)) return;
+      (o.items ?? []).forEach((it, idx) => {
+        if (it.seller_id !== payout.seller_id) return;
+        const refunded = it.listing_id ? refundedSet.has(`${o.id}|${it.listing_id}`) : false;
+        rows.push({
+          key: `${o.id}-${idx}`,
+          order_id: o.id,
+          listing_id: it.listing_id,
+          title: it.title || "Item",
+          buyer_id: o.buyer_id,
+          amount: itemTotal(it),
+          at: o.created_at,
+          refunded,
+        });
+      });
+    });
+    rows.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    const eligible = rows.filter((r) => !r.refunded);
+    const eligibleTotal = eligible.reduce((s, r) => s + r.amount, 0);
+    const refundedTotal = rows.filter((r) => r.refunded).reduce((s, r) => s + r.amount, 0);
+    return { rows, eligibleCount: eligible.length, eligibleTotal, refundedTotal };
+  }, [payout, orders, complaints]);
+
+  return (
+    <Dialog open={!!payout} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Payout details</DialogTitle>
+          <DialogDescription>
+            {payout
+              ? `${nameOf(payout.seller_id)} · ${fmt(Number(payout.amount))} · ${format(
+                  new Date(payout.paid_at),
+                  "MMM d, yyyy",
+                )}`
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+        {payout && details && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+              <Info label="Method" value={payout.method.replace("_", " ")} />
+              <Info
+                label="Period"
+                value={
+                  payout.period_start && payout.period_end
+                    ? `${payout.period_start} → ${payout.period_end}`
+                    : "All time"
+                }
+              />
+              <Info label="Reference" value={payout.reference || "—"} />
+              <Info label="Sales included" value={String(details.eligibleCount)} />
+            </div>
+            {payout.notes && (
+              <div className="rounded-md bg-muted/40 p-3 text-sm">
+                <p className="text-xs font-medium text-muted-foreground">Notes</p>
+                <p className="mt-0.5 whitespace-pre-wrap">{payout.notes}</p>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="secondary">Eligible total {fmt(details.eligibleTotal)}</Badge>
+              {details.refundedTotal > 0 && (
+                <Badge variant="destructive">Refunded {fmt(details.refundedTotal)}</Badge>
+              )}
+            </div>
+            <div className="max-h-[50vh] overflow-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Order</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {details.rows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                        No sales matched this payout.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {details.rows.map((r) => (
+                    <TableRow key={r.key} className={r.refunded ? "bg-destructive/5" : undefined}>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                        {format(new Date(r.at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        <div className="flex items-center gap-1.5">
+                          <span>{r.title}</span>
+                          {r.refunded && (
+                            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                              Refunded
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{nameOf(r.buyer_id)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        Order {r.order_id.slice(0, 8)}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-medium ${
+                          r.refunded ? "text-muted-foreground line-through" : ""
+                        }`}
+                      >
+                        {fmt(r.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const Info = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <p className="text-xs text-muted-foreground">{label}</p>
+    <p className="font-medium capitalize">{value}</p>
+  </div>
+);
 
 export default Payouts;

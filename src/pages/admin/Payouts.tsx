@@ -37,6 +37,16 @@ type Order = {
   status: string;
   items: OrderItem[];
   created_at: string;
+  item_status?: Record<string, { status?: string }> | null;
+};
+
+// A sale is payout-eligible only after the buyer confirms receipt with no
+// issues. Auto-completed orders (after the 12h confirmation window) also count.
+const CONFIRMED_STATUSES = new Set(["received", "completed"]);
+const isItemConfirmed = (order: Order, listingId?: string) => {
+  if (!listingId) return false;
+  const s = order.item_status?.[listingId]?.status?.toLowerCase?.();
+  return !!s && CONFIRMED_STATUSES.has(s);
 };
 
 type Complaint = {

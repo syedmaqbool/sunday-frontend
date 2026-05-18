@@ -252,8 +252,6 @@ const Payouts = () => {
         });
       });
     });
-      });
-    });
 
     payouts.forEach((p) => {
       const s = ensure(p.seller_id);

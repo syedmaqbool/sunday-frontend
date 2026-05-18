@@ -89,6 +89,7 @@ const App = () => (
               <Route path="support" element={<AdminSupport />} />
               <Route path="boosts" element={<BoostManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="payouts" element={<AdminPayouts />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

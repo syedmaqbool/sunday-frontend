@@ -398,7 +398,8 @@ const Payouts = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Seller</TableHead>
-                      <TableHead className="text-right">Sales</TableHead>
+                      <TableHead className="text-right">Net sales</TableHead>
+                      <TableHead className="text-right">Refunded (excluded)</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Balance due</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -407,7 +408,7 @@ const Payouts = () => {
                   <TableBody>
                     {summaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                           No seller activity yet.
                         </TableCell>
                       </TableRow>
@@ -416,6 +417,18 @@ const Payouts = () => {
                       <TableRow key={s.seller_id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
                         <TableCell className="text-right">{fmt(s.sales)}</TableCell>
+                        <TableCell className="text-right">
+                          {s.refundedSales > 0 ? (
+                            <span className="inline-flex items-center gap-1.5 text-destructive">
+                              <span>−{fmt(s.refundedSales)}</span>
+                              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                {s.refundedCount}
+                              </Badge>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">{fmt(s.paid)}</TableCell>
                         <TableCell className="text-right">
                           <span className={s.balance > 0 ? "font-semibold text-primary" : "text-muted-foreground"}>

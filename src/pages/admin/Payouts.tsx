@@ -75,12 +75,15 @@ type Txn = {
   amount: number; // positive = credit to seller, negative = debit
   description: string;
   reference?: string;
+  refunded?: boolean; // sale later refunded — excluded from payout balance
 };
 
 type SellerSummary = {
   seller_id: string;
   name: string;
-  sales: number;
+  sales: number;          // net sales eligible for payout (excludes refunded)
+  refundedSales: number;  // gross value of refunded sales (excluded from payout)
+  refundedCount: number;
   paid: number;
   balance: number;
 };
@@ -193,26 +196,39 @@ const Payouts = () => {
     const ensure = (sid: string): SellerSummary => {
       let s = map.get(sid);
       if (!s) {
-        s = { seller_id: sid, name: nameOf(sid), sales: 0, paid: 0, balance: 0 };
+        s = { seller_id: sid, name: nameOf(sid), sales: 0, refundedSales: 0, refundedCount: 0, paid: 0, balance: 0 };
         map.set(sid, s);
       }
       return s;
     };
+
+    // Build a quick lookup of refunded (order_id, listing_id) pairs
+    const refundedKey = (orderId: string, listingId: string) => `${orderId}|${listingId}`;
+    const refundedSet = new Set<string>(
+      complaints.map((c) => refundedKey(c.order_id, c.listing_id)),
+    );
 
     orders.forEach((o) => {
       (o.items ?? []).forEach((it, idx) => {
         if (!it.seller_id) return;
         const amt = itemTotal(it);
         const s = ensure(it.seller_id);
-        s.sales += amt;
+        const isRefunded = it.listing_id ? refundedSet.has(refundedKey(o.id, it.listing_id)) : false;
+        if (isRefunded) {
+          s.refundedSales += amt;
+          s.refundedCount += 1;
+        } else {
+          s.sales += amt;
+        }
         txns.push({
           id: `sale-${o.id}-${idx}`,
           kind: "sale",
           at: o.created_at,
           seller_id: it.seller_id,
-          amount: amt,
-          description: it.title || "Item sold",
+          amount: isRefunded ? 0 : amt,
+          description: isRefunded ? `Refunded — ${it.title || "Item"}` : it.title || "Item sold",
           reference: `Order ${o.id.slice(0, 8)}`,
+          refunded: isRefunded,
         });
       });
     });
@@ -382,7 +398,8 @@ const Payouts = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Seller</TableHead>
-                      <TableHead className="text-right">Sales</TableHead>
+                      <TableHead className="text-right">Net sales</TableHead>
+                      <TableHead className="text-right">Refunded (excluded)</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Balance due</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -391,7 +408,7 @@ const Payouts = () => {
                   <TableBody>
                     {summaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                           No seller activity yet.
                         </TableCell>
                       </TableRow>
@@ -400,6 +417,18 @@ const Payouts = () => {
                       <TableRow key={s.seller_id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
                         <TableCell className="text-right">{fmt(s.sales)}</TableCell>
+                        <TableCell className="text-right">
+                          {s.refundedSales > 0 ? (
+                            <span className="inline-flex items-center gap-1.5 text-destructive">
+                              <span>−{fmt(s.refundedSales)}</span>
+                              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                {s.refundedCount}
+                              </Badge>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">{fmt(s.paid)}</TableCell>
                         <TableCell className="text-right">
                           <span className={s.balance > 0 ? "font-semibold text-primary" : "text-muted-foreground"}>
@@ -458,19 +487,30 @@ const Payouts = () => {
                       </TableRow>
                     )}
                     {filteredTxns.map((t) => (
-                      <TableRow key={t.id}>
+                      <TableRow key={t.id} className={t.refunded ? "bg-destructive/5" : undefined}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(t.at), "MMM d, yyyy")}
                         </TableCell>
                         <TableCell>
-                          <TxnBadge kind={t.kind} />
+                          <div className="flex items-center gap-1.5">
+                            <TxnBadge kind={t.kind} />
+                            {t.refunded && (
+                              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                Refunded
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{nameOf(t.seller_id)}</TableCell>
                         <TableCell className="max-w-xs truncate">{t.description}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.reference}</TableCell>
                         <TableCell
                           className={`text-right font-medium ${
-                            t.amount >= 0 ? "text-foreground" : "text-destructive"
+                            t.refunded
+                              ? "text-muted-foreground line-through"
+                              : t.amount >= 0
+                              ? "text-foreground"
+                              : "text-destructive"
                           }`}
                         >
                           {t.amount >= 0 ? "+" : "-"}

@@ -308,7 +308,7 @@ const Payouts = () => {
 
   const exportCsv = () => {
     const rows = [
-      ["Date", "Type", "Seller", "Amount (EUR)", "Description", "Reference"],
+      ["Date", "Type", "Seller", "Amount (PKR)", "Description", "Reference"],
       ...filteredTxns.map((t) => [
         format(new Date(t.at), "yyyy-MM-dd HH:mm"),
         t.kind,

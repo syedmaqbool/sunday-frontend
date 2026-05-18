@@ -187,13 +187,13 @@ const Payouts = () => {
   const nameOf = (id: string) =>
     profiles.find((p) => p.id === id)?.full_name?.trim() || `User ${id.slice(0, 6)}`;
 
-  const { transactions, summaries } = useMemo(() => {
+  const { transactions, summaries, buyerRefunds } = useMemo(() => {
     const txns: Txn[] = [];
     const map = new Map<string, SellerSummary>();
     const ensure = (sid: string): SellerSummary => {
       let s = map.get(sid);
       if (!s) {
-        s = { seller_id: sid, name: nameOf(sid), sales: 0, refunds: 0, paid: 0, balance: 0 };
+        s = { seller_id: sid, name: nameOf(sid), sales: 0, paid: 0, balance: 0 };
         map.set(sid, s);
       }
       return s;
@@ -217,24 +217,6 @@ const Payouts = () => {
       });
     });
 
-    complaints.forEach((c) => {
-      // find matching order item amount
-      const order = orders.find((o) => o.id === c.order_id);
-      const item = order?.items?.find((it) => it.listing_id === c.listing_id);
-      const amt = item ? itemTotal(item) : 0;
-      const s = ensure(c.seller_id);
-      s.refunds += amt;
-      txns.push({
-        id: `refund-${c.id}`,
-        kind: "refund",
-        at: c.resolved_at || c.updated_at || c.created_at,
-        seller_id: c.seller_id,
-        amount: -amt,
-        description: item?.title ? `Refunded: ${item.title}` : "Refunded item",
-        reference: `Complaint ${c.id.slice(0, 8)}`,
-      });
-    });
-
     payouts.forEach((p) => {
       const s = ensure(p.seller_id);
       s.paid += Number(p.amount);
@@ -249,13 +231,29 @@ const Payouts = () => {
       });
     });
 
+    const refunds: BuyerRefund[] = complaints.map((c) => {
+      const order = orders.find((o) => o.id === c.order_id);
+      const item = order?.items?.find((it) => it.listing_id === c.listing_id);
+      return {
+        id: c.id,
+        buyer_id: c.buyer_id,
+        buyer_name: nameOf(c.buyer_id),
+        order_id: c.order_id,
+        listing_id: c.listing_id,
+        title: item?.title || "Refunded item",
+        amount: item ? itemTotal(item) : 0,
+        at: c.resolved_at || c.updated_at || c.created_at,
+      };
+    });
+
     map.forEach((s) => {
-      s.balance = s.sales - s.refunds - s.paid;
+      s.balance = s.sales - s.paid;
     });
 
     const list = Array.from(map.values()).sort((a, b) => b.balance - a.balance);
     txns.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-    return { transactions: txns, summaries: list };
+    refunds.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return { transactions: txns, summaries: list, buyerRefunds: refunds };
   }, [orders, complaints, payouts, profiles]);
 
   const filteredTxns = useMemo(
@@ -264,15 +262,18 @@ const Payouts = () => {
   );
 
   const totals = useMemo(() => {
-    return summaries.reduce(
+    const sellerTotals = summaries.reduce(
       (acc, s) => {
         acc.sales += s.sales;
-        acc.refunds += s.refunds;
         acc.paid += s.paid;
         acc.due += Math.max(0, s.balance);
         return acc;
       },
-      { sales: 0, refunds: 0, paid: 0, due: 0 },
+      { sales: 0, paid: 0, due: 0 },
+    );
+    const refundTotal = buyerRefunds.reduce((sum, r) => sum + r.amount, 0);
+    return { ...sellerTotals, refunds: refundTotal };
+  }, [summaries, buyerRefunds]);
     );
   }, [summaries]);
 

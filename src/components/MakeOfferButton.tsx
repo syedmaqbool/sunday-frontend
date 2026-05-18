@@ -214,7 +214,7 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
         {!activeOffer && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="offer-amount">Your offer (ZAR)</Label>
+              <Label htmlFor="offer-amount">Your offer (PKR)</Label>
               <Input
                 id="offer-amount"
                 type="number"

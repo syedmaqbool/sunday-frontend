@@ -281,7 +281,7 @@ const ListingModeration = () => {
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-[10px] font-medium uppercase text-muted-foreground">Price</p>
-                      <p className="text-2xl font-bold text-foreground">R {reviewListing.price.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-foreground">Rs {reviewListing.price.toLocaleString()}</p>
                     </div>
                     {reviewListing.weight && (
                       <div className="flex items-center gap-1 text-muted-foreground">

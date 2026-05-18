@@ -41,7 +41,7 @@ const Checkout = () => {
   useEffect(() => {
     if (items.length > 0) {
       trackEvent("begin_checkout", {
-        currency: "ZAR",
+        currency: "PKR",
         value: totalPrice,
         items: items.map((i) => ({
           item_id: i.listing.id,
@@ -238,7 +238,7 @@ const Checkout = () => {
 
       trackEvent("purchase", {
         transaction_id: orderRow.id,
-        currency: "ZAR",
+        currency: "PKR",
         value: authoritativeTotal,
         tax: authoritativeTax,
         coupon: appliedDiscount?.code ?? undefined,
@@ -414,7 +414,7 @@ const Checkout = () => {
                       <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
                       <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
                     </div>
-                    <p className="text-sm font-semibold text-foreground whitespace-nowrap">R {(listing.price * quantity).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -433,7 +433,7 @@ const Checkout = () => {
                       <span className="text-xs text-primary">
                         {appliedDiscount.discount_type === "percentage"
                           ? `−${appliedDiscount.discount_value}%`
-                          : `−R ${appliedDiscount.discount_value.toLocaleString()}`}
+                          : `−Rs ${appliedDiscount.discount_value.toLocaleString()}`}
                       </span>
                     </div>
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={handleRemoveDiscount}>
@@ -459,12 +459,12 @@ const Checkout = () => {
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="font-medium text-foreground">R {totalPrice.toLocaleString()}</span>
+                <span className="font-medium text-foreground">Rs {totalPrice.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-primary">Discount</span>
-                  <span className="text-sm font-medium text-primary">−R {discountAmount.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-primary">−Rs {discountAmount.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex items-center justify-between pb-3">
@@ -474,13 +474,13 @@ const Checkout = () => {
               {taxAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">{activeTax?.name} ({taxRate}%)</span>
-                  <span className="text-sm text-foreground">R {taxAmount.toLocaleString()}</span>
+                  <span className="text-sm text-foreground">Rs {taxAmount.toLocaleString()}</span>
                 </div>
               )}
               <Separator />
               <div className="flex items-center justify-between py-4">
                 <span className="font-heading text-base font-semibold text-foreground">Total</span>
-                <span className="font-heading text-xl font-bold text-foreground">R {finalPrice.toLocaleString()}</span>
+                <span className="font-heading text-xl font-bold text-foreground">Rs {finalPrice.toLocaleString()}</span>
               </div>
               <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
                 {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Place Order"}

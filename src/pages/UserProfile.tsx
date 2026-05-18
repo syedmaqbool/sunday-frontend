@@ -681,14 +681,14 @@ function OrderCard({ order }: { order: any }) {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="text-foreground">R {Number(order.subtotal).toLocaleString()}</span>
+                  <span className="text-foreground">Rs {Number(order.subtotal).toLocaleString()}</span>
                 </div>
                 {Number(order.discount_amount) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-primary">
                       Discount{order.discount_code ? ` (${order.discount_code})` : ""}
                     </span>
-                    <span className="text-primary">−R {Number(order.discount_amount).toLocaleString()}</span>
+                    <span className="text-primary">−Rs {Number(order.discount_amount).toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -698,7 +698,7 @@ function OrderCard({ order }: { order: any }) {
                 <Separator className="my-2" />
                 <div className="flex justify-between font-semibold">
                   <span className="text-foreground">Total</span>
-                  <span className="text-foreground">R {Number(order.total).toLocaleString()}</span>
+                  <span className="text-foreground">Rs {Number(order.total).toLocaleString()}</span>
                 </div>
               </div>
             </div>

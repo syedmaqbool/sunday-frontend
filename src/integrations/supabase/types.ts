@@ -803,6 +803,113 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_run_items: {
+        Row: {
+          amount: number
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_iban: string | null
+          bank_name: string | null
+          bank_swift: string | null
+          created_at: string
+          description: string
+          details: Json
+          id: string
+          kind: string
+          marked_at: string | null
+          marked_by: string | null
+          party_id: string
+          party_name: string
+          reference: string
+          run_id: string
+          source_key: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
+          created_at?: string
+          description?: string
+          details?: Json
+          id?: string
+          kind: string
+          marked_at?: string | null
+          marked_by?: string | null
+          party_id: string
+          party_name?: string
+          reference?: string
+          run_id: string
+          source_key?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
+          created_at?: string
+          description?: string
+          details?: Json
+          id?: string
+          kind?: string
+          marked_at?: string | null
+          marked_by?: string | null
+          party_id?: string
+          party_name?: string
+          reference?: string
+          run_id?: string
+          source_key?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "payout_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string
+          period_end: string
+          period_start: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string
+          period_end: string
+          period_start: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -21,6 +21,7 @@ import {
   Headphones,
   Rocket,
   BarChart3,
+  Wallet,
   Menu,
   X,
 } from "lucide-react";

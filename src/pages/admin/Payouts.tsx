@@ -1047,6 +1047,8 @@ const PayoutDetailDialog = ({
       (o.items ?? []).forEach((it, idx) => {
         if (it.seller_id !== payout.seller_id) return;
         const refunded = it.listing_id ? refundedSet.has(`${o.id}|${it.listing_id}`) : false;
+        // Only confirmed (or refunded) items belong on a payout record.
+        if (!refunded && !isItemConfirmed(o, it.listing_id)) return;
         rows.push({
           key: `${o.id}-${idx}`,
           order_id: o.id,

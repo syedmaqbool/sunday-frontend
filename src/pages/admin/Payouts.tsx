@@ -941,6 +941,14 @@ const Payouts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PayoutDetailDialog
+        payout={detailPayout}
+        onClose={() => setDetailPayout(null)}
+        orders={orders}
+        complaints={complaints}
+        nameOf={nameOf}
+      />
     </div>
   );
 };

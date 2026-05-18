@@ -533,7 +533,7 @@ const Payouts = () => {
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="amount">Amount (€)</Label>
+                <Label htmlFor="amount">Amount (PKR)</Label>
                 <Input
                   id="amount"
                   type="number"

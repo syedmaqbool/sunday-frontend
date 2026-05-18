@@ -705,7 +705,11 @@ const Payouts = () => {
                       </TableRow>
                     )}
                     {payouts.map((p) => (
-                      <TableRow key={p.id}>
+                      <TableRow
+                        key={p.id}
+                        className="cursor-pointer"
+                        onClick={() => setDetailPayout(p)}
+                      >
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(p.paid_at), "MMM d, yyyy")}
                         </TableCell>

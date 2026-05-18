@@ -120,6 +120,10 @@ const Payouts = () => {
     period_end: "",
   });
   const [saving, setSaving] = useState(false);
+  const [rangeStart, setRangeStart] = useState<string>("");
+  const [rangeEnd, setRangeEnd] = useState<string>("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rangeInitialized, setRangeInitialized] = useState(false);
 
   const { data: orders = [], isLoading: lo } = useQuery({
     queryKey: ["admin-payouts-orders"],

@@ -37,6 +37,16 @@ type Order = {
   status: string;
   items: OrderItem[];
   created_at: string;
+  item_status?: Record<string, { status?: string }> | null;
+};
+
+// A sale is payout-eligible only after the buyer confirms receipt with no
+// issues. Auto-completed orders (after the 12h confirmation window) also count.
+const CONFIRMED_STATUSES = new Set(["received", "completed"]);
+const isItemConfirmed = (order: Order, listingId?: string) => {
+  if (!listingId) return false;
+  const s = order.item_status?.[listingId]?.status?.toLowerCase?.();
+  return !!s && CONFIRMED_STATUSES.has(s);
 };
 
 type Complaint = {
@@ -131,7 +141,7 @@ const Payouts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, buyer_id, status, items, created_at")
+        .select("id, buyer_id, status, items, item_status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Order[];
@@ -220,11 +230,15 @@ const Payouts = () => {
         const amt = itemTotal(it);
         const s = ensure(it.seller_id);
         const isRefunded = it.listing_id ? refundedSet.has(refundedKey(o.id, it.listing_id)) : false;
+        const confirmed = isItemConfirmed(o, it.listing_id);
         if (isRefunded) {
           s.refundedSales += amt;
           s.refundedCount += 1;
-        } else {
+        } else if (confirmed) {
           s.sales += amt;
+        } else {
+          // Not yet confirmed by buyer — not eligible for payout. Skip entirely.
+          return;
         }
         txns.push({
           id: `sale-${o.id}-${idx}`,
@@ -478,7 +492,7 @@ const Payouts = () => {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Track sales, refunds and weekly payments to sellers.
+            Sales become payout-eligible only after the buyer confirms receipt with no issues.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCsv}>
@@ -1033,6 +1047,8 @@ const PayoutDetailDialog = ({
       (o.items ?? []).forEach((it, idx) => {
         if (it.seller_id !== payout.seller_id) return;
         const refunded = it.listing_id ? refundedSet.has(`${o.id}|${it.listing_id}`) : false;
+        // Only confirmed (or refunded) items belong on a payout record.
+        if (!refunded && !isItemConfirmed(o, it.listing_id)) return;
         rows.push({
           key: `${o.id}-${idx}`,
           order_id: o.id,

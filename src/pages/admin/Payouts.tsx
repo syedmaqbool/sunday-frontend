@@ -484,6 +484,48 @@ const Payouts = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="refunds">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {buyerRefunds.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                          No buyer refunds.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {buyerRefunds.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          {format(new Date(r.at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="font-medium">{r.buyer_name}</TableCell>
+                        <TableCell className="max-w-xs truncate">{r.title}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          Order {r.order_id.slice(0, 8)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-destructive">
+                          {fmt(r.amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="history">
             <Card>
               <CardContent className="p-0">

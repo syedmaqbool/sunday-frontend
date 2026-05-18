@@ -357,8 +357,8 @@ const Payouts = () => {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Gross sales" value={fmt(totals.sales)} icon={ArrowUpRight} tone="positive" />
-        <StatCard label="Refunds" value={fmt(totals.refunds)} icon={ArrowDownRight} tone="negative" />
-        <StatCard label="Paid out" value={fmt(totals.paid)} icon={Wallet} tone="muted" />
+        <StatCard label="Buyer refunds" value={fmt(totals.refunds)} icon={ArrowDownRight} tone="negative" />
+        <StatCard label="Paid to sellers" value={fmt(totals.paid)} icon={Wallet} tone="muted" />
         <StatCard label="Balance due" value={fmt(totals.due)} icon={CircleDollarSign} tone="accent" />
       </div>
 

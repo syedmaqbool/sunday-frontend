@@ -230,11 +230,15 @@ const Payouts = () => {
         const amt = itemTotal(it);
         const s = ensure(it.seller_id);
         const isRefunded = it.listing_id ? refundedSet.has(refundedKey(o.id, it.listing_id)) : false;
+        const confirmed = isItemConfirmed(o, it.listing_id);
         if (isRefunded) {
           s.refundedSales += amt;
           s.refundedCount += 1;
-        } else {
+        } else if (confirmed) {
           s.sales += amt;
+        } else {
+          // Not yet confirmed by buyer — not eligible for payout. Skip entirely.
+          return;
         }
         txns.push({
           id: `sale-${o.id}-${idx}`,
@@ -246,6 +250,8 @@ const Payouts = () => {
           reference: `Order ${o.id.slice(0, 8)}`,
           refunded: isRefunded,
         });
+      });
+    });
       });
     });
 

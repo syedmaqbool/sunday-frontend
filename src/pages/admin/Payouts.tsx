@@ -86,7 +86,8 @@ type SellerSummary = {
   balance: number;
 };
 
-const fmt = (n: number) => `€${(Math.round(n * 100) / 100).toFixed(2)}`;
+const fmt = (n: number) =>
+  `Rs ${(Math.round(n * 100) / 100).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const itemTotal = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
 

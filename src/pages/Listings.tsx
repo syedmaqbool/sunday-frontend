@@ -191,7 +191,7 @@ const Listings = () => {
                     <div className="flex-1">
                       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{l.brand}</p>
                       <h3 className="text-sm font-semibold text-card-foreground">{l.title}</h3>
-                      <p className="mt-1 text-sm font-bold text-card-foreground">R {l.price.toLocaleString()}</p>
+                      <p className="mt-1 text-sm font-bold text-card-foreground">Rs {l.price.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Size {l.size} · {l.condition.replace("_", " ")}</p>
                     </div>
                   </div>

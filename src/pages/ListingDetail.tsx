@@ -149,7 +149,7 @@ const ListingDetail = () => {
   useEffect(() => {
     if (listing) {
       trackEvent("view_item", {
-        currency: "ZAR",
+        currency: "PKR",
         value: listing.price,
         items: [{ item_id: listing.id, item_name: listing.title, item_category: listing.category, item_brand: listing.brand, price: listing.price }],
       });
@@ -248,12 +248,12 @@ const ListingDetail = () => {
             <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{listing.title}</h1>
             {isReservedForMe && reservedOfferAmount && reservedOfferAmount !== listing.price ? (
               <div className="mt-4 flex items-baseline gap-3">
-                <p className="text-3xl font-bold text-foreground">R {reservedOfferAmount.toLocaleString()}</p>
-                <p className="text-lg text-muted-foreground line-through">R {listing.price.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-foreground">Rs {reservedOfferAmount.toLocaleString()}</p>
+                <p className="text-lg text-muted-foreground line-through">Rs {listing.price.toLocaleString()}</p>
                 <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Your accepted offer</span>
               </div>
             ) : (
-              <p className="mt-4 text-3xl font-bold text-foreground">R {listing.price.toLocaleString()}</p>
+              <p className="mt-4 text-3xl font-bold text-foreground">Rs {listing.price.toLocaleString()}</p>
             )}
 
             <div className="mt-6 flex flex-wrap gap-3">

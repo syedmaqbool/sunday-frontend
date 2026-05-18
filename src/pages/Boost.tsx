@@ -108,7 +108,7 @@ const Boost = () => {
                           {new Date(b.ends_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge variant="secondary">€{Number(b.price_paid).toFixed(2)}</Badge>
+                      <Badge variant="secondary">Rs {Number(b.price_paid).toFixed(2)}</Badge>
                     </CardContent>
                   </Card>
                 );
@@ -189,7 +189,7 @@ const Boost = () => {
                         {new Date(b.ends_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="outline">€{Number(b.price_paid).toFixed(2)}</Badge>
+                    <Badge variant="outline">Rs {Number(b.price_paid).toFixed(2)}</Badge>
                   </div>
                 );
               })}

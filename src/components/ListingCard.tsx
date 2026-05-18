@@ -59,7 +59,7 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
       <div className="mt-3 space-y-1">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{listing.brand}</p>
         <h3 className="text-sm font-medium leading-tight text-foreground line-clamp-1">{listing.title}</h3>
-        <p className="text-sm font-semibold text-foreground">R {listing.price.toLocaleString()}</p>
+        <p className="text-sm font-semibold text-foreground">Rs {listing.price.toLocaleString()}</p>
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">Size {listing.size}</p>
           {sellerRating && sellerRating.totalReviews > 0 && (

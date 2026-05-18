@@ -61,7 +61,7 @@ const CartDrawer = () => {
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
-                        <p className="text-sm font-bold text-foreground">R {(listing.price * quantity).toLocaleString()}</p>
+                        <p className="text-sm font-bold text-foreground">Rs {(listing.price * quantity).toLocaleString()}</p>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
@@ -75,7 +75,7 @@ const CartDrawer = () => {
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="text-lg font-bold text-foreground">R {totalPrice.toLocaleString()}</span>
+                <span className="text-lg font-bold text-foreground">Rs {totalPrice.toLocaleString()}</span>
               </div>
               <SheetClose asChild>
                 <Button className="w-full gap-2" size="lg" onClick={() => navigate("/checkout")}>

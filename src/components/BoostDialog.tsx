@@ -43,7 +43,7 @@ const placementMeta: Record<BoostPlacement, { label: string; icon: any; color: s
   search: { label: "Search & Browse", icon: Search, color: "text-blue-500" },
 };
 
-// Mock estimation rates (per €1 spend)
+// Mock estimation rates (per Rs 1 spend)
 const RATE_PER_EURO: Record<BoostPlacement, { impressions: number; clicks: number }> = {
   trending: { impressions: 420, clicks: 18 },
   for_you: { impressions: 380, clicks: 22 },
@@ -111,7 +111,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      trackEvent("boost_purchased", { listing_id: listingId, type: "package", value: packagesTotal, currency: "ZAR" });
+      trackEvent("boost_purchased", { listing_id: listingId, type: "package", value: packagesTotal, currency: "PKR" });
       toast.success("Boost activated! (Mock payment)");
       queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
       queryClient.invalidateQueries({ queryKey: ["active-boosts"] });
@@ -139,7 +139,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      trackEvent("boost_purchased", { listing_id: listingId, type: "campaign", placement, value: budget, currency: "ZAR" });
+      trackEvent("boost_purchased", { listing_id: listingId, type: "campaign", placement, value: budget, currency: "PKR" });
       toast.success("Campaign launched! (Mock payment)");
       queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
       queryClient.invalidateQueries({ queryKey: ["active-boosts"] });
@@ -301,7 +301,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               <div className="flex items-center justify-between">
                 <Label>Total budget</Label>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm text-muted-foreground">€</span>
+                  <span className="text-sm text-muted-foreground">Rs </span>
                   <Input
                     type="number"
                     min={1}
@@ -320,7 +320,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                 onValueChange={(v) => setBudget(v[0])}
               />
               <p className="text-xs text-muted-foreground">
-                ≈ €{dailyBudget.toFixed(2)} / day over {days} day{days > 1 ? "s" : ""}
+                ≈ Rs {dailyBudget.toFixed(2)} / day over {days} day{days > 1 ? "s" : ""}
               </p>
             </div>
 
@@ -338,7 +338,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                     {estImpressions.toLocaleString()}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    CPM ≈ €{cpm.toFixed(2)}
+                    CPM ≈ Rs {cpm.toFixed(2)}
                   </p>
                 </div>
                 <div className={cn(goal === "clicks" && "text-primary")}>
@@ -349,7 +349,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                     {estClicks.toLocaleString()}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    CPC ≈ €{cpc.toFixed(2)}
+                    CPC ≈ Rs {cpc.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -362,7 +362,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               <div>
                 <p className="text-xs text-muted-foreground">You'll be charged</p>
                 <p className="font-heading text-2xl font-bold text-foreground">
-                  €{budget.toFixed(2)}
+                  Rs {budget.toFixed(2)}
                 </p>
               </div>
               <Button
@@ -417,7 +417,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                                 </p>
                               </div>
                               <div className="flex shrink-0 items-center gap-1.5">
-                                <Badge variant="secondary">€{Number(pkg.price).toFixed(2)}</Badge>
+                                <Badge variant="secondary">Rs {Number(pkg.price).toFixed(2)}</Badge>
                                 {isSelected && <Check className="h-4 w-4 text-primary" />}
                               </div>
                             </div>
@@ -434,7 +434,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               <div>
                 <p className="text-xs text-muted-foreground">Total ({selected.size} selected)</p>
                 <p className="font-heading text-2xl font-bold text-foreground">
-                  €{packagesTotal.toFixed(2)}
+                  Rs {packagesTotal.toFixed(2)}
                 </p>
               </div>
               <Button

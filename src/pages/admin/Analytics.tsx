@@ -413,7 +413,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KPI label="Total Revenue" value={`R ${kpis.totalRevenue.toLocaleString()}`} icon={DollarSign} delta={12.4} />
+        <KPI label="Total Revenue" value={`Rs ${kpis.totalRevenue.toLocaleString()}`} icon={DollarSign} delta={12.4} />
         <KPI label="Order Volume" value={kpis.orderCount.toLocaleString()} icon={ShoppingCart} delta={8.1} />
         <KPI label="Sales Volume" value={kpis.itemsSold.toLocaleString()} icon={ShoppingBag} delta={-2.4} />
         <KPI label="Refund Rate" value={`${kpis.refundRate.toFixed(1)}%`} icon={RotateCcw} delta={-0.5} highlight />
@@ -475,7 +475,7 @@ const Analytics = () => {
                     <div className="h-2 overflow-hidden rounded-full bg-muted">
                       <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${r.pct}%` }} />
                     </div>
-                    <p className="text-[11px] text-muted-foreground">R {Math.round(r.value).toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground">Rs {Math.round(r.value).toLocaleString()}</p>
                   </div>
                 ))}
               </div>

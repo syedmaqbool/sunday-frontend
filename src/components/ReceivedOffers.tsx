@@ -267,7 +267,7 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Your counter price (ZAR)</Label>
+              <Label>Your counter price (PKR)</Label>
               <Input
                 type="number"
                 min="1"

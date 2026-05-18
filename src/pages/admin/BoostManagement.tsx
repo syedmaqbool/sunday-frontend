@@ -169,7 +169,7 @@ const PackageDialog = ({
               />
             </div>
             <div className="space-y-2">
-              <Label>Price (€)</Label>
+              <Label>Price (PKR)</Label>
               <Input
                 type="number"
                 min={0}
@@ -331,7 +331,7 @@ const BoostManagement = () => {
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime revenue</p>
-          <p className="font-heading text-2xl font-bold">€{totalRevenue.toFixed(2)}</p>
+          <p className="font-heading text-2xl font-bold">Rs {totalRevenue.toFixed(2)}</p>
         </Card>
       </div>
 
@@ -381,7 +381,7 @@ const BoostManagement = () => {
                           </span>
                         </TableCell>
                         <TableCell>{p.duration_days} days</TableCell>
-                        <TableCell>€{Number(p.price).toFixed(2)}</TableCell>
+                        <TableCell>Rs {Number(p.price).toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={p.active ? "default" : "secondary"}>
                             {p.active ? "Active" : "Inactive"}
@@ -472,7 +472,7 @@ const BoostManagement = () => {
                           {format(new Date(b.starts_at), "MMM d")} →{" "}
                           {format(new Date(b.ends_at), "MMM d, yyyy")}
                         </TableCell>
-                        <TableCell>€{Number(b.price_paid).toFixed(2)}</TableCell>
+                        <TableCell>Rs {Number(b.price_paid).toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={isActive ? "default" : "secondary"}>
                             {isActive ? "Active" : b.payment_status === "cancelled" ? "Cancelled" : "Ended"}

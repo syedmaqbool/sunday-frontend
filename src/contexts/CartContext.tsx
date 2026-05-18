@@ -46,7 +46,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const existing = prev.find((i) => i.listing.id === listing.id);
       if (existing) return prev; // no duplicates for unique items
       trackEvent("add_to_cart", {
-        currency: "ZAR",
+        currency: "PKR",
         value: effectivePrice,
         items: [{ item_id: listing.id, item_name: listing.title, item_category: (listing as any).category, price: effectivePrice, quantity: 1 }],
       });

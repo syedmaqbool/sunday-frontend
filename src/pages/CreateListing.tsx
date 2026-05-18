@@ -410,7 +410,7 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price (ZAR)<FieldTip tip="Set a fair selling price in South African Rand. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." /></Label>
+              <Label htmlFor="price">Price (PKR)<FieldTip tip="Set a fair selling price in Pakistani Rupees. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." /></Label>
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
             </div>
             <div className="space-y-2">

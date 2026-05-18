@@ -193,11 +193,11 @@ const DiscountCodes = () => {
                   <TableCell className="font-mono font-semibold text-foreground">{c.code}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {c.discount_type === "percentage" ? `${c.discount_value}%` : `R ${c.discount_value.toLocaleString()}`}
+                      {c.discount_type === "percentage" ? `${c.discount_value}%` : `Rs ${c.discount_value.toLocaleString()}`}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {c.min_order_amount > 0 ? `R ${c.min_order_amount.toLocaleString()}` : "—"}
+                    {c.min_order_amount > 0 ? `Rs ${c.min_order_amount.toLocaleString()}` : "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.current_uses}{c.max_uses !== null ? ` / ${c.max_uses}` : ""}

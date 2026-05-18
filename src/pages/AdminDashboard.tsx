@@ -21,6 +21,7 @@ import {
   Headphones,
   Rocket,
   BarChart3,
+  Wallet,
   Menu,
   X,
 } from "lucide-react";
@@ -56,6 +57,7 @@ const navSections: NavSection[] = [
       { label: "Discounts", path: "/admin/discounts", icon: Tag },
       { label: "Tax Settings", path: "/admin/tax", icon: Percent },
       { label: "Boosts", path: "/admin/boosts", icon: Rocket },
+      { label: "Payouts", path: "/admin/payouts", icon: Wallet },
     ],
   },
   {

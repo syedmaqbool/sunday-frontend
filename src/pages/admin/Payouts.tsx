@@ -371,6 +371,7 @@ const Payouts = () => {
           <TabsList>
             <TabsTrigger value="sellers">By seller</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
             <TabsTrigger value="history">Payout history</TabsTrigger>
           </TabsList>
 
@@ -382,7 +383,6 @@ const Payouts = () => {
                     <TableRow>
                       <TableHead>Seller</TableHead>
                       <TableHead className="text-right">Sales</TableHead>
-                      <TableHead className="text-right">Refunds</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Balance due</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -391,7 +391,7 @@ const Payouts = () => {
                   <TableBody>
                     {summaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                           No seller activity yet.
                         </TableCell>
                       </TableRow>
@@ -400,9 +400,6 @@ const Payouts = () => {
                       <TableRow key={s.seller_id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
                         <TableCell className="text-right">{fmt(s.sales)}</TableCell>
-                        <TableCell className="text-right text-destructive">
-                          {s.refunds > 0 ? `-${fmt(s.refunds)}` : fmt(0)}
-                        </TableCell>
                         <TableCell className="text-right">{fmt(s.paid)}</TableCell>
                         <TableCell className="text-right">
                           <span className={s.balance > 0 ? "font-semibold text-primary" : "text-muted-foreground"}>

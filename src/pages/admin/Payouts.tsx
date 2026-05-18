@@ -196,26 +196,39 @@ const Payouts = () => {
     const ensure = (sid: string): SellerSummary => {
       let s = map.get(sid);
       if (!s) {
-        s = { seller_id: sid, name: nameOf(sid), sales: 0, paid: 0, balance: 0 };
+        s = { seller_id: sid, name: nameOf(sid), sales: 0, refundedSales: 0, refundedCount: 0, paid: 0, balance: 0 };
         map.set(sid, s);
       }
       return s;
     };
+
+    // Build a quick lookup of refunded (order_id, listing_id) pairs
+    const refundedKey = (orderId: string, listingId: string) => `${orderId}|${listingId}`;
+    const refundedSet = new Set<string>(
+      complaints.map((c) => refundedKey(c.order_id, c.listing_id)),
+    );
 
     orders.forEach((o) => {
       (o.items ?? []).forEach((it, idx) => {
         if (!it.seller_id) return;
         const amt = itemTotal(it);
         const s = ensure(it.seller_id);
-        s.sales += amt;
+        const isRefunded = it.listing_id ? refundedSet.has(refundedKey(o.id, it.listing_id)) : false;
+        if (isRefunded) {
+          s.refundedSales += amt;
+          s.refundedCount += 1;
+        } else {
+          s.sales += amt;
+        }
         txns.push({
           id: `sale-${o.id}-${idx}`,
           kind: "sale",
           at: o.created_at,
           seller_id: it.seller_id,
-          amount: amt,
-          description: it.title || "Item sold",
+          amount: isRefunded ? 0 : amt,
+          description: isRefunded ? `Refunded — ${it.title || "Item"}` : it.title || "Item sold",
           reference: `Order ${o.id.slice(0, 8)}`,
+          refunded: isRefunded,
         });
       });
     });

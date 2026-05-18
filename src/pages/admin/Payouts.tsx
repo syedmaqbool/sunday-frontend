@@ -141,7 +141,7 @@ const Payouts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, buyer_id, status, items, created_at")
+        .select("id, buyer_id, status, items, item_status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Order[];

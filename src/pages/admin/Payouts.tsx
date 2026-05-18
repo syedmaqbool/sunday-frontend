@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +18,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 
@@ -119,6 +120,10 @@ const Payouts = () => {
     period_end: "",
   });
   const [saving, setSaving] = useState(false);
+  const [rangeStart, setRangeStart] = useState<string>("");
+  const [rangeEnd, setRangeEnd] = useState<string>("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rangeInitialized, setRangeInitialized] = useState(false);
 
   const { data: orders = [], isLoading: lo } = useQuery({
     queryKey: ["admin-payouts-orders"],
@@ -291,6 +296,115 @@ const Payouts = () => {
     return { ...sellerTotals, refunds: refundTotal };
   }, [summaries, buyerRefunds]);
 
+  type PeriodItem = {
+    id: string;
+    kind: "payout" | "refund";
+    at: string;
+    party: string;
+    description: string;
+    reference: string;
+    amount: number;
+  };
+
+  const periodItems = useMemo<PeriodItem[]>(() => {
+    if (!rangeStart || !rangeEnd) return [];
+    const start = new Date(rangeStart);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(rangeEnd);
+    end.setHours(23, 59, 59, 999);
+    const inRange = (iso: string) => {
+      const t = new Date(iso).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    };
+    const items: PeriodItem[] = [];
+    payouts.forEach((p) => {
+      if (!inRange(p.paid_at)) return;
+      items.push({
+        id: `payout-${p.id}`,
+        kind: "payout",
+        at: p.paid_at,
+        party: nameOf(p.seller_id),
+        description: `Payout · ${p.method.replace("_", " ")}`,
+        reference: p.reference || (p.period_start && p.period_end ? `${p.period_start} → ${p.period_end}` : ""),
+        amount: Number(p.amount),
+      });
+    });
+    buyerRefunds.forEach((r) => {
+      if (!inRange(r.at)) return;
+      items.push({
+        id: `refund-${r.id}`,
+        kind: "refund",
+        at: r.at,
+        party: r.buyer_name,
+        description: r.title,
+        reference: `Order ${r.order_id.slice(0, 8)}`,
+        amount: r.amount,
+      });
+    });
+    items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return items;
+  }, [rangeStart, rangeEnd, payouts, buyerRefunds, profiles]);
+
+  useEffect(() => {
+    if (!rangeStart || !rangeEnd) {
+      setSelectedIds(new Set());
+      setRangeInitialized(false);
+      return;
+    }
+    setSelectedIds(new Set(periodItems.map((i) => i.id)));
+    setRangeInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStart, rangeEnd, periodItems.length]);
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllSelected = () => {
+    if (selectedIds.size === periodItems.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(periodItems.map((i) => i.id)));
+  };
+
+  const periodTotals = useMemo(() => {
+    let payoutTotal = 0;
+    let refundTotal = 0;
+    periodItems.forEach((i) => {
+      if (!selectedIds.has(i.id)) return;
+      if (i.kind === "payout") payoutTotal += i.amount;
+      else refundTotal += i.amount;
+    });
+    return { payoutTotal, refundTotal, count: selectedIds.size };
+  }, [periodItems, selectedIds]);
+
+  const exportPeriodCsv = () => {
+    const rows = [
+      ["Date", "Type", "Party", "Description", "Reference", "Amount (PKR)"],
+      ...periodItems
+        .filter((i) => selectedIds.has(i.id))
+        .map((i) => [
+          format(new Date(i.at), "yyyy-MM-dd HH:mm"),
+          i.kind,
+          i.party,
+          i.description.replace(/"/g, '""'),
+          i.reference.replace(/"/g, '""'),
+          i.amount.toFixed(2),
+        ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payout-period-${rangeStart}_to_${rangeEnd}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const openRecord = (s: SellerSummary) => {
     setActiveSeller(s);
     setForm({
@@ -389,6 +503,7 @@ const Payouts = () => {
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
             <TabsTrigger value="history">Payout history</TabsTrigger>
+            <TabsTrigger value="period">Period report</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sellers">
@@ -606,6 +721,129 @@ const Payouts = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="period">
+            <Card>
+              <CardContent className="space-y-4 p-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rs" className="text-xs text-muted-foreground">From</Label>
+                    <Input
+                      id="rs"
+                      type="date"
+                      className="h-9 w-44"
+                      value={rangeStart}
+                      onChange={(e) => setRangeStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="re" className="text-xs text-muted-foreground">To</Label>
+                    <Input
+                      id="re"
+                      type="date"
+                      className="h-9 w-44"
+                      value={rangeEnd}
+                      onChange={(e) => setRangeEnd(e.target.value)}
+                    />
+                  </div>
+                  {rangeStart && rangeEnd && (
+                    <>
+                      <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+                        <Badge variant="secondary">
+                          {periodTotals.count} of {periodItems.length} selected
+                        </Badge>
+                        <Badge variant="outline">Payouts {fmt(periodTotals.payoutTotal)}</Badge>
+                        <Badge variant="outline" className="text-destructive">
+                          Refunds {fmt(periodTotals.refundTotal)}
+                        </Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={exportPeriodCsv}
+                        disabled={periodTotals.count === 0}
+                      >
+                        <Download className="mr-2 h-4 w-4" /> Export selected
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {!rangeStart || !rangeEnd ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
+                    <CalendarRange className="h-8 w-8" />
+                    <p className="text-sm">Select a date range to view payouts and refunds for that period.</p>
+                  </div>
+                ) : periodItems.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    No payouts or refunds in this period.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={
+                              selectedIds.size === periodItems.length && periodItems.length > 0
+                            }
+                            onCheckedChange={toggleAllSelected}
+                            aria-label="Select all"
+                          />
+                        </TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Party</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {periodItems.map((i) => {
+                        const checked = selectedIds.has(i.id);
+                        return (
+                          <TableRow
+                            key={i.id}
+                            data-state={checked ? "selected" : undefined}
+                            className={!checked ? "opacity-60" : undefined}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleSelected(i.id)}
+                                aria-label={`Select ${i.description}`}
+                              />
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                              {format(new Date(i.at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {i.kind === "payout" ? (
+                                <Badge>Payout</Badge>
+                              ) : (
+                                <Badge variant="destructive">Refund</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{i.party}</TableCell>
+                            <TableCell className="max-w-xs truncate">{i.description}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{i.reference}</TableCell>
+                            <TableCell
+                              className={`text-right font-medium ${
+                                i.kind === "refund" ? "text-destructive" : ""
+                              }`}
+                            >
+                              {fmt(i.amount)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

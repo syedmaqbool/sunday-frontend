@@ -18,7 +18,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 

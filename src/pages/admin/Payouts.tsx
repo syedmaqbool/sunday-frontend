@@ -487,19 +487,30 @@ const Payouts = () => {
                       </TableRow>
                     )}
                     {filteredTxns.map((t) => (
-                      <TableRow key={t.id}>
+                      <TableRow key={t.id} className={t.refunded ? "bg-destructive/5" : undefined}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(t.at), "MMM d, yyyy")}
                         </TableCell>
                         <TableCell>
-                          <TxnBadge kind={t.kind} />
+                          <div className="flex items-center gap-1.5">
+                            <TxnBadge kind={t.kind} />
+                            {t.refunded && (
+                              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                Refunded
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{nameOf(t.seller_id)}</TableCell>
                         <TableCell className="max-w-xs truncate">{t.description}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.reference}</TableCell>
                         <TableCell
                           className={`text-right font-medium ${
-                            t.amount >= 0 ? "text-foreground" : "text-destructive"
+                            t.refunded
+                              ? "text-muted-foreground line-through"
+                              : t.amount >= 0
+                              ? "text-foreground"
+                              : "text-destructive"
                           }`}
                         >
                           {t.amount >= 0 ? "+" : "-"}

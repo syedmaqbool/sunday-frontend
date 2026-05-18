@@ -156,34 +156,36 @@ const Payouts = () => {
   const sellerIds = useMemo(() => {
     const s = new Set<string>();
     orders.forEach((o) => o.items?.forEach((it) => it.seller_id && s.add(it.seller_id)));
-    complaints.forEach((c) => c.seller_id && s.add(c.seller_id));
     payouts.forEach((p) => p.seller_id && s.add(p.seller_id));
     return Array.from(s);
-  }, [orders, complaints, payouts]);
+  }, [orders, payouts]);
+
+  const buyerIds = useMemo(() => {
+    const s = new Set<string>();
+    complaints.forEach((c) => c.buyer_id && s.add(c.buyer_id));
+    return Array.from(s);
+  }, [complaints]);
+
+  const profileIds = useMemo(
+    () => Array.from(new Set([...sellerIds, ...buyerIds])),
+    [sellerIds, buyerIds],
+  );
 
   const { data: profiles = [] } = useQuery({
-    queryKey: ["admin-payouts-profiles", sellerIds.sort().join(",")],
-    enabled: sellerIds.length > 0,
+    queryKey: ["admin-payouts-profiles", profileIds.sort().join(",")],
+    enabled: profileIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", sellerIds);
+        .in("id", profileIds);
       if (error) throw error;
       return (data ?? []) as Profile[];
     },
   });
 
   const nameOf = (id: string) =>
-    profiles.find((p) => p.id === id)?.full_name?.trim() || `Seller ${id.slice(0, 6)}`;
-
-  // Refund map: listing_id+order_id -> true
-  const refundedKey = (orderId: string, listingId: string) => `${orderId}::${listingId}`;
-  const refundSet = useMemo(() => {
-    const s = new Set<string>();
-    complaints.forEach((c) => s.add(refundedKey(c.order_id, c.listing_id)));
-    return s;
-  }, [complaints]);
+    profiles.find((p) => p.id === id)?.full_name?.trim() || `User ${id.slice(0, 6)}`;
 
   const { transactions, summaries } = useMemo(() => {
     const txns: Txn[] = [];

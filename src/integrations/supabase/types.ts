@@ -959,6 +959,54 @@ export type Database = {
           },
         ]
       }
+      seller_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          method: string
+          notes: string
+          paid_at: string
+          period_end: string | null
+          period_start: string | null
+          reference: string
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string
+          paid_at?: string
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string
+          paid_at?: string
+          period_end?: string | null
+          period_start?: string | null
+          reference?: string
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           created_at: string

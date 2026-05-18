@@ -86,7 +86,8 @@ type SellerSummary = {
   balance: number;
 };
 
-const fmt = (n: number) => `€${(Math.round(n * 100) / 100).toFixed(2)}`;
+const fmt = (n: number) =>
+  `Rs ${(Math.round(n * 100) / 100).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const itemTotal = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
 
@@ -307,7 +308,7 @@ const Payouts = () => {
 
   const exportCsv = () => {
     const rows = [
-      ["Date", "Type", "Seller", "Amount (EUR)", "Description", "Reference"],
+      ["Date", "Type", "Seller", "Amount (PKR)", "Description", "Reference"],
       ...filteredTxns.map((t) => [
         format(new Date(t.at), "yyyy-MM-dd HH:mm"),
         t.kind,
@@ -532,7 +533,7 @@ const Payouts = () => {
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="amount">Amount (€)</Label>
+                <Label htmlFor="amount">Amount (PKR)</Label>
                 <Input
                   id="amount"
                   type="number"

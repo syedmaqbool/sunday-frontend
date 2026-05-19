@@ -115,8 +115,8 @@ const fmt = (n: number) =>
 
 const itemGross = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
 const itemCommission = (it: OrderItem) => Number((it as any).commission_amount ?? 0);
-/** Seller-eligible amount after deducting the platform fee captured at checkout. */
-const itemTotal = (it: OrderItem) => Math.max(0, itemGross(it) - itemCommission(it));
+/** Seller payout = full listing price. The platform fee is paid by the buyer on top at checkout. */
+const itemTotal = (it: OrderItem) => itemGross(it);
 
 const Payouts = () => {
   const qc = useQueryClient();

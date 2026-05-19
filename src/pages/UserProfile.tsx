@@ -703,10 +703,7 @@ function OrderCard({ order }: { order: any }) {
                 )}
                 {Number((order as any).commission_amount) > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Platform fee
-                      <span className="ml-1 text-[11px] text-muted-foreground/70">(seller deduction)</span>
-                    </span>
+                    <span className="text-muted-foreground">Platform fee</span>
                     <span className="text-foreground">Rs {Number((order as any).commission_amount).toLocaleString()}</span>
                   </div>
                 )}

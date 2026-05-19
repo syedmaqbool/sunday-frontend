@@ -72,7 +72,7 @@ const Checkout = () => {
   const taxableAmount = totalPrice - discountAmount;
   const taxRate = activeTax?.rate ?? 0;
   const taxAmount = Math.round(taxableAmount * taxRate) / 100;
-  const finalPrice = taxableAmount + taxAmount;
+  const finalPrice = taxableAmount + taxAmount + commissionTotal;
 
   const handleApplyDiscount = async () => {
     const code = discountCode.trim().toUpperCase();
@@ -226,7 +226,7 @@ const Checkout = () => {
         : 0;
       const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
-      const authoritativeTotal = authoritativeTaxable + authoritativeTax;
+      const authoritativeTotal = authoritativeTaxable + authoritativeTax + authoritativeCommission;
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -508,10 +508,7 @@ const Checkout = () => {
               )}
               {commissionTotal > 0 && (
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-muted-foreground">
-                    Platform fee
-                    <span className="ml-1 text-[11px] text-muted-foreground/70">(deducted from seller payout)</span>
-                  </span>
+                  <span className="text-sm text-muted-foreground">Platform fee</span>
                   <span className="text-sm text-foreground">Rs {commissionTotal.toLocaleString()}</span>
                 </div>
               )}

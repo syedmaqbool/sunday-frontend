@@ -122,7 +122,7 @@ const OrderInvoiceEmail = ({
           ) : null}
           {commissionAmount > 0 ? (
             <div style={totalsRow}>
-              <Text style={totalsLabel}>Platform fee (seller deduction)</Text>
+              <Text style={totalsLabel}>Platform fee</Text>
               <Text style={totalsValue}>{fmt(commissionAmount)}</Text>
             </div>
           ) : null}

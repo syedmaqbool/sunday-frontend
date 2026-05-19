@@ -5,10 +5,25 @@ import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useCommissionTiers } from "@/hooks/useCommissionTiers";
+import { calcCommission } from "@/lib/commission";
+import { useMemo } from "react";
 
 const CartDrawer = () => {
   const { items, removeItem, updateQuantity, totalItems, totalPrice } = useCart();
   const navigate = useNavigate();
+  const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
+
+  const itemFees = useMemo(
+    () =>
+      items.map(({ listing, quantity }) => {
+        const c = calcCommission(commissionTiers, (listing as any).category, listing.price, quantity);
+        return { listingId: listing.id, rate: c.rate, amount: c.amount };
+      }),
+    [items, commissionTiers],
+  );
+  const platformFee = itemFees.reduce((s, f) => s + f.amount, 0);
+  const totalPayable = totalPrice + platformFee;
 
   return (
     <Sheet>
@@ -41,7 +56,9 @@ const CartDrawer = () => {
           <>
             <ScrollArea className="flex-1 -mx-6 px-6">
               <div className="flex flex-col gap-4 py-4">
-                {items.map(({ listing, quantity }) => (
+                {items.map(({ listing, quantity }) => {
+                  const fee = itemFees.find((f) => f.listingId === listing.id);
+                  return (
                   <div key={listing.id} className="flex gap-3">
                     <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                       <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
@@ -50,6 +67,11 @@ const CartDrawer = () => {
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{listing.brand}</p>
                         <p className="text-sm font-medium text-foreground line-clamp-1">{listing.title}</p>
+                        {fee && fee.amount > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            + Platform fee ({fee.rate}%): Rs {fee.amount.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
@@ -68,17 +90,29 @@ const CartDrawer = () => {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
 
-            <div className="border-t border-border pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="text-lg font-bold text-foreground">Rs {totalPrice.toLocaleString()}</span>
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-foreground">Rs {totalPrice.toLocaleString()}</span>
+              </div>
+              {platformFee > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Platform fee</span>
+                  <span className="text-foreground">Rs {platformFee.toLocaleString()}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Total payable</span>
+                <span className="text-lg font-bold text-foreground">Rs {totalPayable.toLocaleString()}</span>
               </div>
               <SheetClose asChild>
-                <Button className="w-full gap-2" size="lg" onClick={() => navigate("/checkout")}>
+                <Button className="w-full gap-2 mt-2" size="lg" onClick={() => navigate("/checkout")}>
                   Checkout <ArrowRight className="h-4 w-4" />
                 </Button>
               </SheetClose>

@@ -194,6 +194,7 @@ const Checkout = () => {
       const itemsSnapshot = items.map(({ listing, quantity }) => {
         const overridePrice = offerAmountByListing.get(listing.id);
         const price = typeof overridePrice === "number" ? overridePrice : listing.price;
+        const c = calcCommission(commissionTiers, (listing as any).category, price, quantity);
         return {
           listing_id: listing.id,
           seller_id: listing.seller_id,
@@ -201,14 +202,23 @@ const Checkout = () => {
           title: listing.title,
           brand: listing.brand,
           image: listing.images?.[0] ?? null,
+          category: (listing as any).category ?? null,
           price,
           quantity,
+          commission_rate: c.rate,
+          commission_amount: c.amount,
+          commission_tier_id: c.tier?.id ?? null,
+          commission_tier_name: c.tier?.name ?? null,
           ...(typeof overridePrice === "number" ? { reserved_offer_price: true } : {}),
         };
       });
 
       // Recompute monetary totals from the authoritative snapshot
       const authoritativeSubtotal = itemsSnapshot.reduce((s, i) => s + i.price * i.quantity, 0);
+      const authoritativeCommission = itemsSnapshot.reduce(
+        (s, i) => s + Number(i.commission_amount || 0),
+        0,
+      );
       const authoritativeDiscount = appliedDiscount
         ? appliedDiscount.discount_type === "percentage"
           ? Math.round(authoritativeSubtotal * appliedDiscount.discount_value / 100)

@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveTax } from "@/hooks/useActiveTax";
 import { useCommissionTiers } from "@/hooks/useCommissionTiers";
-import { calcCommission, resolveTier } from "@/lib/commission";
+import { calcCommission } from "@/lib/commission";
 import { trackEvent } from "@/lib/analytics";
 
 interface AppliedDiscount {
@@ -508,7 +508,10 @@ const Checkout = () => {
               )}
               {commissionTotal > 0 && (
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-muted-foreground">Platform fee</span>
+                  <span className="text-sm text-muted-foreground">
+                    Platform fee
+                    <span className="ml-1 text-[11px] text-muted-foreground/70">(deducted from seller payout)</span>
+                  </span>
                   <span className="text-sm text-foreground">Rs {commissionTotal.toLocaleString()}</span>
                 </div>
               )}

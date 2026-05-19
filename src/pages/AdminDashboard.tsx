@@ -22,6 +22,7 @@ import {
   Rocket,
   BarChart3,
   Wallet,
+  Percent as PercentIcon,
   Menu,
   X,
 } from "lucide-react";
@@ -58,6 +59,7 @@ const navSections: NavSection[] = [
       { label: "Tax Settings", path: "/admin/tax", icon: Percent },
       { label: "Boosts", path: "/admin/boosts", icon: Rocket },
       { label: "Payouts", path: "/admin/payouts", icon: Wallet },
+      { label: "Commission", path: "/admin/commission", icon: PercentIcon },
     ],
   },
   {

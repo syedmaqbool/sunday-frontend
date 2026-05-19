@@ -226,7 +226,7 @@ const Checkout = () => {
         : 0;
       const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
-      const authoritativeTotal = authoritativeTaxable + authoritativeTax;
+      const authoritativeTotal = authoritativeTaxable + authoritativeTax + authoritativeCommission;
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({

@@ -113,7 +113,10 @@ type BuyerRefund = {
 const fmt = (n: number) =>
   `Rs ${(Math.round(n * 100) / 100).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const itemTotal = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
+const itemGross = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
+const itemCommission = (it: OrderItem) => Number((it as any).commission_amount ?? 0);
+/** Seller-eligible amount after deducting the platform fee captured at checkout. */
+const itemTotal = (it: OrderItem) => Math.max(0, itemGross(it) - itemCommission(it));
 
 const Payouts = () => {
   const qc = useQueryClient();

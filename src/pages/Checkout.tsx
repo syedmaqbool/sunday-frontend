@@ -72,7 +72,7 @@ const Checkout = () => {
   const taxableAmount = totalPrice - discountAmount;
   const taxRate = activeTax?.rate ?? 0;
   const taxAmount = Math.round(taxableAmount * taxRate) / 100;
-  const finalPrice = taxableAmount + taxAmount;
+  const finalPrice = taxableAmount + taxAmount + commissionTotal;
 
   const handleApplyDiscount = async () => {
     const code = discountCode.trim().toUpperCase();

@@ -237,6 +237,7 @@ const Checkout = () => {
           discount_amount: authoritativeDiscount,
           tax_rate: taxRate,
           tax_amount: authoritativeTax,
+          commission_amount: authoritativeCommission,
           total: authoritativeTotal,
           shipping_first_name: shipping.firstName,
           shipping_last_name: shipping.lastName,
@@ -245,7 +246,7 @@ const Checkout = () => {
           shipping_postal: shipping.postal,
           shipping_phone: shipping.phone,
           status: "confirmed",
-        })
+        } as any)
         .select("id")
         .single();
 
@@ -298,6 +299,7 @@ const Checkout = () => {
                 taxName: activeTax?.name,
                 taxRate,
                 taxAmount: authoritativeTax,
+                commissionAmount: authoritativeCommission,
                 total: authoritativeTotal,
                 shippingName: `${shipping.firstName} ${shipping.lastName}`,
                 shippingAddress: shipping.address,

@@ -32,6 +32,7 @@ interface OrderInvoiceProps {
   taxName?: string
   taxRate?: number
   taxAmount?: number
+  commissionAmount?: number
   total?: number
   shippingName?: string
   shippingAddress?: string
@@ -54,6 +55,7 @@ const OrderInvoiceEmail = ({
   taxName,
   taxRate,
   taxAmount = 0,
+  commissionAmount = 0,
   total = 0,
   shippingName,
   shippingAddress,
@@ -116,6 +118,12 @@ const OrderInvoiceEmail = ({
                 {taxRate ? ` (${taxRate}%)` : ''}
               </Text>
               <Text style={totalsValue}>{fmt(taxAmount)}</Text>
+            </div>
+          ) : null}
+          {commissionAmount > 0 ? (
+            <div style={totalsRow}>
+              <Text style={totalsLabel}>Platform fee (seller deduction)</Text>
+              <Text style={totalsValue}>{fmt(commissionAmount)}</Text>
             </div>
           ) : null}
           <Hr style={hr} />

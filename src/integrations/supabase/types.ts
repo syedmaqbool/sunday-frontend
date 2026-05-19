@@ -77,6 +77,45 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_tiers: {
+        Row: {
+          active: boolean
+          categories: string[]
+          created_at: string
+          id: string
+          max_price: number | null
+          min_price: number
+          name: string
+          rate: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          categories?: string[]
+          created_at?: string
+          id?: string
+          max_price?: number | null
+          min_price?: number
+          name: string
+          rate: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          categories?: string[]
+          created_at?: string
+          id?: string
+          max_price?: number | null
+          min_price?: number
+          name?: string
+          rate?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       complaints: {
         Row: {
           admin_notes: string
@@ -743,6 +782,7 @@ export type Database = {
       orders: {
         Row: {
           buyer_id: string
+          commission_amount: number
           created_at: string
           discount_amount: number
           discount_code: string | null
@@ -763,6 +803,7 @@ export type Database = {
         }
         Insert: {
           buyer_id: string
+          commission_amount?: number
           created_at?: string
           discount_amount?: number
           discount_code?: string | null
@@ -783,6 +824,7 @@ export type Database = {
         }
         Update: {
           buyer_id?: string
+          commission_amount?: number
           created_at?: string
           discount_amount?: number
           discount_code?: string | null

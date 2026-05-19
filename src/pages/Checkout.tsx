@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveTax } from "@/hooks/useActiveTax";
+import { useCommissionTiers } from "@/hooks/useCommissionTiers";
+import { calcCommission } from "@/lib/commission";
 import { trackEvent } from "@/lib/analytics";
 
 interface AppliedDiscount {
@@ -29,6 +31,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: activeTax } = useActiveTax();
+  const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
@@ -53,6 +56,12 @@ const Checkout = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const itemCommissions = items.map(({ listing, quantity }) => {
+    const c = calcCommission(commissionTiers, (listing as any).category, listing.price, quantity);
+    return { listingId: listing.id, ...c };
+  });
+  const commissionTotal = itemCommissions.reduce((s, i) => s + i.amount, 0);
 
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"
@@ -185,6 +194,7 @@ const Checkout = () => {
       const itemsSnapshot = items.map(({ listing, quantity }) => {
         const overridePrice = offerAmountByListing.get(listing.id);
         const price = typeof overridePrice === "number" ? overridePrice : listing.price;
+        const c = calcCommission(commissionTiers, (listing as any).category, price, quantity);
         return {
           listing_id: listing.id,
           seller_id: listing.seller_id,
@@ -192,14 +202,23 @@ const Checkout = () => {
           title: listing.title,
           brand: listing.brand,
           image: listing.images?.[0] ?? null,
+          category: (listing as any).category ?? null,
           price,
           quantity,
+          commission_rate: c.rate,
+          commission_amount: c.amount,
+          commission_tier_id: c.tier?.id ?? null,
+          commission_tier_name: c.tier?.name ?? null,
           ...(typeof overridePrice === "number" ? { reserved_offer_price: true } : {}),
         };
       });
 
       // Recompute monetary totals from the authoritative snapshot
       const authoritativeSubtotal = itemsSnapshot.reduce((s, i) => s + i.price * i.quantity, 0);
+      const authoritativeCommission = itemsSnapshot.reduce(
+        (s, i) => s + Number(i.commission_amount || 0),
+        0,
+      );
       const authoritativeDiscount = appliedDiscount
         ? appliedDiscount.discount_type === "percentage"
           ? Math.round(authoritativeSubtotal * appliedDiscount.discount_value / 100)
@@ -218,6 +237,7 @@ const Checkout = () => {
           discount_amount: authoritativeDiscount,
           tax_rate: taxRate,
           tax_amount: authoritativeTax,
+          commission_amount: authoritativeCommission,
           total: authoritativeTotal,
           shipping_first_name: shipping.firstName,
           shipping_last_name: shipping.lastName,
@@ -226,7 +246,7 @@ const Checkout = () => {
           shipping_postal: shipping.postal,
           shipping_phone: shipping.phone,
           status: "confirmed",
-        })
+        } as any)
         .select("id")
         .single();
 
@@ -279,6 +299,7 @@ const Checkout = () => {
                 taxName: activeTax?.name,
                 taxRate,
                 taxAmount: authoritativeTax,
+                commissionAmount: authoritativeCommission,
                 total: authoritativeTotal,
                 shippingName: `${shipping.firstName} ${shipping.lastName}`,
                 shippingAddress: shipping.address,
@@ -405,21 +426,29 @@ const Checkout = () => {
             <div className="rounded-lg border border-border bg-card p-6 sticky top-24">
               <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Order Summary ({totalItems})</h2>
               <div className="space-y-3 mb-4">
-                {items.map(({ listing, quantity }) => (
-                  <div key={listing.id} className="flex items-center gap-3">
-                    <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
-                      <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                {items.map(({ listing, quantity }) => {
+                  const c = itemCommissions.find((x) => x.listingId === listing.id);
+                  return (
+                    <div key={listing.id} className="flex items-start gap-3">
+                      <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
+                        <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
+                        {c && c.amount > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Platform fee ({c.rate}%): Rs {c.amount.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Discount code input */}
@@ -475,6 +504,15 @@ const Checkout = () => {
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">{activeTax?.name} ({taxRate}%)</span>
                   <span className="text-sm text-foreground">Rs {taxAmount.toLocaleString()}</span>
+                </div>
+              )}
+              {commissionTotal > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-muted-foreground">
+                    Platform fee
+                    <span className="ml-1 text-[11px] text-muted-foreground/70">(deducted from seller payout)</span>
+                  </span>
+                  <span className="text-sm text-foreground">Rs {commissionTotal.toLocaleString()}</span>
                 </div>
               )}
               <Separator />

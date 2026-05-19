@@ -695,6 +695,21 @@ function OrderCard({ order }: { order: any }) {
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="text-muted-foreground">Free</span>
                 </div>
+                {Number((order as any).tax_amount) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span className="text-foreground">Rs {Number((order as any).tax_amount).toLocaleString()}</span>
+                  </div>
+                )}
+                {Number((order as any).commission_amount) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Platform fee
+                      <span className="ml-1 text-[11px] text-muted-foreground/70">(seller deduction)</span>
+                    </span>
+                    <span className="text-foreground">Rs {Number((order as any).commission_amount).toLocaleString()}</span>
+                  </div>
+                )}
                 <Separator className="my-2" />
                 <div className="flex justify-between font-semibold">
                   <span className="text-foreground">Total</span>

@@ -41,6 +41,7 @@ import AdminSupport from "./pages/admin/Support";
 import BoostManagement from "./pages/admin/BoostManagement";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminPayouts from "./pages/admin/Payouts";
+import CommissionManagement from "./pages/admin/CommissionManagement";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
@@ -90,6 +91,7 @@ const App = () => (
               <Route path="boosts" element={<BoostManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="payouts" element={<AdminPayouts />} />
+              <Route path="commission" element={<CommissionManagement />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

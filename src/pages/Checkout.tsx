@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveTax } from "@/hooks/useActiveTax";
+import { useCommissionTiers } from "@/hooks/useCommissionTiers";
+import { calcCommission, resolveTier } from "@/lib/commission";
 import { trackEvent } from "@/lib/analytics";
 
 interface AppliedDiscount {
@@ -29,6 +31,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: activeTax } = useActiveTax();
+  const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
@@ -53,6 +56,12 @@ const Checkout = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const itemCommissions = items.map(({ listing, quantity }) => {
+    const c = calcCommission(commissionTiers, (listing as any).category, listing.price, quantity);
+    return { listingId: listing.id, ...c };
+  });
+  const commissionTotal = itemCommissions.reduce((s, i) => s + i.amount, 0);
 
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"

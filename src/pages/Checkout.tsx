@@ -426,21 +426,29 @@ const Checkout = () => {
             <div className="rounded-lg border border-border bg-card p-6 sticky top-24">
               <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Order Summary ({totalItems})</h2>
               <div className="space-y-3 mb-4">
-                {items.map(({ listing, quantity }) => (
-                  <div key={listing.id} className="flex items-center gap-3">
-                    <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
-                      <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                {items.map(({ listing, quantity }) => {
+                  const c = itemCommissions.find((x) => x.listingId === listing.id);
+                  return (
+                    <div key={listing.id} className="flex items-start gap-3">
+                      <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
+                        <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
+                        {c && c.amount > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Platform fee ({c.rate}%): Rs {c.amount.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Discount code input */}
@@ -496,6 +504,12 @@ const Checkout = () => {
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">{activeTax?.name} ({taxRate}%)</span>
                   <span className="text-sm text-foreground">Rs {taxAmount.toLocaleString()}</span>
+                </div>
+              )}
+              {commissionTotal > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-muted-foreground">Platform fee</span>
+                  <span className="text-sm text-foreground">Rs {commissionTotal.toLocaleString()}</span>
                 </div>
               )}
               <Separator />

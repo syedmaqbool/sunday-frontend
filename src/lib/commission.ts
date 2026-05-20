@@ -39,12 +39,13 @@ export function resolveTier(
     t.categories.length === 0 ||
     t.categories.some((c) => tokens.has(c.toLowerCase()));
 
-  const candidates = tiers.filter((t) => inRange(t) && matchesCategory(t));
-  if (candidates.length === 0) return null;
+  const inRangeTiers = tiers.filter(inRange);
+  if (inRangeTiers.length === 0) return null;
 
-  // Prefer category-specific tiers over wildcard tiers
-  const specific = candidates.filter((t) => t.categories.length > 0);
-  const pool = specific.length ? specific : candidates;
+  // Prefer category-specific match, then wildcard, then price-only fallback.
+  const specific = inRangeTiers.filter((t) => t.categories.length > 0 && matchesCategory(t));
+  const wildcard = inRangeTiers.filter((t) => t.categories.length === 0);
+  const pool = specific.length ? specific : wildcard.length ? wildcard : inRangeTiers;
 
   return [...pool].sort((a, b) => {
     const minDiff = Number(b.min_price) - Number(a.min_price);

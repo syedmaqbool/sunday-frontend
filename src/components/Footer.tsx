@@ -6,7 +6,7 @@ const Footer = () => (
     <div className="container py-12">
       <div className="grid gap-8 md:grid-cols-4">
         <div>
-          <img src={sundayLogo} alt="Sunday" className="h-10 w-auto brightness-0 invert" />
+          <img src={sundayLogo} alt="Sunday" className="h-10 w-auto" />
           <p className="mt-2 text-sm opacity-70">
             The fashion marketplace for pre-loved luxury & streetwear.
           </p>

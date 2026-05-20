@@ -115,8 +115,17 @@ const fmt = (n: number) =>
 
 const itemGross = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
 const itemCommission = (it: OrderItem) => Number((it as any).commission_amount ?? 0);
-/** Seller payout = full listing price. The platform fee is paid by the buyer on top at checkout. */
-const itemTotal = (it: OrderItem) => itemGross(it);
+/** Of every platform commission collected from the buyer, 5 percentage points are credited
+ * back to the seller and the rest is retained by the platform. */
+export const SELLER_COMMISSION_SHARE_RATE = 5;
+const itemSellerCommissionShare = (it: OrderItem) => {
+  const share = (itemGross(it) * SELLER_COMMISSION_SHARE_RATE) / 100;
+  const commission = itemCommission(it);
+  // Never pay the seller more than the commission actually collected on that item.
+  return commission > 0 ? Math.min(share, commission) : 0;
+};
+/** Seller payout = full listing price + 5% commission share. */
+const itemTotal = (it: OrderItem) => itemGross(it) + itemSellerCommissionShare(it);
 
 const Payouts = () => {
   const qc = useQueryClient();
@@ -495,7 +504,7 @@ const Payouts = () => {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Sales become payout-eligible only after the buyer confirms receipt with no issues.
+            Sales become payout-eligible only after the buyer confirms receipt with no issues. Sellers also earn a {SELLER_COMMISSION_SHARE_RATE}% share of every platform commission collected.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCsv}>

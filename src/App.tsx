@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Preferences from "./pages/Preferences";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
 import Messages from "./pages/Messages";
 import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerProfile from "./pages/SellerProfile";
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/preferences" element={<Preferences />} />
             <Route path="/help" element={<HelpCenter />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/support" element={<Support />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/seller-analytics" element={<SellerAnalytics />} />

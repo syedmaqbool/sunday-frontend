@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import sundayLogo from "@/assets/sunday-logo.png";
 
 const Footer = () => (
-  <footer className="border-t border-border bg-surface-dark text-surface-dark-foreground">
+  <footer className="border-t border-border bg-[#99ACFF] text-[#1a1a1a]">
     <div className="container py-12">
       <div className="grid gap-8 md:grid-cols-4">
         <div>

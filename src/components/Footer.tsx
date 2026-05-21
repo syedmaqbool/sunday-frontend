@@ -34,6 +34,7 @@ const Footer = () => (
             <li><Link to="/help" className="hover:opacity-100">FAQ</Link></li>
             <li><a href="mailto:support@sunday.app" className="hover:opacity-100">Contact</a></li>
             <li><Link to="/terms" className="hover:opacity-100">Terms</Link></li>
+            <li><Link to="/returns" className="hover:opacity-100">Returns</Link></li>
             <li><span className="cursor-pointer hover:opacity-100">Privacy</span></li>
           </ul>
         </div>

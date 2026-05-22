@@ -342,10 +342,10 @@ const ListingDetail = () => {
                 </AlertDialog>
               </div>
             ) : listing.status !== "sold" ? (
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Button
                   size="lg"
-                  className="flex-1 gap-2"
+                  className="min-w-0 flex-1 gap-2"
                   disabled={inCart || isReservedForOther}
                   onClick={() => addItem(listing, isReservedForMe ? effectivePrice : undefined)}
                 >
@@ -365,7 +365,7 @@ const ListingDetail = () => {
                     listingTitle={listing.title}
                   />
                 )}
-                <Button variant="outline" size="lg">
+                <Button variant="outline" size="lg" className="flex-shrink-0">
                   <Heart className="h-4 w-4" />
                 </Button>
               </div>

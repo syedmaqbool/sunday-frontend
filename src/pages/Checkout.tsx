@@ -423,13 +423,13 @@ const Checkout = () => {
 
           {/* Order summary */}
           <div className="lg:col-span-2">
-            <div className="rounded-lg border border-border bg-card p-6 sticky top-24">
+            <div className="rounded-lg border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-24">
               <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Order Summary ({totalItems})</h2>
               <div className="space-y-3 mb-4">
                 {items.map(({ listing, quantity }) => {
                   const c = itemCommissions.find((x) => x.listingId === listing.id);
                   return (
-                    <div key={listing.id} className="flex items-start gap-3">
+                    <div key={listing.id} className="flex items-start gap-2 sm:gap-3">
                       <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
                         <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                       </div>
@@ -442,10 +442,12 @@ const Checkout = () => {
                           </p>
                         )}
                       </div>
-                      <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}

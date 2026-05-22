@@ -57,7 +57,7 @@ const Auth = () => {
         password,
         options: {
           data: { full_name: name, phone: phone.trim(), date_of_birth: dob },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: "https://sndymarket.com/",
         },
       });
       if (error) {

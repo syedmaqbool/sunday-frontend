@@ -380,17 +380,17 @@ const Checkout = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="container flex-1 py-8">
-        <Link to="/listings" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <main className="container flex-1 px-4 py-6 sm:py-8">
+        <Link to="/listings" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground sm:mb-6">
           <ArrowLeft className="h-4 w-4" /> Continue shopping
         </Link>
 
-        <h1 className="font-heading text-3xl font-bold text-foreground mb-8">Checkout</h1>
+        <h1 className="font-heading text-2xl font-bold text-foreground mb-6 sm:text-3xl sm:mb-8">Checkout</h1>
 
-        <div className="grid gap-8 lg:grid-cols-5">
+        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
           {/* Shipping info */}
           <div className="lg:col-span-3 space-y-6">
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
               <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Shipping Information</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -423,13 +423,13 @@ const Checkout = () => {
 
           {/* Order summary */}
           <div className="lg:col-span-2">
-            <div className="rounded-lg border border-border bg-card p-6 sticky top-24">
+            <div className="rounded-lg border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-24">
               <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Order Summary ({totalItems})</h2>
               <div className="space-y-3 mb-4">
                 {items.map(({ listing, quantity }) => {
                   const c = itemCommissions.find((x) => x.listingId === listing.id);
                   return (
-                    <div key={listing.id} className="flex items-start gap-3">
+                    <div key={listing.id} className="flex items-start gap-2 sm:gap-3">
                       <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
                         <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                       </div>
@@ -442,10 +442,12 @@ const Checkout = () => {
                           </p>
                         )}
                       </div>
-                      <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}

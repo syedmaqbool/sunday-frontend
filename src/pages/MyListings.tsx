@@ -73,12 +73,6 @@ const MyListings = () => {
     onError: () => toast.error("Failed to resubmit"),
   });
 
-  if (authLoading) return null;
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-
   const cancelReservationMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.rpc("expire_listing_reservation", {
@@ -93,6 +87,12 @@ const MyListings = () => {
     },
     onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
+
+  if (authLoading) return null;
+  if (!user) {
+    navigate("/auth");
+    return null;
+  }
 
   const statusColor = (s: string) => {
     if (s === "approved") return "default";

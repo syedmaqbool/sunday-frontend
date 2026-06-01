@@ -183,8 +183,26 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
 
   return (
     <>
+      <div className="flex items-center justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sortLabel[sortBy]}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSortBy("newest")}>
+              Newest First
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortBy("price_desc")}>
+              Highest to Lowest Price
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="space-y-3">
-        {received.map((offer) => (
+        {sortedOffers.map((offer) => (
           <Card key={offer.id}>
             <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
               <img

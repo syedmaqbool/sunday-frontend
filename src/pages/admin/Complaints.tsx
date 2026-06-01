@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Loader2, ExternalLink } from "lucide-react";
+import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock, MapPin, Truck, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 

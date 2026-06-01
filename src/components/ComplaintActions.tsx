@@ -238,36 +238,69 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
                 <PackageCheck className="h-5 w-5" /> Mark return as shipped
               </DialogTitle>
               <DialogDescription>
-                Attach a photo of the return shipment receipt or parcel. Once submitted, the order moves to "Return In
-                Transit" and the seller is notified.
+                Provide the carrier, tracking number, expected delivery date and at least one shipment photo. All
+                fields are required.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              {originalShipment?.expected_delivery && (
+                <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                  Original shipment ETA was{" "}
+                  <span className="font-medium text-foreground">
+                    {new Date(originalShipment.expected_delivery).toLocaleDateString()}
+                  </span>
+                  . Please pick a realistic return delivery date.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label htmlFor="return-carrier">Carrier (optional)</Label>
+                  <Label htmlFor="return-carrier">
+                    Carrier <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="return-carrier"
                     value={carrier}
                     onChange={(e) => setCarrier(e.target.value)}
                     placeholder="e.g. PostNet"
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="return-tracking">Tracking # (optional)</Label>
+                  <Label htmlFor="return-tracking">
+                    Tracking # <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="return-tracking"
                     value={tracking}
                     onChange={(e) => setTracking(e.target.value)}
                     placeholder="Tracking number"
+                    required
                   />
                 </div>
               </div>
-              <FilePicker
-                id="return-proof"
-                label="Return shipment photo(s)"
-                files={proofFiles}
-                onChange={setProofFiles}
+              <div>
+                <Label htmlFor="return-expected-date">
+                  Expected delivery date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="return-expected-date"
+                  type="date"
+                  value={expectedDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setExpectedDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>
+                  Return shipment photo(s) <span className="text-destructive">*</span>
+                </Label>
+                <FilePicker
+                  id="return-proof"
+                  label=""
+                  files={proofFiles}
+                  onChange={setProofFiles}
+                />
               />
             </div>
             <DialogFooter>

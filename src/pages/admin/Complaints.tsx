@@ -78,6 +78,7 @@ const AdminComplaints = () => {
       .update({
         status,
         ...(notes !== undefined ? { admin_notes: notes } : {}),
+        ...(status === "return_approved" ? { return_approved_at: new Date().toISOString() } : {}),
         ...(status === "refunded" || status === "rejected" || status === "return_received"
           ? { resolved_at: new Date().toISOString() }
           : {}),

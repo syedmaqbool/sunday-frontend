@@ -17,13 +17,15 @@ import { toast } from "sonner";
 const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   under_review: "Under Review",
+  return_approved: "Return Approved",
+  return_address_provided: "Return Address Provided",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
   refunded: "Completed (Refunded)",
   rejected: "Completed (Rejected)",
 };
 
-type StatusFilter = "all" | "raised" | "under_review" | "return_in_transit" | "return_received" | "refunded" | "rejected";
+type StatusFilter = "all" | "raised" | "under_review" | "return_approved" | "return_address_provided" | "return_in_transit" | "return_received" | "refunded" | "rejected";
 
 type ComplaintRow = {
   id: string;
@@ -76,6 +78,7 @@ const AdminComplaints = () => {
       .update({
         status,
         ...(notes !== undefined ? { admin_notes: notes } : {}),
+        ...(status === "return_approved" ? { return_approved_at: new Date().toISOString() } : {}),
         ...(status === "refunded" || status === "rejected" || status === "return_received"
           ? { resolved_at: new Date().toISOString() }
           : {}),
@@ -132,11 +135,13 @@ const AdminComplaints = () => {
       </div>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="raised">Raised</TabsTrigger>
           <TabsTrigger value="under_review">Under Review</TabsTrigger>
-          <TabsTrigger value="return_in_transit">Return in transit</TabsTrigger>
+          <TabsTrigger value="return_approved">Approved</TabsTrigger>
+          <TabsTrigger value="return_address_provided">Address Provided</TabsTrigger>
+          <TabsTrigger value="return_in_transit">In Transit</TabsTrigger>
           <TabsTrigger value="return_received">Received</TabsTrigger>
           <TabsTrigger value="refunded">Refunded</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
@@ -268,6 +273,28 @@ const ComplaintDetailDialog = ({
             </Card>
           )}
 
+          {((complaint as any).return_to_address || (complaint as any).return_to_name) && (
+            <Card>
+              <CardContent className="space-y-1 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Seller return address</p>
+                {(complaint as any).return_to_name && (
+                  <p className="font-medium text-foreground">{(complaint as any).return_to_name}</p>
+                )}
+                {(complaint as any).return_to_address && <p>{(complaint as any).return_to_address}</p>}
+                <p className="text-muted-foreground">
+                  {(complaint as any).return_to_city}
+                  {(complaint as any).return_to_postal ? `, ${(complaint as any).return_to_postal}` : ""}
+                </p>
+                {(complaint as any).return_to_phone && (
+                  <p className="text-muted-foreground">{(complaint as any).return_to_phone}</p>
+                )}
+                {(complaint as any).return_to_notes && (
+                  <p className="text-xs italic text-muted-foreground">{(complaint as any).return_to_notes}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/listing/${complaint.listing_id}`}
@@ -305,6 +332,9 @@ const ComplaintDetailDialog = ({
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "under_review", notes || undefined)}>
             Mark as Under Review
           </Button>
+          <Button onClick={() => onUpdate(complaint.id, "return_approved", notes || undefined)}>
+            Approve return
+          </Button>
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "return_received", notes || undefined)}>
             Mark return received
           </Button>
@@ -312,7 +342,7 @@ const ComplaintDetailDialog = ({
             Complete · Refund buyer
           </Button>
           <Button variant="ghost" onClick={() => onUpdate(complaint.id, "rejected", notes || undefined)}>
-            Complete · Reject complaint
+            Reject return request
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AlertTriangle, PackageCheck, CheckCircle2, ImageIcon } from "lucide-react";
+import { AlertTriangle, PackageCheck, CheckCircle2, ImageIcon, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   under_review: "Under Review",
+  return_approved: "Return Approved",
+  return_address_provided: "Return Address Provided",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
   refunded: "Completed · Refunded",
@@ -23,6 +25,12 @@ export interface ComplaintDetailsData {
   return_tracking?: string | null;
   admin_notes?: string | null;
   created_at?: string;
+  return_to_name?: string | null;
+  return_to_address?: string | null;
+  return_to_city?: string | null;
+  return_to_postal?: string | null;
+  return_to_phone?: string | null;
+  return_to_notes?: string | null;
 }
 
 export function ComplaintDetailsView({
@@ -38,11 +46,15 @@ export function ComplaintDetailsView({
   const [preview, setPreview] = useState<string | null>(null);
   const isCompleted = complaint.status === "refunded" || complaint.status === "rejected";
   const isReturn =
-    complaint.status === "return_in_transit" || complaint.status === "return_received";
+    complaint.status === "return_in_transit" ||
+    complaint.status === "return_received" ||
+    complaint.status === "return_address_provided" ||
+    complaint.status === "return_approved";
   const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
 
   const evidence = complaint.evidence_urls ?? [];
   const proofs = complaint.return_proof_urls ?? [];
+  const hasReturnAddress = !!(complaint.return_to_address || complaint.return_to_name);
 
   return (
     <div className={`mt-2 ${className ?? ""}`}>
@@ -98,6 +110,30 @@ export function ComplaintDetailsView({
                       <img src={url} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {hasReturnAddress && (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" /> Ship return to
+                </p>
+                <div className="mt-1 space-y-0.5 text-sm text-foreground">
+                  {complaint.return_to_name && <p className="font-medium">{complaint.return_to_name}</p>}
+                  {complaint.return_to_address && <p>{complaint.return_to_address}</p>}
+                  {(complaint.return_to_city || complaint.return_to_postal) && (
+                    <p className="text-muted-foreground">
+                      {complaint.return_to_city}
+                      {complaint.return_to_postal ? `, ${complaint.return_to_postal}` : ""}
+                    </p>
+                  )}
+                  {complaint.return_to_phone && (
+                    <p className="text-muted-foreground">{complaint.return_to_phone}</p>
+                  )}
+                  {complaint.return_to_notes && (
+                    <p className="text-xs text-muted-foreground italic">{complaint.return_to_notes}</p>
+                  )}
                 </div>
               </div>
             )}

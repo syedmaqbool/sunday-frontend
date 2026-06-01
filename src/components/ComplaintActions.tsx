@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Truck, Loader2, Upload, X, PackageCheck } from "lucide-react";
+import { AlertTriangle, Truck, Loader2, Upload, X, PackageCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
 
@@ -37,15 +36,12 @@ type Complaint = {
   admin_notes: string;
   created_at: string;
   updated_at: string;
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  raised: "Complaint Raised",
-  under_review: "Under Review",
-  return_in_transit: "Return In Transit",
-  return_received: "Return Received",
-  refunded: "Completed · Refunded",
-  rejected: "Completed · Rejected",
+  return_to_name: string | null;
+  return_to_address: string | null;
+  return_to_city: string | null;
+  return_to_postal: string | null;
+  return_to_phone: string | null;
+  return_to_notes: string | null;
 };
 
 const uploadFiles = async (files: File[], folder: string) => {
@@ -81,7 +77,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, updated_at")
+        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
         .eq("order_id", orderId)
         .eq("listing_id", listingId)
         .maybeSingle();
@@ -127,7 +123,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
         status: "raised",
       });
       if (error) throw error;
-      toast.success("Complaint raised. Admin has been alerted.");
+      toast.success("Return request submitted for admin review.");
       setRaiseOpen(false);
       await refetch();
       queryClient.invalidateQueries({ queryKey: ["my-orders"] });
@@ -175,15 +171,26 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
 
   // Active complaint
   if (complaint) {
-    const isRaised = complaint.status === "raised";
     return (
       <>
         <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {isRaised && (
+          {(complaint.status === "raised" || complaint.status === "under_review") && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              Awaiting admin review
+            </span>
+          )}
+          {complaint.status === "return_approved" && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              Approved — waiting for seller's return address
+            </span>
+          )}
+          {complaint.status === "return_address_provided" && (
             <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setReturnOpen(true)}>
               <Truck className="h-3 w-3" />
-              Upload return proof
+              Mark return as shipped
             </Button>
           )}
           {complaint.status === "return_in_transit" && (
@@ -198,11 +205,11 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-heading">
-                <PackageCheck className="h-5 w-5" /> Upload return proof
+                <PackageCheck className="h-5 w-5" /> Mark return as shipped
               </DialogTitle>
               <DialogDescription>
-                Attach a photo of the return shipment receipt or parcel. Once submitted, the order moves to “Return In
-                Transit” and the seller is notified.
+                Attach a photo of the return shipment receipt or parcel. Once submitted, the order moves to "Return In
+                Transit" and the seller is notified.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -268,8 +275,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
               <AlertTriangle className="h-5 w-5 text-amber-600" /> Raise a quality complaint
             </DialogTitle>
             <DialogDescription>
-              Tell us what's wrong with the item and attach clear photos. Our admin team will be alerted and review your
-              report.
+              Tell us what's wrong with the item and attach clear photos. Our admin team will review your return
+              request before the seller is involved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -296,7 +303,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
             </Button>
             <Button onClick={handleRaise} disabled={busy}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
-              Raise complaint
+              Submit for review
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -273,6 +273,28 @@ const ComplaintDetailDialog = ({
             </Card>
           )}
 
+          {((complaint as any).return_to_address || (complaint as any).return_to_name) && (
+            <Card>
+              <CardContent className="space-y-1 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Seller return address</p>
+                {(complaint as any).return_to_name && (
+                  <p className="font-medium text-foreground">{(complaint as any).return_to_name}</p>
+                )}
+                {(complaint as any).return_to_address && <p>{(complaint as any).return_to_address}</p>}
+                <p className="text-muted-foreground">
+                  {(complaint as any).return_to_city}
+                  {(complaint as any).return_to_postal ? `, ${(complaint as any).return_to_postal}` : ""}
+                </p>
+                {(complaint as any).return_to_phone && (
+                  <p className="text-muted-foreground">{(complaint as any).return_to_phone}</p>
+                )}
+                {(complaint as any).return_to_notes && (
+                  <p className="text-xs italic text-muted-foreground">{(complaint as any).return_to_notes}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/listing/${complaint.listing_id}`}
@@ -310,6 +332,9 @@ const ComplaintDetailDialog = ({
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "under_review", notes || undefined)}>
             Mark as Under Review
           </Button>
+          <Button onClick={() => onUpdate(complaint.id, "return_approved", notes || undefined)}>
+            Approve return
+          </Button>
           <Button variant="outline" onClick={() => onUpdate(complaint.id, "return_received", notes || undefined)}>
             Mark return received
           </Button>
@@ -317,7 +342,7 @@ const ComplaintDetailDialog = ({
             Complete · Refund buyer
           </Button>
           <Button variant="ghost" onClick={() => onUpdate(complaint.id, "rejected", notes || undefined)}>
-            Complete · Reject complaint
+            Reject return request
           </Button>
         </DialogFooter>
       </DialogContent>

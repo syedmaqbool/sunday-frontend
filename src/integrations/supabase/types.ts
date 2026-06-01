@@ -131,6 +131,7 @@ export type Database = {
           return_address_provided_at: string | null
           return_approved_at: string | null
           return_carrier: string | null
+          return_expected_date: string | null
           return_proof_urls: string[]
           return_to_address: string | null
           return_to_city: string | null
@@ -157,6 +158,7 @@ export type Database = {
           return_address_provided_at?: string | null
           return_approved_at?: string | null
           return_carrier?: string | null
+          return_expected_date?: string | null
           return_proof_urls?: string[]
           return_to_address?: string | null
           return_to_city?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           return_address_provided_at?: string | null
           return_approved_at?: string | null
           return_carrier?: string | null
+          return_expected_date?: string | null
           return_proof_urls?: string[]
           return_to_address?: string | null
           return_to_city?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.complaints ADD COLUMN IF NOT EXISTS return_expected_date timestamp with time zone;

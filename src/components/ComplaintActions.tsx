@@ -33,6 +33,7 @@ type Complaint = {
   return_proof_urls: string[];
   return_carrier: string | null;
   return_tracking: string | null;
+  return_expected_date: string | null;
   admin_notes: string;
   created_at: string;
   updated_at: string;
@@ -71,18 +72,33 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
+  const [expectedDate, setExpectedDate] = useState("");
 
   const { data: complaint, refetch } = useQuery({
     queryKey: ["complaint", orderId, listingId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
+        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
         .eq("order_id", orderId)
         .eq("listing_id", listingId)
         .maybeSingle();
       if (error) throw error;
       return (data as Complaint | null) ?? null;
+    },
+  });
+
+  const { data: originalShipment } = useQuery({
+    queryKey: ["order-shipment", orderId, listingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (error) throw error;
+      const entry = (data?.item_status as any)?.[listingId] ?? null;
+      return entry as { expected_delivery?: string; shipped_at?: string } | null;
     },
   });
 
@@ -98,6 +114,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
       setProofFiles([]);
       setCarrier("");
       setTracking("");
+      setExpectedDate("");
     }
   }, [returnOpen]);
 
@@ -136,6 +153,18 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
 
   const handleReturnProof = async () => {
     if (!complaint) return;
+    if (!carrier.trim()) {
+      toast.error("Please enter the carrier");
+      return;
+    }
+    if (!tracking.trim()) {
+      toast.error("Please enter the tracking number");
+      return;
+    }
+    if (!expectedDate) {
+      toast.error("Please select the expected delivery date");
+      return;
+    }
     if (proofFiles.length === 0) {
       toast.error("Please upload return proof photo(s)");
       return;
@@ -147,8 +176,9 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
         .from("complaints")
         .update({
           return_proof_urls: [...(complaint.return_proof_urls ?? []), ...urls],
-          return_carrier: carrier.trim() || null,
-          return_tracking: tracking.trim() || null,
+          return_carrier: carrier.trim(),
+          return_tracking: tracking.trim(),
+          return_expected_date: new Date(expectedDate).toISOString(),
           status: "return_in_transit",
         })
         .eq("id", complaint.id);
@@ -208,37 +238,70 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
                 <PackageCheck className="h-5 w-5" /> Mark return as shipped
               </DialogTitle>
               <DialogDescription>
-                Attach a photo of the return shipment receipt or parcel. Once submitted, the order moves to "Return In
-                Transit" and the seller is notified.
+                Provide the carrier, tracking number, expected delivery date and at least one shipment photo. All
+                fields are required.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              {originalShipment?.expected_delivery && (
+                <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                  Original shipment ETA was{" "}
+                  <span className="font-medium text-foreground">
+                    {new Date(originalShipment.expected_delivery).toLocaleDateString()}
+                  </span>
+                  . Please pick a realistic return delivery date.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label htmlFor="return-carrier">Carrier (optional)</Label>
+                  <Label htmlFor="return-carrier">
+                    Carrier <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="return-carrier"
                     value={carrier}
                     onChange={(e) => setCarrier(e.target.value)}
                     placeholder="e.g. PostNet"
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="return-tracking">Tracking # (optional)</Label>
+                  <Label htmlFor="return-tracking">
+                    Tracking # <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="return-tracking"
                     value={tracking}
                     onChange={(e) => setTracking(e.target.value)}
                     placeholder="Tracking number"
+                    required
                   />
                 </div>
               </div>
-              <FilePicker
-                id="return-proof"
-                label="Return shipment photo(s)"
-                files={proofFiles}
-                onChange={setProofFiles}
-              />
+              <div>
+                <Label htmlFor="return-expected-date">
+                  Expected delivery date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="return-expected-date"
+                  type="date"
+                  value={expectedDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setExpectedDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>
+                  Return shipment photo(s) <span className="text-destructive">*</span>
+                </Label>
+                <FilePicker
+                  id="return-proof"
+                  label=""
+                  files={proofFiles}
+                  onChange={setProofFiles}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setReturnOpen(false)} disabled={busy}>

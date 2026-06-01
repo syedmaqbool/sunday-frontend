@@ -72,18 +72,33 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
+  const [expectedDate, setExpectedDate] = useState("");
 
   const { data: complaint, refetch } = useQuery({
     queryKey: ["complaint", orderId, listingId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
+        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
         .eq("order_id", orderId)
         .eq("listing_id", listingId)
         .maybeSingle();
       if (error) throw error;
       return (data as Complaint | null) ?? null;
+    },
+  });
+
+  const { data: originalShipment } = useQuery({
+    queryKey: ["order-shipment", orderId, listingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("item_status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (error) throw error;
+      const entry = (data?.item_status as any)?.[listingId] ?? null;
+      return entry as { expected_delivery?: string; shipped_at?: string } | null;
     },
   });
 
@@ -99,6 +114,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
       setProofFiles([]);
       setCarrier("");
       setTracking("");
+      setExpectedDate("");
     }
   }, [returnOpen]);
 

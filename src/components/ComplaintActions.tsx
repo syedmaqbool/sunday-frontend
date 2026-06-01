@@ -33,6 +33,7 @@ type Complaint = {
   return_proof_urls: string[];
   return_carrier: string | null;
   return_tracking: string | null;
+  return_expected_date: string | null;
   admin_notes: string;
   created_at: string;
   updated_at: string;

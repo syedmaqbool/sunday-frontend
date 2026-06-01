@@ -301,7 +301,7 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
                   files={proofFiles}
                   onChange={setProofFiles}
                 />
-              />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setReturnOpen(false)} disabled={busy}>

@@ -1227,7 +1227,11 @@ const RETURN_STATUS_LABEL: Record<string, string> = {
 
 function ReturnStatusBadge({ status }: { status: string }) {
   const isCompleted = status === "refunded" || status === "rejected";
-  const isReturn = status === "return_in_transit" || status === "return_received";
+  const isReturn =
+    status === "return_in_transit" ||
+    status === "return_received" ||
+    status === "return_approved" ||
+    status === "return_address_provided";
   const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
   return (
     <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20">

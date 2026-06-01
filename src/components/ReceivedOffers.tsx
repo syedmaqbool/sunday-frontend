@@ -9,7 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Loader2, ArrowRightLeft, Star } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CheckCircle, XCircle, Loader2, ArrowRightLeft, Star, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 
@@ -45,6 +51,8 @@ interface ReceivedOffersProps {
   listingId?: string;
 }
 
+type SortOption = "newest" | "price_desc";
+
 export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -52,6 +60,7 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const { data: received = [], isLoading } = useQuery({
     queryKey: ["offers-received", user?.id, listingId ?? "all"],
@@ -162,10 +171,38 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
     return <div className="py-12 text-center text-muted-foreground">No offers received yet</div>;
   }
 
+  const sortedOffers = [...received].sort((a, b) => {
+    if (sortBy === "price_desc") return b.amount - a.amount;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const sortLabel: Record<SortOption, string> = {
+    newest: "Newest First",
+    price_desc: "Highest to Lowest Price",
+  };
+
   return (
     <>
+      <div className="flex items-center justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sortLabel[sortBy]}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSortBy("newest")}>
+              Newest First
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortBy("price_desc")}>
+              Highest to Lowest Price
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="space-y-3">
-        {received.map((offer) => (
+        {sortedOffers.map((offer) => (
           <Card key={offer.id}>
             <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
               <img

@@ -128,8 +128,16 @@ export type Database = {
           reason: string
           resolved_at: string | null
           resolved_by: string | null
+          return_address_provided_at: string | null
+          return_approved_at: string | null
           return_carrier: string | null
           return_proof_urls: string[]
+          return_to_address: string | null
+          return_to_city: string | null
+          return_to_name: string | null
+          return_to_notes: string | null
+          return_to_phone: string | null
+          return_to_postal: string | null
           return_tracking: string | null
           seller_id: string
           status: string
@@ -146,8 +154,16 @@ export type Database = {
           reason?: string
           resolved_at?: string | null
           resolved_by?: string | null
+          return_address_provided_at?: string | null
+          return_approved_at?: string | null
           return_carrier?: string | null
           return_proof_urls?: string[]
+          return_to_address?: string | null
+          return_to_city?: string | null
+          return_to_name?: string | null
+          return_to_notes?: string | null
+          return_to_phone?: string | null
+          return_to_postal?: string | null
           return_tracking?: string | null
           seller_id: string
           status?: string
@@ -164,8 +180,16 @@ export type Database = {
           reason?: string
           resolved_at?: string | null
           resolved_by?: string | null
+          return_address_provided_at?: string | null
+          return_approved_at?: string | null
           return_carrier?: string | null
           return_proof_urls?: string[]
+          return_to_address?: string | null
+          return_to_city?: string | null
+          return_to_name?: string | null
+          return_to_notes?: string | null
+          return_to_phone?: string | null
+          return_to_postal?: string | null
           return_tracking?: string | null
           seller_id?: string
           status?: string

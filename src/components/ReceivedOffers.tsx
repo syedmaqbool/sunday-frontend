@@ -51,6 +51,8 @@ interface ReceivedOffersProps {
   listingId?: string;
 }
 
+type SortOption = "newest" | "price_desc";
+
 export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -58,6 +60,7 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const { data: received = [], isLoading } = useQuery({
     queryKey: ["offers-received", user?.id, listingId ?? "all"],

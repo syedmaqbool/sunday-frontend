@@ -171,6 +171,16 @@ export const ReceivedOffers = ({ listingId }: ReceivedOffersProps = {}) => {
     return <div className="py-12 text-center text-muted-foreground">No offers received yet</div>;
   }
 
+  const sortedOffers = [...received].sort((a, b) => {
+    if (sortBy === "price_desc") return b.amount - a.amount;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const sortLabel: Record<SortOption, string> = {
+    newest: "Newest First",
+    price_desc: "Highest to Lowest Price",
+  };
+
   return (
     <>
       <div className="space-y-3">

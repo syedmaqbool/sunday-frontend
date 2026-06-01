@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Loader2, ExternalLink } from "lucide-react";
+import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock, MapPin, Truck, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -38,6 +38,12 @@ type ComplaintRow = {
   return_proof_urls: string[];
   return_carrier: string | null;
   return_tracking: string | null;
+  return_to_name: string | null;
+  return_to_address: string | null;
+  return_to_city: string | null;
+  return_to_postal: string | null;
+  return_to_phone: string | null;
+  return_to_notes: string | null;
   status: string;
   admin_notes: string;
   created_at: string;
@@ -273,27 +279,75 @@ const ComplaintDetailDialog = ({
             </Card>
           )}
 
-          {((complaint as any).return_to_address || (complaint as any).return_to_name) && (
-            <Card>
-              <CardContent className="space-y-1 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Seller return address</p>
-                {(complaint as any).return_to_name && (
-                  <p className="font-medium text-foreground">{(complaint as any).return_to_name}</p>
+          <Card>
+            <CardContent className="space-y-3 p-4 text-sm">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Return status</p>
+
+              {/* 1. Return address provided */}
+              <div className="flex items-start gap-3">
+                {complaint.return_to_address ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
-                {(complaint as any).return_to_address && <p>{(complaint as any).return_to_address}</p>}
-                <p className="text-muted-foreground">
-                  {(complaint as any).return_to_city}
-                  {(complaint as any).return_to_postal ? `, ${(complaint as any).return_to_postal}` : ""}
-                </p>
-                {(complaint as any).return_to_phone && (
-                  <p className="text-muted-foreground">{(complaint as any).return_to_phone}</p>
+                <div>
+                  <p className="font-medium text-foreground">
+                    {complaint.return_to_address ? "Return address provided" : "Return address not provided"}
+                  </p>
+                  {complaint.return_to_address && (
+                    <div className="mt-1 space-y-0.5 text-muted-foreground">
+                      {complaint.return_to_name && <p className="text-foreground">{complaint.return_to_name}</p>}
+                      <p>{complaint.return_to_address}</p>
+                      <p>
+                        {complaint.return_to_city}
+                        {complaint.return_to_postal ? `, ${complaint.return_to_postal}` : ""}
+                      </p>
+                      {complaint.return_to_phone && <p>{complaint.return_to_phone}</p>}
+                      {complaint.return_to_notes && <p className="text-xs italic">{complaint.return_to_notes}</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Buyer returned product */}
+              <div className="flex items-start gap-3">
+                {complaint.status === "return_in_transit" || complaint.status === "return_received" || complaint.status === "refunded" ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
-                {(complaint as any).return_to_notes && (
-                  <p className="text-xs italic text-muted-foreground">{(complaint as any).return_to_notes}</p>
+                <div>
+                  <p className="font-medium text-foreground">
+                    {complaint.status === "return_in_transit" || complaint.status === "return_received" || complaint.status === "refunded"
+                      ? "Buyer has returned the product"
+                      : "Buyer has not returned the product yet"}
+                  </p>
+                  {complaint.return_carrier && (
+                    <p className="text-xs text-muted-foreground">Carrier: {complaint.return_carrier}</p>
+                  )}
+                  {complaint.return_tracking && (
+                    <p className="font-mono text-xs text-muted-foreground">Tracking: {complaint.return_tracking}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Seller received item */}
+              <div className="flex items-start gap-3">
+                {complaint.status === "return_received" || complaint.status === "refunded" ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
-              </CardContent>
-            </Card>
-          )}
+                <div>
+                  <p className="font-medium text-foreground">
+                    {complaint.status === "return_received" || complaint.status === "refunded"
+                      ? "Seller has received the returned item"
+                      : "Seller has not received the returned item yet"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex flex-wrap gap-2">
             <Link

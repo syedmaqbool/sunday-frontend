@@ -38,6 +38,12 @@ type ComplaintRow = {
   return_proof_urls: string[];
   return_carrier: string | null;
   return_tracking: string | null;
+  return_to_name: string | null;
+  return_to_address: string | null;
+  return_to_city: string | null;
+  return_to_postal: string | null;
+  return_to_phone: string | null;
+  return_to_notes: string | null;
   status: string;
   admin_notes: string;
   created_at: string;

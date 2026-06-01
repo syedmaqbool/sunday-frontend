@@ -1217,6 +1217,8 @@ function BuyerQualityConfirm({
 const RETURN_STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
   under_review: "Under Review",
+  return_approved: "Return Approved",
+  return_address_provided: "Return Address Provided",
   return_in_transit: "Return In Transit",
   return_received: "Return Received",
   refunded: "Completed · Refunded",

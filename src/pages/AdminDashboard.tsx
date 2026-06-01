@@ -92,7 +92,7 @@ const AdminDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
+    if (!authLoading && !user) navigate("/auth", { replace: true });
     if (!isLoading && !authLoading && user && isAdmin === false) navigate("/");
   }, [authLoading, user, isAdmin, isLoading, navigate]);
 

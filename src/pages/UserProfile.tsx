@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Star, Package, ShoppingBag, Settings, ChevronDown, MapPin, Receipt, Truck, CheckCircle2, Phone, Calendar as CalendarIcon, Upload, X, Undo2, AlertTriangle, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderItemReview } from "@/components/OrderItemReview";
 import { ComplaintActions } from "@/components/ComplaintActions";
 import { SellerComplaintBadge } from "@/components/SellerComplaintBadge";
@@ -239,11 +239,12 @@ const UserProfile = () => {
 
   const { data: rating } = useSellerRating(user?.id);
 
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth", { replace: true });
+  }, [authLoading, user, navigate]);
+
   if (authLoading) return null;
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user) return null;
 
   const isLoading = profileLoading || ordersLoading || soldLoading;
   const boughtCount = orders.reduce(

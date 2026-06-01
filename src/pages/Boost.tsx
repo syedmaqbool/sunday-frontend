@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,11 +45,12 @@ const Boost = () => {
 
   const { data: myBoosts = [], isLoading: boostsLoading } = useMyBoosts();
 
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth", { replace: true });
+  }, [authLoading, user, navigate]);
+
   if (authLoading) return null;
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user) return null;
 
   const now = Date.now();
   const activeBoosts = myBoosts.filter((b) => new Date(b.ends_at).getTime() > now);

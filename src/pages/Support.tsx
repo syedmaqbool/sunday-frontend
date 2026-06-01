@@ -74,7 +74,7 @@ const Support = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
+    if (!authLoading && !user) navigate("/auth", { replace: true });
   }, [user, authLoading, navigate]);
 
   const { data: tickets = [], isLoading: ticketsLoading } = useQuery({

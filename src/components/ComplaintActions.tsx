@@ -153,6 +153,18 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
 
   const handleReturnProof = async () => {
     if (!complaint) return;
+    if (!carrier.trim()) {
+      toast.error("Please enter the carrier");
+      return;
+    }
+    if (!tracking.trim()) {
+      toast.error("Please enter the tracking number");
+      return;
+    }
+    if (!expectedDate) {
+      toast.error("Please select the expected delivery date");
+      return;
+    }
     if (proofFiles.length === 0) {
       toast.error("Please upload return proof photo(s)");
       return;
@@ -164,8 +176,9 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
         .from("complaints")
         .update({
           return_proof_urls: [...(complaint.return_proof_urls ?? []), ...urls],
-          return_carrier: carrier.trim() || null,
-          return_tracking: tracking.trim() || null,
+          return_carrier: carrier.trim(),
+          return_tracking: tracking.trim(),
+          return_expected_date: new Date(expectedDate).toISOString(),
           status: "return_in_transit",
         })
         .eq("id", complaint.id);

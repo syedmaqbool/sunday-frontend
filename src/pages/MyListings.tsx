@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,11 +89,12 @@ const MyListings = () => {
     onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth", { replace: true });
+  }, [authLoading, user, navigate]);
+
   if (authLoading) return null;
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user) return null;
 
   const statusColor = (s: string) => {
     if (s === "approved") return "default";

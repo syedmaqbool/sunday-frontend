@@ -135,11 +135,13 @@ const AdminComplaints = () => {
       </div>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="raised">Raised</TabsTrigger>
           <TabsTrigger value="under_review">Under Review</TabsTrigger>
-          <TabsTrigger value="return_in_transit">Return in transit</TabsTrigger>
+          <TabsTrigger value="return_approved">Approved</TabsTrigger>
+          <TabsTrigger value="return_address_provided">Address Provided</TabsTrigger>
+          <TabsTrigger value="return_in_transit">In Transit</TabsTrigger>
           <TabsTrigger value="return_received">Received</TabsTrigger>
           <TabsTrigger value="refunded">Refunded</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>

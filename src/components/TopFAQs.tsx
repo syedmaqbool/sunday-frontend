@@ -1,13 +1,9 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { ArrowRight, HelpCircle } from "lucide-react";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { Plus, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Faq {
   id: string;
@@ -33,43 +29,43 @@ const TopFAQs = () => {
   if (faqs.length === 0) return null;
 
   return (
-    <section className="container py-14 md:py-20">
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <HelpCircle className="h-5 w-5 text-primary" />
-          <h2 className="font-heading text-2xl font-semibold text-foreground">
-            Frequently asked questions
-          </h2>
-        </div>
-        <Link
-          to="/help"
-          className="hidden items-center gap-1.5 text-sm font-medium text-primary hover:underline md:flex"
-        >
-          View all <ArrowRight className="h-4 w-4" />
-        </Link>
+    <section className="container max-w-3xl py-14 md:py-20">
+      <div className="mb-8 text-center">
+        <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+          Frequently asked questions
+        </h2>
       </div>
 
-      <Accordion type="single" collapsible className="space-y-2">
+      <AccordionPrimitive.Root type="single" collapsible className="border-t border-border">
         {faqs.map((faq) => (
-          <AccordionItem
+          <AccordionPrimitive.Item
             key={faq.id}
             value={faq.id}
-            className="rounded-lg border border-border bg-card px-4"
+            className="border-b border-border"
           >
-            <AccordionTrigger className="py-4 text-left hover:no-underline">
-              <span className="font-medium text-foreground">{faq.question}</span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-4 pr-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-              {faq.answer}
-            </AccordionContent>
-          </AccordionItem>
+            <AccordionPrimitive.Header className="flex">
+              <AccordionPrimitive.Trigger
+                className={cn(
+                  "group flex flex-1 items-center justify-between py-5 text-left text-base font-medium text-foreground transition-colors hover:text-primary"
+                )}
+              >
+                <span>{faq.question}</span>
+                <Plus className="h-5 w-5 shrink-0 text-primary transition-transform duration-300 group-data-[state=open]:rotate-45" />
+              </AccordionPrimitive.Trigger>
+            </AccordionPrimitive.Header>
+            <AccordionPrimitive.Content className="overflow-hidden text-sm text-muted-foreground data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+              <div className="pb-5 pr-10 leading-relaxed whitespace-pre-line">
+                {faq.answer}
+              </div>
+            </AccordionPrimitive.Content>
+          </AccordionPrimitive.Item>
         ))}
-      </Accordion>
+      </AccordionPrimitive.Root>
 
-      <div className="mt-6 flex justify-center md:hidden">
+      <div className="mt-8 flex justify-center">
         <Link
           to="/help"
-          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
           View all FAQs <ArrowRight className="h-4 w-4" />
         </Link>

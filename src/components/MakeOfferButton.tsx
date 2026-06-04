@@ -34,6 +34,7 @@ interface MakeOfferProps {
 
 export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitle }: MakeOfferProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");

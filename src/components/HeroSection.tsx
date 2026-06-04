@@ -1,11 +1,27 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import heroImage from "@/assets/hero-fashion.jpg";
+import heroFallback from "@/assets/hero-fashion.jpg";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { data: heroUrl } = useQuery({
+    queryKey: ["hero_image"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "hero_image")
+        .maybeSingle();
+      const v = data?.value as { url?: string } | null;
+      return v?.url || null;
+    },
+    staleTime: 60_000,
+  });
+  const heroImage = heroUrl || heroFallback;
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">

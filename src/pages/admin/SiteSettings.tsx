@@ -7,17 +7,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Upload } from "lucide-react";
 import heroFallback from "@/assets/hero-fashion.jpg";
 
 const KEY = "hero_image";
+
+type HeroContent = {
+  url?: string;
+  badge?: string;
+  title_line1?: string;
+  title_line2?: string;
+  subtitle?: string;
+  primary_cta?: string;
+  secondary_cta?: string;
+};
+
+const DEFAULTS: Required<Omit<HeroContent, "url">> = {
+  badge: "Pre-loved fashion",
+  title_line1: "Style doesn't",
+  title_line2: "expire.",
+  subtitle:
+    "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
+  primary_cta: "Shop Now",
+  secondary_cta: "Start Selling",
+};
 
 const SiteSettings = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [url, setUrl] = useState("");
+  const [form, setForm] = useState<HeroContent>({ ...DEFAULTS });
 
   const { data, isLoading } = useQuery({
     queryKey: ["site_settings", KEY],
@@ -28,23 +49,23 @@ const SiteSettings = () => {
         .eq("key", KEY)
         .maybeSingle();
       if (error) throw error;
-      return (data?.value as { url?: string } | null) ?? null;
+      return (data?.value as HeroContent | null) ?? null;
     },
   });
 
   useEffect(() => {
-    setUrl(data?.url ?? "");
+    setForm({ ...DEFAULTS, ...(data || {}) });
   }, [data]);
 
   const save = useMutation({
-    mutationFn: async (newUrl: string) => {
+    mutationFn: async (next: HeroContent) => {
       const { error } = await supabase
         .from("site_settings")
-        .upsert({ key: KEY, value: { url: newUrl }, updated_by: user?.id ?? null });
+        .upsert({ key: KEY, value: next, updated_by: user?.id ?? null });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Hero image updated");
+      toast.success("Hero section updated");
       qc.invalidateQueries({ queryKey: ["site_settings", KEY] });
       qc.invalidateQueries({ queryKey: ["hero_image"] });
     },
@@ -66,9 +87,10 @@ const SiteSettings = () => {
         .from("listing-images")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
-      const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
-      setUrl(data.publicUrl);
-      await save.mutateAsync(data.publicUrl);
+      const { data: pub } = supabase.storage.from("listing-images").getPublicUrl(path);
+      const next = { ...form, url: pub.publicUrl };
+      setForm(next);
+      await save.mutateAsync(next);
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
     } finally {
@@ -76,20 +98,22 @@ const SiteSettings = () => {
     }
   };
 
-  const preview = url || heroFallback;
+  const preview = form.url || heroFallback;
+  const update = (k: keyof HeroContent) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="font-heading text-2xl font-semibold">Site Settings</h2>
-        <p className="text-sm text-muted-foreground">Manage homepage content and branding.</p>
+        <p className="text-sm text-muted-foreground">Manage homepage hero image and text.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Homepage hero image</CardTitle>
+          <CardTitle>Homepage hero</CardTitle>
           <CardDescription>
-            Shown as the background of the hero section on the homepage. Recommended 1920×1080, max 8MB.
+            Background image (1920×1080 recommended, max 8MB) and headline text shown on the homepage.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -102,44 +126,67 @@ const SiteSettings = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleUpload}
-                />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
                 <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   {uploading ? "Uploading..." : "Upload new image"}
                 </Button>
-                {url && (
+                {form.url && (
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setUrl("");
-                      save.mutate("");
+                      const next = { ...form, url: "" };
+                      setForm(next);
+                      save.mutate(next);
                     }}
                     disabled={save.isPending}
                   >
-                    Reset to default
+                    Reset image to default
                   </Button>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="hero-url">Or paste an image URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="hero-url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                  <Button onClick={() => save.mutate(url)} disabled={save.isPending}>
-                    {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-                  </Button>
+                <Input
+                  id="hero-url"
+                  value={form.url ?? ""}
+                  onChange={update("url")}
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="badge">Badge</Label>
+                  <Input id="badge" value={form.badge ?? ""} onChange={update("badge")} />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="t1">Headline — line 1</Label>
+                  <Input id="t1" value={form.title_line1 ?? ""} onChange={update("title_line1")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="t2">Headline — line 2 (italic accent)</Label>
+                  <Input id="t2" value={form.title_line2 ?? ""} onChange={update("title_line2")} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="sub">Subtitle</Label>
+                  <Textarea id="sub" rows={3} value={form.subtitle ?? ""} onChange={update("subtitle")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cta1">Primary button label</Label>
+                  <Input id="cta1" value={form.primary_cta ?? ""} onChange={update("primary_cta")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cta2">Secondary button label</Label>
+                  <Input id="cta2" value={form.secondary_cta ?? ""} onChange={update("secondary_cta")} />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => save.mutate(form)} disabled={save.isPending}>
+                  {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save changes"}
+                </Button>
               </div>
             </>
           )}

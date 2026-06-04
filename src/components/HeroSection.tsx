@@ -6,9 +6,29 @@ import heroFallback from "@/assets/hero-fashion.jpg";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
+type HeroContent = {
+  url?: string;
+  badge?: string;
+  title_line1?: string;
+  title_line2?: string;
+  subtitle?: string;
+  primary_cta?: string;
+  secondary_cta?: string;
+};
+
+const DEFAULTS: Required<Omit<HeroContent, "url">> = {
+  badge: "Pre-loved fashion",
+  title_line1: "Style doesn't",
+  title_line2: "expire.",
+  subtitle:
+    "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
+  primary_cta: "Shop Now",
+  secondary_cta: "Start Selling",
+};
+
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { data: heroUrl } = useQuery({
+  const { data } = useQuery({
     queryKey: ["hero_image"],
     queryFn: async () => {
       const { data } = await supabase
@@ -16,22 +36,21 @@ const HeroSection = () => {
         .select("value")
         .eq("key", "hero_image")
         .maybeSingle();
-      const v = data?.value as { url?: string } | null;
-      return v?.url || null;
+      return (data?.value as HeroContent | null) ?? null;
     },
     staleTime: 60_000,
   });
-  const heroImage = heroUrl || heroFallback;
+
+  const heroImage = data?.url || heroFallback;
+  const c = { ...DEFAULTS, ...(data || {}) };
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
-      {/* Background */}
       <div className="absolute inset-0">
         <img src={heroImage} alt="Fashion editorial" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-surface-dark/90 via-surface-dark/60 to-transparent" />
       </div>
 
-      {/* Content */}
       <div className="container relative z-10">
         <motion.div
           className="max-w-xl"
@@ -40,23 +59,19 @@ const HeroSection = () => {
           transition={{ duration: 0.7, ease: "easeOut" }}
         >
           <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
-            Pre-loved fashion
+            {c.badge}
           </span>
           <h1 className="font-heading text-5xl font-bold leading-tight text-surface-dark-foreground md:text-7xl">
-            Style doesn't
+            {c.title_line1}
             <br />
-            <span className="italic text-gold">expire.</span>
+            <span className="italic text-gold">{c.title_line2}</span>
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-surface-dark-foreground/80">
-            Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.
+            {c.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="gap-2"
-              onClick={() => navigate("/listings")}
-            >
-              Shop Now
+            <Button size="lg" className="gap-2" onClick={() => navigate("/listings")}>
+              {c.primary_cta}
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button
@@ -65,7 +80,7 @@ const HeroSection = () => {
               className="border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground hover:bg-surface-dark-foreground/10"
               onClick={() => navigate("/create-listing")}
             >
-              Start Selling
+              {c.secondary_cta}
             </Button>
           </div>
         </motion.div>

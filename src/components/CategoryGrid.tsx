@@ -21,7 +21,7 @@ const CategoryGrid = () => {
       <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
         Shop by Category
       </h2>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         {categories.map((cat, i) => (
           <motion.div
             key={cat.id}
@@ -32,10 +32,10 @@ const CategoryGrid = () => {
           >
             <Link
               to={`/listings?parent=${cat.value}`}
-              className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-8 transition-all hover:border-primary hover:shadow-lg"
+              className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary hover:shadow-lg sm:gap-3 sm:p-8"
             >
-              <span className="text-5xl">{cat.icon}</span>
-              <span className="font-heading text-xl font-semibold text-card-foreground">{cat.label}</span>
+              <span className="text-3xl sm:text-5xl">{cat.icon}</span>
+              <span className="font-heading text-sm font-semibold text-card-foreground sm:text-xl">{cat.label}</span>
             </Link>
           </motion.div>
         ))}

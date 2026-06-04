@@ -25,6 +25,7 @@ import {
   Percent as PercentIcon,
   Menu,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
@@ -47,6 +48,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
       { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
+      { label: "Site Settings", path: "/admin/site-settings", icon: ImageIcon },
     ],
   },
   {

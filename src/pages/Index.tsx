@@ -3,6 +3,7 @@ import HeroSection from "@/components/HeroSection";
 import CategoryGrid from "@/components/CategoryGrid";
 import TrendingProducts from "@/components/TrendingProducts";
 import FeaturedListings from "@/components/FeaturedListings";
+import TopFAQs from "@/components/TopFAQs";
 import MobileAppBanner from "@/components/MobileAppBanner";
 import Footer from "@/components/Footer";
 
@@ -14,6 +15,7 @@ const Index = () => (
       <CategoryGrid />
       <TrendingProducts />
       <FeaturedListings />
+      <TopFAQs />
     </main>
     <MobileAppBanner />
     <Footer />

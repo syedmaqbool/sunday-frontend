@@ -118,7 +118,13 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
     },
   });
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Button variant="outline" size="lg" className="gap-2" onClick={() => navigate("/auth")}>
+        <MessageSquare className="h-4 w-4" /> Make Offer
+      </Button>
+    );
+  }
 
   const activeOffer = existingOffers.find((o) => o.status === "pending" || o.status === "countered");
 

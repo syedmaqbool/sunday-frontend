@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +34,7 @@ interface MakeOfferProps {
 
 export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitle }: MakeOfferProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -116,7 +118,13 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
     },
   });
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Button variant="outline" size="lg" className="gap-2" onClick={() => navigate("/auth")}>
+        <MessageSquare className="h-4 w-4" /> Make Offer
+      </Button>
+    );
+  }
 
   const activeOffer = existingOffers.find((o) => o.status === "pending" || o.status === "countered");
 

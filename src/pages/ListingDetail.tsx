@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Listing } from "@/lib/constants";
+import { getWeightLabel } from "@/lib/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -286,7 +287,7 @@ const ListingDetail = () => {
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.category}</span>
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                  <Weight className="h-3 w-3" /> {listing.weight}kg
+                  <Weight className="h-3 w-3" /> {getWeightLabel(listing.weight)}
                 </span>
               )}
             </div>

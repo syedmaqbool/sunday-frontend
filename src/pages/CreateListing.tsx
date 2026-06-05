@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONDITIONS, SIZES } from "@/lib/constants";
+import { CONDITIONS, SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Camera, Upload, Loader2, X, Video as VideoIcon, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -88,6 +88,20 @@ const CreateListing = () => {
         return;
       }
       const parts = (existingListing.category || "").split("-");
+      const closestWeight = (() => {
+        if (!existingListing.weight) return "";
+        const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: parseFloat(o.value) }));
+        let closest = options[0];
+        let minDist = Math.abs(options[0].num - existingListing.weight);
+        for (let i = 1; i < options.length; i++) {
+          const dist = Math.abs(options[i].num - existingListing.weight);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = options[i];
+          }
+        }
+        return closest.value;
+      })();
       setForm({
         title: existingListing.title,
         description: existingListing.description || "",
@@ -97,7 +111,7 @@ const CreateListing = () => {
         subCategory: parts[1] || "",
         condition: existingListing.condition,
         size: existingListing.size,
-        weight: existingListing.weight ? String(existingListing.weight) : "",
+        weight: closestWeight,
       });
       const media = existingListing.images || [];
       setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
@@ -414,8 +428,13 @@ const CreateListing = () => {
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)<FieldTip tip="Approximate packed weight in kilograms. Used to estimate shipping cost. If unsure, weigh on a kitchen scale with the item in its packaging." /></Label>
-              <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
+              <Label>Weight<FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." /></Label>
+              <Select value={form.weight} onValueChange={v => setForm(f => ({ ...f, weight: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select weight" /></SelectTrigger>
+                <SelectContent>
+                  {WEIGHT_OPTIONS.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Condition<FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." /></Label>

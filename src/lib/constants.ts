@@ -31,6 +31,30 @@ export const CONDITIONS = [
 
 export const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "One Size"] as const;
 
+export const WEIGHT_OPTIONS = [
+  { label: "Less than 0.5 kg", value: "0.25" },
+  { label: "0.5 – 1 kg", value: "0.75" },
+  { label: "1 – 2 kg", value: "1.5" },
+  { label: "2 – 3 kg", value: "2.5" },
+  { label: "3 – 5 kg", value: "4" },
+  { label: "More than 5 kg", value: "6" },
+] as const;
+
+export const getWeightLabel = (weight: number | null | undefined): string | null => {
+  if (weight == null) return null;
+  const options = WEIGHT_OPTIONS.map((o) => ({ ...o, num: parseFloat(o.value) }));
+  let closest = options[0];
+  let minDist = Math.abs(options[0].num - weight);
+  for (let i = 1; i < options.length; i++) {
+    const dist = Math.abs(options[i].num - weight);
+    if (dist < minDist) {
+      minDist = dist;
+      closest = options[i];
+    }
+  }
+  return closest.label;
+};
+
 export const SORT_OPTIONS = [
   { label: "Newest first", value: "newest" },
   { label: "Price: Low to High", value: "price_asc" },

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getWeightLabel } from "@/lib/constants";
 
 interface ListingRow {
   id: string;
@@ -304,7 +305,7 @@ const ListingModeration = () => {
                     {reviewListing.weight && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Weight className="h-4 w-4" />
-                        <span className="text-sm">{reviewListing.weight}kg</span>
+                        <span className="text-sm">{getWeightLabel(reviewListing.weight)}</span>
                       </div>
                     )}
                   </div>

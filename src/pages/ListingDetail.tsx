@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Listing } from "@/lib/constants";
+import { getWeightLabel } from "@/lib/constants";
 import {
   AlertDialog,
   AlertDialogAction,

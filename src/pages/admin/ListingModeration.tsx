@@ -305,7 +305,7 @@ const ListingModeration = () => {
                     {reviewListing.weight && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Weight className="h-4 w-4" />
-                        <span className="text-sm">{reviewListing.weight}kg</span>
+                        <span className="text-sm">{getWeightLabel(reviewListing.weight)}</span>
                       </div>
                     )}
                   </div>

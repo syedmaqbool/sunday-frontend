@@ -503,11 +503,11 @@ const CreateListing = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Size<FieldTip tip="Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')." /></Label>
-            <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))}>
-              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Select size" /></SelectTrigger>
+            <Label>Size<FieldTip tip={form.subCategory === "shoes" ? "Select the European shoe size (EU)." : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."} /></Label>
+            <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))} disabled={!form.subCategory}>
+              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder={form.subCategory ? "Select size" : "Choose subcategory first"} /></SelectTrigger>
               <SelectContent>
-                {SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {(form.subCategory === "shoes" ? SHOE_SIZES : SIZES).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

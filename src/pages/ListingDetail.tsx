@@ -75,17 +75,31 @@ function useCountdown(target?: string | null) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+
 const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
   const [selected, setSelected] = useState(0);
+  const current = images[selected];
+  const currentIsVideo = isVideoUrl(current);
 
   return (
     <div className="space-y-3">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-        <img
-          src={images[selected]}
-          alt={`${title} - photo ${selected + 1}`}
-          className="h-full w-full object-cover transition-opacity duration-300"
-        />
+        {currentIsVideo ? (
+          <video
+            key={current}
+            src={current}
+            controls
+            playsInline
+            className="h-full w-full bg-black object-contain"
+          />
+        ) : (
+          <img
+            src={current}
+            alt={`${title} - photo ${selected + 1}`}
+            className="h-full w-full object-cover transition-opacity duration-300"
+          />
+        )}
         {images.length > 1 && (
           <>
             <button
@@ -117,15 +131,25 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
       </div>
       {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setSelected(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition ${i === selected ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
-            >
-              <img src={img} alt={`${title} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
-            </button>
-          ))}
+          {images.map((img, i) => {
+            const vid = isVideoUrl(img);
+            return (
+              <button
+                key={i}
+                onClick={() => setSelected(i)}
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition ${i === selected ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
+              >
+                {vid ? (
+                  <>
+                    <video src={img} className="h-full w-full bg-black object-cover" muted preload="metadata" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">▶</span>
+                  </>
+                ) : (
+                  <img src={img} alt={`${title} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

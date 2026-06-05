@@ -28,14 +28,22 @@ interface ListingRow {
   created_at: string;
 }
 
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+
 const DetailGallery = ({ images }: { images: string[] }) => {
   const [idx, setIdx] = useState(0);
   if (!images.length) return <div className="aspect-square rounded-lg bg-muted" />;
+  const current = images[idx];
+  const currentIsVideo = isVideoUrl(current);
 
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-        <img src={images[idx]} alt="" className="h-full w-full object-cover" />
+        {currentIsVideo ? (
+          <video src={current} className="h-full w-full object-contain bg-black" controls playsInline />
+        ) : (
+          <img src={current} alt="" className="h-full w-full object-cover" />
+        )}
         {images.length > 1 && (
           <>
             <button
@@ -58,15 +66,25 @@ const DetailGallery = ({ images }: { images: string[] }) => {
       </div>
       {images.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setIdx(i)}
-              className={`h-12 w-12 shrink-0 overflow-hidden rounded border-2 transition ${i === idx ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"}`}
-            >
-              <img src={img} alt="" className="h-full w-full object-cover" />
-            </button>
-          ))}
+          {images.map((img, i) => {
+            const vid = isVideoUrl(img);
+            return (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`relative h-12 w-12 shrink-0 overflow-hidden rounded border-2 transition ${i === idx ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"}`}
+              >
+                {vid ? (
+                  <>
+                    <video src={img} className="h-full w-full object-cover bg-black" muted preload="metadata" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">▶</span>
+                  </>
+                ) : (
+                  <img src={img} alt="" className="h-full w-full object-cover" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

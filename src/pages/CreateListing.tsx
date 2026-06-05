@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONDITIONS, SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
+import { CONDITIONS, SIZES, SHOE_SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Camera, Upload, Loader2, X, Video as VideoIcon, Info, Star, Volume2, VolumeX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -468,7 +468,7 @@ const CreateListing = () => {
             </div>
             <div className="space-y-2">
               <Label>Subcategory<FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." /></Label>
-              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v }))} disabled={!form.parentCategory}>
+              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v, size: "" }))} disabled={!form.parentCategory}>
                 <SelectTrigger><SelectValue placeholder={form.parentCategory ? "Select type" : "Choose category first"} /></SelectTrigger>
                 <SelectContent>
                   {subCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
@@ -503,11 +503,11 @@ const CreateListing = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Size<FieldTip tip="Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')." /></Label>
-            <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))}>
-              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Select size" /></SelectTrigger>
+            <Label>Size<FieldTip tip={form.subCategory === "shoes" ? "Select the European shoe size (EU)." : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."} /></Label>
+            <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))} disabled={!form.subCategory}>
+              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder={form.subCategory ? "Select size" : "Choose subcategory first"} /></SelectTrigger>
               <SelectContent>
-                {SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {(form.subCategory === "shoes" ? SHOE_SIZES : SIZES).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

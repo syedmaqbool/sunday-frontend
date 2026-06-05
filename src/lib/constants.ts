@@ -30,6 +30,7 @@ export const CONDITIONS = [
 ] as const;
 
 export const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "One Size"] as const;
+export const SHOE_SIZES = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"] as const;
 
 export const WEIGHT_OPTIONS = [
   { label: "Less than 0.5 kg", value: "0.25" },

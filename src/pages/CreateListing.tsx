@@ -334,10 +334,15 @@ const CreateListing = () => {
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
-            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span><FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image will be your cover. Show any flaws or details up close. Up to 20 images." /></Label>
+            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span><FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." /></Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, i) => (
-                <div key={i} className="relative h-24 w-24 rounded-lg overflow-hidden border border-border">
+                <div
+                  key={i}
+                  className={`relative h-24 w-24 rounded-lg overflow-hidden border ${
+                    i === 0 ? "ring-2 ring-gold border-gold" : "border-border"
+                  }`}
+                >
                   <img src={preview.url} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
@@ -350,10 +355,20 @@ const CreateListing = () => {
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
-                  {i === 0 && (
-                    <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-center text-[9px] font-semibold text-primary-foreground">
-                      Cover
-                    </span>
+                  {i === 0 ? (
+                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
+                      <Star className="h-2.5 w-2.5 fill-white text-white" />
+                      <span className="text-[9px] font-semibold text-white">Cover</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCoverPhoto(i)}
+                      className="absolute bottom-1 left-1 rounded-full bg-background/80 p-1 text-muted-foreground hover:text-gold hover:bg-background transition-colors"
+                      title="Set as cover photo"
+                    >
+                      <Star className="h-3 w-3" />
+                    </button>
                   )}
                 </div>
               ))}

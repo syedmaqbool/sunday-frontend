@@ -88,6 +88,20 @@ const CreateListing = () => {
         return;
       }
       const parts = (existingListing.category || "").split("-");
+      const closestWeight = (() => {
+        if (!existingListing.weight) return "";
+        const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: parseFloat(o.value) }));
+        let closest = options[0];
+        let minDist = Math.abs(options[0].num - existingListing.weight);
+        for (let i = 1; i < options.length; i++) {
+          const dist = Math.abs(options[i].num - existingListing.weight);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = options[i];
+          }
+        }
+        return closest.value;
+      })();
       setForm({
         title: existingListing.title,
         description: existingListing.description || "",
@@ -97,7 +111,7 @@ const CreateListing = () => {
         subCategory: parts[1] || "",
         condition: existingListing.condition,
         size: existingListing.size,
-        weight: existingListing.weight ? String(existingListing.weight) : "",
+        weight: closestWeight,
       });
       const media = existingListing.images || [];
       setExistingImages(media.filter((u: string) => !isVideoUrl(u)));

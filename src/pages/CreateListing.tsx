@@ -399,7 +399,24 @@ const CreateListing = () => {
             <div className="mt-2 flex flex-wrap gap-3">
               {videoPreviewUrl ? (
                 <div className="relative h-32 w-44 rounded-lg overflow-hidden border border-border bg-muted">
-                  <video src={videoPreviewUrl} className="h-full w-full object-cover" controls />
+                  <video
+                    src={videoPreviewUrl}
+                    className="h-full w-full object-cover"
+                    controls
+                    muted={videoMuted}
+                  />
+                  <button
+                    type="button"
+                    className="absolute left-1 top-1 rounded-full bg-background/80 p-1 text-foreground hover:bg-background"
+                    onClick={() => setVideoMuted((m) => !m)}
+                    title={videoMuted ? "Unmute" : "Mute"}
+                  >
+                    {videoMuted ? (
+                      <VolumeX className="h-3.5 w-3.5" />
+                    ) : (
+                      <Volume2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                   <button
                     type="button"
                     className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"

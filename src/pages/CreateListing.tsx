@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONDITIONS, SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
+import { CONDITIONS, SIZES, SHOE_SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
 import { Camera, Upload, Loader2, X, Video as VideoIcon, Info, Star, Volume2, VolumeX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

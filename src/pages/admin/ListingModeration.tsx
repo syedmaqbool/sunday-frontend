@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getWeightLabel } from "@/lib/constants";
 
 interface ListingRow {
   id: string;

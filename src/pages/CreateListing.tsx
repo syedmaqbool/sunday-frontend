@@ -171,6 +171,28 @@ const CreateListing = () => {
     setExistingVideo(null);
   };
 
+  const setCoverPhoto = (previewIndex: number) => {
+    if (previewIndex === 0) return;
+    if (previewIndex < existingImages.length) {
+      // Cover is an existing image
+      setExistingImages((prev) => {
+        const next = [...prev];
+        const [cover] = next.splice(previewIndex, 1);
+        next.unshift(cover);
+        return next;
+      });
+    } else {
+      // Cover is a new image
+      const newIdx = previewIndex - existingImages.length;
+      setImageFiles((prev) => {
+        const next = [...prev];
+        const [cover] = next.splice(newIdx, 1);
+        next.unshift(cover);
+        return next;
+      });
+    }
+  };
+
   const totalPhotos = imageFiles.length + existingImages.length;
   const hasVideo = !!videoFile || !!existingVideo;
 

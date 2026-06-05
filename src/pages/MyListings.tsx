@@ -126,7 +126,7 @@ const MyListings = () => {
           </div>
           <p className="text-sm text-muted-foreground">
             {listing.brand} · R {listing.price.toLocaleString()}
-            {listing.weight ? ` · ${listing.weight}kg` : ""}
+            {listing.weight ? ` · ${getWeightLabel(listing.weight)}` : ""}
           </p>
           {listing.status === "reserved" && listing.reserved_until && (
             <p className="mt-1 text-xs text-primary">

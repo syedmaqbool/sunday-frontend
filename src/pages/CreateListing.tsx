@@ -414,8 +414,13 @@ const CreateListing = () => {
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)<FieldTip tip="Approximate packed weight in kilograms. Used to estimate shipping cost. If unsure, weigh on a kitchen scale with the item in its packaging." /></Label>
-              <Input id="weight" type="number" min="0" step="0.01" placeholder="e.g. 0.5" value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} />
+              <Label>Weight<FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." /></Label>
+              <Select value={form.weight} onValueChange={v => setForm(f => ({ ...f, weight: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select weight" /></SelectTrigger>
+                <SelectContent>
+                  {WEIGHT_OPTIONS.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Condition<FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." /></Label>

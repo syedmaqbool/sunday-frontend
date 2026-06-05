@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONDITIONS, SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import { Camera, Upload, Loader2, X, Video as VideoIcon, Info, Star } from "lucide-react";
+import { Camera, Upload, Loader2, X, Video as VideoIcon, Info, Star, Volume2, VolumeX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +55,7 @@ const CreateListing = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
     parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
@@ -398,7 +399,24 @@ const CreateListing = () => {
             <div className="mt-2 flex flex-wrap gap-3">
               {videoPreviewUrl ? (
                 <div className="relative h-32 w-44 rounded-lg overflow-hidden border border-border bg-muted">
-                  <video src={videoPreviewUrl} className="h-full w-full object-cover" controls />
+                  <video
+                    src={videoPreviewUrl}
+                    className="h-full w-full object-cover"
+                    controls
+                    muted={videoMuted}
+                  />
+                  <button
+                    type="button"
+                    className="absolute left-1 top-1 rounded-full bg-background/80 p-1 text-foreground hover:bg-background"
+                    onClick={() => setVideoMuted((m) => !m)}
+                    title={videoMuted ? "Unmute" : "Mute"}
+                  >
+                    {videoMuted ? (
+                      <VolumeX className="h-3.5 w-3.5" />
+                    ) : (
+                      <Volume2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                   <button
                     type="button"
                     className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"

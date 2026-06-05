@@ -55,6 +55,7 @@ const CreateListing = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
   const [form, setForm] = useState({
     title: "", description: "", price: "", brand: "",
     parentCategory: "", subCategory: "", condition: "", size: "", weight: "",

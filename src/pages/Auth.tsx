@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,8 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -33,6 +36,11 @@ const Auth = () => {
     setLoading(true);
 
     if (mode === "register") {
+      if (!termsAccepted) {
+        toast({ title: "Terms required", description: "Please accept the Terms & Conditions to continue.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
       // Validate DOB (must be a valid past date, age >= 13)
       const dobDate = new Date(dob);
       if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
@@ -56,14 +64,14 @@ const Auth = () => {
         email,
         password,
         options: {
-          data: { full_name: name, phone: phone.trim(), date_of_birth: dob },
+          data: { full_name: name, phone: phone.trim(), date_of_birth: dob, marketing_consent: marketingConsent },
           emailRedirectTo: "https://sndymarket.com/",
         },
       });
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        trackEvent("sign_up", { method: "email" });
+        trackEvent("sign_up", { method: "email", marketing_consent: marketingConsent });
         toast({ title: "Account created!", description: "Please check your email to verify your account." });
       }
     } else {
@@ -133,6 +141,35 @@ const Auth = () => {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
               </div>
+              {mode === "register" && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="terms"
+                      checked={termsAccepted}
+                      onCheckedChange={checked => setTermsAccepted(checked === true)}
+                      required
+                    />
+                    <Label htmlFor="terms" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
+                      I agree to the{" "}
+                      <Link to="/terms" target="_blank" className="text-primary underline hover:text-primary/80">
+                        Terms & Conditions
+                      </Link>{" "}
+                      and understand that my account may be suspended if I violate them.
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="marketing"
+                      checked={marketingConsent}
+                      onCheckedChange={checked => setMarketingConsent(checked === true)}
+                    />
+                    <Label htmlFor="marketing" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
+                      I would like to receive marketing emails about new arrivals, promotions, and platform updates. (Optional)
+                    </Label>
+                  </div>
+                </div>
+              )}
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
               </Button>

@@ -269,7 +269,7 @@ const ListingDetail = () => {
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <ImageGallery images={listing.images} title={listing.title} />
+          <ImageGallery images={listing.images} title={listing.title} status={listing.status} />
 
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>

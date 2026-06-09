@@ -141,6 +141,35 @@ const Auth = () => {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
               </div>
+              {mode === "register" && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="terms"
+                      checked={termsAccepted}
+                      onCheckedChange={checked => setTermsAccepted(checked === true)}
+                      required
+                    />
+                    <Label htmlFor="terms" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
+                      I agree to the{" "}
+                      <Link to="/terms" target="_blank" className="text-primary underline hover:text-primary/80">
+                        Terms & Conditions
+                      </Link>{" "}
+                      and understand that my account may be suspended if I violate them.
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="marketing"
+                      checked={marketingConsent}
+                      onCheckedChange={checked => setMarketingConsent(checked === true)}
+                    />
+                    <Label htmlFor="marketing" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
+                      I would like to receive marketing emails about new arrivals, promotions, and platform updates. (Optional)
+                    </Label>
+                  </div>
+                </div>
+              )}
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
               </Button>

@@ -233,15 +233,26 @@ const Preferences = () => {
               <p className="mt-1 text-muted-foreground">
                 Pick your favourites — we'll highlight them in your feed
               </p>
+              <div className="relative mx-auto mt-6 max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  placeholder="Search brands..."
+                  className="pl-9"
+                />
+              </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                {BRANDS.map((brand) => {
-                  const selected = selectedBrands.includes(brand);
+                {filteredBrands.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No brands match your search.</p>
+                ) : filteredBrands.map((brand) => {
+                  const selected = selectedBrands.includes(brand.name);
                   return (
                     <motion.button
-                      key={brand}
+                      key={brand.id}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleBrand(brand)}
+                      onClick={() => toggleBrand(brand.name)}
                       className={`rounded-full border-2 px-5 py-2.5 text-sm font-medium transition-colors ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground"
@@ -249,7 +260,7 @@ const Preferences = () => {
                       }`}
                     >
                       {selected && <Check className="mr-1.5 inline h-3.5 w-3.5" />}
-                      {brand}
+                      {brand.name}
                     </motion.button>
                   );
                 })}

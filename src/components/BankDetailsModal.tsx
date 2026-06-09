@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, Landmark } from "lucide-react";
+import { Loader2, Landmark, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -130,6 +130,11 @@ const BankDetailsModal = ({ open, onSaved, onCancel, initialValues }: BankDetail
               : "We need your bank account so we can pay you out when your items sell. Saved securely to your profile."}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+          <p>Add correct bank details for smooth payout. Incorrect details may lead to delayed payments.</p>
+        </div>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">

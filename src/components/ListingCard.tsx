@@ -22,7 +22,7 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
           src={listing.images[0]}
           alt={listing.title}
           className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-            listing.status === "sold" ? "opacity-60" : ""
+            listing.status === "sold" || listing.status === "reserved" ? "opacity-60 grayscale" : ""
           }`}
           loading="lazy"
         />

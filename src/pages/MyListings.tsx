@@ -117,7 +117,7 @@ const MyListings = () => {
         <img
           src={listing.images?.[0] || "/placeholder.svg"}
           alt={listing.title}
-          className="h-20 w-20 rounded-md object-cover"
+          className={`h-20 w-20 rounded-md object-cover ${listing.status === "reserved" ? "grayscale opacity-60" : ""}`}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

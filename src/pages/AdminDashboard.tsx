@@ -57,6 +57,7 @@ const navSections: NavSection[] = [
       { label: "Listings", path: "/admin/listings", icon: ShieldCheck },
       { label: "Orders", path: "/admin/orders", icon: Package },
       { label: "Categories", path: "/admin/categories", icon: FolderTree },
+      { label: "Brands", path: "/admin/brands", icon: Tag },
       { label: "Discounts", path: "/admin/discounts", icon: Tag },
       { label: "Tax Settings", path: "/admin/tax", icon: Percent },
       { label: "Boosts", path: "/admin/boosts", icon: Rocket },

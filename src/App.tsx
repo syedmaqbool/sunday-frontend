@@ -29,6 +29,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import MessageModeration from "./pages/admin/MessageModeration";
 import DiscountCodes from "./pages/admin/DiscountCodes";
 import CategoryManagement from "./pages/admin/CategoryManagement";
+import BrandManagement from "./pages/admin/BrandManagement";
 import FlagKeywords from "./pages/admin/FlagKeywords";
 import HelpManagement from "./pages/admin/HelpManagement";
 import Reports from "./pages/admin/Reports";
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="messages" element={<MessageModeration />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="categories" element={<CategoryManagement />} />
+              <Route path="brands" element={<BrandManagement />} />
               <Route path="discounts" element={<DiscountCodes />} />
               <Route path="flag-keywords" element={<FlagKeywords />} />
               <Route path="help" element={<HelpManagement />} />

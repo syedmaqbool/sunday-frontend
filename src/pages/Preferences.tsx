@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useCategories";
+import { useBrands } from "@/hooks/useBrands";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, Search, type LucideIcon } from "lucide-react";
 
 const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = [
   { id: "eastern", label: "Eastern", icon: Landmark, desc: "Traditional & cultural elegance" },
@@ -17,12 +19,6 @@ const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = 
   { id: "semi_formal", label: "Semi Formal", icon: Shirt, desc: "Smart yet relaxed style" },
 ];
 
-const BRANDS = [
-  "Nike", "Adidas", "Gucci", "Chanel", "Zara", "H&M",
-  "Prada", "Balenciaga", "Levi's", "Acne Studios",
-  "The North Face", "Patagonia", "Versace", "Dior",
-  "Supreme", "Uniqlo",
-];
 
 const FITS = [
   { id: "slim", label: "Slim", desc: "Close to the body" },
@@ -45,6 +41,12 @@ const Preferences = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
+  const [brandSearch, setBrandSearch] = useState("");
+  const filteredBrands = useMemo(
+    () => brands.filter((b) => b.name.toLowerCase().includes(brandSearch.toLowerCase())),
+    [brands, brandSearch]
+  );
 
   const toggleCategory = (id: string) =>
     setSelectedCategories((prev) =>
@@ -231,15 +233,26 @@ const Preferences = () => {
               <p className="mt-1 text-muted-foreground">
                 Pick your favourites — we'll highlight them in your feed
               </p>
+              <div className="relative mx-auto mt-6 max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={brandSearch}
+                  onChange={(e) => setBrandSearch(e.target.value)}
+                  placeholder="Search brands..."
+                  className="pl-9"
+                />
+              </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                {BRANDS.map((brand) => {
-                  const selected = selectedBrands.includes(brand);
+                {filteredBrands.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No brands match your search.</p>
+                ) : filteredBrands.map((brand) => {
+                  const selected = selectedBrands.includes(brand.name);
                   return (
                     <motion.button
-                      key={brand}
+                      key={brand.id}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleBrand(brand)}
+                      onClick={() => toggleBrand(brand.name)}
                       className={`rounded-full border-2 px-5 py-2.5 text-sm font-medium transition-colors ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground"
@@ -247,7 +260,7 @@ const Preferences = () => {
                       }`}
                     >
                       {selected && <Check className="mr-1.5 inline h-3.5 w-3.5" />}
-                      {brand}
+                      {brand.name}
                     </motion.button>
                   );
                 })}

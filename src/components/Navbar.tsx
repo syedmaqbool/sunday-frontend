@@ -1,23 +1,26 @@
 import { Link, useNavigate } from "react-router-dom";
 import sundayLogo from "@/assets/sunday-logo.png";
-import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy, Shield } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useCategories";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useAdminCheck();
   const { data: categories = [] } = useCategories();
 
   return (
@@ -78,6 +81,14 @@ const Navbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/support")}>
                   <LifeBuoy className="mr-2 h-4 w-4" /> Support
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <Separator className="my-1" />
+                    <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <Shield className="mr-2 h-4 w-4" /> Admin Portal
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>
@@ -104,6 +115,9 @@ const Navbar = () => {
                 {cat.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link to="/admin" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Admin Portal</Link>
+            )}
             <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate(user ? "/create-listing" : "/auth"); setMobileOpen(false); }}>
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>

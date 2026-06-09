@@ -41,6 +41,12 @@ const Preferences = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
+  const [brandSearch, setBrandSearch] = useState("");
+  const filteredBrands = useMemo(
+    () => brands.filter((b) => b.name.toLowerCase().includes(brandSearch.toLowerCase())),
+    [brands, brandSearch]
+  );
 
   const toggleCategory = (id: string) =>
     setSelectedCategories((prev) =>

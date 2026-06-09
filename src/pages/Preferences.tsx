@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useCategories";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Flame, Clock, Minus, Gem, Flower2, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, type LucideIcon } from "lucide-react";
 
 const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = [
   { id: "casual", label: "Casual", icon: Sun, desc: "Laid-back everyday wear" },

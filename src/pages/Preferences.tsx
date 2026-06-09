@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useCategories";
+import { useBrands } from "@/hooks/useBrands";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, Search, type LucideIcon } from "lucide-react";
 
 const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = [
   { id: "eastern", label: "Eastern", icon: Landmark, desc: "Traditional & cultural elegance" },
@@ -17,12 +19,6 @@ const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = 
   { id: "semi_formal", label: "Semi Formal", icon: Shirt, desc: "Smart yet relaxed style" },
 ];
 
-const BRANDS = [
-  "Nike", "Adidas", "Gucci", "Chanel", "Zara", "H&M",
-  "Prada", "Balenciaga", "Levi's", "Acne Studios",
-  "The North Face", "Patagonia", "Versace", "Dior",
-  "Supreme", "Uniqlo",
-];
 
 const FITS = [
   { id: "slim", label: "Slim", desc: "Close to the body" },

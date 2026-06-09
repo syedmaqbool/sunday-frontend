@@ -1,18 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
 import sundayLogo from "@/assets/sunday-logo.png";
-import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy } from "lucide-react";
+import { Search, Heart, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy, Shield } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useCategories";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);

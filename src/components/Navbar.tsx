@@ -20,6 +20,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useAdminCheck();
   const { data: categories = [] } = useCategories();
 
   return (

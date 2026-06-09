@@ -10,12 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronRight, ChevronLeft, Sparkles, Sun, Gem, Landmark, Globe, Shirt, type LucideIcon } from "lucide-react";
 
 const STYLES: { id: string; label: string; icon: LucideIcon; desc: string }[] = [
+  { id: "eastern", label: "Eastern", icon: Landmark, desc: "Traditional & cultural elegance" },
+  { id: "western", label: "Western", icon: Globe, desc: "Classic contemporary fashion" },
   { id: "casual", label: "Casual", icon: Sun, desc: "Laid-back everyday wear" },
-  { id: "streetwear", label: "Streetwear", icon: Flame, desc: "Bold urban fashion" },
-  { id: "vintage", label: "Vintage", icon: Clock, desc: "Retro & timeless pieces" },
-  { id: "minimalist", label: "Minimalist", icon: Minus, desc: "Clean & simple lines" },
-  { id: "luxury", label: "Luxury", icon: Gem, desc: "Premium designer goods" },
-  { id: "bohemian", label: "Bohemian", icon: Flower2, desc: "Free-spirited & eclectic" },
+  { id: "formal", label: "Formal", icon: Gem, desc: "Premium & elegant attire" },
+  { id: "semi_formal", label: "Semi Formal", icon: Shirt, desc: "Smart yet relaxed style" },
 ];
 
 const BRANDS = [

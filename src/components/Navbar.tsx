@@ -115,6 +115,9 @@ const Navbar = () => {
                 {cat.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link to="/admin" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Admin Portal</Link>
+            )}
             <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate(user ? "/create-listing" : "/auth"); setMobileOpen(false); }}>
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>

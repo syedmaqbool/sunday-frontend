@@ -36,6 +36,11 @@ const Auth = () => {
     setLoading(true);
 
     if (mode === "register") {
+      if (!termsAccepted) {
+        toast({ title: "Terms required", description: "Please accept the Terms & Conditions to continue.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
       // Validate DOB (must be a valid past date, age >= 13)
       const dobDate = new Date(dob);
       if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
@@ -59,14 +64,14 @@ const Auth = () => {
         email,
         password,
         options: {
-          data: { full_name: name, phone: phone.trim(), date_of_birth: dob },
+          data: { full_name: name, phone: phone.trim(), date_of_birth: dob, marketing_consent: marketingConsent },
           emailRedirectTo: "https://sndymarket.com/",
         },
       });
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        trackEvent("sign_up", { method: "email" });
+        trackEvent("sign_up", { method: "email", marketing_consent: marketingConsent });
         toast({ title: "Account created!", description: "Please check your email to verify your account." });
       }
     } else {

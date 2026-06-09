@@ -78,10 +78,13 @@ function useCountdown(target?: string | null) {
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
-const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
+const ImageGallery = ({ images, title, status }: { images: string[]; title: string; status?: string }) => {
   const [selected, setSelected] = useState(0);
   const current = images[selected];
   const currentIsVideo = isVideoUrl(current);
+
+  const isUnavailable = status === "sold" || status === "reserved";
+  const unavailableClass = isUnavailable ? "grayscale opacity-60" : "";
 
   return (
     <div className="space-y-3">
@@ -92,13 +95,13 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
             src={current}
             controls
             playsInline
-            className="h-full w-full bg-black object-contain"
+            className={`h-full w-full bg-black object-contain ${unavailableClass}`}
           />
         ) : (
           <img
             src={current}
             alt={`${title} - photo ${selected + 1}`}
-            className="h-full w-full object-cover transition-opacity duration-300"
+            className={`h-full w-full object-cover transition-opacity duration-300 ${unavailableClass}`}
           />
         )}
         {images.length > 1 && (
@@ -146,7 +149,7 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
                     <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">▶</span>
                   </>
                 ) : (
-                  <img src={img} alt={`${title} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
+                  <img src={img} alt={`${title} thumbnail ${i + 1}`} className={`h-full w-full object-cover ${isUnavailable ? "grayscale opacity-60" : ""}`} />
                 )}
               </button>
             );

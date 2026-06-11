@@ -24,9 +24,8 @@ interface ShareProfileDialogProps {
   userName?: string | null;
 }
 
-const getShareUrl = (userId: string) => {
-  return `${window.location.origin}/seller/${userId}`;
-};
+const getShareUrl = (userId: string) =>
+  `${window.location.origin}/seller/${userId}`;
 
 export const ShareProfileDialog = ({
   userId,
@@ -55,19 +54,19 @@ export const ShareProfileDialog = ({
       label: "WhatsApp",
       icon: MessageCircle,
       href: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
-      color: "hover:bg-green-50 hover:text-green-600",
+      iconBg: "bg-[#25D366]/10 text-[#25D366]",
     },
     {
       label: "Facebook",
       icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      color: "hover:bg-blue-50 hover:text-blue-600",
+      iconBg: "bg-[#1877F2]/10 text-[#1877F2]",
     },
     {
-      label: "X (Twitter)",
+      label: "X",
       icon: Twitter,
       href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
-      color: "hover:bg-slate-50 hover:text-slate-900",
+      iconBg: "bg-foreground/10 text-foreground",
     },
     {
       label: "Email",
@@ -75,7 +74,7 @@ export const ShareProfileDialog = ({
       href: `mailto:?subject=${encodeURIComponent(
         `${displayName}'s Sunday Profile`
       )}&body=${encodedText}%20${encodedUrl}`,
-      color: "hover:bg-orange-50 hover:text-orange-600",
+      iconBg: "bg-primary/10 text-primary",
     },
   ];
 
@@ -86,49 +85,71 @@ export const ShareProfileDialog = ({
           <Share2 className="h-4 w-4" /> Share Profile
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle>Share your profile</DialogTitle>
-          <DialogDescription>
-            Share your public profile with friends and on social media.
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader className="text-center sm:text-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Share2 className="h-5 w-5 text-primary" />
+          </div>
+          <DialogTitle className="text-center">Share your profile</DialogTitle>
+          <DialogDescription className="text-center">
+            Send your public profile to friends or share it on social media.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Copy link */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 overflow-hidden rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground truncate">
-              {profileUrl}
+        <div className="space-y-5 pt-2">
+          {/* Social share buttons */}
+          <div>
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Share via
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {shareOptions.map((option) => (
+                <a
+                  key={option.label}
+                  href={option.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                >
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${option.iconBg}`}
+                  >
+                    <option.icon className="h-5 w-5" />
+                  </span>
+                  <span className="text-xs font-medium text-foreground">
+                    {option.label}
+                  </span>
+                </a>
+              ))}
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleCopyLink}
-              className="shrink-0 gap-1"
-            >
-              {copied ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <LinkIcon className="h-4 w-4" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
           </div>
 
-          {/* Social share buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            {shareOptions.map((option) => (
-              <a
-                key={option.label}
-                href={option.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-colors ${option.color}`}
+          {/* Copy link */}
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Or copy link
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-1.5">
+              <div className="flex flex-1 items-center gap-2 overflow-hidden px-2">
+                <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate text-sm text-muted-foreground">
+                  {profileUrl}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleCopyLink}
+                className="shrink-0 gap-1"
               >
-                <option.icon className="h-4 w-4" />
-                {option.label}
-              </a>
-            ))}
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" /> Copied
+                  </>
+                ) : (
+                  <>Copy</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

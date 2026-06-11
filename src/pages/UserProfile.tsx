@@ -27,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { ShareProfileDialog } from "@/components/ShareProfileDialog";
 import BankDetailsModal from "@/components/BankDetailsModal";
 import { Landmark } from "lucide-react";
 

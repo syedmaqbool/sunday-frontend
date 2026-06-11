@@ -54,13 +54,13 @@ export const ShareProfileDialog = ({
       label: "WhatsApp",
       icon: MessageCircle,
       href: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
-      iconBg: "bg-[#25D366]/10 text-[#25D366]",
+      iconBg: "bg-primary/10 text-primary",
     },
     {
       label: "Facebook",
       icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      iconBg: "bg-[#1877F2]/10 text-[#1877F2]",
+      iconBg: "bg-accent text-accent-foreground",
     },
     {
       label: "X",

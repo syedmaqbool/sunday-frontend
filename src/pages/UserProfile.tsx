@@ -27,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { ShareProfileDialog } from "@/components/ShareProfileDialog";
 import BankDetailsModal from "@/components/BankDetailsModal";
 import { Landmark } from "lucide-react";
 
@@ -332,6 +333,7 @@ const UserProfile = () => {
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
                 <EditProfileDialog profile={profile} />
+                <ShareProfileDialog userId={user.id} userName={profile?.full_name} />
                 <Button
                   variant="ghost"
                   size="sm"

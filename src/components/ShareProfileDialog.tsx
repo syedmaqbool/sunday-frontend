@@ -85,7 +85,7 @@ export const ShareProfileDialog = ({
           <Share2 className="h-4 w-4" /> Share Profile
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[440px] overflow-hidden">
         <DialogHeader className="text-center sm:text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Share2 className="h-5 w-5 text-primary" />

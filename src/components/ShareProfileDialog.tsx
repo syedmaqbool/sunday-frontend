@@ -125,14 +125,14 @@ export const ShareProfileDialog = ({
           </div>
 
           {/* Copy link */}
-          <div>
+          <div className="min-w-0">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Or copy link
             </p>
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-1.5">
-              <div className="flex flex-1 items-center gap-2 overflow-hidden px-2">
+            <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-muted/40 p-1.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2">
                 <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate text-sm text-muted-foreground">
+                <span className="block min-w-0 flex-1 truncate text-sm text-muted-foreground">
                   {profileUrl}
                 </span>
               </div>

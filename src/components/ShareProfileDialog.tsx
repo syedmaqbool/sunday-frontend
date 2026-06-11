@@ -54,13 +54,13 @@ export const ShareProfileDialog = ({
       label: "WhatsApp",
       icon: MessageCircle,
       href: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
-      iconBg: "bg-[#25D366]/10 text-[#25D366]",
+      iconBg: "bg-primary/10 text-primary",
     },
     {
       label: "Facebook",
       icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      iconBg: "bg-[#1877F2]/10 text-[#1877F2]",
+      iconBg: "bg-accent text-accent-foreground",
     },
     {
       label: "X",
@@ -85,38 +85,39 @@ export const ShareProfileDialog = ({
           <Share2 className="h-4 w-4" /> Share Profile
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[440px] overflow-hidden">
-        <DialogHeader className="text-center sm:text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Share2 className="h-5 w-5 text-primary" />
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-md overflow-hidden p-0">
+        <div className="min-w-0 p-5 sm:p-6">
+        <DialogHeader className="min-w-0 pr-6 text-left sm:text-left">
+          <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Share2 className="h-5 w-5 text-primary" aria-hidden="true" />
           </div>
-          <DialogTitle className="text-center">Share your profile</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="text-xl leading-tight">Share your profile</DialogTitle>
+          <DialogDescription className="max-w-sm">
             Send your public profile to friends or share it on social media.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 pt-2">
+        <div className="min-w-0 space-y-5 pt-5">
           {/* Social share buttons */}
-          <div>
+          <div className="min-w-0">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Share via
             </p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2">
               {shareOptions.map((option) => (
                 <a
                   key={option.label}
                   href={option.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                  className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/40"
                 >
                   <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-full ${option.iconBg}`}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${option.iconBg}`}
                   >
-                    <option.icon className="h-5 w-5" />
+                    <option.icon className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <span className="text-xs font-medium text-foreground">
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
                     {option.label}
                   </span>
                 </a>
@@ -129,8 +130,8 @@ export const ShareProfileDialog = ({
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Or copy link
             </p>
-            <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-muted/40 p-1.5">
-              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2">
+            <div className="min-w-0 space-y-3 rounded-lg border border-border bg-muted/40 p-3">
+              <div className="flex min-w-0 items-center gap-2 overflow-hidden">
                 <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="block min-w-0 flex-1 truncate text-sm text-muted-foreground">
                   {profileUrl}
@@ -139,7 +140,7 @@ export const ShareProfileDialog = ({
               <Button
                 size="sm"
                 onClick={handleCopyLink}
-                className="shrink-0 gap-1"
+                className="w-full gap-1"
               >
                 {copied ? (
                   <>
@@ -151,6 +152,7 @@ export const ShareProfileDialog = ({
               </Button>
             </div>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>

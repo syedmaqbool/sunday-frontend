@@ -333,6 +333,7 @@ const UserProfile = () => {
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
                 <EditProfileDialog profile={profile} />
+                <ShareProfileDialog userId={user.id} userName={profile?.full_name} />
                 <Button
                   variant="ghost"
                   size="sm"

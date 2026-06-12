@@ -21,6 +21,9 @@ type HeroContent = {
   subtitle?: string;
   primary_cta?: string;
   secondary_cta?: string;
+  title_line1_color?: string;
+  title_line2_color?: string;
+  subtitle_color?: string;
 };
 
 const DEFAULTS: Required<Omit<HeroContent, "url">> = {
@@ -31,7 +34,18 @@ const DEFAULTS: Required<Omit<HeroContent, "url">> = {
     "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
   primary_cta: "Shop Now",
   secondary_cta: "Start Selling",
+  title_line1_color: "",
+  title_line2_color: "",
+  subtitle_color: "",
 };
+
+const COLOR_PALETTE = [
+  "#FFFFFF", "#000000", "#1F2937", "#6B7280",
+  "#EF4444", "#F97316", "#F59E0B", "#EAB308",
+  "#22C55E", "#10B981", "#14B8A6", "#06B6D4",
+  "#3B82F6", "#6366F1", "#8B5CF6", "#A855F7",
+  "#EC4899", "#F43F5E", "#C2410C", "#B45309",
+];
 
 const SiteSettings = () => {
   const { user } = useAuth();

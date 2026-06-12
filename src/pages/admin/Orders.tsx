@@ -180,6 +180,7 @@ const AdminOrders = () => {
     const start = dateFilterStart(dateFilter);
     let sold = 0;
     let shipped = 0;
+    let received = 0;
     let completed = 0;
     let overdue = 0;
     for (const o of orders) {
@@ -189,11 +190,12 @@ const AdminOrders = () => {
         const eff = itemEffectiveStatus(o.status, o.created_at, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
+        else if (eff === "received") received++;
         else if (eff === "completed") completed++;
         else if (eff === "overdue") overdue++;
       }
     }
-    return { sold, shipped, completed, overdue, total: sold + shipped + completed + overdue };
+    return { sold, shipped, received, completed, overdue, total: sold + shipped + received + completed + overdue };
   }, [orders, dateFilter]);
 
   return (

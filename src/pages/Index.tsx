@@ -14,9 +14,10 @@ const Index = () => (
     <main className="flex-1">
       <HeroSection />
       <CategoryGrid />
-      <TrendingProducts />
-      <FeaturedListings />
+      <FeaturedListings variant="fresh" />
       <WhyShopWithUs />
+      <TrendingProducts />
+      <FeaturedListings variant="personalized" />
       <TopFAQs />
     </main>
     <MobileAppBanner />

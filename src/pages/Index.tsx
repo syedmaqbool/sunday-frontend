@@ -4,6 +4,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import TrendingProducts from "@/components/TrendingProducts";
 import FeaturedListings from "@/components/FeaturedListings";
 import TopFAQs from "@/components/TopFAQs";
+import WhyShopWithUs from "@/components/WhyShopWithUs";
 import MobileAppBanner from "@/components/MobileAppBanner";
 import Footer from "@/components/Footer";
 
@@ -15,6 +16,7 @@ const Index = () => (
       <CategoryGrid />
       <TrendingProducts />
       <FeaturedListings />
+      <WhyShopWithUs />
       <TopFAQs />
     </main>
     <MobileAppBanner />

@@ -59,7 +59,7 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue";
+type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue" | "reserved";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
@@ -114,6 +114,39 @@ const AdminOrders = () => {
       if (error) throw error;
       return (data ?? []) as unknown as Order[];
     },
+  });
+
+  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery({
+    queryKey: ["admin-reserved-listings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id, title, price, images, seller_id, reserved_for, reserved_until, reserved_offer_id, updated_at")
+        .eq("status", "reserved")
+        .order("reserved_until", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: statusFilter === "reserved",
+  });
+
+  const reservedUserIds = useMemo(
+    () => Array.from(new Set(reservedListings.flatMap((l: any) => [l.seller_id, l.reserved_for].filter(Boolean)))),
+    [reservedListings]
+  );
+
+  const { data: reservedProfiles = [] } = useQuery({
+    queryKey: ["admin-reserved-profiles", reservedUserIds],
+    queryFn: async () => {
+      if (reservedUserIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", reservedUserIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: statusFilter === "reserved" && reservedUserIds.length > 0,
   });
 
   const rows = useMemo<Row[]>(() => {
@@ -214,6 +247,7 @@ const AdminOrders = () => {
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="overdue">Admin Review</TabsTrigger>
+            <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
@@ -226,66 +260,123 @@ const AdminOrders = () => {
         </Tabs>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : rows.length === 0 ? (
-            <p className="p-12 text-center text-sm text-muted-foreground">No orders match these filters.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tracking</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r, i) => (
-                  <TableRow
-                    key={`${r.orderId}-${r.item.listing_id}-${i}`}
-                    className="cursor-pointer"
-                    onClick={() => setSelected(r)}
-                  >
-                    <TableCell className="font-medium">{r.item.title ?? "—"}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">{r.buyerName}</div>
-                      {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={r.effective === "overdue" ? "destructive" : r.effective === "shipped" ? "default" : "secondary"}>
-                        {r.effective}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {r.entry?.tracking_number ? (
-                        <div>
-                          <div>{r.entry.shipping_method ?? "—"}</div>
-                          <div className="font-mono text-xs">{r.entry.tracking_number}</div>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(r.created_at), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      Rs {Number(r.item.price ?? 0).toLocaleString()}
-                    </TableCell>
+      {statusFilter === "reserved" ? (
+        <Card>
+          <CardContent className="p-0">
+            {reservedLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : reservedListings.length === 0 ? (
+              <p className="p-12 text-center text-sm text-muted-foreground">No reserved listings right now.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Seller</TableHead>
+                    <TableHead>Reserved for</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {reservedListings.map((l: any) => {
+                    const seller = reservedProfiles.find((p: any) => p.id === l.seller_id);
+                    const buyer = reservedProfiles.find((p: any) => p.id === l.reserved_for);
+                    const expiresAt = l.reserved_until ? new Date(l.reserved_until) : null;
+                    const expired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="font-medium">
+                          <Link to={`/listing/${l.id}`} className="inline-flex items-center gap-1 hover:underline">
+                            {l.title ?? "—"} <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-sm">{seller?.full_name ?? "—"}</TableCell>
+                        <TableCell className="text-sm">{buyer?.full_name ?? "—"}</TableCell>
+                        <TableCell>
+                          {expiresAt ? (
+                            <Badge variant={expired ? "destructive" : "secondary"}>
+                              {format(expiresAt, "MMM d, p")}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          Rs {Number(l.price ?? 0).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : rows.length === 0 ? (
+              <p className="p-12 text-center text-sm text-muted-foreground">No orders match these filters.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Tracking</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow
+                      key={`${r.orderId}-${r.item.listing_id}-${i}`}
+                      className="cursor-pointer"
+                      onClick={() => setSelected(r)}
+                    >
+                      <TableCell className="font-medium">{r.item.title ?? "—"}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">{r.buyerName}</div>
+                        {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={r.effective === "overdue" ? "destructive" : r.effective === "shipped" ? "default" : "secondary"}>
+                          {r.effective}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {r.entry?.tracking_number ? (
+                          <div>
+                            <div>{r.entry.shipping_method ?? "—"}</div>
+                            <div className="font-mono text-xs">{r.entry.tracking_number}</div>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(r.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        Rs {Number(r.item.price ?? 0).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <OrderDetailDialog row={selected} onClose={() => setSelected(null)} />
     </div>

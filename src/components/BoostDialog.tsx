@@ -306,7 +306,12 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
             {/* Budget */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Total budget</Label>
+                <div className="space-y-0.5">
+                  <Label>Total budget</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Suggested Rs {suggestedRate}/day for {placementMeta[placement].label}
+                  </p>
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-muted-foreground">Rs </span>
                   <Input
@@ -315,15 +320,15 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                     step={1}
                     value={budget}
                     onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
-                    className="h-8 w-24 text-right"
+                    className="h-8 w-28 text-right"
                   />
                 </div>
               </div>
               <Slider
                 value={[budget]}
-                min={5}
-                max={500}
-                step={5}
+                min={100}
+                max={10000}
+                step={100}
                 onValueChange={(v) => setBudget(v[0])}
               />
               <p className="text-xs text-muted-foreground">

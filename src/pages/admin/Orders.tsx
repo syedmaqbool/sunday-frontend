@@ -116,6 +116,39 @@ const AdminOrders = () => {
     },
   });
 
+  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery({
+    queryKey: ["admin-reserved-listings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id, title, price, images, seller_id, reserved_for, reserved_until, reserved_offer_id, updated_at")
+        .eq("status", "reserved")
+        .order("reserved_until", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: statusFilter === "reserved",
+  });
+
+  const reservedUserIds = useMemo(
+    () => Array.from(new Set(reservedListings.flatMap((l: any) => [l.seller_id, l.reserved_for].filter(Boolean)))),
+    [reservedListings]
+  );
+
+  const { data: reservedProfiles = [] } = useQuery({
+    queryKey: ["admin-reserved-profiles", reservedUserIds],
+    queryFn: async () => {
+      if (reservedUserIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", reservedUserIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: statusFilter === "reserved" && reservedUserIds.length > 0,
+  });
+
   const rows = useMemo<Row[]>(() => {
     const start = dateFilterStart(dateFilter);
     const flat: Row[] = [];

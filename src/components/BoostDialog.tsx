@@ -387,7 +387,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              (Object.keys(grouped) as BoostPlacement[]).map((p) => {
+              (Object.keys(grouped) as BoostPlacement[]).filter((p) => p !== "trending").map((p) => {
                 const items = grouped[p];
                 if (items.length === 0) return null;
                 const M = placementMeta[p];

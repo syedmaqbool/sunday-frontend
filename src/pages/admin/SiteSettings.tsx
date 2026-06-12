@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Palette } from "lucide-react";
 import heroFallback from "@/assets/hero-fashion.jpg";
 
 const KEY = "hero_image";
@@ -48,41 +49,58 @@ const COLOR_PALETTE = [
 ];
 
 const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string) => void }) => (
-  <div className="space-y-1.5">
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">Text color</span>
-      {value && (
-        <button
-          type="button"
-          onClick={() => onChange("")}
-          className="text-xs text-muted-foreground underline hover:text-foreground"
-        >
-          Reset
-        </button>
-      )}
-    </div>
-    <div className="flex flex-wrap gap-1.5">
-      {COLOR_PALETTE.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          aria-label={`Select ${c}`}
-          className={`h-6 w-6 rounded border-2 transition ${
-            value.toLowerCase() === c.toLowerCase() ? "border-primary ring-2 ring-primary/30" : "border-border"
-          }`}
-          style={{ background: c }}
-        />
-      ))}
-      <input
-        type="color"
-        value={value || "#000000"}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-6 w-6 cursor-pointer rounded border border-border bg-transparent p-0"
-        aria-label="Custom color"
-      />
-    </div>
-  </div>
+  <Popover>
+    <PopoverTrigger asChild>
+      <button
+        type="button"
+        className="h-7 w-7 rounded-full border-2 border-border shadow-sm transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary/30 flex items-center justify-center"
+        style={value ? { backgroundColor: value, borderColor: value } : undefined}
+        aria-label="Pick color"
+      >
+        {!value && <Palette className="h-4 w-4 text-muted-foreground" />}
+      </button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-3" align="start">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Text color</span>
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1.5 max-w-[220px]">
+          {COLOR_PALETTE.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onChange(c)}
+              aria-label={`Select ${c}`}
+              className={`h-6 w-6 rounded border-2 transition ${
+                value.toLowerCase() === c.toLowerCase() ? "border-primary ring-2 ring-primary/30" : "border-border"
+              }`}
+              style={{ background: c }}
+            />
+          ))}
+          <label className="flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border bg-muted hover:bg-muted/80">
+            <span className="text-[10px] font-bold leading-none">+</span>
+            <input
+              type="color"
+              value={value || "#000000"}
+              onChange={(e) => onChange(e.target.value)}
+              className="sr-only"
+              aria-label="Custom color"
+            />
+          </label>
+        </div>
+      </div>
+    </PopoverContent>
+  </Popover>
 );
 
 

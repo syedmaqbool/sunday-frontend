@@ -205,7 +205,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -225,6 +225,12 @@ const AdminOrders = () => {
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Shipped</p>
             <p className="font-heading text-2xl font-semibold">{counts.shipped}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Received</p>
+            <p className="font-heading text-2xl font-semibold">{counts.received}</p>
           </CardContent>
         </Card>
         <Card>

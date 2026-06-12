@@ -14,6 +14,9 @@ type HeroContent = {
   subtitle?: string;
   primary_cta?: string;
   secondary_cta?: string;
+  title_line1_color?: string;
+  title_line2_color?: string;
+  subtitle_color?: string;
 };
 
 const DEFAULTS: Required<Omit<HeroContent, "url">> = {

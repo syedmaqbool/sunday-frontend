@@ -68,11 +68,19 @@ const HeroSection = () => {
             {c.badge}
           </span>
           <h1 className="font-heading text-5xl font-bold leading-tight text-surface-dark-foreground md:text-7xl">
-            {c.title_line1}
+            <span style={c.title_line1_color ? { color: c.title_line1_color } : undefined}>{c.title_line1}</span>
             <br />
-            <span className="italic text-gold">{c.title_line2}</span>
+            <span
+              className={c.title_line2_color ? "italic" : "italic text-gold"}
+              style={c.title_line2_color ? { color: c.title_line2_color } : undefined}
+            >
+              {c.title_line2}
+            </span>
           </h1>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-surface-dark-foreground/80">
+          <p
+            className="mt-5 max-w-md text-base leading-relaxed text-surface-dark-foreground/80"
+            style={c.subtitle_color ? { color: c.subtitle_color } : undefined}
+          >
             {c.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">

@@ -27,6 +27,9 @@ const DEFAULTS: Required<Omit<HeroContent, "url">> = {
     "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
   primary_cta: "Shop Now",
   secondary_cta: "Start Selling",
+  title_line1_color: "",
+  title_line2_color: "",
+  subtitle_color: "",
 };
 
 const HeroSection = () => {

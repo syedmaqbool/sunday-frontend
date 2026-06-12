@@ -39,8 +39,13 @@ import { cn } from "@/lib/utils";
 
 const placementMeta: Record<BoostPlacement, { label: string; icon: any; color: string }> = {
   trending: { label: "Trending Now", icon: TrendingUp, color: "text-orange-500" },
-  for_you: { label: "Picked for You", icon: Sparkles, color: "text-primary" },
+  for_you: { label: "Picked for /for You", icon: Sparkles, color: "text-primary" },
   search: { label: "Search & Browse", icon: Search, color: "text-blue-500" },
+};
+
+const SUGGESTED_DAILY_RATE: Record<Exclude<BoostPlacement, "trending">, number> = {
+  for_you: 300,
+  search: 200,
 };
 
 // Mock estimation rates (per Rs 1 spend)

@@ -247,6 +247,7 @@ const AdminOrders = () => {
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="overdue">Admin Review</TabsTrigger>
+            <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
         </Tabs>
         <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>

@@ -75,12 +75,12 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 7));
   const defaultDays = Math.max(1, differenceInCalendarDays(addDays(new Date(), 7), new Date()) + 1);
-  const suggestedRate = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, "trending">] ?? 200;
-  const [budget, setBudget] = useState<number>(suggestedRate * defaultDays);
+  const dailyRate = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, "trending">] ?? 200;
   const [goal, setGoal] = useState<"impressions" | "clicks">("impressions");
 
   const days = Math.max(1, differenceInCalendarDays(endDate, startDate) + 1);
-  const dailyBudget = budget / days;
+  const budget = dailyRate * days;
+  const dailyBudget = dailyRate;
   const rate = RATE_PER_EURO[placement];
   const estImpressions = Math.round(budget * rate.impressions);
   const estClicks = Math.round(budget * rate.clicks);
@@ -303,37 +303,22 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               </RadioGroup>
             </div>
 
-            {/* Budget */}
-            <div className="space-y-3">
+            {/* Budget (fixed by placement) */}
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Total budget</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Suggested Rs {suggestedRate}/day for {placementMeta[placement].label}
+                    Fixed Rs {dailyRate}/day for {placementMeta[placement].label}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-muted-foreground">Rs </span>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={budget}
-                    onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
-                    className="h-8 w-28 text-right"
-                  />
+                <div className="text-right">
+                  <p className="text-lg font-semibold">Rs {budget.toLocaleString()}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Rs {dailyRate} × {days} day{days > 1 ? "s" : ""}
+                  </p>
                 </div>
               </div>
-              <Slider
-                value={[budget]}
-                min={100}
-                max={10000}
-                step={100}
-                onValueChange={(v) => setBudget(v[0])}
-              />
-              <p className="text-xs text-muted-foreground">
-                ≈ Rs {dailyBudget.toFixed(2)} / day over {days} day{days > 1 ? "s" : ""}
-              </p>
             </div>
 
             {/* Estimates */}

@@ -187,9 +187,9 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               <RadioGroup
                 value={placement}
                 onValueChange={(v) => setPlacement(v as BoostPlacement)}
-                className="grid grid-cols-3 gap-2"
+                className="grid grid-cols-2 gap-2"
               >
-                {(Object.keys(placementMeta) as BoostPlacement[]).map((p) => {
+                {(Object.keys(placementMeta) as BoostPlacement[]).filter((p) => p !== "trending").map((p) => {
                   const M = placementMeta[p];
                   const Icon = M.icon;
                   return (

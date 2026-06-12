@@ -74,7 +74,9 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
   const [placement, setPlacement] = useState<BoostPlacement>("for_you");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 7));
-  const [budget, setBudget] = useState<number>(25);
+  const defaultDays = Math.max(1, differenceInCalendarDays(addDays(new Date(), 7), new Date()) + 1);
+  const suggestedRate = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, "trending">] ?? 200;
+  const [budget, setBudget] = useState<number>(suggestedRate * defaultDays);
   const [goal, setGoal] = useState<"impressions" | "clicks">("impressions");
 
   const days = Math.max(1, differenceInCalendarDays(endDate, startDate) + 1);

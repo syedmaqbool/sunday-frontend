@@ -7,7 +7,11 @@ import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import { Sparkles } from "lucide-react";
 import type { Listing } from "@/lib/constants";
 
-const FeaturedListings = () => {
+interface FeaturedListingsProps {
+  variant?: "fresh" | "personalized";
+}
+
+const FeaturedListings = ({ variant = "fresh" }: FeaturedListingsProps) => {
   const { data: prefs } = useUserPreferences();
   const boostMap = useBoostScoreMap("for_you");
 
@@ -29,13 +33,17 @@ const FeaturedListings = () => {
     },
   });
 
-  const listings = useMemo(
-    () => applyBoostRanking(personalizeListings([...dbListings], prefs), boostMap),
-    [dbListings, prefs, boostMap]
-  );
+  const isPersonalized = variant === "personalized" && prefs?.onboarding_completed;
 
-  const isPersonalized = prefs?.onboarding_completed;
+  const listings = useMemo(() => {
+    if (variant === "personalized") {
+      return applyBoostRanking(personalizeListings([...dbListings], prefs), boostMap);
+    }
+    return dbListings;
+  }, [dbListings, prefs, boostMap, variant]);
 
+  // Hide personalized section when user has no preferences (avoid duplicating Fresh Drops)
+  if (variant === "personalized" && !isPersonalized) return null;
   if (listings.length === 0) return null;
 
   return (

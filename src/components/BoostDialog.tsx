@@ -66,7 +66,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
   const { data: packages = [], isLoading } = useBoostPackages();
 
   // Custom campaign tab state
-  const [placement, setPlacement] = useState<BoostPlacement>("trending");
+  const [placement, setPlacement] = useState<BoostPlacement>("for_you");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 7));
   const [budget, setBudget] = useState<number>(25);
@@ -187,9 +187,9 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
               <RadioGroup
                 value={placement}
                 onValueChange={(v) => setPlacement(v as BoostPlacement)}
-                className="grid grid-cols-3 gap-2"
+                className="grid grid-cols-2 gap-2"
               >
-                {(Object.keys(placementMeta) as BoostPlacement[]).map((p) => {
+                {(Object.keys(placementMeta) as BoostPlacement[]).filter((p) => p !== "trending").map((p) => {
                   const M = placementMeta[p];
                   const Icon = M.icon;
                   return (
@@ -387,7 +387,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              (Object.keys(grouped) as BoostPlacement[]).map((p) => {
+              (Object.keys(grouped) as BoostPlacement[]).filter((p) => p !== "trending").map((p) => {
                 const items = grouped[p];
                 if (items.length === 0) return null;
                 const M = placementMeta[p];

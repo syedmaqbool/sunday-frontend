@@ -47,6 +47,45 @@ const COLOR_PALETTE = [
   "#EC4899", "#F43F5E", "#C2410C", "#B45309",
 ];
 
+const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string) => void }) => (
+  <div className="space-y-1.5">
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">Text color</span>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-xs text-muted-foreground underline hover:text-foreground"
+        >
+          Reset
+        </button>
+      )}
+    </div>
+    <div className="flex flex-wrap gap-1.5">
+      {COLOR_PALETTE.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onChange(c)}
+          aria-label={`Select ${c}`}
+          className={`h-6 w-6 rounded border-2 transition ${
+            value.toLowerCase() === c.toLowerCase() ? "border-primary ring-2 ring-primary/30" : "border-border"
+          }`}
+          style={{ background: c }}
+        />
+      ))}
+      <input
+        type="color"
+        value={value || "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-6 w-6 cursor-pointer rounded border border-border bg-transparent p-0"
+        aria-label="Custom color"
+      />
+    </div>
+  </div>
+);
+
+
 const SiteSettings = () => {
   const { user } = useAuth();
   const qc = useQueryClient();

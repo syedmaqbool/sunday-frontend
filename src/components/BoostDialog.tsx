@@ -66,7 +66,7 @@ const BoostDialog = ({ listingId, listingTitle, trigger }: Props) => {
   const { data: packages = [], isLoading } = useBoostPackages();
 
   // Custom campaign tab state
-  const [placement, setPlacement] = useState<BoostPlacement>("trending");
+  const [placement, setPlacement] = useState<BoostPlacement>("for_you");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 7));
   const [budget, setBudget] = useState<number>(25);

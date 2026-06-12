@@ -80,7 +80,8 @@ const isShippedLike = (s?: string) => {
 
 const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
-  if (s === "completed" || s === "received") return "completed";
+  if (s === "completed") return "completed";
+  if (s === "received") return "received";
   if (s === "shipped" || s === "delivered") {
     const shipTs = entry?.shipped_at ?? entry?.updated_at;
     if (shipTs) {
@@ -92,7 +93,6 @@ const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?
     return "shipped";
   }
   if (orderStatus === "cancelled") return "cancelled";
-  // Not shipped — check SLA
   if (entry?.overdue_at) return "overdue";
   const created = new Date(orderCreatedAt).getTime();
   if (Number.isFinite(created) && Date.now() - created >= SHIPPING_SLA_MS) return "overdue";

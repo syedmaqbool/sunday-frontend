@@ -59,7 +59,7 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue" | "reserved";
+type StatusFilter = "all" | "sold" | "shipped" | "received" | "completed" | "overdue" | "reserved";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
@@ -80,7 +80,8 @@ const isShippedLike = (s?: string) => {
 
 const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?: ItemStatusEntry) => {
   const s = entry?.status?.toLowerCase();
-  if (s === "completed" || s === "received") return "completed";
+  if (s === "completed") return "completed";
+  if (s === "received") return "received";
   if (s === "shipped" || s === "delivered") {
     const shipTs = entry?.shipped_at ?? entry?.updated_at;
     if (shipTs) {
@@ -92,7 +93,6 @@ const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?
     return "shipped";
   }
   if (orderStatus === "cancelled") return "cancelled";
-  // Not shipped — check SLA
   if (entry?.overdue_at) return "overdue";
   const created = new Date(orderCreatedAt).getTime();
   if (Number.isFinite(created) && Date.now() - created >= SHIPPING_SLA_MS) return "overdue";
@@ -180,6 +180,7 @@ const AdminOrders = () => {
     const start = dateFilterStart(dateFilter);
     let sold = 0;
     let shipped = 0;
+    let received = 0;
     let completed = 0;
     let overdue = 0;
     for (const o of orders) {
@@ -189,11 +190,12 @@ const AdminOrders = () => {
         const eff = itemEffectiveStatus(o.status, o.created_at, o.item_status?.[item.listing_id]);
         if (eff === "sold") sold++;
         else if (eff === "shipped") shipped++;
+        else if (eff === "received") received++;
         else if (eff === "completed") completed++;
         else if (eff === "overdue") overdue++;
       }
     }
-    return { sold, shipped, completed, overdue, total: sold + shipped + completed + overdue };
+    return { sold, shipped, received, completed, overdue, total: sold + shipped + received + completed + overdue };
   }, [orders, dateFilter]);
 
   return (
@@ -203,7 +205,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -227,6 +229,12 @@ const AdminOrders = () => {
         </Card>
         <Card>
           <CardContent className="p-4">
+            <p className="text-xs uppercase text-muted-foreground">Received</p>
+            <p className="font-heading text-2xl font-semibold">{counts.received}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Completed</p>
             <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
           </CardContent>
@@ -245,6 +253,7 @@ const AdminOrders = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
+            <TabsTrigger value="received">Received</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="overdue">Admin Review</TabsTrigger>
             <TabsTrigger value="reserved">Reserved</TabsTrigger>

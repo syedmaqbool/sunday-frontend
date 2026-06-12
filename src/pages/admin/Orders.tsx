@@ -59,7 +59,7 @@ type Row = {
   order: Order;
 };
 
-type StatusFilter = "all" | "sold" | "shipped" | "completed" | "overdue" | "reserved";
+type StatusFilter = "all" | "sold" | "shipped" | "received" | "completed" | "overdue" | "reserved";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;

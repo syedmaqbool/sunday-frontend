@@ -178,14 +178,26 @@ const SiteSettings = () => {
                 <div className="space-y-2">
                   <Label htmlFor="t1">Headline — line 1</Label>
                   <Input id="t1" value={form.title_line1 ?? ""} onChange={update("title_line1")} />
+                  <ColorPicker
+                    value={form.title_line1_color ?? ""}
+                    onChange={(c) => setForm((f) => ({ ...f, title_line1_color: c }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="t2">Headline — line 2 (italic accent)</Label>
                   <Input id="t2" value={form.title_line2 ?? ""} onChange={update("title_line2")} />
+                  <ColorPicker
+                    value={form.title_line2_color ?? ""}
+                    onChange={(c) => setForm((f) => ({ ...f, title_line2_color: c }))}
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="sub">Subtitle</Label>
                   <Textarea id="sub" rows={3} value={form.subtitle ?? ""} onChange={update("subtitle")} />
+                  <ColorPicker
+                    value={form.subtitle_color ?? ""}
+                    onChange={(c) => setForm((f) => ({ ...f, subtitle_color: c }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cta1">Primary button label</Label>

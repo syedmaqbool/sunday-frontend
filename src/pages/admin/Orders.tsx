@@ -253,6 +253,7 @@ const AdminOrders = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
+            <TabsTrigger value="received">Received</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="overdue">Admin Review</TabsTrigger>
             <TabsTrigger value="reserved">Reserved</TabsTrigger>

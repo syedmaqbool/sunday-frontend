@@ -44,9 +44,6 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/listings")} className="text-muted-foreground hover:text-foreground">
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden text-muted-foreground hover:text-foreground md:flex">
-            <Heart className="h-5 w-5" />
-          </Button>
           <CartDrawer />
           {user && <NotificationBell audience="user" />}
           <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={() => navigate(user ? "/create-listing" : "/auth")}>

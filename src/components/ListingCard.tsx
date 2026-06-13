@@ -40,16 +40,6 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
             </span>
           </div>
         )}
-        {listing.status !== "sold" && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 h-8 w-8 rounded-full bg-background/80 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-primary group-hover:opacity-100"
-            onClick={(e) => { e.preventDefault(); }}
-          >
-            <Heart className="h-4 w-4" />
-          </Button>
-        )}
         <div className="absolute bottom-2 left-2">
           <span className="rounded-sm bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">
             {listing.condition.replace("_", " ")}

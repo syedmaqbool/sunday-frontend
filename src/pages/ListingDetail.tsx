@@ -393,9 +393,6 @@ const ListingDetail = () => {
                     listingTitle={listing.title}
                   />
                 )}
-                <Button variant="outline" size="lg" className="flex-shrink-0">
-                  <Heart className="h-4 w-4" />
-                </Button>
               </div>
             ) : null}
 

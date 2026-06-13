@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import sundayLogo from "@/assets/sunday-logo.png";
+import sundayLogoAsset from "@/assets/sunday-logo.jpeg.asset.json";
+const sundayLogo = sundayLogoAsset.url;
 
 const Footer = () => (
   <footer className="border-t border-border bg-[#99ACFF] text-[#1a1a1a]">

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/constants";
 import { motion } from "framer-motion";

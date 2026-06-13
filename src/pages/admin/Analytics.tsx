@@ -28,7 +28,7 @@ import {
   DollarSign,
   RotateCcw,
   Target,
-  Heart,
+  Users,
   ShoppingBag,
   CheckCircle2,
   Search,

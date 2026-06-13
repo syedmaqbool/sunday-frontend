@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
-import { Heart, ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
 import { ReportDialog } from "@/components/ReportDialog";
 import { ReviewsList } from "@/components/ReviewsList";
@@ -393,9 +393,6 @@ const ListingDetail = () => {
                     listingTitle={listing.title}
                   />
                 )}
-                <Button variant="outline" size="lg" className="flex-shrink-0">
-                  <Heart className="h-4 w-4" />
-                </Button>
               </div>
             ) : null}
 

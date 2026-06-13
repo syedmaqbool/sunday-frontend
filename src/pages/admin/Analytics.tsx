@@ -28,7 +28,7 @@ import {
   DollarSign,
   RotateCcw,
   Target,
-  Heart,
+  Users,
   ShoppingBag,
   CheckCircle2,
   Search,
@@ -553,7 +553,7 @@ const Analytics = () => {
             ) : (
               <div className="space-y-3">
                 {[
-                  { label: `Engaged · ${topFunnel.key}`, value: topFunnel.engaged, icon: Heart, tint: "bg-rose-100 text-rose-600" },
+                  { label: `Engaged · ${topFunnel.key}`, value: topFunnel.engaged, icon: Users, tint: "bg-rose-100 text-rose-600" },
                   { label: "Offer Accepted", value: topFunnel.accepted, icon: ShoppingBag, tint: "bg-amber-100 text-amber-600" },
                   { label: "Purchased", value: topFunnel.ordered, icon: CheckCircle2, tint: "bg-emerald-100 text-emerald-600" },
                 ].map((s) => {

@@ -66,10 +66,23 @@ const Checkout = () => {
   });
   const commissionTotal = itemCommissions.reduce((s, i) => s + i.amount, 0);
 
+  // Compute the subtotal eligible for the applied discount.
+  const eligibleSubtotalFor = (cartItems: typeof items, d: AppliedDiscount | null) => {
+    if (!d) return 0;
+    return cartItems.reduce((sum, { listing, quantity }) => {
+      if (d.source === "seller") {
+        if (d.seller_id && listing.seller_id !== d.seller_id) return sum;
+        if (d.applicable_listing_ids && !d.applicable_listing_ids.includes(listing.id)) return sum;
+      }
+      return sum + listing.price * quantity;
+    }, 0);
+  };
+
+  const eligibleSubtotal = eligibleSubtotalFor(items, appliedDiscount);
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"
-      ? Math.round(totalPrice * appliedDiscount.discount_value / 100)
-      : Math.min(appliedDiscount.discount_value, totalPrice)
+      ? Math.round(eligibleSubtotal * appliedDiscount.discount_value / 100)
+      : Math.min(appliedDiscount.discount_value, eligibleSubtotal)
     : 0;
 
   const taxableAmount = totalPrice - discountAmount;

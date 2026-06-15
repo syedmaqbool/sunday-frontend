@@ -96,44 +96,135 @@ const Checkout = () => {
 
     setApplyingCode(true);
     try {
-      const { data, error } = await supabase
+      // 1) Try platform-wide discount_codes first
+      const { data: platform } = await supabase
         .from("discount_codes")
         .select("*")
         .eq("code", code)
         .eq("active", true)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        toast({ title: "Invalid code", description: "This discount code is not valid.", variant: "destructive" });
+      if (platform) {
+        if (platform.expires_at && new Date(platform.expires_at) < new Date()) {
+          toast({ title: "Code expired", variant: "destructive" });
+          return;
+        }
+        if (platform.max_uses !== null && platform.current_uses >= platform.max_uses) {
+          toast({ title: "Code exhausted", variant: "destructive" });
+          return;
+        }
+        if (totalPrice < (platform.min_order_amount || 0)) {
+          toast({
+            title: "Minimum not met",
+            description: `Order must be at least Rs ${platform.min_order_amount} to use this code.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        setAppliedDiscount({
+          id: platform.id,
+          code: platform.code,
+          discount_type: platform.discount_type,
+          discount_value: Number(platform.discount_value),
+          min_order_amount: Number(platform.min_order_amount || 0),
+          source: "platform",
+        });
+        setDiscountCode("");
+        toast({ title: "Discount applied!", description: `Code "${platform.code}" has been applied.` });
         return;
       }
 
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        toast({ title: "Code expired", description: "This discount code has expired.", variant: "destructive" });
+      // 2) Try seller coupons
+      const { data: sc } = await supabase
+        .from("seller_coupons" as any)
+        .select("*")
+        .eq("code", code)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (!sc) {
+        toast({ title: "Invalid code", description: "This code is not valid.", variant: "destructive" });
+        return;
+      }
+      const sCoupon: any = sc;
+      const now = new Date();
+      if (sCoupon.starts_at && new Date(sCoupon.starts_at) > now) {
+        toast({ title: "Not yet active", description: "This coupon isn't active yet.", variant: "destructive" });
+        return;
+      }
+      if (sCoupon.expires_at && new Date(sCoupon.expires_at) < now) {
+        toast({ title: "Code expired", variant: "destructive" });
+        return;
+      }
+      if (sCoupon.max_uses !== null && sCoupon.current_uses >= sCoupon.max_uses) {
+        toast({ title: "Code exhausted", variant: "destructive" });
         return;
       }
 
-      if (data.max_uses !== null && data.current_uses >= data.max_uses) {
-        toast({ title: "Code exhausted", description: "This discount code has reached its usage limit.", variant: "destructive" });
-        return;
+      // Per-user limit
+      if (sCoupon.per_user_limit && user) {
+        const { count } = await supabase
+          .from("seller_coupon_redemptions" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("coupon_id", sCoupon.id)
+          .eq("user_id", user.id);
+        if ((count ?? 0) >= sCoupon.per_user_limit) {
+          toast({ title: "Limit reached", description: "You've already used this coupon.", variant: "destructive" });
+          return;
+        }
       }
 
-      if (totalPrice < (data.min_order_amount || 0)) {
-        toast({ title: "Minimum not met", description: `Order must be at least R ${data.min_order_amount} to use this code.`, variant: "destructive" });
-        return;
+      // Load listing ids for item-based
+      let applicableIds: string[] | undefined;
+      if (sCoupon.scope === "item_based") {
+        const { data: links } = await supabase
+          .from("seller_coupon_listings" as any)
+          .select("listing_id")
+          .eq("coupon_id", sCoupon.id);
+        applicableIds = ((links ?? []) as any[]).map((l) => l.listing_id);
       }
 
-      setAppliedDiscount({
-        id: data.id,
-        code: data.code,
-        discount_type: data.discount_type,
-        discount_value: Number(data.discount_value),
-        min_order_amount: Number(data.min_order_amount || 0),
+      // Confirm the cart contains qualifying items
+      const cartHasMatch = items.some((i) => {
+        if (i.listing.seller_id !== sCoupon.seller_id) return false;
+        if (applicableIds && !applicableIds.includes(i.listing.id)) return false;
+        return true;
       });
+      if (!cartHasMatch) {
+        toast({
+          title: "Not applicable",
+          description: "Your cart has no items eligible for this coupon.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const candidate: AppliedDiscount = {
+        id: sCoupon.id,
+        code: sCoupon.code,
+        discount_type: sCoupon.discount_type,
+        discount_value: Number(sCoupon.discount_value),
+        min_order_amount: Number(sCoupon.min_order_amount || 0),
+        source: "seller",
+        seller_id: sCoupon.seller_id,
+        applicable_listing_ids: applicableIds,
+      };
+
+      const eligible = eligibleSubtotalFor(items, candidate);
+      if (eligible < (sCoupon.min_order_amount || 0)) {
+        toast({
+          title: "Minimum not met",
+          description: `Eligible items must total at least Rs ${sCoupon.min_order_amount}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppliedDiscount(candidate);
       setDiscountCode("");
-      toast({ title: "Discount applied!", description: `Code "${data.code}" has been applied.` });
+      toast({ title: "Coupon applied!", description: `"${sCoupon.code}" applied to eligible items.` });
     } catch {
-      toast({ title: "Error", description: "Could not validate discount code.", variant: "destructive" });
+      toast({ title: "Error", description: "Could not validate code.", variant: "destructive" });
     } finally {
       setApplyingCode(false);
     }

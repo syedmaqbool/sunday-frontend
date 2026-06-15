@@ -326,10 +326,19 @@ const Checkout = () => {
         (s, i) => s + Number(i.commission_amount || 0),
         0,
       );
+      const authoritativeEligible = appliedDiscount
+        ? itemsSnapshot.reduce((sum, i) => {
+            if (appliedDiscount.source === "seller") {
+              if (appliedDiscount.seller_id && i.seller_id !== appliedDiscount.seller_id) return sum;
+              if (appliedDiscount.applicable_listing_ids && !appliedDiscount.applicable_listing_ids.includes(i.listing_id)) return sum;
+            }
+            return sum + i.price * i.quantity;
+          }, 0)
+        : 0;
       const authoritativeDiscount = appliedDiscount
         ? appliedDiscount.discount_type === "percentage"
-          ? Math.round(authoritativeSubtotal * appliedDiscount.discount_value / 100)
-          : Math.min(appliedDiscount.discount_value, authoritativeSubtotal)
+          ? Math.round(authoritativeEligible * appliedDiscount.discount_value / 100)
+          : Math.min(appliedDiscount.discount_value, authoritativeEligible)
         : 0;
       const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;

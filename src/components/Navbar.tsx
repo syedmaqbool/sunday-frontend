@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import sundayLogoAsset from "@/assets/sunday-logo.jpeg.asset.json";
+import sundayLogoAsset from "@/assets/sndy-logo.png.asset.json";
 const sundayLogo = sundayLogoAsset.url;
 import { Search, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy, Shield } from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";

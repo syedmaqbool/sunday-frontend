@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import sundayLogoAsset from "@/assets/sunday-logo.jpeg.asset.json";
+import sundayLogoAsset from "@/assets/sndy-logo.png.asset.json";
 const sundayLogo = sundayLogoAsset.url;
 
 const Footer = () => (

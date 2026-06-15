@@ -5,9 +5,11 @@ import { ArrowRight } from "lucide-react";
 import heroFallback from "@/assets/hero-fashion.jpg";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type HeroContent = {
   url?: string;
+  mobile_url?: string;
   badge?: string;
   title_line1?: string;
   title_line2?: string;
@@ -19,7 +21,7 @@ type HeroContent = {
   subtitle_color?: string;
 };
 
-const DEFAULTS: Required<Omit<HeroContent, "url">> = {
+const DEFAULTS: Required<Omit<HeroContent, "url" | "mobile_url">> = {
   badge: "Pre-loved fashion",
   title_line1: "Style doesn't",
   title_line2: "expire.",
@@ -34,6 +36,7 @@ const DEFAULTS: Required<Omit<HeroContent, "url">> = {
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { data } = useQuery({
     queryKey: ["hero_image"],
     queryFn: async () => {
@@ -47,7 +50,7 @@ const HeroSection = () => {
     staleTime: 60_000,
   });
 
-  const heroImage = data?.url || heroFallback;
+  const heroImage = (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
   const c = { ...DEFAULTS, ...(data || {}) };
 
   return (

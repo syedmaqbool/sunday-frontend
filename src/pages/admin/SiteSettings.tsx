@@ -16,6 +16,7 @@ const KEY = "hero_image";
 
 type HeroContent = {
   url?: string;
+  mobile_url?: string;
   badge?: string;
   title_line1?: string;
   title_line2?: string;
@@ -27,7 +28,7 @@ type HeroContent = {
   subtitle_color?: string;
 };
 
-const DEFAULTS: Required<Omit<HeroContent, "url">> = {
+const DEFAULTS: Required<Omit<HeroContent, "url" | "mobile_url">> = {
   badge: "Pre-loved fashion",
   title_line1: "Style doesn't",
   title_line2: "expire.",
@@ -107,8 +108,9 @@ const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string)
 const SiteSettings = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"desktop" | "mobile" | null>(null);
   const [form, setForm] = useState<HeroContent>({ ...DEFAULTS });
 
   const { data, isLoading } = useQuery({
@@ -143,33 +145,33 @@ const SiteSettings = () => {
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (variant: "desktop" | "mobile") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (file.size > 8 * 1024 * 1024) {
       toast.error("Image must be under 8MB");
       return;
     }
-    setUploading(true);
+    setUploading(variant);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${user.id}/site/hero-${Date.now()}.${ext}`;
+      const path = `${user.id}/site/hero-${variant}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("listing-images")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("listing-images").getPublicUrl(path);
-      const next = { ...form, url: pub.publicUrl };
+      const key = variant === "mobile" ? "mobile_url" : "url";
+      const next = { ...form, [key]: pub.publicUrl };
       setForm(next);
       await save.mutateAsync(next);
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
-  const preview = form.url || heroFallback;
   const update = (k: keyof HeroContent) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -192,40 +194,77 @@ const SiteSettings = () => {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
             <>
-              <div className="overflow-hidden rounded-md border border-border">
-                <img src={preview} alt="Hero preview" className="aspect-[16/9] w-full object-cover" />
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Desktop banner</Label>
+                  <div className="overflow-hidden rounded-md border border-border">
+                    <img src={form.url || heroFallback} alt="Desktop hero preview" className="aspect-[16/9] w-full object-cover" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input ref={desktopInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload("desktop")} />
+                    <Button onClick={() => desktopInputRef.current?.click()} disabled={uploading === "desktop"} className="gap-2">
+                      {uploading === "desktop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {uploading === "desktop" ? "Uploading..." : "Upload desktop image"}
+                    </Button>
+                    {form.url && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const next = { ...form, url: "" };
+                          setForm(next);
+                          save.mutate(next);
+                        }}
+                        disabled={save.isPending}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    value={form.url ?? ""}
+                    onChange={update("url")}
+                    placeholder="Or paste a desktop image URL"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mobile banner</Label>
+                  <div className="overflow-hidden rounded-md border border-border bg-muted">
+                    <img
+                      src={form.mobile_url || form.url || heroFallback}
+                      alt="Mobile hero preview"
+                      className="aspect-[9/16] max-h-80 w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input ref={mobileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload("mobile")} />
+                    <Button onClick={() => mobileInputRef.current?.click()} disabled={uploading === "mobile"} className="gap-2">
+                      {uploading === "mobile" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {uploading === "mobile" ? "Uploading..." : "Upload mobile image"}
+                    </Button>
+                    {form.mobile_url && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const next = { ...form, mobile_url: "" };
+                          setForm(next);
+                          save.mutate(next);
+                        }}
+                        disabled={save.isPending}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    value={form.mobile_url ?? ""}
+                    onChange={update("mobile_url")}
+                    placeholder="Or paste a mobile image URL"
+                  />
+                  <p className="text-xs text-muted-foreground">Falls back to desktop banner if not set. Recommended 1080×1920.</p>
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {uploading ? "Uploading..." : "Upload new image"}
-                </Button>
-                {form.url && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const next = { ...form, url: "" };
-                      setForm(next);
-                      save.mutate(next);
-                    }}
-                    disabled={save.isPending}
-                  >
-                    Reset image to default
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hero-url">Or paste an image URL</Label>
-                <Input
-                  id="hero-url"
-                  value={form.url ?? ""}
-                  onChange={update("url")}
-                  placeholder="https://..."
-                />
-              </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">

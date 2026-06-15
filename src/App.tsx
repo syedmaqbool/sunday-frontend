@@ -101,6 +101,7 @@ const App = () => (
               <Route path="payouts" element={<AdminPayouts />} />
               <Route path="commission" element={<CommissionManagement />} />
               <Route path="site-settings" element={<SiteSettings />} />
+              <Route path="seller-coupons" element={<SellerCoupons />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

@@ -36,6 +36,7 @@ const DEFAULTS: Required<Omit<HeroContent, "url" | "mobile_url">> = {
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { data } = useQuery({
     queryKey: ["hero_image"],
     queryFn: async () => {
@@ -49,7 +50,7 @@ const HeroSection = () => {
     staleTime: 60_000,
   });
 
-  const heroImage = data?.url || heroFallback;
+  const heroImage = (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
   const c = { ...DEFAULTS, ...(data || {}) };
 
   return (

@@ -46,6 +46,7 @@ import AdminAnalytics from "./pages/admin/Analytics";
 import AdminPayouts from "./pages/admin/Payouts";
 import CommissionManagement from "./pages/admin/CommissionManagement";
 import SiteSettings from "./pages/admin/SiteSettings";
+import SellerCoupons from "./pages/admin/SellerCoupons";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const queryClient = new QueryClient();

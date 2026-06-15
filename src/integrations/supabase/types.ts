@@ -1162,6 +1162,159 @@ export type Database = {
           },
         ]
       }
+      seller_coupon_listings: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          listing_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          listing_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_coupon_listings_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "seller_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_coupon_listings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string | null
+          seller_id: string
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          seller_id: string
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          seller_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "seller_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_coupon_redemptions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          min_order_amount: number
+          per_user_limit: number | null
+          scope: string
+          seller_id: string
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_order_amount?: number
+          per_user_limit?: number | null
+          scope?: string
+          seller_id: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_order_amount?: number
+          per_user_limit?: number | null
+          scope?: string
+          seller_id?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_coupons_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_payouts: {
         Row: {
           amount: number

@@ -59,6 +59,7 @@ const navSections: NavSection[] = [
       { label: "Categories", path: "/admin/categories", icon: FolderTree },
       { label: "Brands", path: "/admin/brands", icon: Tag },
       { label: "Discounts", path: "/admin/discounts", icon: Tag },
+      { label: "Seller Coupons", path: "/admin/seller-coupons", icon: Tag },
       { label: "Tax Settings", path: "/admin/tax", icon: Percent },
       { label: "Boosts", path: "/admin/boosts", icon: Rocket },
       { label: "Payouts", path: "/admin/payouts", icon: Wallet },

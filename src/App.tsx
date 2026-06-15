@@ -46,6 +46,7 @@ import AdminAnalytics from "./pages/admin/Analytics";
 import AdminPayouts from "./pages/admin/Payouts";
 import CommissionManagement from "./pages/admin/CommissionManagement";
 import SiteSettings from "./pages/admin/SiteSettings";
+import SellerCoupons from "./pages/admin/SellerCoupons";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
@@ -100,6 +101,7 @@ const App = () => (
               <Route path="payouts" element={<AdminPayouts />} />
               <Route path="commission" element={<CommissionManagement />} />
               <Route path="site-settings" element={<SiteSettings />} />
+              <Route path="seller-coupons" element={<SellerCoupons />} />
             </Route>
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />

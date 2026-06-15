@@ -434,18 +434,39 @@ const Checkout = () => {
         await supabase.rpc("mark_listings_sold", { _listing_ids: soldIds });
       }
 
-      // Increment discount code usage
+      // Increment coupon usage + record redemption
       if (appliedDiscount) {
-        const { data: codeData } = await supabase
-          .from("discount_codes")
-          .select("current_uses")
-          .eq("id", appliedDiscount.id)
-          .single();
-        if (codeData) {
-          await supabase
+        if (appliedDiscount.source === "platform") {
+          const { data: codeData } = await supabase
             .from("discount_codes")
-            .update({ current_uses: codeData.current_uses + 1 })
-            .eq("id", appliedDiscount.id);
+            .select("current_uses")
+            .eq("id", appliedDiscount.id)
+            .single();
+          if (codeData) {
+            await supabase
+              .from("discount_codes")
+              .update({ current_uses: codeData.current_uses + 1 })
+              .eq("id", appliedDiscount.id);
+          }
+        } else {
+          const { data: cd } = await supabase
+            .from("seller_coupons" as any)
+            .select("current_uses")
+            .eq("id", appliedDiscount.id)
+            .single();
+          if (cd) {
+            await supabase
+              .from("seller_coupons" as any)
+              .update({ current_uses: ((cd as any).current_uses ?? 0) + 1 })
+              .eq("id", appliedDiscount.id);
+          }
+          await supabase.from("seller_coupon_redemptions" as any).insert({
+            coupon_id: appliedDiscount.id,
+            user_id: user.id,
+            order_id: orderRow.id,
+            seller_id: appliedDiscount.seller_id,
+            discount_amount: authoritativeDiscount,
+          });
         }
       }
 

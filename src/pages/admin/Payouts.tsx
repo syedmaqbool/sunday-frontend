@@ -115,15 +115,11 @@ const fmt = (n: number) =>
 
 const itemGross = (it: OrderItem) => Number(it.price ?? 0) * Number(it.quantity ?? 1);
 const itemCommission = (it: OrderItem) => Number((it as any).commission_amount ?? 0);
-/** Of every platform commission collected from the buyer, 5 percentage points are credited
- * back to the seller and the rest is retained by the platform. */
+/** Seller earns a flat 5% commission on the listing price, calculated independently
+ * from the platform fee charged to the buyer. */
 export const SELLER_COMMISSION_SHARE_RATE = 5;
-const itemSellerCommissionShare = (it: OrderItem) => {
-  const share = (itemGross(it) * SELLER_COMMISSION_SHARE_RATE) / 100;
-  const commission = itemCommission(it);
-  // Never pay the seller more than the commission actually collected on that item.
-  return commission > 0 ? Math.min(share, commission) : 0;
-};
+const itemSellerCommissionShare = (it: OrderItem) =>
+  (itemGross(it) * SELLER_COMMISSION_SHARE_RATE) / 100;
 /** Seller payout = full listing price + 5% commission share. */
 const itemTotal = (it: OrderItem) => itemGross(it) + itemSellerCommissionShare(it);
 

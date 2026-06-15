@@ -108,8 +108,9 @@ const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string)
 const SiteSettings = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<"desktop" | "mobile" | null>(null);
   const [form, setForm] = useState<HeroContent>({ ...DEFAULTS });
 
   const { data, isLoading } = useQuery({

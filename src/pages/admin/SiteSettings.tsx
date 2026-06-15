@@ -145,29 +145,30 @@ const SiteSettings = () => {
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (variant: "desktop" | "mobile") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (file.size > 8 * 1024 * 1024) {
       toast.error("Image must be under 8MB");
       return;
     }
-    setUploading(true);
+    setUploading(variant);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${user.id}/site/hero-${Date.now()}.${ext}`;
+      const path = `${user.id}/site/hero-${variant}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("listing-images")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("listing-images").getPublicUrl(path);
-      const next = { ...form, url: pub.publicUrl };
+      const key = variant === "mobile" ? "mobile_url" : "url";
+      const next = { ...form, [key]: pub.publicUrl };
       setForm(next);
       await save.mutateAsync(next);
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 

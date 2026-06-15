@@ -172,7 +172,6 @@ const SiteSettings = () => {
     }
   };
 
-  const preview = form.url || heroFallback;
   const update = (k: keyof HeroContent) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 

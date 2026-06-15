@@ -195,40 +195,77 @@ const SiteSettings = () => {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
             <>
-              <div className="overflow-hidden rounded-md border border-border">
-                <img src={preview} alt="Hero preview" className="aspect-[16/9] w-full object-cover" />
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Desktop banner</Label>
+                  <div className="overflow-hidden rounded-md border border-border">
+                    <img src={form.url || heroFallback} alt="Desktop hero preview" className="aspect-[16/9] w-full object-cover" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input ref={desktopInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload("desktop")} />
+                    <Button onClick={() => desktopInputRef.current?.click()} disabled={uploading === "desktop"} className="gap-2">
+                      {uploading === "desktop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {uploading === "desktop" ? "Uploading..." : "Upload desktop image"}
+                    </Button>
+                    {form.url && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const next = { ...form, url: "" };
+                          setForm(next);
+                          save.mutate(next);
+                        }}
+                        disabled={save.isPending}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    value={form.url ?? ""}
+                    onChange={update("url")}
+                    placeholder="Or paste a desktop image URL"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mobile banner</Label>
+                  <div className="overflow-hidden rounded-md border border-border bg-muted">
+                    <img
+                      src={form.mobile_url || form.url || heroFallback}
+                      alt="Mobile hero preview"
+                      className="aspect-[9/16] max-h-80 w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input ref={mobileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload("mobile")} />
+                    <Button onClick={() => mobileInputRef.current?.click()} disabled={uploading === "mobile"} className="gap-2">
+                      {uploading === "mobile" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {uploading === "mobile" ? "Uploading..." : "Upload mobile image"}
+                    </Button>
+                    {form.mobile_url && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const next = { ...form, mobile_url: "" };
+                          setForm(next);
+                          save.mutate(next);
+                        }}
+                        disabled={save.isPending}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  <Input
+                    value={form.mobile_url ?? ""}
+                    onChange={update("mobile_url")}
+                    placeholder="Or paste a mobile image URL"
+                  />
+                  <p className="text-xs text-muted-foreground">Falls back to desktop banner if not set. Recommended 1080×1920.</p>
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {uploading ? "Uploading..." : "Upload new image"}
-                </Button>
-                {form.url && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const next = { ...form, url: "" };
-                      setForm(next);
-                      save.mutate(next);
-                    }}
-                    disabled={save.isPending}
-                  >
-                    Reset image to default
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hero-url">Or paste an image URL</Label>
-                <Input
-                  id="hero-url"
-                  value={form.url ?? ""}
-                  onChange={update("url")}
-                  placeholder="https://..."
-                />
-              </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">

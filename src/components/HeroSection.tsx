@@ -5,9 +5,11 @@ import { ArrowRight } from "lucide-react";
 import heroFallback from "@/assets/hero-fashion.jpg";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type HeroContent = {
   url?: string;
+  mobile_url?: string;
   badge?: string;
   title_line1?: string;
   title_line2?: string;

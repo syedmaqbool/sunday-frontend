@@ -54,7 +54,6 @@ const HeroSection = () => {
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
       <div className="absolute inset-0">
         <img src={heroImage} alt="Fashion editorial" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface-dark/90 via-surface-dark/60 to-transparent" />
       </div>
 
       <div className="container relative z-10">

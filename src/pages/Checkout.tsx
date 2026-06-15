@@ -23,6 +23,9 @@ interface AppliedDiscount {
   discount_type: string;
   discount_value: number;
   min_order_amount: number;
+  source: "platform" | "seller";
+  seller_id?: string;
+  applicable_listing_ids?: string[]; // undefined = all eligible items in scope
 }
 
 const Checkout = () => {

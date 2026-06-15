@@ -500,7 +500,7 @@ const Payouts = () => {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Sales become payout-eligible only after the buyer confirms receipt with no issues. Sellers also earn a {SELLER_COMMISSION_SHARE_RATE}% share of every platform commission collected.
+            Sales become payout-eligible only after the buyer confirms receipt with no issues. Sellers also earn a flat {SELLER_COMMISSION_SHARE_RATE}% commission on the listing price, separate from the platform fee charged to the buyer.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCsv}>

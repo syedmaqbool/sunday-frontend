@@ -30,6 +30,7 @@ import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { ShareProfileDialog } from "@/components/ShareProfileDialog";
 import BankDetailsModal from "@/components/BankDetailsModal";
 import { Landmark } from "lucide-react";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig"; 
 
 type ItemStatus = {
   status: "confirmed" | "shipped" | "received" | "not_received" | "completed";
@@ -46,6 +47,50 @@ type ItemStatus = {
   quality_confirmed?: boolean;
   quality_confirmed_at?: string;
 };
+
+
+
+//mock data
+const MOCK_PROFILE_DATA = {
+    avatar_url: null,       
+  full_name: "Muhamad Bilal Shaikh",
+  email: "bilal@example.com",
+  created_at: "2026-01-15T10:00:00.000Z",
+  bio: "Full Stack Developer | Building pristine web experiences.",
+  location: "Karachi, Pakistan",
+  phone: "+92 300 1234567",
+  bank_name: "Meezan Bank",
+  bank_account_holder: "Muhamad Bilal Shaikh",
+  bank_account_number: "0102030405060708",
+  bank_iban: "PK49MEZN0001020304050608",
+  bank_swift: "MEZNPKKA"
+};
+
+const MOCK_BOUGHT_ORDERS = [
+  {
+    id: "ord-8fdf392k",
+    status: "shipped",
+    total: 14500,
+    subtotal: 14500,
+    discount_amount: 0,
+    created_at: "2026-06-12T14:22:00.000Z",
+    item_status: {},
+    items: [
+      {
+        listing_id: "lst_mock_1",
+        title: "Oversized Vintage Denim Jacket",
+        brand: "Levi's",
+        image: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=300",
+        price: 14500,
+        quantity: 1,
+        seller_id: "seller_mock_1",
+        seller_name: "Premium Thrifter"
+      }
+    ]
+  }
+];
+
+
 
 // Buyer has 12h after the expected delivery date to confirm receipt or
 // raise a quality concern; otherwise the order is auto-closed.
@@ -135,9 +180,11 @@ const UserProfile = () => {
   const queryClient = useQueryClient();
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
+  // Profile Query Hook
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["my-profile", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_PROFILE_DATA;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -146,13 +193,14 @@ const UserProfile = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   // Orders placed by this user
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["my-orders", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_BOUGHT_ORDERS; // Feed safe static array
       const { data, error } = await supabase
         .from("orders")
         .select("*")
@@ -171,13 +219,14 @@ const UserProfile = () => {
         })),
       }));
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   // Items sold via accepted offers (negotiations)
   const { data: offerSales = [], isLoading: offerSalesLoading } = useQuery({
     queryKey: ["sold-offers", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return [];
       const { data, error } = await supabase
         .from("offers")
         .select("id, amount, status, created_at, updated_at, listing_id, listings(id, title, images, brand, category, condition, size, price)")
@@ -187,13 +236,14 @@ const UserProfile = () => {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!user && !NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   // Items sold via direct checkout (orders containing this seller's items)
   const { data: orderSales = [], isLoading: orderSalesLoading } = useQuery({
     queryKey: ["sold-orders", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return [];
       const { data, error } = await supabase
         .from("orders")
         .select("id, created_at, items, item_status, shipping_first_name, shipping_last_name, shipping_address, shipping_city, shipping_postal, shipping_phone")
@@ -232,28 +282,37 @@ const UserProfile = () => {
 
       return flat;
     },
-    enabled: !!user,
+    enabled: !!user && !NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   const soldItems = [...orderSales, ...offerSales];
   const soldLoading = offerSalesLoading || orderSalesLoading;
 
-  const { data: rating } = useSellerRating(user?.id);
+  const { data: rating } = useSellerRating(NEXT_PUBLIC_USE_MOCK_DATA ? "mock-user-id" : user?.id);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) {
+      navigate("/auth", { replace: true });
+    }
   }, [authLoading, user, navigate]);
 
   if (authLoading) return null;
-  if (!user) return null;
+  
+  // Clean fallback pattern check for Mock Environment Bypass
+  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
 
   const isLoading = profileLoading || ordersLoading || soldLoading;
+  
   const boughtCount = orders.reduce(
     (sum: number, o: any) => sum + (Array.isArray(o.items) ? o.items.reduce((s: number, it: any) => s + (it.quantity || 0), 0) : 0),
     0,
   );
 
-  const initials = (profile?.full_name || user.email || "U")
+  // Safe evaluation pattern without triggering runtime property reading errors
+  const userFallbackEmail = NEXT_PUBLIC_USE_MOCK_DATA ? "bilal@example.com" : (user?.email || "user@example.com");
+  const userFallbackCreatedAt = NEXT_PUBLIC_USE_MOCK_DATA ? "2026-01-01T00:00:00.000Z" : (user?.created_at || new Date().toISOString());
+
+  const initials = (profile?.full_name || userFallbackEmail)
     .split(/[\s@]/)
     .map((n: string) => n[0])
     .join("")
@@ -280,10 +339,10 @@ const UserProfile = () => {
               </Avatar>
               <div className="flex-1 text-center sm:text-left">
                 <h1 className="font-heading text-2xl font-bold text-card-foreground">
-                  {profile?.full_name || user.email}
+                  {profile?.full_name || userFallbackEmail}
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Member since {format(new Date(profile?.created_at || user.created_at), "MMMM yyyy")}
+                  Member since {format(new Date(profile?.created_at || userFallbackCreatedAt), "MMMM yyyy")}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
                   {rating && rating.totalReviews > 0 && (
@@ -333,7 +392,7 @@ const UserProfile = () => {
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
                 <EditProfileDialog profile={profile} />
-                <ShareProfileDialog userId={user.id} userName={profile?.full_name} />
+                <ShareProfileDialog userId={user?.id || "mock-user-id"} userName={profile?.full_name} />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -460,14 +519,14 @@ const UserProfile = () => {
                         <SoldOrderCard key={item.id} item={item} />
                       ) : (
                         <TransactionCard key={item.id} item={item} label="Sold" />
-                      ),
+                      )
                     )}
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="returns" className="mt-4">
-                <ReturnsTab userId={user.id} />
+                <ReturnsTab userId={user?.id || "mock-user-id"} />
               </TabsContent>
             </Tabs>
           </>

@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import type { Listing } from "@/lib/constants";
+// 👇 Mock switcher config import karein
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const SellerProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,19 @@ const SellerProfile = () => {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["seller-profile", id],
     queryFn: async () => {
+      // 👇 Mock Data Interception
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return {
+          id: id || "mock-seller-id",
+          full_name: "Premium Seller Pro",
+          avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+          bio: "Specializing in premium perfumes, authentic streetwear, and high-end tech accessories. Fast shipping across Pakistan!",
+          location: "Karachi, Pakistan",
+          phone: "+92 300 1234567",
+          created_at: "2024-01-15T00:00:00.000Z",
+        };
+      }
+
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -32,6 +47,60 @@ const SellerProfile = () => {
   const { data: listings = [], isLoading: listingsLoading } = useQuery({
     queryKey: ["seller-listings", id],
     queryFn: async (): Promise<Listing[]> => {
+      // 👇 Mock Listings Interception
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return [
+          {
+            id: "mock-list-1",
+            title: "Bleu de Chanel Eau de Parfum",
+            description: "Partially used premium scent. 90ml remaining out of 100ml. Authentic box included.",
+            price: 28500,
+            images: ["https://images.unsplash.com/photo-1541643600914-78b084683601?w=600"],
+            category: "perfumes",
+            condition: "Like New",
+            size: "90ml",
+            brand: "Chanel",
+            seller_id: id || "mock-seller-id",
+            seller_name: "Premium Seller Pro",
+            created_at: new Date().toISOString(),
+            status: "approved",
+            weight: 0.3,
+          },
+          {
+            id: "mock-list-2",
+            title: "Mechanical Gaming Keyboard",
+            description: "RGB backlit mechanical keyboard with red switches. Perfect condition.",
+            price: 8500,
+            images: ["https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600"],
+            category: "electronics",
+            condition: "Good",
+            size: "Standard",
+            brand: "Redragon",
+            seller_id: id || "mock-seller-id",
+            seller_name: "Premium Seller Pro",
+            created_at: new Date().toISOString(),
+            status: "approved",
+            weight: 0.9,
+          },
+          {
+            id: "mock-list-3",
+            title: "Oversized Vintage Graphic Tee",
+            description: "Comfortable drop-shoulder cotton t-shirt. Worn only twice.",
+            price: 2400,
+            images: ["https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600"],
+            category: "clothing",
+            condition: "Good",
+            size: "XL",
+            brand: "Outfitters",
+            seller_id: id || "mock-seller-id",
+            seller_name: "Premium Seller Pro",
+            created_at: new Date().toISOString(),
+            status: "sold", // Ek product ko sold state me rakha hai verification ke liye
+            weight: 0.25,
+          }
+        ];
+      }
+
       const { data, error } = await supabase
         .from("listings")
         .select("*")
@@ -60,6 +129,11 @@ const SellerProfile = () => {
   });
 
   const { data: rating } = useSellerRating(id);
+
+  // 👇 Reviews UI safety fix for mock environment
+  const mockRating = NEXT_PUBLIC_USE_MOCK_DATA 
+    ? { avgRating: 4.8, totalReviews: 12 } 
+    : rating;
 
   const isLoading = profileLoading || listingsLoading;
 
@@ -115,22 +189,22 @@ const SellerProfile = () => {
               Member since {format(new Date(profile.created_at), "MMMM yyyy")}
             </p>
             <div className="mt-2 flex items-center justify-center gap-3 sm:justify-start">
-              {rating && rating.totalReviews > 0 && (
+              {mockRating && mockRating.totalReviews > 0 && (
                 <div className="flex items-center gap-1.5">
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star
                         key={s}
                         className={`h-4 w-4 ${
-                          s <= Math.round(rating.avgRating)
+                          s <= Math.round(mockRating.avgRating)
                             ? "fill-primary text-primary"
                             : "text-muted-foreground/30"
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="text-sm font-medium text-card-foreground">{rating.avgRating.toFixed(1)}</span>
-                  <span className="text-sm text-muted-foreground">({rating.totalReviews} review{rating.totalReviews !== 1 ? "s" : ""})</span>
+                  <span className="text-sm font-medium text-card-foreground">{mockRating.avgRating.toFixed(1)}</span>
+                  <span className="text-sm text-muted-foreground">({mockRating.totalReviews} review{mockRating.totalReviews !== 1 ? "s" : ""})</span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -154,7 +228,7 @@ const SellerProfile = () => {
         <Tabs defaultValue="listings" className="mt-6">
           <TabsList>
             <TabsTrigger value="listings">Listings ({listings.length})</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({rating?.totalReviews ?? 0})</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({mockRating?.totalReviews ?? 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="listings" className="mt-4">
@@ -170,7 +244,15 @@ const SellerProfile = () => {
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4">
-            <ReviewsList userId={id!} limit={20} />
+            {/* Mock condition blocks subcomponents crashing if needed */}
+            {NEXT_PUBLIC_USE_MOCK_DATA ? (
+              <div className="text-center py-8 text-muted-foreground bg-card border rounded-lg">
+                <p className="font-medium text-foreground mb-1">Reviews Panel (Mock Enabled)</p>
+                <p className="text-sm">Sample reviews are hidden or loaded as static layout items.</p>
+              </div>
+            ) : (
+              <ReviewsList userId={id!} limit={20} />
+            )}
           </TabsContent>
         </Tabs>
       </main>

@@ -5,12 +5,26 @@ import ListingCard from "./ListingCard";
 import { TrendingUp } from "lucide-react";
 import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import type { Listing } from "@/lib/constants";
+// Mock data configuration configuration import 
+import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const TrendingProducts = () => {
   const boostMap = useBoostScoreMap("trending");
   const { data: dbTrending = [] } = useQuery({
     queryKey: ["trending-listings"],
     queryFn: async (): Promise<Listing[]> => {
+      //Agar toggle true hai toh yahan se dummy data return ho jaye
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return DUMMY_LISTINGS.map((item) => ({
+          ...item,
+          images: [item.image_url], // Component images array expect karta hai
+          seller_name: "Trending Mock Seller",
+          created_at: new Date().toISOString(),
+          status: "approved",
+        })) as unknown as Listing[];
+      }
+
+      // Real Supabase call (Mock active hone par skip ho jayegi)
       const { data, error } = await supabase
         .from("listings")
         .select("*")

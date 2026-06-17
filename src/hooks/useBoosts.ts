@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 export type BoostPlacement = "trending" | "for_you" | "search";
 
@@ -25,11 +26,51 @@ export interface ListingBoost {
   payment_status: string;
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_BOOST_PACKAGES: BoostPackage[] = [
+  { id: "pkg-1", name: "Trending Boost · 3 Days",  placement: "trending", duration_days: 3,  price: 500,  description: "Show up in Trending Now for 3 days.",     active: true },
+  { id: "pkg-2", name: "Trending Boost · 7 Days",  placement: "trending", duration_days: 7,  price: 1000, description: "Show up in Trending Now for a week.",     active: true },
+  { id: "pkg-3", name: "For You Boost · 3 Days",   placement: "for_you",  duration_days: 3,  price: 450,  description: "Get featured in personalized feeds.",     active: true },
+  { id: "pkg-4", name: "Search Boost · 3 Days",    placement: "search",   duration_days: 3,  price: 400,  description: "Rank higher in search & browse results.", active: true },
+  { id: "pkg-5", name: "Search Boost · 7 Days",    placement: "search",   duration_days: 7,  price: 850,  description: "Rank higher in search for a full week.",  active: true },
+];
+
+const now = Date.now();
+const MOCK_MY_BOOSTS: ListingBoost[] = [
+  {
+    id: "boost-1",
+    listing_id: "mock-listing-1",
+    seller_id: "mock-user-id",
+    placement: "trending",
+    starts_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(now + 1 * 24 * 60 * 60 * 1000).toISOString(),
+    price_paid: 500,
+    payment_status: "mock",
+  },
+  {
+    id: "boost-2",
+    listing_id: "mock-listing-5",
+    seller_id: "mock-user-id",
+    placement: "search",
+    starts_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    price_paid: 400,
+    payment_status: "mock",
+  },
+];
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
 /** All active boosts across the marketplace, used to rank listings. */
 export const useActiveBoosts = (placement?: BoostPlacement) => {
   return useQuery({
     queryKey: ["active-boosts", placement ?? "all"],
     queryFn: async (): Promise<ListingBoost[]> => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const activeOnly = MOCK_MY_BOOSTS.filter((b) => new Date(b.ends_at).getTime() > Date.now());
+        return placement ? activeOnly.filter((b) => b.placement === placement) : activeOnly;
+      }
       let q = supabase
         .from("listing_boosts" as any)
         .select("*")
@@ -64,6 +105,7 @@ export const useBoostPackages = () => {
   return useQuery({
     queryKey: ["boost-packages"],
     queryFn: async (): Promise<BoostPackage[]> => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_BOOST_PACKAGES;
       const { data, error } = await supabase
         .from("boost_packages" as any)
         .select("*")
@@ -81,6 +123,7 @@ export const useMyBoosts = () => {
   return useQuery({
     queryKey: ["my-boosts", user?.id],
     queryFn: async (): Promise<ListingBoost[]> => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_MY_BOOSTS;
       const { data, error } = await supabase
         .from("listing_boosts" as any)
         .select("*")
@@ -89,6 +132,6 @@ export const useMyBoosts = () => {
       if (error) throw error;
       return (data as any[]) ?? [];
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 };

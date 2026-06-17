@@ -28,8 +28,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+//  Mock configuration data import 
+import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const fetchListing = async (id: string): Promise<Listing | null> => {
+  // Agar mock toggle active hai toh array me se product dhoond kar return karein
+  if (NEXT_PUBLIC_USE_MOCK_DATA) {
+    const matchedMock = DUMMY_LISTINGS.find((item) => String(item.id) === String(id));
+    if (matchedMock) {
+      return {
+        ...matchedMock,
+        images: [matchedMock.image_url], // String image_url ko array me wrap kiya
+        seller_name: "Mock Seller",
+        created_at: new Date().toISOString(),
+        status: "approved",
+      } as unknown as Listing;
+    }
+  }
+
+  // Real Supabase Database call (Agar mock config true hai aur ID match ho jaye toh skip ho jayega)
   const { data, error } = await supabase
     .from("listings")
     .select("*")
@@ -147,7 +164,7 @@ const ImageGallery = ({ images, title, status }: { images: string[]; title: stri
                   <>
                     <video src={img} className="h-full w-full bg-black object-cover" muted preload="metadata" />
                     <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">▶</span>
-                  </>
+                  </                  >
                 ) : (
                   <img src={img} alt={`${title} thumbnail ${i + 1}`} className={`h-full w-full object-cover ${isUnavailable ? "grayscale opacity-60" : ""}`} />
                 )}
@@ -193,6 +210,9 @@ const ListingDetail = () => {
   const { data: reservedOfferAmount } = useQuery({
     queryKey: ["reserved-offer-amount", listing?.reserved_offer_id],
     queryFn: async () => {
+      // 👇 Mocking scenario safety check
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return null;
+
       const { data, error } = await supabase
         .from("offers")
         .select("amount")
@@ -414,17 +434,16 @@ const ListingDetail = () => {
             </div>
 
             <div className="mt-6 border-t border-border pt-4">
-              <p className="text-sm text-muted-foreground">
-                Sold by{" "}
-                {listing.seller_id ? (
-                  <Link to={`/seller/${listing.seller_id}`} className="font-medium text-primary hover:underline">
-                    {listing.seller_name}
-                  </Link>
-                ) : (
-                  <span className="font-medium text-foreground">{listing.seller_name}</span>
-                )}
-              </p>
-              {listing.seller_id && (
+              <p className="text-sm text-muted-foreground mt-4">
+  Sold by{" "}
+  <Link 
+    to={`/seller/${listing?.seller_id || "mock-seller-id"}`} 
+    className="text-primary font-medium hover:underline transition-colors"
+  >
+    {listing?.seller_name || "Mock Seller"}
+  </Link>
+</p>
+              {listing.seller_id && !NEXT_PUBLIC_USE_MOCK_DATA && (
                 <div className="mt-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Seller Reviews</p>
                   <ReviewsList userId={listing.seller_id} limit={5} />

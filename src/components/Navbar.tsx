@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+//  Mock config switcher import 
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,6 +25,15 @@ const Navbar = () => {
   const { user, signOut } = useAuth();
   const { data: isAdmin } = useAdminCheck();
   const { data: categories = [] } = useCategories();
+
+  //  Clean click handler logic for both desktop & mobile navigation
+  const handleSellClick = () => {
+    if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
+      navigate("/auth");
+    } else {
+      navigate("/create-listing");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -45,8 +56,10 @@ const Navbar = () => {
             <Search className="h-5 w-5" />
           </Button>
           <CartDrawer />
-          {user && <NotificationBell audience="user" />}
-          <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={() => navigate(user ? "/create-listing" : "/auth")}>
+          {(user || NEXT_PUBLIC_USE_MOCK_DATA) && <NotificationBell audience="user" />}
+          
+          {/* Desktop Sell Button  */}
+          <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={handleSellClick}>
             <Plus className="h-4 w-4" /> Sell
           </Button>
 
@@ -116,7 +129,9 @@ const Navbar = () => {
             {isAdmin && (
               <Link to="/admin" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Admin Portal</Link>
             )}
-            <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { navigate(user ? "/create-listing" : "/auth"); setMobileOpen(false); }}>
+            
+            {/* Mobile Sell Button  */}
+            <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { handleSellClick(); setMobileOpen(false); }}>
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>
           </nav>

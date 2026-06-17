@@ -27,6 +27,69 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_LISTINGS = [
+  {
+    id: "mock-listing-1",
+    title: "Vintage Leather Jacket",
+    brand: "Zara",
+    price: 6500,
+    weight: "medium",
+    status: "approved",
+    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"],
+    reserved_until: null,
+    created_at: "2026-06-10T10:00:00.000Z",
+  },
+  {
+    id: "mock-listing-2",
+    title: "Classic White Sneakers",
+    brand: "Nike",
+    price: 3500,
+    weight: "light",
+    status: "reserved",
+    images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600"],
+    reserved_until: "2026-06-20T18:00:00.000Z",
+    created_at: "2026-06-08T14:30:00.000Z",
+  },
+  {
+    id: "mock-listing-3",
+    title: "Bohemian Summer Dress",
+    brand: "Mango",
+    price: 2800,
+    weight: "light",
+    status: "pending",
+    images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
+    reserved_until: null,
+    created_at: "2026-06-15T09:00:00.000Z",
+  },
+  {
+    id: "mock-listing-4",
+    title: "Kids Denim Dungarees",
+    brand: "H&M",
+    price: 2200,
+    weight: "light",
+    status: "rejected",
+    images: ["https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600"],
+    reserved_until: null,
+    created_at: "2026-06-05T11:15:00.000Z",
+  },
+  {
+    id: "mock-listing-5",
+    title: "Wool Winter Coat",
+    brand: "Uniqlo",
+    price: 8900,
+    weight: "heavy",
+    status: "sold",
+    images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"],
+    reserved_until: null,
+    created_at: "2026-05-28T16:45:00.000Z",
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const MyListings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -36,6 +99,7 @@ const MyListings = () => {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["my-listings", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_LISTINGS;
       const { data, error } = await supabase
         .from("listings")
         .select("*")
@@ -44,57 +108,78 @@ const MyListings = () => {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return;
       const { error } = await supabase.from("listings").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       toast.success("Listing deleted");
-      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData(["my-listings", user?.id], (old: any[] = []) =>
+          old.filter((l) => l.id !== id),
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      }
     },
     onError: () => toast.error("Failed to delete listing"),
   });
 
   const resubmitMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return;
       const { error } = await supabase
         .from("listings")
         .update({ status: "pending" } as any)
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       toast.success("Listing resubmitted for review");
-      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData(["my-listings", user?.id], (old: any[] = []) =>
+          old.map((l) => (l.id === id ? { ...l, status: "pending" } : l)),
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      }
     },
     onError: () => toast.error("Failed to resubmit"),
   });
 
   const cancelReservationMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return;
       const { error } = await supabase.rpc("expire_listing_reservation", {
         _listing_id: id,
         _force: true,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       toast.success("Reservation cancelled");
-      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData(["my-listings", user?.id], (old: any[] = []) =>
+          old.map((l) => (l.id === id ? { ...l, status: "approved", reserved_until: null } : l)),
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
   }, [authLoading, user, navigate]);
 
   if (authLoading) return null;
-  if (!user) return null;
+  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
 
   const statusColor = (s: string) => {
     if (s === "approved") return "default";

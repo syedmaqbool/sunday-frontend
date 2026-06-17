@@ -14,6 +14,7 @@ import { Send, ArrowLeft, MessageSquare, Loader2, AlertTriangle } from "lucide-r
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trackEvent } from "@/lib/analytics";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const CONTACT_PATTERNS = [
   { regex: /\+?\d[\d\s\-\.]{7,}\d/g, label: "phone number" },
@@ -58,6 +59,83 @@ interface Message {
   flag_reason?: string;
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_USER_ID = "mock-user-id";
+const MOCK_SELLER_ID = "mock-seller-id";
+
+const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "convo-1",
+    offer_id: "offer-1",
+    listing_id: "mock-listing-1",
+    buyer_id: MOCK_USER_ID,
+    seller_id: MOCK_SELLER_ID,
+    created_at: "2026-06-14T10:00:00.000Z",
+    listing_title: "Vintage Leather Jacket",
+    listing_image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600",
+    other_name: "Premium Thrifter",
+    last_message: "Sounds good, I'll ship it tomorrow!",
+    last_message_at: "2026-06-16T15:30:00.000Z",
+    unread_count: 2,
+  },
+  {
+    id: "convo-2",
+    offer_id: "offer-2",
+    listing_id: "mock-listing-3",
+    buyer_id: MOCK_USER_ID,
+    seller_id: "mock-seller-id-2",
+    created_at: "2026-06-10T09:00:00.000Z",
+    listing_title: "Bohemian Summer Dress",
+    listing_image: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600",
+    other_name: "Closet Curator",
+    last_message: "Thanks for your purchase!",
+    last_message_at: "2026-06-11T12:00:00.000Z",
+    unread_count: 0,
+  },
+];
+
+let mockMessageStore: Record<string, Message[]> = {
+  "convo-1": [
+    {
+      id: "msg-1",
+      conversation_id: "convo-1",
+      sender_id: MOCK_SELLER_ID,
+      content: "Hi! Thanks for accepting the offer. I'll get this packed up soon.",
+      created_at: "2026-06-14T10:05:00.000Z",
+      read: true,
+    },
+    {
+      id: "msg-2",
+      conversation_id: "convo-1",
+      sender_id: MOCK_USER_ID,
+      content: "Awesome, looking forward to it!",
+      created_at: "2026-06-14T10:10:00.000Z",
+      read: true,
+    },
+    {
+      id: "msg-3",
+      conversation_id: "convo-1",
+      sender_id: MOCK_SELLER_ID,
+      content: "Sounds good, I'll ship it tomorrow!",
+      created_at: "2026-06-16T15:30:00.000Z",
+      read: false,
+    },
+  ],
+  "convo-2": [
+    {
+      id: "msg-4",
+      conversation_id: "convo-2",
+      sender_id: "mock-seller-id-2",
+      content: "Thanks for your purchase!",
+      created_at: "2026-06-11T12:00:00.000Z",
+      read: true,
+    },
+  ],
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const Messages = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -67,14 +145,23 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const currentUserId = NEXT_PUBLIC_USE_MOCK_DATA ? MOCK_USER_ID : user?.id;
+
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
   }, [user, authLoading, navigate]);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: convosLoading } = useQuery({
-    queryKey: ["conversations", user?.id],
+    queryKey: ["conversations", currentUserId],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return [...MOCK_CONVERSATIONS].sort((a, b) =>
+          new Date(b.last_message_at || b.created_at).getTime() -
+          new Date(a.last_message_at || a.created_at).getTime()
+        );
+      }
+
       const { data, error } = await supabase
         .from("conversations")
         .select("*")
@@ -119,13 +206,16 @@ const Messages = () => {
         new Date(a.last_message_at || a.created_at).getTime()
       );
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   // Fetch messages for active conversation
   const { data: messages = [], isLoading: msgsLoading } = useQuery({
     queryKey: ["messages", activeConvo],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return mockMessageStore[activeConvo!] ?? [];
+      }
       const { data, error } = await supabase
         .from("messages")
         .select("*")
@@ -135,23 +225,31 @@ const Messages = () => {
       return data as Message[];
     },
     enabled: !!activeConvo,
-    refetchInterval: 3000,
+    refetchInterval: NEXT_PUBLIC_USE_MOCK_DATA ? false : 3000,
   });
 
   // Mark messages as read
   useEffect(() => {
-    if (!activeConvo || !user || messages.length === 0) return;
-    const unread = messages.filter((m) => !m.read && m.sender_id !== user.id);
-    if (unread.length > 0) {
-      supabase
-        .from("messages")
-        .update({ read: true })
-        .in("id", unread.map((m) => m.id))
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        });
+    if (!activeConvo || !currentUserId || messages.length === 0) return;
+    const unread = messages.filter((m) => !m.read && m.sender_id !== currentUserId);
+    if (unread.length === 0) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      mockMessageStore[activeConvo] = mockMessageStore[activeConvo].map((m) =>
+        unread.some((u) => u.id === m.id) ? { ...m, read: true } : m
+      );
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      return;
     }
-  }, [messages, activeConvo, user, queryClient]);
+
+    supabase
+      .from("messages")
+      .update({ read: true })
+      .in("id", unread.map((m) => m.id))
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      });
+  }, [messages, activeConvo, currentUserId, queryClient]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -160,7 +258,7 @@ const Messages = () => {
 
   // Realtime subscription
   useEffect(() => {
-    if (!activeConvo) return;
+    if (!activeConvo || NEXT_PUBLIC_USE_MOCK_DATA) return;
     const channel = supabase
       .channel(`messages-${activeConvo}`)
       .on("postgres_changes", {
@@ -178,10 +276,30 @@ const Messages = () => {
 
   const sendMessage = useMutation({
     mutationFn: async () => {
-      if (!newMessage.trim() || !activeConvo || !user) return;
+      if (!newMessage.trim() || !activeConvo || !currentUserId) return;
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const newMsg: Message = {
+          id: `msg-${Date.now()}`,
+          conversation_id: activeConvo,
+          sender_id: currentUserId,
+          content: newMessage.trim(),
+          created_at: new Date().toISOString(),
+          read: false,
+        };
+        mockMessageStore[activeConvo] = [...(mockMessageStore[activeConvo] ?? []), newMsg];
+
+        const convo = MOCK_CONVERSATIONS.find((c) => c.id === activeConvo);
+        if (convo) {
+          convo.last_message = newMsg.content;
+          convo.last_message_at = newMsg.created_at;
+        }
+        return;
+      }
+
       const { error } = await supabase.from("messages").insert({
         conversation_id: activeConvo,
-        sender_id: user.id,
+        sender_id: currentUserId,
         content: newMessage.trim(),
       });
       if (error) throw error;
@@ -306,7 +424,7 @@ const Messages = () => {
                   ) : (
                     <div className="space-y-3">
                       {messages.map((m) => {
-                        const isMine = m.sender_id === user?.id;
+                        const isMine = m.sender_id === currentUserId;
                         return (
                           <div
                             key={m.id}

@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import BankDetailsModal from "@/components/BankDetailsModal";
 import { trackEvent } from "@/lib/analytics";
+// Mock configuration configuration switcher import 
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const MAX_PHOTOS = 20;
 
@@ -66,6 +68,23 @@ const CreateListing = () => {
   const { data: existingListing, isLoading: loadingListing } = useQuery({
     queryKey: ["edit-listing", id],
     queryFn: async () => {
+      // 👇 Mocking existing items layer configuration safety override
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return {
+          id: id,
+          title: "Premium Designer Jacket",
+          description: "Stunning limited variant tailored jacket.",
+          price: 18500,
+          brand: "Zara",
+          category: "women-clothing",
+          condition: "like_new",
+          size: "M",
+          weight: 0.5,
+          seller_id: user?.id || "mock-seller",
+          images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600"],
+        };
+      }
+
       const { data, error } = await supabase
         .from("listings")
         .select("*")
@@ -78,13 +97,12 @@ const CreateListing = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (existingListing) {
-      // Verify ownership
-      if (existingListing.seller_id !== user?.id) {
+      if (existingListing.seller_id !== user?.id && !NEXT_PUBLIC_USE_MOCK_DATA) {
         navigate("/listings", { replace: true });
         return;
       }
@@ -125,7 +143,7 @@ const CreateListing = () => {
     const urls: string[] = [];
     for (const file of files) {
       const ext = file.name.split(".").pop();
-      const path = `${user!.id}/${listingId}/${crypto.randomUUID()}.${ext}`;
+      const path = `${user?.id || "mock"}/${listingId}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from("listing-images")
         .upload(path, file, { upsert: true });
@@ -175,7 +193,6 @@ const CreateListing = () => {
   const setCoverPhoto = (previewIndex: number) => {
     if (previewIndex === 0) return;
     if (previewIndex < existingImages.length) {
-      // Cover is an existing image
       setExistingImages((prev) => {
         const next = [...prev];
         const [cover] = next.splice(previewIndex, 1);
@@ -183,7 +200,6 @@ const CreateListing = () => {
         return next;
       });
     } else {
-      // Cover is a new image
       const newIdx = previewIndex - existingImages.length;
       setImageFiles((prev) => {
         const next = [...prev];
@@ -199,6 +215,13 @@ const CreateListing = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 👇 Live Mock Environment Submissions Validation Controls
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      await performSubmit();
+      return;
+    }
+
     if (!user) return;
 
     if (totalPhotos === 0) {
@@ -210,7 +233,6 @@ const CreateListing = () => {
       return;
     }
 
-    // Before creating a NEW listing, ensure the seller has bank/payout details on file.
     if (!isEditing) {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -238,8 +260,21 @@ const CreateListing = () => {
   };
 
   const performSubmit = async () => {
-    if (!user) return;
     setSubmitting(true);
+
+    // 👇 Mock Submission Interception Flow
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Real field experience loader duration
+      toast({
+        title: isEditing ? "Listing updated!" : "Listing created!",
+        description: isEditing ? "Your changes have been saved successfully (Mock Mode)." : "Your item has been submitted and is pending preview verification.",
+      });
+      setSubmitting(false);
+      navigate("/listings");
+      return;
+    }
+
+    if (!user) return;
 
     try {
       if (isEditing) {
@@ -312,7 +347,7 @@ const CreateListing = () => {
     setSubmitting(false);
   };
 
-  if (authLoading || loadingListing) return null;
+  if ((authLoading || loadingListing) && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
 
   const allPreviews = [
     ...existingImages.map((url) => ({ type: "existing" as const, url })),
@@ -477,7 +512,7 @@ const CreateListing = () => {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="price">Price (PKR)<FieldTip tip="Set a fair selling price in Pakistani Rupees. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." /></Label>
               <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />

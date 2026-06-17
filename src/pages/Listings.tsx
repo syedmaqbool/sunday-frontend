@@ -15,8 +15,32 @@ import type { Listing } from "@/lib/constants";
 import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
 import { useSellerRatings } from "@/hooks/useSellerRating";
 import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
+// Mock config  data import 
+import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const fetchListings = async (): Promise<Listing[]> => {
+  // Agar mock active hai toh database bypass karein
+  if (NEXT_PUBLIC_USE_MOCK_DATA) {
+    return DUMMY_LISTINGS.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      price: row.price,
+      images: [row.image_url], // image_url string ko array me map kiya
+      category: row.category,
+      condition: row.condition,
+      size: row.size,
+      brand: row.brand,
+      seller_id: row.seller_id || "mock-seller-id",
+      seller_name: "Mock Seller",
+      created_at: new Date().toISOString(),
+      status: row.status || "approved",
+      reserved_for: null,
+      reserved_until: null,
+    })) as unknown as Listing[];
+  }
+
+  //  Real Supabase Call (Mock true hone par skip ho jayegi)
   const { data, error } = await supabase
     .from("listings")
     .select("*")
@@ -73,12 +97,14 @@ const Listings = () => {
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
   const searchBoostMap = useBoostScoreMap("search");
 
+
   const filtered = useMemo(() => {
     let items = [...listings];
     if (search) items = items.filter(i => i.title.toLowerCase().includes(search.toLowerCase()) || i.brand.toLowerCase().includes(search.toLowerCase()));
     if (parentCat !== "all") {
-      items = items.filter(i => i.category.startsWith(parentCat + "-"));
+      items = items.filter(i => i.category.toLowerCase() === parentCat.toLowerCase());
     }
+
     if (subCat !== "all") {
       items = items.filter(i => i.category.endsWith("-" + subCat));
     }

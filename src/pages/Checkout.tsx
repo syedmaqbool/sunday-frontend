@@ -16,6 +16,8 @@ import { useActiveTax } from "@/hooks/useActiveTax";
 import { useCommissionTiers } from "@/hooks/useCommissionTiers";
 import { calcCommission } from "@/lib/commission";
 import { trackEvent } from "@/lib/analytics";
+// Mock switcher config import 
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface AppliedDiscount {
   id: string;
@@ -95,6 +97,25 @@ const Checkout = () => {
     if (!code) return;
 
     setApplyingCode(true);
+
+    // Mock Code Interception
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      setTimeout(() => {
+        setAppliedDiscount({
+          id: "mock-coupon-id",
+          code: code,
+          discount_type: "percentage",
+          discount_value: 10, // 10% Flat Mock discount
+          min_order_amount: 0,
+          source: "platform",
+        });
+        setDiscountCode("");
+        setApplyingCode(false);
+        toast({ title: "Mock Discount applied!", description: `Promo code "${code}" (10% off) applied successfully.` });
+      }, 600);
+      return;
+    }
+
     try {
       // 1) Try platform-wide discount_codes first
       const { data: platform } = await supabase
@@ -235,7 +256,8 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!user) {
+    // Basic Auth Check Override for testing
+    if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
       navigate("/auth");
       return;
     }
@@ -250,6 +272,18 @@ const Checkout = () => {
     }
 
     setPlacing(true);
+
+    // Mock Place Order Flow
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      setTimeout(() => {
+        setPlaced(true);
+        clearCart();
+        setPlacing(false);
+        toast({ title: "Mock Order placed!", description: "Your demo order has been confirmed successfully." });
+      }, 1500);
+      return;
+    }
+
     try {
       // Re-validate listings server-side: block if any item is reserved for another buyer.
       const listingIds = items.map((i) => i.listing.id);
@@ -266,7 +300,7 @@ const Checkout = () => {
         if (l.status === "sold") return true;
         if (l.status === "reserved") {
           const stillValid = l.reserved_until && new Date(l.reserved_until) > new Date();
-          return stillValid && l.reserved_for !== user.id;
+          return stillValid && l.reserved_for !== user?.id;
         }
         return false;
       });
@@ -282,7 +316,7 @@ const Checkout = () => {
 
       // Authoritative price: when listing is reserved for this buyer, use the accepted offer amount.
       const reservedOfferIds = (freshListings ?? [])
-        .filter((l: any) => l.status === "reserved" && l.reserved_for === user.id && l.reserved_offer_id)
+        .filter((l: any) => l.status === "reserved" && l.reserved_for === user?.id && l.reserved_offer_id)
         .map((l: any) => l.reserved_offer_id as string);
       const offerAmountByListing = new Map<string, number>();
       if (reservedOfferIds.length) {
@@ -291,7 +325,7 @@ const Checkout = () => {
           .select("id, listing_id, amount, status, buyer_id")
           .in("id", reservedOfferIds);
         for (const o of acceptedOffers ?? []) {
-          if (o.status === "accepted" && o.buyer_id === user.id) {
+          if (o.status === "accepted" && o.buyer_id === user?.id) {
             offerAmountByListing.set(o.listing_id as string, Number(o.amount));
           }
         }
@@ -346,7 +380,7 @@ const Checkout = () => {
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({
-          buyer_id: user.id,
+          buyer_id: user?.id,
           items: itemsSnapshot,
           subtotal: authoritativeSubtotal,
           discount_code: appliedDiscount?.code ?? null,
@@ -388,7 +422,7 @@ const Checkout = () => {
       });
 
       // Send invoice email (fire-and-forget — don't block the UI)
-      if (user.email) {
+      if (user?.email) {
         supabase.functions
           .invoke("send-transactional-email", {
             body: {
@@ -462,7 +496,7 @@ const Checkout = () => {
           }
           await supabase.from("seller_coupon_redemptions" as any).insert({
             coupon_id: appliedDiscount.id,
-            user_id: user.id,
+            user_id: user?.id,
             order_id: orderRow.id,
             seller_id: appliedDiscount.seller_id,
             discount_amount: authoritativeDiscount,

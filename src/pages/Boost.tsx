@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Rocket, TrendingUp, Sparkles, Search, Loader2, Package } from "lucide-react";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const placementIcon: Record<string, any> = {
   trending: TrendingUp,
@@ -24,6 +25,23 @@ const placementLabel: Record<string, string> = {
   search: "Search & Browse",
 };
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_APPROVED_LISTINGS = [
+  {
+    id: "mock-listing-1",
+    title: "Vintage Leather Jacket",
+    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"],
+    price: 6500,
+  },
+  {
+    id: "mock-listing-5",
+    title: "Wool Winter Coat",
+    images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"],
+    price: 8900,
+  },
+];
+
 const Boost = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +49,7 @@ const Boost = () => {
   const { data: listings = [], isLoading: listingsLoading } = useQuery({
     queryKey: ["my-approved-listings", user?.id],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_APPROVED_LISTINGS;
       const { data, error } = await supabase
         .from("listings")
         .select("id, title, images, price")
@@ -40,17 +59,17 @@ const Boost = () => {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
   });
 
   const { data: myBoosts = [], isLoading: boostsLoading } = useMyBoosts();
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
   }, [authLoading, user, navigate]);
 
   if (authLoading) return null;
-  if (!user) return null;
+  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
 
   const now = Date.now();
   const activeBoosts = myBoosts.filter((b) => new Date(b.ends_at).getTime() > now);

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type Audience = "user" | "admin";
 
@@ -34,6 +35,53 @@ interface NotificationBellProps {
   className?: string;
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_NOTIFICATIONS: NotificationRow[] = [
+  {
+    id: "notif-1",
+    type: "offer_accepted",
+    title: "Your offer was accepted!",
+    body: "The seller accepted your offer on 'Vintage Leather Jacket'.",
+    link: "/my-offers",
+    read: false,
+    audience: "user",
+    created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif-2",
+    type: "item_shipped",
+    title: "Your order has shipped",
+    body: "Tracking number added — your item is on its way via Aramex.",
+    link: "/profile",
+    read: false,
+    audience: "user",
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif-3",
+    type: "new_message",
+    title: "New message from Premium Thrifter",
+    body: "\"Hey, thanks for your purchase! Let me know if you have questions.\"",
+    link: "/messages",
+    read: true,
+    audience: "user",
+    created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif-4",
+    type: "listing_approved",
+    title: "Your listing is live",
+    body: "'Classic White Sneakers' has been approved and is now visible to buyers.",
+    link: "/my-listings",
+    read: true,
+    audience: "user",
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const NotificationBell = ({ audience = "user", className }: NotificationBellProps) => {
   const { user } = useAuth();
   const { data: isAdmin } = useAdminCheck();
@@ -43,12 +91,15 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
 
   const queryKey = ["notifications", audience, user?.id ?? "anon"];
 
-  const enabled = !!user && (audience === "user" || isAdmin === true);
+  const enabled = NEXT_PUBLIC_USE_MOCK_DATA || (!!user && (audience === "user" || isAdmin === true));
 
   const { data: items = [], isLoading } = useQuery({
     queryKey,
     enabled,
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return MOCK_NOTIFICATIONS.filter((n) => n.audience === audience);
+      }
       let q = supabase
         .from("notifications")
         .select("*")
@@ -63,7 +114,7 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
 
   // Realtime subscription
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || NEXT_PUBLIC_USE_MOCK_DATA) return;
     const channel = supabase
       .channel(`notifications-${audience}-${user!.id}`)
       .on(
@@ -83,11 +134,23 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
   if (!enabled) return null;
 
   const markRead = async (id: string) => {
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      queryClient.setQueryData(queryKey, (old: NotificationRow[] = []) =>
+        old.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+      return;
+    }
     await supabase.from("notifications").update({ read: true }).eq("id", id);
     queryClient.invalidateQueries({ queryKey });
   };
 
   const markAllRead = async () => {
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      queryClient.setQueryData(queryKey, (old: NotificationRow[] = []) =>
+        old.map((n) => ({ ...n, read: true })),
+      );
+      return;
+    }
     const ids = items.filter((n) => !n.read).map((n) => n.id);
     if (!ids.length) return;
     await supabase.from("notifications").update({ read: true }).in("id", ids);

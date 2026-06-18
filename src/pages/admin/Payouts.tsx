@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type OrderItem = {
   listing_id?: string;
@@ -123,6 +124,93 @@ const itemSellerCommissionShare = (it: OrderItem) =>
 /** Seller payout = full listing price + 5% commission share. */
 const itemTotal = (it: OrderItem) => itemGross(it) + itemSellerCommissionShare(it);
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_PAYOUT_ORDERS: Order[] = [
+  {
+    id: "ord-1029ab",
+    buyer_id: "mock-buyer-2",
+    status: "completed",
+    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    items: [{ listing_id: "mock-listing-2", title: "Classic White Sneakers", price: 3500, quantity: 1, seller_id: "mock-seller-id-2" }],
+    item_status: { "mock-listing-2": { status: "completed" } },
+  },
+  {
+    id: "ord-77baad",
+    buyer_id: "mock-buyer-3",
+    status: "completed",
+    created_at: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    items: [{ listing_id: "mock-listing-3", title: "Bohemian Summer Dress", price: 2800, quantity: 1, seller_id: "mock-user-id" }],
+    item_status: { "mock-listing-3": { status: "received" } },
+  },
+  {
+    id: "ord-44ccde",
+    buyer_id: "mock-buyer-4",
+    status: "completed",
+    created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    items: [{ listing_id: "mock-listing-5", title: "Wool Winter Coat", price: 8900, quantity: 1, seller_id: "mock-user-id" }],
+    item_status: { "mock-listing-5": { status: "completed" } },
+  },
+  {
+    id: "ord-55deff",
+    buyer_id: "mock-buyer-5",
+    status: "completed",
+    created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    items: [{ listing_id: "mock-listing-6", title: "Leather Crossbody Bag", price: 5200, quantity: 1, seller_id: "mock-seller-id-2" }],
+    item_status: { "mock-listing-6": { status: "received" } },
+  },
+  {
+    id: "ord-8fdf392k",
+    buyer_id: "mock-user-id",
+    status: "shipped",
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    items: [{ listing_id: "mock-listing-1", title: "Vintage Leather Jacket", price: 6500, quantity: 1, seller_id: "mock-seller-id" }],
+    item_status: { "mock-listing-1": { status: "shipped" } }, // not yet confirmed — excluded from payouts
+  },
+];
+
+const MOCK_PAYOUT_COMPLAINTS: Complaint[] = [
+  {
+    id: "cmp-1",
+    order_id: "ord-55deff",
+    listing_id: "mock-listing-6",
+    seller_id: "mock-seller-id-2",
+    buyer_id: "mock-buyer-5",
+    status: "refunded",
+    resolved_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+let mockPayoutsStore: Payout[] = [
+  {
+    id: "payout-1",
+    seller_id: "mock-user-id",
+    period_start: "2026-05-01",
+    period_end: "2026-05-31",
+    amount: 9345,
+    method: "bank_transfer",
+    reference: "TX-2026-05-31-001",
+    notes: "Monthly payout for May sales.",
+    status: "paid",
+    paid_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+const MOCK_PAYOUT_PROFILES: Profile[] = [
+  { id: "mock-user-id", full_name: "Muhamad Bilal Shaikh" },
+  { id: "mock-seller-id", full_name: "Premium Thrifter" },
+  { id: "mock-seller-id-2", full_name: "Closet Curator" },
+  { id: "mock-buyer-2", full_name: "Ayesha Khan" },
+  { id: "mock-buyer-3", full_name: "Sana Malik" },
+  { id: "mock-buyer-4", full_name: "Hassan Raza" },
+  { id: "mock-buyer-5", full_name: "Fatima Noor" },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const Payouts = () => {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -147,6 +235,7 @@ const Payouts = () => {
   const { data: orders = [], isLoading: lo } = useQuery({
     queryKey: ["admin-payouts-orders"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_PAYOUT_ORDERS;
       const { data, error } = await supabase
         .from("orders")
         .select("id, buyer_id, status, items, item_status, created_at")
@@ -159,6 +248,7 @@ const Payouts = () => {
   const { data: complaints = [], isLoading: lc } = useQuery({
     queryKey: ["admin-payouts-complaints"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_PAYOUT_COMPLAINTS;
       const { data, error } = await supabase
         .from("complaints")
         .select("id, order_id, listing_id, seller_id, buyer_id, status, resolved_at, updated_at, created_at")
@@ -171,6 +261,7 @@ const Payouts = () => {
   const { data: payouts = [], isLoading: lp } = useQuery({
     queryKey: ["admin-payouts-records"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockPayoutsStore;
       const { data, error } = await supabase
         .from("seller_payouts")
         .select("*")
@@ -202,6 +293,9 @@ const Payouts = () => {
     queryKey: ["admin-payouts-profiles", profileIds.sort().join(",")],
     enabled: profileIds.length > 0,
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return MOCK_PAYOUT_PROFILES.filter((p) => profileIds.includes(p.id));
+      }
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name")
@@ -449,6 +543,29 @@ const Payouts = () => {
       return;
     }
     setSaving(true);
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      const newPayout: Payout = {
+        id: `payout-${Date.now()}`,
+        seller_id: activeSeller.seller_id,
+        amount,
+        method: form.method,
+        reference: form.reference,
+        notes: form.notes,
+        period_start: form.period_start || null,
+        period_end: form.period_end || null,
+        status: "paid",
+        paid_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      mockPayoutsStore = [newPayout, ...mockPayoutsStore];
+      setSaving(false);
+      toast({ title: "Payout recorded", description: `${fmt(amount)} to ${activeSeller.name}` });
+      setDialogOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin-payouts-records"] });
+      return;
+    }
+
     const { error } = await supabase.from("seller_payouts").insert({
       seller_id: activeSeller.seller_id,
       amount,

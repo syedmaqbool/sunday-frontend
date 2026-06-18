@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Send, ArrowLeft, MessageSquare, Loader2, LifeBuoy } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   open: { label: "Open", className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
@@ -42,6 +43,122 @@ interface Msg {
   created_at: string;
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_TICKETS: Ticket[] = [
+  {
+    id: "ticket-1",
+    user_id: "mock-user-id",
+    subject: "Payment not reflecting after order",
+    category: "Payments",
+    status: "open",
+    last_message_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    user_name: "Muhamad Bilal Shaikh",
+  },
+  {
+    id: "ticket-2",
+    user_id: "mock-buyer-2",
+    subject: "Item arrived damaged",
+    category: "Returns",
+    status: "pending",
+    last_message_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    user_name: "Ayesha Khan",
+  },
+  {
+    id: "ticket-3",
+    user_id: "mock-buyer-3",
+    subject: "How do I change my bank account for payouts?",
+    category: "Account",
+    status: "resolved",
+    last_message_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    user_name: "Sana Malik",
+  },
+  {
+    id: "ticket-4",
+    user_id: "mock-buyer-4",
+    subject: "Old issue resolved last month",
+    category: "General",
+    status: "closed",
+    last_message_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
+    user_name: "Hassan Raza",
+  },
+];
+
+let mockTicketsStore: Ticket[] = [...MOCK_TICKETS];
+
+let mockMessagesStore: Record<string, Msg[]> = {
+  "ticket-1": [
+    {
+      id: "msg-1",
+      ticket_id: "ticket-1",
+      sender_id: "mock-user-id",
+      sender_role: "user",
+      content: "Hi, I placed an order but my payment isn't showing as confirmed. Order #ord-8fdf392k.",
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "msg-2",
+      ticket_id: "ticket-1",
+      sender_id: "mock-user-id",
+      sender_role: "user",
+      content: "Any update on this?",
+      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    },
+  ],
+  "ticket-2": [
+    {
+      id: "msg-3",
+      ticket_id: "ticket-2",
+      sender_id: "mock-buyer-2",
+      sender_role: "user",
+      content: "The sneakers I received have a torn sole, doesn't match the listing photos.",
+      created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "msg-4",
+      ticket_id: "ticket-2",
+      sender_id: "admin-mock-id",
+      sender_role: "admin",
+      content: "Sorry to hear that! Could you share a photo of the damage so we can process a return?",
+      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+  "ticket-3": [
+    {
+      id: "msg-5",
+      ticket_id: "ticket-3",
+      sender_id: "mock-buyer-3",
+      sender_role: "user",
+      content: "How can I update my bank details for payouts?",
+      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "msg-6",
+      ticket_id: "ticket-3",
+      sender_id: "admin-mock-id",
+      sender_role: "admin",
+      content: "You can update it anytime from your Profile page under 'Payout details'.",
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+  "ticket-4": [
+    {
+      id: "msg-7",
+      ticket_id: "ticket-4",
+      sender_id: "mock-buyer-4",
+      sender_role: "user",
+      content: "Thanks for resolving my earlier issue!",
+      created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ],
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const AdminSupport = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -53,6 +170,15 @@ const AdminSupport = () => {
   const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
     queryKey: ["admin-support-tickets", statusFilter],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const filtered = statusFilter === "all"
+          ? mockTicketsStore
+          : mockTicketsStore.filter((t) => t.status === statusFilter);
+        return [...filtered].sort(
+          (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime(),
+        );
+      }
+
       let q = supabase.from("support_tickets").select("*").order("last_message_at", { ascending: false });
       if (statusFilter !== "all") q = q.eq("status", statusFilter);
       const { data, error } = await q;
@@ -73,6 +199,9 @@ const AdminSupport = () => {
   const { data: messages = [], isLoading: msgsLoading } = useQuery({
     queryKey: ["admin-support-messages", activeTicket],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return mockMessagesStore[activeTicket!] ?? [];
+      }
       const { data, error } = await supabase
         .from("support_messages").select("*")
         .eq("ticket_id", activeTicket!)
@@ -81,11 +210,11 @@ const AdminSupport = () => {
       return data as Msg[];
     },
     enabled: !!activeTicket,
-    refetchInterval: 3000,
+    refetchInterval: NEXT_PUBLIC_USE_MOCK_DATA ? false : 3000,
   });
 
   useEffect(() => {
-    if (!activeTicket) return;
+    if (!activeTicket || NEXT_PUBLIC_USE_MOCK_DATA) return;
     const channel = supabase
       .channel(`admin-support-${activeTicket}`)
       .on("postgres_changes", {
@@ -103,7 +232,25 @@ const AdminSupport = () => {
 
   const sendReply = useMutation({
     mutationFn: async () => {
-      if (!reply.trim() || !activeTicket || !user) return;
+      if (!reply.trim() || !activeTicket) return;
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const newMsg: Msg = {
+          id: `msg-${Date.now()}`,
+          ticket_id: activeTicket,
+          sender_id: "admin-mock-id",
+          sender_role: "admin",
+          content: reply.trim(),
+          created_at: new Date().toISOString(),
+        };
+        mockMessagesStore[activeTicket] = [...(mockMessagesStore[activeTicket] ?? []), newMsg];
+        mockTicketsStore = mockTicketsStore.map((t) =>
+          t.id === activeTicket ? { ...t, last_message_at: newMsg.created_at, status: "pending" } : t,
+        );
+        return;
+      }
+
+      if (!user) return;
       const { error } = await supabase.from("support_messages").insert({
         ticket_id: activeTicket,
         sender_id: user.id,
@@ -123,6 +270,14 @@ const AdminSupport = () => {
   const updateStatus = useMutation({
     mutationFn: async (newStatus: string) => {
       if (!activeTicket) return;
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockTicketsStore = mockTicketsStore.map((t) =>
+          t.id === activeTicket ? { ...t, status: newStatus } : t,
+        );
+        return;
+      }
+
       const { error } = await supabase.from("support_tickets")
         .update({ status: newStatus }).eq("id", activeTicket);
       if (error) throw error;

@@ -32,6 +32,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Loader2, Trash2, Tag, Pencil, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type DiscountType = "percentage" | "fixed";
 type Scope = "seller_wide" | "item_based";
@@ -81,6 +82,72 @@ const emptyForm = {
   listing_ids: [] as string[],
 };
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_SELLER_OPTIONS: SellerOption[] = [
+  { id: "mock-user-id", full_name: "Muhamad Bilal Shaikh" },
+  { id: "mock-seller-id", full_name: "Premium Thrifter" },
+  { id: "mock-seller-id-2", full_name: "Closet Curator" },
+];
+
+const MOCK_SELLER_LISTINGS: ListingOption[] = [
+  { id: "mock-listing-1", title: "Vintage Leather Jacket", seller_id: "mock-seller-id" },
+  { id: "mock-listing-3", title: "Bohemian Summer Dress", seller_id: "mock-user-id" },
+  { id: "mock-listing-5", title: "Wool Winter Coat", seller_id: "mock-user-id" },
+  { id: "mock-listing-2", title: "Classic White Sneakers", seller_id: "mock-seller-id-2" },
+];
+
+let mockCouponsStore: SellerCoupon[] = [
+  {
+    id: "coupon-1",
+    code: "WELCOME10",
+    seller_id: "mock-seller-id",
+    description: "Welcome discount for new buyers",
+    discount_type: "percentage",
+    discount_value: 10,
+    min_order_amount: 2000,
+    max_uses: 100,
+    current_uses: 23,
+    per_user_limit: 1,
+    scope: "seller_wide",
+    starts_at: null,
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    active: true,
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "coupon-2",
+    code: "JACKET500",
+    seller_id: "mock-user-id",
+    description: "Flat discount on selected items",
+    discount_type: "fixed",
+    discount_value: 500,
+    min_order_amount: 0,
+    max_uses: 50,
+    current_uses: 5,
+    per_user_limit: null,
+    scope: "item_based",
+    starts_at: null,
+    expires_at: null,
+    active: true,
+    created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+let mockCouponListingsStore: Record<string, string[]> = {
+  "coupon-2": ["mock-listing-3", "mock-listing-5"],
+};
+
+let mockRedemptionsStore: Record<string, any[]> = {
+  "coupon-1": [
+    { id: "rd-1", user_id: "mock-buyer-2", order_id: "ord-1029ab", discount_amount: 350, created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: "rd-2", user_id: "mock-buyer-3", order_id: "ord-77baad", discount_amount: 280, created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+  ],
+  "coupon-2": [],
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const SellerCoupons = () => {
   const { user } = useAuth();
   const [coupons, setCoupons] = useState<SellerCoupon[]>([]);
@@ -96,6 +163,20 @@ const SellerCoupons = () => {
 
   const fetchAll = async () => {
     setLoading(true);
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      const sellerMap = new Map(MOCK_SELLER_OPTIONS.map((p) => [p.id, p.full_name]));
+      setSellers(MOCK_SELLER_OPTIONS);
+      setCoupons(
+        mockCouponsStore.map((c) => ({
+          ...c,
+          seller_name: sellerMap.get(c.seller_id) ?? "—",
+        })),
+      );
+      setLoading(false);
+      return;
+    }
+
     const [{ data: cps }, { data: prof }] = await Promise.all([
       supabase
         .from("seller_coupons" as any)
@@ -126,6 +207,12 @@ const SellerCoupons = () => {
       setListings([]);
       return;
     }
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      setListings(MOCK_SELLER_LISTINGS.filter((l) => l.seller_id === form.seller_id));
+      return;
+    }
+
     supabase
       .from("listings")
       .select("id, title, seller_id")
@@ -146,10 +233,18 @@ const SellerCoupons = () => {
   };
 
   const openEdit = async (c: SellerCoupon) => {
-    const { data: links } = await supabase
-      .from("seller_coupon_listings" as any)
-      .select("listing_id")
-      .eq("coupon_id", c.id);
+    let linkedIds: string[] = [];
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      linkedIds = mockCouponListingsStore[c.id] ?? [];
+    } else {
+      const { data: links } = await supabase
+        .from("seller_coupon_listings" as any)
+        .select("listing_id")
+        .eq("coupon_id", c.id);
+      linkedIds = ((links ?? []) as any[]).map((l) => l.listing_id);
+    }
+
     setEditingId(c.id);
     setForm({
       code: c.code,
@@ -163,7 +258,7 @@ const SellerCoupons = () => {
       scope: c.scope,
       starts_at: c.starts_at ? c.starts_at.slice(0, 16) : "",
       expires_at: c.expires_at ? c.expires_at.slice(0, 16) : "",
-      listing_ids: ((links ?? []) as any[]).map((l) => l.listing_id),
+      listing_ids: linkedIds,
     });
     setDialogOpen(true);
   };
@@ -199,6 +294,31 @@ const SellerCoupons = () => {
       starts_at: form.starts_at || null,
       expires_at: form.expires_at || null,
     };
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      let couponId = editingId;
+      if (editingId) {
+        mockCouponsStore = mockCouponsStore.map((c) =>
+          c.id === editingId ? { ...c, ...payload } : c,
+        );
+        delete mockCouponListingsStore[editingId];
+      } else {
+        couponId = `mock-coupon-${Date.now()}`;
+        mockCouponsStore = [
+          { ...payload, id: couponId, current_uses: 0, created_at: new Date().toISOString() },
+          ...mockCouponsStore,
+        ];
+      }
+      if (form.scope === "item_based" && couponId) {
+        mockCouponListingsStore[couponId] = [...form.listing_ids];
+      }
+      setSaving(false);
+      setDialogOpen(false);
+      resetForm();
+      fetchAll();
+      toast({ title: editingId ? "Coupon updated" : "Coupon created" });
+      return;
+    }
 
     let couponId = editingId;
     if (editingId) {
@@ -243,6 +363,13 @@ const SellerCoupons = () => {
   };
 
   const toggleActive = async (c: SellerCoupon) => {
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      mockCouponsStore = mockCouponsStore.map((x) =>
+        x.id === c.id ? { ...x, active: !x.active } : x,
+      );
+      fetchAll();
+      return;
+    }
     await supabase
       .from("seller_coupons" as any)
       .update({ active: !c.active })
@@ -252,6 +379,16 @@ const SellerCoupons = () => {
 
   const deleteCoupon = async (id: string) => {
     if (!confirm("Delete this coupon? Redemption history will be removed.")) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      mockCouponsStore = mockCouponsStore.filter((c) => c.id !== id);
+      delete mockCouponListingsStore[id];
+      delete mockRedemptionsStore[id];
+      fetchAll();
+      toast({ title: "Coupon deleted" });
+      return;
+    }
+
     await supabase.from("seller_coupons" as any).delete().eq("id", id);
     fetchAll();
     toast({ title: "Coupon deleted" });
@@ -259,6 +396,12 @@ const SellerCoupons = () => {
 
   const openRedemptions = async (c: SellerCoupon) => {
     setRedemptionsFor(c);
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      setRedemptions(mockRedemptionsStore[c.id] ?? []);
+      return;
+    }
+
     const { data } = await supabase
       .from("seller_coupon_redemptions" as any)
       .select("id, user_id, order_id, discount_amount, created_at")

@@ -3,6 +3,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,23 @@ const DEFAULTS: Required<Omit<HeroContent, "url" | "mobile_url">> = {
   title_line1_color: "",
   title_line2_color: "",
   subtitle_color: "",
+};
+
+// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
+// `let` so the save mutation can update it in place and the UI reflects edits instantly.
+let MOCK_HERO_CONTENT: HeroContent = {
+  url: heroFallback,
+  mobile_url: "",
+  badge: "Pre-loved fashion",
+  title_line1: "Style doesn't",
+  title_line2: "expire.",
+  subtitle:
+    "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
+  primary_cta: "Shop Now",
+  secondary_cta: "Start Selling",
+  title_line1_color: "#FFFFFF",
+  title_line2_color: "#F59E0B",
+  subtitle_color: "#FFFFFF",
 };
 
 const COLOR_PALETTE = [
@@ -116,6 +134,7 @@ const SiteSettings = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["site_settings", KEY],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_HERO_CONTENT;
       const { data, error } = await supabase
         .from("site_settings")
         .select("value")
@@ -132,6 +151,11 @@ const SiteSettings = () => {
 
   const save = useMutation({
     mutationFn: async (next: HeroContent) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_HERO_CONTENT = next;
+        qc.setQueryData(["site_settings", KEY], MOCK_HERO_CONTENT);
+        return;
+      }
       const { error } = await supabase
         .from("site_settings")
         .upsert({ key: KEY, value: next, updated_by: user?.id ?? null });
@@ -147,15 +171,25 @@ const SiteSettings = () => {
 
   const handleUpload = (variant: "desktop" | "mobile") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+    if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) return;
     if (file.size > 8 * 1024 * 1024) {
       toast.error("Image must be under 8MB");
       return;
     }
     setUploading(variant);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        // Local preview only — no real storage backend in mock mode.
+        const previewUrl = URL.createObjectURL(file);
+        const key = variant === "mobile" ? "mobile_url" : "url";
+        const next = { ...form, [key]: previewUrl };
+        setForm(next);
+        await save.mutateAsync(next);
+        return;
+      }
       const ext = file.name.split(".").pop();
-      const path = `${user.id}/site/hero-${variant}-${Date.now()}.${ext}`;
+      const path = `${user?.id ?? "mock-user-id"}/site/hero-${variant}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("listing-images")
         .upload(path, file, { upsert: true, contentType: file.type });

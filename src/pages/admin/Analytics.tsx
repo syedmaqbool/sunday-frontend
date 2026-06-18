@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,244 @@ const CHART_COLORS = [
   "hsl(140 50% 45%)",
   "hsl(270 50% 55%)",
   "hsl(0 65% 55%)",
+];
+
+// ── Mock data types (shared shape between mock and Supabase branches) ──
+interface AnalyticsOrder {
+  id: string;
+  buyer_id: string;
+  items: { listing_id: string; price: number; quantity: number }[];
+  subtotal: number;
+  total: number;
+  created_at: string;
+  shipping_city: string | null;
+}
+interface AnalyticsListing {
+  id: string;
+  category: string | null;
+  price: number;
+  size: string | null;
+  seller_id: string;
+  title: string;
+}
+interface AnalyticsProfile {
+  id: string;
+  location: string | null;
+  date_of_birth: string | null;
+  phone: string | null;
+  full_name: string | null;
+}
+interface AnalyticsComplaint {
+  id: string;
+  buyer_id: string;
+  listing_id: string;
+  status: string;
+  created_at: string;
+}
+interface AnalyticsOffer {
+  id: string;
+  buyer_id: string;
+  listing_id: string;
+  amount: number;
+  counter_amount: number | null;
+  status: string;
+  created_at: string;
+}
+
+// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
+// IDs are interconnected: orders/complaints/offers reference mock-user-* (buyers)
+// and mock-listing-* (which reference mock-seller-*), so joins/filters in this
+// page (dimKey, marketingLeads, funnel) resolve correctly.
+const MOCK_PROFILES: AnalyticsProfile[] = [
+  {
+    id: "mock-user-1",
+    location: "Karachi",
+    date_of_birth: "1996-03-15",
+    phone: "+923001234567",
+    full_name: "Ayesha Khan",
+  },
+  {
+    id: "mock-user-2",
+    location: "Lahore",
+    date_of_birth: "1989-07-22",
+    phone: "+923004567890",
+    full_name: "Bilal Ahmed",
+  },
+  {
+    id: "mock-user-3",
+    location: "Islamabad",
+    date_of_birth: "2001-11-05",
+    phone: "+923331234567",
+    full_name: "Sara Malik",
+  },
+  {
+    id: "mock-user-4",
+    location: "Karachi",
+    date_of_birth: "1979-02-10",
+    phone: "+923211234567",
+    full_name: "Usman Tariq",
+  },
+  {
+    id: "mock-user-5",
+    location: "Lahore",
+    date_of_birth: "1994-09-30",
+    phone: "+923451234567",
+    full_name: "Fatima Noor",
+  },
+];
+
+const MOCK_LISTINGS: AnalyticsListing[] = [
+  {
+    id: "mock-listing-1",
+    category: "Dresses",
+    price: 2500,
+    size: "M",
+    seller_id: "mock-seller-1",
+    title: "Floral Summer Dress",
+  },
+  {
+    id: "mock-listing-2",
+    category: "Shoes",
+    price: 3200,
+    size: "8",
+    seller_id: "mock-seller-1",
+    title: "Leather Sneakers",
+  },
+  {
+    id: "mock-listing-3",
+    category: "Bags",
+    price: 1800,
+    size: "-",
+    seller_id: "mock-seller-2",
+    title: "Canvas Tote Bag",
+  },
+  {
+    id: "mock-listing-4",
+    category: "Jackets",
+    price: 4500,
+    size: "L",
+    seller_id: "mock-seller-2",
+    title: "Denim Jacket",
+  },
+  {
+    id: "mock-listing-5",
+    category: "Dresses",
+    price: 1200,
+    size: "S",
+    seller_id: "mock-seller-1",
+    title: "Casual Maxi Dress",
+  },
+];
+
+const MOCK_ORDERS: AnalyticsOrder[] = [
+  {
+    id: "mock-order-1",
+    buyer_id: "mock-user-1",
+    items: [{ listing_id: "mock-listing-1", price: 2500, quantity: 1 }],
+    subtotal: 2500,
+    total: 2700,
+    created_at: "2026-05-12T11:00:00Z",
+    shipping_city: "Karachi",
+  },
+  {
+    id: "mock-order-2",
+    buyer_id: "mock-user-1",
+    items: [{ listing_id: "mock-listing-2", price: 3200, quantity: 1 }],
+    subtotal: 3200,
+    total: 3400,
+    created_at: "2026-05-20T11:00:00Z",
+    shipping_city: "Karachi",
+  },
+  {
+    id: "mock-order-3",
+    buyer_id: "mock-user-2",
+    items: [{ listing_id: "mock-listing-4", price: 4500, quantity: 1 }],
+    subtotal: 4500,
+    total: 4700,
+    created_at: "2026-05-18T10:00:00Z",
+    shipping_city: "Lahore",
+  },
+  {
+    id: "mock-order-4",
+    buyer_id: "mock-user-3",
+    items: [{ listing_id: "mock-listing-3", price: 1800, quantity: 2 }],
+    subtotal: 3600,
+    total: 3800,
+    created_at: "2026-05-28T09:30:00Z",
+    shipping_city: "Islamabad",
+  },
+  {
+    id: "mock-order-5",
+    buyer_id: "mock-user-1",
+    items: [{ listing_id: "mock-listing-5", price: 1200, quantity: 1 }],
+    subtotal: 1200,
+    total: 1400,
+    created_at: "2026-06-02T14:00:00Z",
+    shipping_city: "Karachi",
+  },
+];
+
+const MOCK_COMPLAINTS: AnalyticsComplaint[] = [
+  {
+    id: "mock-complaint-1",
+    buyer_id: "mock-user-2",
+    listing_id: "mock-listing-4",
+    status: "refunded",
+    created_at: "2026-05-22T12:00:00Z",
+  },
+  {
+    id: "mock-complaint-2",
+    buyer_id: "mock-user-3",
+    listing_id: "mock-listing-3",
+    status: "open",
+    created_at: "2026-05-30T12:00:00Z",
+  },
+  {
+    id: "mock-complaint-3",
+    buyer_id: "mock-user-1",
+    listing_id: "mock-listing-1",
+    status: "resolved",
+    created_at: "2026-05-15T12:00:00Z",
+  },
+];
+
+const MOCK_OFFERS: AnalyticsOffer[] = [
+  {
+    id: "mock-offer-1",
+    buyer_id: "mock-user-1",
+    listing_id: "mock-listing-1",
+    amount: 2200,
+    counter_amount: 2500,
+    status: "accepted",
+    created_at: "2026-05-10T09:00:00Z",
+  },
+  {
+    id: "mock-offer-2",
+    buyer_id: "mock-user-2",
+    listing_id: "mock-listing-4",
+    amount: 4000,
+    counter_amount: 4500,
+    status: "accepted",
+    created_at: "2026-05-15T09:00:00Z",
+  },
+  {
+    id: "mock-offer-3",
+    buyer_id: "mock-user-3",
+    listing_id: "mock-listing-3",
+    amount: 1500,
+    counter_amount: null,
+    status: "pending",
+    created_at: "2026-05-25T09:00:00Z",
+  },
+  {
+    id: "mock-offer-4",
+    buyer_id: "mock-user-4",
+    listing_id: "mock-listing-2",
+    amount: 2800,
+    counter_amount: null,
+    status: "rejected",
+    created_at: "2026-06-01T09:00:00Z",
+  },
 ];
 
 const downloadCSV = (rows: any[], filename: string) => {
@@ -159,7 +398,22 @@ const Analytics = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-analytics-data"],
-    queryFn: async () => {
+    queryFn: async (): Promise<{
+      orders: AnalyticsOrder[];
+      listings: AnalyticsListing[];
+      profiles: AnalyticsProfile[];
+      complaints: AnalyticsComplaint[];
+      offers: AnalyticsOffer[];
+    }> => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return {
+          orders: MOCK_ORDERS,
+          listings: MOCK_LISTINGS,
+          profiles: MOCK_PROFILES,
+          complaints: MOCK_COMPLAINTS,
+          offers: MOCK_OFFERS,
+        };
+      }
       const [orders, listings, profiles, complaints, offers] = await Promise.all([
         supabase.from("orders").select("id, buyer_id, items, subtotal, total, created_at, shipping_city"),
         supabase.from("listings").select("id, category, price, size, seller_id, title"),
@@ -168,11 +422,11 @@ const Analytics = () => {
         supabase.from("offers").select("id, buyer_id, listing_id, amount, counter_amount, status, created_at"),
       ]);
       return {
-        orders: orders.data ?? [],
-        listings: listings.data ?? [],
-        profiles: profiles.data ?? [],
-        complaints: complaints.data ?? [],
-        offers: offers.data ?? [],
+        orders: (orders.data ?? []) as AnalyticsOrder[],
+        listings: (listings.data ?? []) as AnalyticsListing[],
+        profiles: (profiles.data ?? []) as AnalyticsProfile[],
+        complaints: (complaints.data ?? []) as AnalyticsComplaint[],
+        offers: (offers.data ?? []) as AnalyticsOffer[],
       };
     },
   });

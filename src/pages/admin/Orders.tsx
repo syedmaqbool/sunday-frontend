@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, Package, ExternalLink } from "lucide-react";
 import { format, startOfDay, startOfMonth, subDays } from "date-fns";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type OrderItem = {
   listing_id?: string;
@@ -99,6 +100,128 @@ const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?
   return "sold";
 };
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_ADMIN_ORDERS: Order[] = [
+  {
+    id: "ord-8fdf392k",
+    buyer_id: "mock-user-id",
+    status: "shipped",
+    total: 14500,
+    items: [
+      { listing_id: "mock-listing-1", title: "Vintage Leather Jacket", price: 6500, quantity: 1, seller_id: "mock-seller-id" },
+    ],
+    item_status: {
+      "mock-listing-1": {
+        status: "shipped",
+        shipping_method: "Aramex",
+        tracking_number: "ARX998877",
+        shipped_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      },
+    },
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    shipping_first_name: "Bilal",
+    shipping_last_name: "Shaikh",
+    shipping_address: "House 12, Block C, North Nazimabad",
+    shipping_city: "Karachi",
+    shipping_postal: "74700",
+    shipping_phone: "+92 300 1234567",
+  },
+  {
+    id: "ord-1029ab",
+    buyer_id: "mock-buyer-2",
+    status: "completed",
+    total: 3500,
+    items: [
+      { listing_id: "mock-listing-2", title: "Classic White Sneakers", price: 3500, quantity: 1, seller_id: "mock-seller-id-2" },
+    ],
+    item_status: {
+      "mock-listing-2": {
+        status: "completed",
+        shipping_method: "The Courier Guy",
+        tracking_number: "TCG553211",
+        shipped_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    },
+    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    shipping_first_name: "Ayesha",
+    shipping_last_name: "Khan",
+    shipping_address: "Flat 4B, Clifton Block 5",
+    shipping_city: "Karachi",
+    shipping_postal: "75600",
+    shipping_phone: "+92 321 7654321",
+  },
+  {
+    id: "ord-77baad",
+    buyer_id: "mock-buyer-3",
+    status: "sold",
+    total: 2800,
+    items: [
+      { listing_id: "mock-listing-3", title: "Bohemian Summer Dress", price: 2800, quantity: 1, seller_id: "mock-user-id" },
+    ],
+    item_status: {},
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    shipping_first_name: "Sana",
+    shipping_last_name: "Malik",
+    shipping_address: "Plot 22, DHA Phase 6",
+    shipping_city: "Lahore",
+    shipping_postal: "54000",
+    shipping_phone: "+92 333 1122334",
+  },
+  {
+    id: "ord-44ccde",
+    buyer_id: "mock-buyer-4",
+    status: "sold",
+    total: 8900,
+    items: [
+      { listing_id: "mock-listing-5", title: "Wool Winter Coat", price: 8900, quantity: 1, seller_id: "mock-user-id" },
+    ],
+    item_status: {},
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    shipping_first_name: "Hassan",
+    shipping_last_name: "Raza",
+    shipping_address: "Street 9, F-10",
+    shipping_city: "Islamabad",
+    shipping_postal: "44000",
+    shipping_phone: "+92 345 5566778",
+  },
+];
+
+const MOCK_RESERVED_LISTINGS = [
+  {
+    id: "mock-listing-7",
+    title: "Designer Silk Scarf",
+    price: 1800,
+    images: ["https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=600"],
+    seller_id: "mock-seller-id-2",
+    reserved_for: "mock-buyer-2",
+    reserved_until: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    reserved_offer_id: "offer-mock-1",
+    updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+const MOCK_PROFILES_MAP: Record<string, { id: string; full_name: string; avatar_url: string | null; phone: string | null; location: string | null }> = {
+  "mock-user-id": { id: "mock-user-id", full_name: "Muhamad Bilal Shaikh", avatar_url: null, phone: "+92 300 1234567", location: "Karachi, Pakistan" },
+  "mock-seller-id": { id: "mock-seller-id", full_name: "Premium Thrifter", avatar_url: null, phone: "+92 312 9988776", location: "Karachi, Pakistan" },
+  "mock-seller-id-2": { id: "mock-seller-id-2", full_name: "Closet Curator", avatar_url: null, phone: "+92 333 4455667", location: "Lahore, Pakistan" },
+  "mock-buyer-2": { id: "mock-buyer-2", full_name: "Ayesha Khan", avatar_url: null, phone: "+92 321 7654321", location: "Karachi, Pakistan" },
+  "mock-buyer-3": { id: "mock-buyer-3", full_name: "Sana Malik", avatar_url: null, phone: "+92 333 1122334", location: "Lahore, Pakistan" },
+  "mock-buyer-4": { id: "mock-buyer-4", full_name: "Hassan Raza", avatar_url: null, phone: "+92 345 5566778", location: "Islamabad, Pakistan" },
+};
+
+const MOCK_LISTING_LOOKUP: Record<string, { id: string; title: string; seller_id: string; images: string[]; price: number; status: string }> = {
+  "mock-listing-1": { id: "mock-listing-1", title: "Vintage Leather Jacket", seller_id: "mock-seller-id", images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"], price: 6500, status: "approved" },
+  "mock-listing-2": { id: "mock-listing-2", title: "Classic White Sneakers", seller_id: "mock-seller-id-2", images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600"], price: 3500, status: "sold" },
+  "mock-listing-3": { id: "mock-listing-3", title: "Bohemian Summer Dress", seller_id: "mock-user-id", images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"], price: 2800, status: "pending" },
+  "mock-listing-5": { id: "mock-listing-5", title: "Wool Winter Coat", seller_id: "mock-user-id", images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"], price: 8900, status: "sold" },
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
@@ -107,6 +230,7 @@ const AdminOrders = () => {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_ADMIN_ORDERS;
       const { data, error } = await supabase
         .from("orders")
         .select("*")
@@ -119,6 +243,7 @@ const AdminOrders = () => {
   const { data: reservedListings = [], isLoading: reservedLoading } = useQuery({
     queryKey: ["admin-reserved-listings"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_RESERVED_LISTINGS;
       const { data, error } = await supabase
         .from("listings")
         .select("id, title, price, images, seller_id, reserved_for, reserved_until, reserved_offer_id, updated_at")
@@ -138,6 +263,9 @@ const AdminOrders = () => {
   const { data: reservedProfiles = [] } = useQuery({
     queryKey: ["admin-reserved-profiles", reservedUserIds],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return reservedUserIds.map((id) => MOCK_PROFILES_MAP[id]).filter(Boolean);
+      }
       if (reservedUserIds.length === 0) return [];
       const { data, error } = await supabase
         .from("profiles")
@@ -399,6 +527,7 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
   const { data: listing } = useQuery({
     queryKey: ["admin-order-listing", listingId],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_LISTING_LOOKUP[listingId!] ?? null;
       const { data, error } = await supabase
         .from("listings")
         .select("id, title, seller_id, images, price, status")
@@ -415,6 +544,10 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
   const { data: profiles } = useQuery({
     queryKey: ["admin-order-profiles", buyerId, sellerId],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const ids = [buyerId, sellerId].filter(Boolean) as string[];
+        return ids.map((id) => MOCK_PROFILES_MAP[id]).filter(Boolean);
+      }
       const ids = [buyerId, sellerId].filter(Boolean) as string[];
       if (ids.length === 0) return [];
       const { data, error } = await supabase

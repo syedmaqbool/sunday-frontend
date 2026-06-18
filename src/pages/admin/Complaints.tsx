@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock, MapPin, Truck, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const STATUS_LABEL: Record<string, string> = {
   raised: "Complaint Raised",
@@ -50,6 +51,79 @@ type ComplaintRow = {
   updated_at: string;
 };
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+let mockComplaintsStore: ComplaintRow[] = [
+  {
+    id: "cmp-1",
+    order_id: "ord-55deff",
+    listing_id: "mock-listing-6",
+    buyer_id: "mock-buyer-5",
+    seller_id: "mock-seller-id-2",
+    reason: "Bag arrived with a broken zipper, doesn't match the listing photos which showed it fully intact.",
+    evidence_urls: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600"],
+    return_proof_urls: [],
+    return_carrier: null,
+    return_tracking: null,
+    return_to_name: null,
+    return_to_address: null,
+    return_to_city: null,
+    return_to_postal: null,
+    return_to_phone: null,
+    return_to_notes: null,
+    status: "refunded",
+    admin_notes: "Verified zipper damage from photos. Approved refund without requiring return since item value was low relative to return shipping cost.",
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "cmp-2",
+    order_id: "ord-1029ab",
+    listing_id: "mock-listing-2",
+    buyer_id: "mock-buyer-2",
+    seller_id: "mock-seller-id-2",
+    reason: "Sneakers are a size smaller than what was listed.",
+    evidence_urls: [],
+    return_proof_urls: [],
+    return_carrier: null,
+    return_tracking: null,
+    return_to_name: "Closet Curator",
+    return_to_address: "Shop 14, Tariq Road",
+    return_to_city: "Karachi",
+    return_to_postal: "74400",
+    return_to_phone: "+92 333 4455667",
+    return_to_notes: "Please pack securely, original box not required.",
+    status: "return_address_provided",
+    admin_notes: "",
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "cmp-3",
+    order_id: "ord-77baad",
+    listing_id: "mock-listing-3",
+    buyer_id: "mock-buyer-3",
+    seller_id: "mock-user-id",
+    reason: "Dress has a small stain near the hem that wasn't mentioned in the description.",
+    evidence_urls: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
+    return_proof_urls: [],
+    return_carrier: null,
+    return_tracking: null,
+    return_to_name: null,
+    return_to_address: null,
+    return_to_city: null,
+    return_to_postal: null,
+    return_to_phone: null,
+    return_to_notes: null,
+    status: "raised",
+    admin_notes: "",
+    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const AdminComplaints = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -58,6 +132,7 @@ const AdminComplaints = () => {
   const { data: complaints = [], isLoading } = useQuery({
     queryKey: ["admin-complaints"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockComplaintsStore;
       const { data, error } = await supabase
         .from("complaints")
         .select("*")
@@ -79,6 +154,23 @@ const AdminComplaints = () => {
   );
 
   const updateStatus = async (id: string, status: string, notes?: string) => {
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      mockComplaintsStore = mockComplaintsStore.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              status,
+              ...(notes !== undefined ? { admin_notes: notes } : {}),
+              updated_at: new Date().toISOString(),
+            }
+          : c,
+      );
+      toast.success("Complaint updated");
+      queryClient.invalidateQueries({ queryKey: ["admin-complaints"] });
+      setSelected(null);
+      return;
+    }
+
     const { error } = await supabase
       .from("complaints")
       .update({

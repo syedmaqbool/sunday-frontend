@@ -37,6 +37,7 @@ import { Loader2, Plus, Trash2, Pencil, Rocket, TrendingUp, Sparkles, Search } f
 import { toast } from "sonner";
 import type { BoostPackage, BoostPlacement, ListingBoost } from "@/hooks/useBoosts";
 import { format } from "date-fns";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const placementMeta: Record<BoostPlacement, { label: string; icon: any; color: string }> = {
   trending: { label: "Trending Now", icon: TrendingUp, color: "text-orange-500" },
@@ -63,6 +64,66 @@ const emptyPackage: PackageFormState = {
   active: true,
 };
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_ADMIN_PACKAGES: BoostPackage[] = [
+  { id: "pkg-1", name: "Trending Boost · 3 Days",  placement: "trending", duration_days: 3,  price: 500,  description: "Show up in Trending Now for 3 days.",     active: true },
+  { id: "pkg-2", name: "Trending Boost · 7 Days",  placement: "trending", duration_days: 7,  price: 1000, description: "Show up in Trending Now for a week.",     active: true },
+  { id: "pkg-3", name: "For You Boost · 3 Days",   placement: "for_you",  duration_days: 3,  price: 450,  description: "Get featured in personalized feeds.",     active: true },
+  { id: "pkg-4", name: "Search Boost · 3 Days",    placement: "search",   duration_days: 3,  price: 400,  description: "Rank higher in search & browse results.", active: true },
+  { id: "pkg-5", name: "Search Boost · 7 Days",    placement: "search",   duration_days: 7,  price: 850,  description: "Rank higher in search for a full week.",  active: false },
+];
+
+const nowTs = Date.now();
+const MOCK_ADMIN_BOOSTS: ListingBoost[] = [
+  {
+    id: "boost-1",
+    listing_id: "mock-listing-1",
+    seller_id: "mock-user-id",
+    placement: "trending",
+    starts_at: new Date(nowTs - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(nowTs + 1 * 24 * 60 * 60 * 1000).toISOString(),
+    price_paid: 500,
+    payment_status: "mock",
+  },
+  {
+    id: "boost-2",
+    listing_id: "mock-listing-5",
+    seller_id: "mock-user-id",
+    placement: "search",
+    starts_at: new Date(nowTs - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(nowTs - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    price_paid: 400,
+    payment_status: "paid",
+  },
+  {
+    id: "boost-3",
+    listing_id: "mock-listing-2",
+    seller_id: "mock-seller-id-2",
+    placement: "for_you",
+    starts_at: new Date(nowTs - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(nowTs + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    price_paid: 450,
+    payment_status: "paid",
+  },
+];
+
+let mockPackagesStore = [...MOCK_ADMIN_PACKAGES];
+let mockBoostsStore = [...MOCK_ADMIN_BOOSTS];
+
+const MOCK_LISTING_TITLES: Record<string, string> = {
+  "mock-listing-1": "Vintage Leather Jacket",
+  "mock-listing-2": "Classic White Sneakers",
+  "mock-listing-5": "Wool Winter Coat",
+};
+
+const MOCK_SELLER_NAMES: Record<string, string> = {
+  "mock-user-id": "Muhamad Bilal Shaikh",
+  "mock-seller-id-2": "Closet Curator",
+};
+
+// ─── Components ───────────────────────────────────────────────────────────────
+
 const PackageDialog = ({
   initial,
   trigger,
@@ -88,6 +149,17 @@ const PackageDialog = ({
         description: form.description,
         active: form.active,
       };
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        if (form.id) {
+          mockPackagesStore = mockPackagesStore.map((p) =>
+            p.id === form.id ? { ...p, ...payload } : p,
+          );
+        } else {
+          mockPackagesStore = [...mockPackagesStore, { id: `mock-pkg-${Date.now()}`, ...payload }];
+        }
+        return;
+      }
 
       if (form.id) {
         const { error } = await supabase
@@ -210,6 +282,7 @@ const BoostManagement = () => {
   const { data: packages = [], isLoading: pkgLoading } = useQuery({
     queryKey: ["admin-boost-packages"],
     queryFn: async (): Promise<BoostPackage[]> => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockPackagesStore;
       const { data, error } = await supabase
         .from("boost_packages" as any)
         .select("*")
@@ -223,6 +296,7 @@ const BoostManagement = () => {
   const { data: boosts = [], isLoading: boostLoading } = useQuery({
     queryKey: ["admin-all-boosts"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockBoostsStore;
       const { data, error } = await supabase
         .from("listing_boosts" as any)
         .select("*")
@@ -241,6 +315,11 @@ const BoostManagement = () => {
     queryKey: ["admin-boost-listings", listingIds],
     enabled: listingIds.length > 0,
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const m: Record<string, string> = {};
+        listingIds.forEach((id) => (m[id] = MOCK_LISTING_TITLES[id] ?? id));
+        return m;
+      }
       const { data, error } = await supabase
         .from("listings")
         .select("id,title")
@@ -256,6 +335,11 @@ const BoostManagement = () => {
     queryKey: ["admin-boost-sellers", sellerIds],
     enabled: sellerIds.length > 0,
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const m: Record<string, string> = {};
+        sellerIds.forEach((id) => (m[id] = MOCK_SELLER_NAMES[id] ?? "—"));
+        return m;
+      }
       const { data, error } = await supabase
         .from("profiles")
         .select("id,full_name")
@@ -269,6 +353,10 @@ const BoostManagement = () => {
 
   const deletePkg = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockPackagesStore = mockPackagesStore.filter((p) => p.id !== id);
+        return;
+      }
       const { error } = await supabase.from("boost_packages" as any).delete().eq("id", id);
       if (error) throw error;
     },
@@ -282,6 +370,12 @@ const BoostManagement = () => {
 
   const cancelBoost = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockBoostsStore = mockBoostsStore.map((b) =>
+          b.id === id ? { ...b, ends_at: new Date().toISOString(), payment_status: "cancelled" } : b,
+        );
+        return;
+      }
       const { error } = await supabase
         .from("listing_boosts" as any)
         .update({ ends_at: new Date().toISOString(), payment_status: "cancelled" })

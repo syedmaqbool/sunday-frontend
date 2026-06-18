@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertTriangle, CheckCircle, Trash2, Loader2, Eye, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface FlaggedMessage {
   id: string;
@@ -36,6 +37,91 @@ interface ConversationMessage {
   flag_reason: string | null;
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+let mockFlaggedMessagesStore: FlaggedMessage[] = [
+  {
+    id: "fmsg-1",
+    content: "hey just whatsapp me at +92 300 1234567 instead, easier to chat there",
+    flag_reason: "phone number",
+    flagged: true,
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    sender_id: "mock-seller-id",
+    conversation_id: "convo-1",
+    read: true,
+  },
+  {
+    id: "fmsg-2",
+    content: "you can reach me on insta @closetcurator_pk for faster replies",
+    flag_reason: "social media handle",
+    flagged: true,
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    sender_id: "mock-seller-id-2",
+    conversation_id: "convo-2",
+    read: true,
+  },
+];
+
+const MOCK_SENDER_PROFILES: Record<string, { full_name: string | null }> = {
+  "mock-seller-id": { full_name: "Premium Thrifter" },
+  "mock-seller-id-2": { full_name: "Closet Curator" },
+  "mock-user-id": { full_name: "Muhamad Bilal Shaikh" },
+};
+
+const MOCK_CONVERSATIONS_FULL: Record<string, { listing_id: string; buyer_id: string; seller_id: string; listing: { title: string } }> = {
+  "convo-1": { listing_id: "mock-listing-1", buyer_id: "mock-user-id", seller_id: "mock-seller-id", listing: { title: "Vintage Leather Jacket" } },
+  "convo-2": { listing_id: "mock-listing-3", buyer_id: "mock-user-id", seller_id: "mock-seller-id-2", listing: { title: "Bohemian Summer Dress" } },
+};
+
+const MOCK_CONVERSATION_MESSAGES: Record<string, ConversationMessage[]> = {
+  "convo-1": [
+    {
+      id: "msg-1",
+      content: "Hi! Thanks for accepting the offer. I'll get this packed up soon.",
+      sender_id: "mock-seller-id",
+      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      flagged: false,
+      flag_reason: null,
+    },
+    {
+      id: "msg-2",
+      content: "Awesome, looking forward to it!",
+      sender_id: "mock-user-id",
+      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      flagged: false,
+      flag_reason: null,
+    },
+    {
+      id: "fmsg-1",
+      content: "hey just whatsapp me at +92 300 1234567 instead, easier to chat there",
+      sender_id: "mock-seller-id",
+      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      flagged: true,
+      flag_reason: "phone number",
+    },
+  ],
+  "convo-2": [
+    {
+      id: "msg-4",
+      content: "Thanks for your purchase!",
+      sender_id: "mock-seller-id-2",
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      flagged: false,
+      flag_reason: null,
+    },
+    {
+      id: "fmsg-2",
+      content: "you can reach me on insta @closetcurator_pk for faster replies",
+      sender_id: "mock-seller-id-2",
+      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      flagged: true,
+      flag_reason: "social media handle",
+    },
+  ],
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const MessageModeration = () => {
   const [selectedMessage, setSelectedMessage] = useState<FlaggedMessage | null>(null);
   const [conversationMessages, setConversationMessages] = useState<ConversationMessage[]>([]);
@@ -45,6 +131,13 @@ const MessageModeration = () => {
   const { data: flaggedMessages = [], isLoading } = useQuery({
     queryKey: ["admin-flagged-messages"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return mockFlaggedMessagesStore.map((m) => ({
+          ...m,
+          sender_profile: MOCK_SENDER_PROFILES[m.sender_id] ?? null,
+        }));
+      }
+
       const { data: msgs, error } = await supabase
         .from("messages")
         .select("*")
@@ -70,6 +163,15 @@ const MessageModeration = () => {
     setSelectedMessage(msg);
     setLoadingConvo(true);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const convo = MOCK_CONVERSATIONS_FULL[msg.conversation_id];
+        if (convo) {
+          setSelectedMessage((prev) => (prev ? { ...prev, conversation: convo } : prev));
+        }
+        setConversationMessages(MOCK_CONVERSATION_MESSAGES[msg.conversation_id] ?? []);
+        return;
+      }
+
       // Get conversation details
       const { data: convo } = await supabase
         .from("conversations")
@@ -96,6 +198,10 @@ const MessageModeration = () => {
 
   const dismissFlag = useMutation({
     mutationFn: async (messageId: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockFlaggedMessagesStore = mockFlaggedMessagesStore.filter((m) => m.id !== messageId);
+        return;
+      }
       const { error } = await supabase
         .from("messages")
         .update({ flagged: false, flag_reason: null })
@@ -113,6 +219,10 @@ const MessageModeration = () => {
 
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockFlaggedMessagesStore = mockFlaggedMessagesStore.filter((m) => m.id !== messageId);
+        return;
+      }
       // Update content to show it was removed by admin
       const { error } = await supabase
         .from("messages")

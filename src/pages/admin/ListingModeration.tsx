@@ -12,6 +12,7 @@ import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getWeightLabel } from "@/lib/constants";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface ListingRow {
   id: string;
@@ -30,6 +31,73 @@ interface ListingRow {
 }
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_ADMIN_LISTINGS: ListingRow[] = [
+  {
+    id: "mock-listing-3",
+    title: "Bohemian Summer Dress",
+    description: "Lightweight floral dress perfect for hot days. Worn twice, no flaws.",
+    brand: "Mango",
+    category: "women",
+    condition: "new_with_tags",
+    size: "S",
+    price: 2800,
+    weight: 1,
+    images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
+    status: "pending",
+    seller_id: "mock-user-id",
+    created_at: "2026-06-15T09:00:00.000Z",
+  },
+  {
+    id: "mock-listing-6",
+    title: "Leather Crossbody Bag",
+    description: "Genuine leather, barely used, comes with dust bag.",
+    brand: "Coach",
+    category: "women",
+    condition: "excellent",
+    size: "One Size",
+    price: 5200,
+    weight: 1,
+    images: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600"],
+    status: "pending",
+    seller_id: "mock-seller-id-2",
+    created_at: "2026-06-16T11:20:00.000Z",
+  },
+  {
+    id: "mock-listing-1",
+    title: "Vintage Leather Jacket",
+    description: "Premium quality oversized leather jacket from the 90s.",
+    brand: "Zara",
+    category: "women",
+    condition: "excellent",
+    size: "M",
+    price: 6500,
+    weight: 2,
+    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"],
+    status: "approved",
+    seller_id: "mock-user-id",
+    created_at: "2026-06-10T10:00:00.000Z",
+  },
+  {
+    id: "mock-listing-4",
+    title: "Kids Denim Dungarees",
+    description: "Comfortable and durable denim dungarees for toddlers.",
+    brand: "H&M",
+    category: "children",
+    condition: "like_new",
+    size: "3-4Y",
+    price: 2200,
+    weight: 1,
+    images: ["https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600"],
+    status: "rejected",
+    seller_id: "mock-seller-id-3",
+    created_at: "2026-06-05T11:15:00.000Z",
+  },
+];
+
+let mockListingsStore = [...MOCK_ADMIN_LISTINGS];
 
 const DetailGallery = ({ images }: { images: string[] }) => {
   const [idx, setIdx] = useState(0);
@@ -101,6 +169,11 @@ const ListingModeration = () => {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["admin-listings", filter],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        return filter === "all"
+          ? mockListingsStore
+          : mockListingsStore.filter((l) => l.status === filter);
+      }
       let q = supabase.from("listings").select("*").order("created_at", { ascending: false });
       if (filter !== "all") q = q.eq("status", filter);
       const { data, error } = await q;
@@ -111,6 +184,13 @@ const ListingModeration = () => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, admin_feedback }: { id: string; status: string; admin_feedback?: string }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockListingsStore = mockListingsStore.map((l) =>
+          l.id === id ? { ...l, status } : l,
+        );
+        return;
+      }
+
       // Update listing status (also keep admin_feedback column for quick access)
       const updateData: Record<string, unknown> = { status };
       if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;

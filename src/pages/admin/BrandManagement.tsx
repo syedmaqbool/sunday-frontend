@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type BrandForm = { name: string; sort_order: number; active: boolean };
 const emptyForm: BrandForm = { name: "", sort_order: 0, active: true };
@@ -36,6 +37,22 @@ const BrandManagement = () => {
     if (!form.name.trim()) return;
     setBusy(true);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData<Brand[]>(["brands", true], (old = []) => {
+          if (editingId) {
+            return old.map((b) => (b.id === editingId ? { ...b, ...form } : b));
+          }
+          return [...old, { id: `mock-brand-${Date.now()}`, ...form }];
+        });
+        queryClient.invalidateQueries({ queryKey: ["brands", false] });
+        toast({ title: editingId ? "Brand updated" : "Brand created" });
+        setDialogOpen(false);
+        setForm(emptyForm);
+        setEditingId(null);
+        setBusy(false);
+        return;
+      }
+
       if (editingId) {
         const { error } = await supabase.from("brands").update(form).eq("id", editingId);
         if (error) throw error;
@@ -57,6 +74,14 @@ const BrandManagement = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this brand?")) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      queryClient.setQueryData<Brand[]>(["brands", true], (old = []) => old.filter((b) => b.id !== id));
+      queryClient.invalidateQueries({ queryKey: ["brands", false] });
+      toast({ title: "Brand deleted" });
+      return;
+    }
+
     const { error } = await supabase.from("brands").delete().eq("id", id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,38 @@ const PLACEHOLDERS: Record<string, string[]> = {
   shipping_notification: ["{{buyer_name}}", "{{order_id}}", "{{item_title}}"],
 };
 
+// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
+// `let` so saved edits persist across re-loads within the mock session.
+let MOCK_EMAIL_TEMPLATES: EmailTemplate[] = [
+  {
+    id: "mock-template-order-confirmation",
+    key: "order_confirmation",
+    name: "Order Confirmation",
+    subject: "Your order {{order_id}} is confirmed!",
+    body:
+      "Hi {{buyer_name}},\n\nThanks for your order! We've received order {{order_id}} for a total of {{order_total}}. We'll notify you again once it ships.\n\n— The Team",
+    enabled: true,
+  },
+  {
+    id: "mock-template-shipping-notification",
+    key: "shipping_notification",
+    name: "Shipping Notification",
+    subject: "Your order {{order_id}} has shipped",
+    body:
+      "Hi {{buyer_name}},\n\nGood news — {{item_title}} from order {{order_id}} is on its way!\n\n— The Team",
+    enabled: true,
+  },
+  {
+    id: "mock-template-password-reset",
+    key: "password_reset",
+    name: "Password Reset",
+    subject: "Reset your password",
+    body:
+      "Hi there,\n\nWe received a request to reset your password. Click the link below to choose a new one.\n\nIf you didn't request this, you can ignore this email.",
+    enabled: false,
+  },
+];
+
 const EmailTemplates = () => {
   const { toast } = useToast();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -31,6 +64,11 @@ const EmailTemplates = () => {
 
   const load = async () => {
     setLoading(true);
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      setTemplates(MOCK_EMAIL_TEMPLATES);
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from("email_templates" as any)
       .select("*")
@@ -53,6 +91,12 @@ const EmailTemplates = () => {
 
   const save = async (tpl: EmailTemplate) => {
     setSavingId(tpl.id);
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      MOCK_EMAIL_TEMPLATES = MOCK_EMAIL_TEMPLATES.map((t) => (t.id === tpl.id ? { ...tpl } : t));
+      setSavingId(null);
+      toast({ title: "Template saved", description: `${tpl.name} updated.` });
+      return;
+    }
     const { error } = await supabase
       .from("email_templates" as any)
       .update({ subject: tpl.subject, body: tpl.body, enabled: tpl.enabled })

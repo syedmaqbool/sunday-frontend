@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Loader2, Tag, AlertTriangle, ShieldAlert, Eye, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type Action = "review" | "auto_delete";
 
@@ -40,6 +41,37 @@ const SYSTEM_RULES: Array<{ keyword: string; reason: string; action: Action }> =
   },
 ];
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+let mockKeywordsStore: FlagKeyword[] = [
+  {
+    id: "kw-1",
+    keyword: "cashapp",
+    reason: "Payment platform mention",
+    active: true,
+    action: "auto_delete",
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "kw-2",
+    keyword: "meet outside",
+    reason: "Possible attempt to arrange off-platform transaction",
+    active: true,
+    action: "review",
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "kw-3",
+    keyword: "easypaisa",
+    reason: "Payment platform mention",
+    active: false,
+    action: "review",
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const FlagKeywords = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -50,6 +82,7 @@ const FlagKeywords = () => {
   const { data: keywords = [], isLoading } = useQuery({
     queryKey: ["admin-flag-keywords"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockKeywordsStore;
       const { data, error } = await supabase
         .from("flag_keywords")
         .select("*")
@@ -65,6 +98,26 @@ const FlagKeywords = () => {
       if (!parsed.success) {
         throw new Error(parsed.error.issues[0].message);
       }
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const lower = parsed.data.keyword.toLowerCase();
+        if (mockKeywordsStore.some((k) => k.keyword === lower)) {
+          throw new Error("That keyword already exists");
+        }
+        mockKeywordsStore = [
+          {
+            id: `kw-${Date.now()}`,
+            keyword: lower,
+            reason: parsed.data.reason,
+            action,
+            active: true,
+            created_at: new Date().toISOString(),
+          },
+          ...mockKeywordsStore,
+        ];
+        return;
+      }
+
       const { error } = await supabase.from("flag_keywords").insert({
         keyword: parsed.data.keyword.toLowerCase(),
         reason: parsed.data.reason,
@@ -88,6 +141,10 @@ const FlagKeywords = () => {
 
   const updateAction = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: Action }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockKeywordsStore = mockKeywordsStore.map((k) => (k.id === id ? { ...k, action } : k));
+        return;
+      }
       const { error } = await supabase.from("flag_keywords").update({ action }).eq("id", id);
       if (error) throw error;
     },
@@ -100,6 +157,10 @@ const FlagKeywords = () => {
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockKeywordsStore = mockKeywordsStore.map((k) => (k.id === id ? { ...k, active } : k));
+        return;
+      }
       const { error } = await supabase.from("flag_keywords").update({ active }).eq("id", id);
       if (error) throw error;
     },
@@ -109,6 +170,10 @@ const FlagKeywords = () => {
 
   const deleteKeyword = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        mockKeywordsStore = mockKeywordsStore.filter((k) => k.id !== id);
+        return;
+      }
       const { error } = await supabase.from("flag_keywords").delete().eq("id", id);
       if (error) throw error;
     },

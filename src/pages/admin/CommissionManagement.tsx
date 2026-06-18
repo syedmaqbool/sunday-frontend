@@ -17,8 +17,9 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Percent } from "lucide-react";
-import { useCommissionTiers } from "@/hooks/useCommissionTiers";
+import { useCommissionTiers, __mockCommissionStore } from "@/hooks/useCommissionTiers";
 import type { CommissionTier } from "@/lib/commission";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const blankForm = {
   name: "",
@@ -89,6 +90,26 @@ const CommissionManagement = () => {
 
     setSaving(true);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        const current = __mockCommissionStore.get();
+        if (editing) {
+          __mockCommissionStore.set(
+            current.map((t) => (t.id === editing.id ? { ...t, ...payload } : t)),
+          );
+          toast({ title: "Tier updated" });
+        } else {
+          __mockCommissionStore.set([
+            ...current,
+            { id: `mock-tier-${Date.now()}`, ...payload },
+          ]);
+          toast({ title: "Tier created" });
+        }
+        setOpen(false);
+        refresh();
+        setSaving(false);
+        return;
+      }
+
       if (editing) {
         const { error } = await supabase
           .from("commission_tiers" as any)
@@ -112,6 +133,14 @@ const CommissionManagement = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this commission tier?")) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      __mockCommissionStore.set(__mockCommissionStore.get().filter((t) => t.id !== id));
+      toast({ title: "Tier deleted" });
+      refresh();
+      return;
+    }
+
     const { error } = await supabase.from("commission_tiers" as any).delete().eq("id", id);
     if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
     toast({ title: "Tier deleted" });
@@ -119,6 +148,14 @@ const CommissionManagement = () => {
   };
 
   const toggleActive = async (t: CommissionTier) => {
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      __mockCommissionStore.set(
+        __mockCommissionStore.get().map((x) => (x.id === t.id ? { ...x, active: !x.active } : x)),
+      );
+      refresh();
+      return;
+    }
+
     const { error } = await supabase
       .from("commission_tiers" as any)
       .update({ active: !t.active })

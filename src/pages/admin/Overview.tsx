@@ -1,13 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Users, Clock, CheckCircle, AlertTriangle } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Package, Users, Clock, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
+const MOCK_ADMIN_STATS = {
+  totalListings: 128,
+  totalUsers: 342,
+  pendingListings: 14,
+  approvedListings: 98,
+  flaggedMessages: 3,
+};
 
 const Overview = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_ADMIN_STATS;
       const [listings, profiles, pending, approved, flagged] = await Promise.all([
         supabase.from("listings").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
@@ -62,8 +73,5 @@ const Overview = () => {
     </div>
   );
 };
-
-// need cn import
-import { cn } from "@/lib/utils";
 
 export default Overview;

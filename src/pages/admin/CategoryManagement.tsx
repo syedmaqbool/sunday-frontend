@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 type ItemForm = { label: string; value: string; icon: string; sort_order: number };
 const emptyForm: ItemForm = { label: "", value: "", icon: "📦", sort_order: 0 };
@@ -33,6 +34,21 @@ const CategoryManagement = () => {
     if (!catForm.label || !catForm.value) return;
     setBusy(true);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData<Category[]>(["categories"], (old = []) => {
+          if (editingCatId) {
+            return old.map((c) => (c.id === editingCatId ? { ...c, ...catForm } : c));
+          }
+          return [...old, { id: `mock-cat-${Date.now()}`, ...catForm }];
+        });
+        toast({ title: editingCatId ? "Category updated" : "Category created" });
+        setCatDialogOpen(false);
+        setCatForm(emptyForm);
+        setEditingCatId(null);
+        setBusy(false);
+        return;
+      }
+
       if (editingCatId) {
         const { error } = await supabase.from("categories").update({
           label: catForm.label, value: catForm.value, icon: catForm.icon, sort_order: catForm.sort_order,
@@ -60,6 +76,21 @@ const CategoryManagement = () => {
     if (!subForm.label || !subForm.value) return;
     setBusy(true);
     try {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        queryClient.setQueryData<Subcategory[]>(["subcategories"], (old = []) => {
+          if (editingSubId) {
+            return old.map((s) => (s.id === editingSubId ? { ...s, ...subForm } : s));
+          }
+          return [...old, { id: `mock-sub-${Date.now()}`, ...subForm }];
+        });
+        toast({ title: editingSubId ? "Subcategory updated" : "Subcategory created" });
+        setSubDialogOpen(false);
+        setSubForm(emptyForm);
+        setEditingSubId(null);
+        setBusy(false);
+        return;
+      }
+
       if (editingSubId) {
         const { error } = await supabase.from("subcategories").update({
           label: subForm.label, value: subForm.value, icon: subForm.icon, sort_order: subForm.sort_order,
@@ -85,6 +116,13 @@ const CategoryManagement = () => {
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("Delete this category? Existing listings won't be affected.")) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      queryClient.setQueryData<Category[]>(["categories"], (old = []) => old.filter((c) => c.id !== id));
+      toast({ title: "Category deleted" });
+      return;
+    }
+
     const { error } = await supabase.from("categories").delete().eq("id", id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else {
@@ -95,6 +133,13 @@ const CategoryManagement = () => {
 
   const handleDeleteSubcategory = async (id: string) => {
     if (!confirm("Delete this subcategory? Existing listings won't be affected.")) return;
+
+    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      queryClient.setQueryData<Subcategory[]>(["subcategories"], (old = []) => old.filter((s) => s.id !== id));
+      toast({ title: "Subcategory deleted" });
+      return;
+    }
+
     const { error } = await supabase.from("subcategories").delete().eq("id", id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else {

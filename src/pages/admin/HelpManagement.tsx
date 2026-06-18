@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,133 @@ interface Tutorial {
   sort_order: number;
   published: boolean;
 }
+
+// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
+// `let` because mutations (save/toggle/delete) update these arrays in place
+// so admin edits persist across the mock session.
+let MOCK_CATEGORIES: Category[] = [
+  {
+    id: "mock-category-buying",
+    key: "buying",
+    label: "Buying",
+    blurb: "Tips for browsing and purchasing listings",
+    icon: "BookOpen",
+    sort_order: 0,
+    active: true,
+  },
+  {
+    id: "mock-category-selling",
+    key: "selling",
+    label: "Selling",
+    blurb: "How to list and sell your items",
+    icon: "BookOpen",
+    sort_order: 1,
+    active: true,
+  },
+  {
+    id: "mock-category-payments",
+    key: "payments",
+    label: "Payments",
+    blurb: "Payment methods, refunds and billing",
+    icon: "BookOpen",
+    sort_order: 2,
+    active: true,
+  },
+  {
+    id: "mock-category-shipping",
+    key: "shipping",
+    label: "Shipping",
+    blurb: "Delivery options and order tracking",
+    icon: "BookOpen",
+    sort_order: 3,
+    active: true,
+  },
+  {
+    id: "mock-category-account",
+    key: "account",
+    label: "Account",
+    blurb: "Manage your profile and account settings",
+    icon: "BookOpen",
+    sort_order: 4,
+    active: false,
+  },
+];
+
+let MOCK_FAQS: Faq[] = [
+  {
+    id: "mock-faq-1",
+    category_key: "buying",
+    question: "How do I search for a specific item?",
+    answer: "Use the search bar at the top of the page and filter results by category, price range, or location to find exactly what you're looking for.",
+    sort_order: 0,
+    published: true,
+  },
+  {
+    id: "mock-faq-2",
+    category_key: "buying",
+    question: "Can I message a seller before buying?",
+    answer: "Yes, open any listing and tap 'Message seller' to ask questions about the item before making a purchase.",
+    sort_order: 1,
+    published: true,
+  },
+  {
+    id: "mock-faq-3",
+    category_key: "selling",
+    question: "How do I create a new listing?",
+    answer: "Go to your dashboard and click 'New listing'. Add photos, a description, and a price, then publish it for buyers to see.",
+    sort_order: 0,
+    published: true,
+  },
+  {
+    id: "mock-faq-4",
+    category_key: "payments",
+    question: "What payment methods are accepted?",
+    answer: "We support major credit/debit cards and select digital wallets. All payments are processed securely through our checkout flow.",
+    sort_order: 0,
+    published: true,
+  },
+  {
+    id: "mock-faq-5",
+    category_key: "shipping",
+    question: "How do I track my order?",
+    answer: "Once a seller ships your order, a tracking link will appear in your order history under 'My purchases'.",
+    sort_order: 0,
+    published: false,
+  },
+];
+
+let MOCK_TUTORIALS: Tutorial[] = [
+  {
+    id: "mock-tutorial-1",
+    title: "Creating your first listing",
+    icon: "BookOpen",
+    steps: [
+      "Go to your dashboard and click 'New listing'",
+      "Upload clear photos of your item",
+      "Write a short, honest description and set a price",
+      "Publish your listing",
+    ],
+    cta_label: "Create listing",
+    cta_to: "/listings/new",
+    sort_order: 0,
+    published: true,
+  },
+  {
+    id: "mock-tutorial-2",
+    title: "Setting up payouts",
+    icon: "BookOpen",
+    steps: [
+      "Open Settings → Payouts",
+      "Add your bank or wallet details",
+      "Confirm your identity if prompted",
+      "Start receiving payouts after each sale",
+    ],
+    cta_label: "Go to payouts",
+    cta_to: "/settings/payouts",
+    sort_order: 1,
+    published: true,
+  },
+];
 
 const categorySchema = z.object({
   key: z.string().trim().min(2).max(40).regex(/^[a-z0-9_-]+$/, "Lowercase letters, numbers, _ or -"),
@@ -114,6 +242,7 @@ const HelpManagement = () => {
   const { data: categories = [], isLoading: loadingCats } = useQuery({
     queryKey: ["admin-help-categories"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_CATEGORIES;
       const { data, error } = await supabase
         .from("help_categories")
         .select("*")
@@ -125,6 +254,7 @@ const HelpManagement = () => {
   const { data: faqs = [], isLoading: loadingFaqs } = useQuery({
     queryKey: ["admin-help-faqs"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_FAQS;
       const { data, error } = await supabase
         .from("help_faqs")
         .select("*")
@@ -137,6 +267,7 @@ const HelpManagement = () => {
   const { data: tutorials = [], isLoading: loadingTuts } = useQuery({
     queryKey: ["admin-help-tutorials"],
     queryFn: async () => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_TUTORIALS;
       const { data, error } = await supabase
         .from("help_tutorials")
         .select("*")
@@ -164,6 +295,33 @@ const HelpManagement = () => {
     mutationFn: async () => {
       const parsed = categorySchema.safeParse(catForm);
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        if (catEdit) {
+          MOCK_CATEGORIES = MOCK_CATEGORIES.map((c) =>
+            c.id === catEdit.id ? { ...c, ...parsed.data } : c
+          );
+        } else {
+          if (MOCK_CATEGORIES.some((c) => c.key === parsed.data.key)) {
+            throw new Error("That key already exists");
+          }
+          const newCategory: Category = {
+            id: `mock-category-${parsed.data.key}`,
+            key: parsed.data.key,
+            label: parsed.data.label,
+            blurb: parsed.data.blurb,
+            icon: parsed.data.icon,
+            sort_order: parsed.data.sort_order,
+            active: true,
+          };
+          MOCK_CATEGORIES = [...MOCK_CATEGORIES, newCategory];
+
+
+        }
+        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
+        return;
+      }
+
       if (catEdit) {
         const { error } = await supabase.from("help_categories").update(parsed.data).eq("id", catEdit.id);
         if (error) throw error;
@@ -180,6 +338,11 @@ const HelpManagement = () => {
   });
   const toggleCategoryActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_CATEGORIES = MOCK_CATEGORIES.map((c) => (c.id === id ? { ...c, active } : c));
+        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
+        return;
+      }
       const { error } = await supabase.from("help_categories").update({ active }).eq("id", id);
       if (error) throw error;
     },
@@ -187,6 +350,11 @@ const HelpManagement = () => {
   });
   const deleteCategory = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_CATEGORIES = MOCK_CATEGORIES.filter((c) => c.id !== id);
+        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
+        return;
+      }
       const { error } = await supabase.from("help_categories").delete().eq("id", id);
       if (error) throw error;
     },
@@ -212,6 +380,25 @@ const HelpManagement = () => {
     mutationFn: async () => {
       const parsed = faqSchema.safeParse(faqForm);
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        if (faqEdit) {
+          MOCK_FAQS = MOCK_FAQS.map((f) => (f.id === faqEdit.id ? { ...f, ...parsed.data } : f));
+        } else {
+          const newFaq: Faq = {
+            id: `mock-faq-${MOCK_FAQS.length + 1}`,
+            category_key: parsed.data.category_key,
+            question: parsed.data.question,
+            answer: parsed.data.answer,
+            sort_order: parsed.data.sort_order,
+            published: true,
+          };
+          MOCK_FAQS = [...MOCK_FAQS, newFaq];
+        }
+        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
+        return;
+      }
+
       if (faqEdit) {
         const { error } = await supabase.from("help_faqs").update(parsed.data).eq("id", faqEdit.id);
         if (error) throw error;
@@ -225,6 +412,11 @@ const HelpManagement = () => {
   });
   const toggleFaqPublished = useMutation({
     mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_FAQS = MOCK_FAQS.map((f) => (f.id === id ? { ...f, published } : f));
+        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
+        return;
+      }
       const { error } = await supabase.from("help_faqs").update({ published }).eq("id", id);
       if (error) throw error;
     },
@@ -232,6 +424,11 @@ const HelpManagement = () => {
   });
   const deleteFaq = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_FAQS = MOCK_FAQS.filter((f) => f.id !== id);
+        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
+        return;
+      }
       const { error } = await supabase.from("help_faqs").delete().eq("id", id);
       if (error) throw error;
     },
@@ -265,6 +462,27 @@ const HelpManagement = () => {
       const cleanSteps = tutForm.steps.map((s) => s.trim()).filter(Boolean);
       const parsed = tutorialSchema.safeParse({ ...tutForm, steps: cleanSteps });
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        if (tutEdit) {
+          MOCK_TUTORIALS = MOCK_TUTORIALS.map((t) => (t.id === tutEdit.id ? { ...t, ...parsed.data } : t));
+        } else {
+          const newTutorial: Tutorial = {
+            id: `mock-tutorial-${MOCK_TUTORIALS.length + 1}`,
+            title: parsed.data.title,
+            icon: parsed.data.icon,
+            steps: parsed.data.steps,
+            cta_label: parsed.data.cta_label,
+            cta_to: parsed.data.cta_to,
+            sort_order: parsed.data.sort_order,
+            published: true,
+          };
+          MOCK_TUTORIALS = [...MOCK_TUTORIALS, newTutorial];
+        }
+        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
+        return;
+      }
+
       if (tutEdit) {
         const { error } = await supabase.from("help_tutorials").update(parsed.data).eq("id", tutEdit.id);
         if (error) throw error;
@@ -278,6 +496,11 @@ const HelpManagement = () => {
   });
   const toggleTutorialPublished = useMutation({
     mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_TUTORIALS = MOCK_TUTORIALS.map((t) => (t.id === id ? { ...t, published } : t));
+        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
+        return;
+      }
       const { error } = await supabase.from("help_tutorials").update({ published }).eq("id", id);
       if (error) throw error;
     },
@@ -285,6 +508,11 @@ const HelpManagement = () => {
   });
   const deleteTutorial = useMutation({
     mutationFn: async (id: string) => {
+      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+        MOCK_TUTORIALS = MOCK_TUTORIALS.filter((t) => t.id !== id);
+        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
+        return;
+      }
       const { error } = await supabase.from("help_tutorials").delete().eq("id", id);
       if (error) throw error;
     },

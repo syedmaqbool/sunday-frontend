@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,9 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 
 const Auth = () => {
@@ -25,8 +23,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signIn, signUp } = useAuth();
 
+  // Already logged in → home 
   useEffect(() => {
     if (user) navigate("/", { replace: true });
   }, [user, navigate]);
@@ -35,67 +34,82 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    if (mode === "register") {
-      if (!termsAccepted) {
-        toast({ title: "Terms required", description: "Please accept the Terms & Conditions to continue.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-      // Validate DOB (must be a valid past date, age >= 13)
-      const dobDate = new Date(dob);
-      if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
-        toast({ title: "Invalid date of birth", description: "Please enter a valid date.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-      const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-      if (age < 13) {
-        toast({ title: "Age requirement", description: "You must be at least 13 years old.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-      if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
-        toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
+    try {
+      if (mode === "register") {
+        // ── Client-side validation (same as before) ──────────────────────
+        if (!termsAccepted) {
+          toast({
+            title: "Terms required",
+            description: "Please accept the Terms & Conditions to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: name, phone: phone.trim(), date_of_birth: dob, marketing_consent: marketingConsent },
-          emailRedirectTo: "https://sndymarket.com/",
-        },
-      });
-      if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      } else {
+        const dobDate = new Date(dob);
+        if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
+          toast({ title: "Invalid date of birth", description: "Please enter a valid date.", variant: "destructive" });
+          return;
+        }
+        const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        if (age < 13) {
+          toast({ title: "Age requirement", description: "You must be at least 13 years old.", variant: "destructive" });
+          return;
+        }
+        if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
+          toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
+          return;
+        }
+
+        // ── Register API call ─────────────────────────────────────────────
+        await signUp({
+          fullName: name,
+          email,
+          password,
+          phone: phone.trim(),
+          dateOfBirth: dob,
+          marketingEmailConsent: marketingConsent,
+          termsAccepted: true,
+        });
+
         trackEvent("sign_up", { method: "email", marketing_consent: marketingConsent });
-        toast({ title: "Account created!", description: "Please check your email to verify your account." });
-      }
-    } else {
-      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      } else {
-        trackEvent("login", { method: "email" });
-        // Check if user has completed onboarding
-        const { data: prefs } = await supabase
-          .from("user_preferences")
-          .select("onboarding_completed")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
 
-        if (!prefs?.onboarding_completed) {
+        // Backend OTP email bhejta hai — Supabase wala redirect nahi
+        toast({
+          title: "Account created!",
+          description: "Please check your email for a verification code.",
+        });
+
+        // Register ke baad seedha preferences onboarding pe
+        navigate("/preferences");
+
+      } else {
+        // ── Login API call ────────────────────────────────────────────────
+        const data = await signIn(email, password);
+
+        trackEvent("login", { method: "email" });
+
+        // Onboarding check — preferences ab login response mein hi aata hai,
+        // alag Supabase query ki zaroorat nahi
+        const onboardingDone = (data.preferences as any)?.onboarding_completed;
+
+        if (!onboardingDone) {
           navigate("/preferences");
         } else {
           toast({ title: "Welcome back!" });
           navigate("/");
         }
       }
+    } catch (err: any) {
+      // apiClient already Error throw karta hai message ke saath
+      toast({
+        title: "Error",
+        description: err?.message ?? "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -125,7 +139,7 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+27 ..." value={phone} onChange={e => setPhone(e.target.value)} required maxLength={20} />
+                    <Input id="phone" type="tel" placeholder="+92 ..." value={phone} onChange={e => setPhone(e.target.value)} required maxLength={20} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dob">Date of Birth</Label>
@@ -139,8 +153,9 @@ const Auth = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
               </div>
+
               {mode === "register" && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-start gap-2">
@@ -170,6 +185,7 @@ const Auth = () => {
                   </div>
                 </div>
               )}
+
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
               </Button>

@@ -1,287 +1,129 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useTaxSettings,
+  useCreateTaxSetting,
+  useUpdateTaxSetting,
+  useDeleteTaxSetting,
+} from "@/queries/useAdminTaxSettings";
+import type { TaxSetting } from "@/services/taxSetting.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 
-interface TaxSetting {
-  id: string;
-  name: string;
-  rate: number;
-  active: boolean;
-}
-
-/* MOCK DATA */
-let MOCK_TAX_SETTINGS: TaxSetting[] = [
-  {
-    id: "mock-tax-1",
-    name: "VAT",
-    rate: 15,
-    active: true,
-  },
-  {
-    id: "mock-tax-2",
-    name: "Service Tax",
-    rate: 8,
-    active: false,
-  },
-];
-
 const TaxSettings = () => {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open,    setOpen]    = useState(false);
   const [editing, setEditing] = useState<TaxSetting | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    rate: "",
-    active: true,
-  });
-  const [saving, setSaving] = useState(false);
+  const [form,    setForm]    = useState({ name: "", rate: "", active: true });
+  const [saving,  setSaving]  = useState(false);
 
-  const { data: taxes, isLoading } = useQuery({
-    queryKey: ["tax-settings"],
-    queryFn: async () => {
-      /* MOCK MODE */
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return MOCK_TAX_SETTINGS;
-      }
+  // ── Hooks ──────────────────────────────────────────────────────────────────
+  const { data: taxes = [], isLoading } = useTaxSettings();
+  const createTax = useCreateTaxSetting();
+  const updateTax = useUpdateTaxSetting();
+  const deleteTax = useDeleteTaxSetting();
 
-      const { data, error } = await supabase
-        .from("tax_settings")
-        .select("*")
-        .order("created_at", { ascending: false });
+  // ── "Only one active" helper ───────────────────────────────────────────────
+  const deactivateAll = async (exceptId?: string) => {
+    const activeOnes = taxes.filter((t) => t.active && t.id !== exceptId);
+    await Promise.all(
+      activeOnes.map((t) =>
+        updateTax.mutateAsync({ resourceId: t.id, payload: { active: false } }),
+      ),
+    );
+  };
 
-      if (error) throw error;
-      return data as TaxSetting[];
-    },
-  });
-
+  // ── Dialog helpers ─────────────────────────────────────────────────────────
   const openNew = () => {
     setEditing(null);
-    setForm({
-      name: "",
-      rate: "",
-      active: true,
-    });
+    setForm({ name: "", rate: "", active: true });
     setOpen(true);
   };
 
   const openEdit = (t: TaxSetting) => {
     setEditing(t);
-    setForm({
-      name: t.name,
-      rate: String(t.rate),
-      active: t.active,
-    });
+    setForm({ name: t.name, rate: String(t.rate), active: t.active });
     setOpen(true);
   };
 
+  // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     const rate = parseFloat(form.rate);
-
-    if (
-      !form.name.trim() ||
-      isNaN(rate) ||
-      rate < 0 ||
-      rate > 100
-    ) {
+    if (!form.name.trim() || isNaN(rate) || rate < 0 || rate > 100) {
       toast({
-        title: "Invalid input",
+        title:       "Invalid input",
         description: "Provide a name and rate between 0 and 100.",
-        variant: "destructive",
+        variant:     "destructive",
       });
       return;
     }
 
     setSaving(true);
-
     try {
-      /* MOCK MODE */
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        if (editing) {
-          MOCK_TAX_SETTINGS = MOCK_TAX_SETTINGS.map((t) =>
-            t.id === editing.id
-              ? {
-                  ...t,
-                  name: form.name.trim(),
-                  rate,
-                  active: form.active,
-                }
-              : form.active
-              ? { ...t, active: false }
-              : t
-          );
+      if (form.active) await deactivateAll(editing?.id);
 
-          toast({ title: "Tax updated" });
-        } else {
-          if (form.active) {
-            MOCK_TAX_SETTINGS = MOCK_TAX_SETTINGS.map((t) => ({
-              ...t,
-              active: false,
-            }));
-          }
-
-          MOCK_TAX_SETTINGS.unshift({
-            id: `mock-tax-${Date.now()}`,
-            name: form.name.trim(),
-            rate,
-            active: form.active,
-          });
-
-          toast({ title: "Tax created" });
-        }
-
-        qc.setQueryData(["tax-settings"], [...MOCK_TAX_SETTINGS]);
-        qc.setQueryData(
-          ["active-tax"],
-          MOCK_TAX_SETTINGS.find((t) => t.active)
-        );
-
-        setOpen(false);
-        setSaving(false);
-        return;
-      }
-
-      /* SUPABASE MODE */
       if (editing) {
-        const { error } = await supabase
-          .from("tax_settings")
-          .update({
-            name: form.name.trim(),
-            rate,
-            active: form.active,
-          })
-          .eq("id", editing.id);
-
-        if (error) throw error;
+        await updateTax.mutateAsync({
+          resourceId: editing.id,
+          payload: { name: form.name.trim(), rate, active: form.active },
+        });
         toast({ title: "Tax updated" });
       } else {
-        if (form.active) {
-          await supabase
-            .from("tax_settings")
-            .update({ active: false })
-            .eq("active", true);
-        }
-
-        const { error } = await supabase
-          .from("tax_settings")
-          .insert({
-            name: form.name.trim(),
-            rate,
-            active: form.active,
-          });
-
-        if (error) throw error;
+        await createTax.mutateAsync({
+          name:   form.name.trim(),
+          rate,
+          active: form.active,
+        });
         toast({ title: "Tax created" });
       }
 
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["tax-settings"] });
-      qc.invalidateQueries({ queryKey: ["active-tax"] });
     } catch (e: any) {
-      toast({
-        title: "Error",
-        description: e.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this tax rate?")) return;
-
-    /* MOCK MODE */
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      MOCK_TAX_SETTINGS = MOCK_TAX_SETTINGS.filter(
-        (t) => t.id !== id
-      );
-
-      qc.setQueryData(["tax-settings"], [...MOCK_TAX_SETTINGS]);
-
+    try {
+      await deleteTax.mutateAsync(id);
       toast({ title: "Tax deleted" });
-      return;
+      qc.invalidateQueries({ queryKey: ["tax-settings"] });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-
-    const { error } = await supabase
-      .from("tax_settings")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({ title: "Tax deleted" });
-    qc.invalidateQueries({ queryKey: ["tax-settings"] });
-    qc.invalidateQueries({ queryKey: ["active-tax"] });
   };
 
+  // ── Toggle active ──────────────────────────────────────────────────────────
   const handleToggleActive = async (t: TaxSetting) => {
-    /* MOCK MODE */
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      MOCK_TAX_SETTINGS = MOCK_TAX_SETTINGS.map((tax) => {
-        if (!t.active) {
-          if (tax.id === t.id) return { ...tax, active: true };
-          return { ...tax, active: false };
-        }
-
-        if (tax.id === t.id) {
-          return { ...tax, active: false };
-        }
-
-        return tax;
+    try {
+      if (!t.active) await deactivateAll(t.id);
+      await updateTax.mutateAsync({
+        resourceId: t.id,
+        payload: { active: !t.active },
       });
-
-      qc.setQueryData(["tax-settings"], [...MOCK_TAX_SETTINGS]);
-
-      return;
+      qc.invalidateQueries({ queryKey: ["tax-settings"] });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-
-    /* SUPABASE */
-    if (!t.active) {
-      await supabase
-        .from("tax_settings")
-        .update({ active: false })
-        .eq("active", true);
-    }
-
-    await supabase
-      .from("tax_settings")
-      .update({ active: !t.active })
-      .eq("id", t.id);
-
-    qc.invalidateQueries({ queryKey: ["tax-settings"] });
-    qc.invalidateQueries({ queryKey: ["active-tax"] });
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -293,7 +135,6 @@ const TaxSettings = () => {
             Manage tax rates applied to all orders at checkout.
           </p>
         </div>
-
         <Button onClick={openNew}>
           <Plus className="h-4 w-4" /> Add Tax
         </Button>
@@ -304,7 +145,7 @@ const TaxSettings = () => {
           <div className="flex justify-center p-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : !taxes || taxes.length === 0 ? (
+        ) : taxes.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             No tax rates configured yet.
           </div>
@@ -315,51 +156,26 @@ const TaxSettings = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Rate</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">
-                  Actions
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
-
             <TableBody>
               {taxes.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium">
-                    {t.name}
-                  </TableCell>
-
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell>{Number(t.rate).toFixed(2)}%</TableCell>
                   <TableCell>
-                    {Number(t.rate).toFixed(2)}%
-                  </TableCell>
-
-                  <TableCell>
-                    <button
-                      onClick={() => handleToggleActive(t)}
-                    >
-                      <Badge
-                        variant={
-                          t.active ? "default" : "secondary"
-                        }
-                      >
+                    <button onClick={() => handleToggleActive(t)}>
+                      <Badge variant={t.active ? "default" : "secondary"}>
                         {t.active ? "Active" : "Inactive"}
                       </Badge>
                     </button>
                   </TableCell>
-
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(t)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(t.id)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -377,74 +193,42 @@ const TaxSettings = () => {
               {editing ? "Edit Tax Rate" : "Add Tax Rate"}
             </DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Name</Label>
-
               <Input
                 placeholder="VAT"
                 value={form.name}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    name: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
-
             <div className="space-y-2">
               <Label>Rate (%)</Label>
-
               <Input
                 type="number"
                 value={form.rate}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    rate: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, rate: e.target.value })}
               />
             </div>
-
             <div className="flex items-center justify-between">
               <Label>Active</Label>
-
               <Switch
                 checked={form.active}
-                onCheckedChange={(v) =>
-                  setForm({
-                    ...form,
-                    active: v,
-                  })
-                }
+                onCheckedChange={(v) => setForm({ ...form, active: v })}
               />
             </div>
-
             <p className="text-xs text-muted-foreground">
               Only one tax rate can be active at a time.
             </p>
           </div>
-
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Save"
-              )}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

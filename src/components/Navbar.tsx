@@ -56,7 +56,7 @@ const Navbar = () => {
             <Search className="h-5 w-5" />
           </Button>
           <CartDrawer />
-          {(user || NEXT_PUBLIC_USE_MOCK_DATA) && <NotificationBell audience="user" />}
+          {(user || NEXT_PUBLIC_USE_MOCK_DATA) && <NotificationBell />}
           
           {/* Desktop Sell Button  */}
           <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={handleSellClick}>

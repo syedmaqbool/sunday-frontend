@@ -53,12 +53,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (res.status === 401) {
-    const newToken = await attemptRefresh();
-    if (!newToken) {
-      tokenStorage.clear();
+  const newToken = await attemptRefresh();
+  if (!newToken) {
+    tokenStorage.clear();
+    if (window.location.pathname !== "/auth") {
       window.location.href = "/auth";
-      throw new Error("Session expired. Please login again.");
     }
+    throw new Error("Session expired. Please login again.");
+  }
+  
+
     token = newToken;
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...options,

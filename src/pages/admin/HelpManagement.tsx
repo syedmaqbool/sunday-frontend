@@ -1,7 +1,15 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import {
+  useAdminSettings,
+  useUpdateHelpCategories,
+  useUpdateHelpFaqs,
+  useUpdateHelpTutorials,
+} from "@/queries/useAdminSettings";
+import type {
+  HelpCategoryAPI,
+  HelpFaqAPI,
+  HelpTutorialAPI,
+} from "@/services/adminSettings.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,30 +19,22 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Loader2, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, BookOpen, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { HELP_ICON_OPTIONS, getHelpIcon } from "@/lib/helpIcons";
 
+// ── Display types ────────────────────────────────────────────────────────────
+// Note: backend HelpCategorySchema has no `id`/`blurb`/`icon` — `key` is the
+// identifier. HelpTutorialSchema has no `icon`/`steps`/`cta` — it's a simple
+// title+slug+body article, not a step-by-step card. UI redesigned to match.
 interface Category {
-  id: string;
   key: string;
   label: string;
-  blurb: string;
-  icon: string;
   sort_order: number;
   active: boolean;
 }
@@ -49,146 +49,42 @@ interface Faq {
 interface Tutorial {
   id: string;
   title: string;
-  icon: string;
-  steps: string[];
-  cta_label: string;
-  cta_to: string;
+  slug: string;
+  body: string;
   sort_order: number;
   published: boolean;
 }
 
-// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
-// `let` because mutations (save/toggle/delete) update these arrays in place
-// so admin edits persist across the mock session.
-let MOCK_CATEGORIES: Category[] = [
-  {
-    id: "mock-category-buying",
-    key: "buying",
-    label: "Buying",
-    blurb: "Tips for browsing and purchasing listings",
-    icon: "BookOpen",
-    sort_order: 0,
-    active: true,
-  },
-  {
-    id: "mock-category-selling",
-    key: "selling",
-    label: "Selling",
-    blurb: "How to list and sell your items",
-    icon: "BookOpen",
-    sort_order: 1,
-    active: true,
-  },
-  {
-    id: "mock-category-payments",
-    key: "payments",
-    label: "Payments",
-    blurb: "Payment methods, refunds and billing",
-    icon: "BookOpen",
-    sort_order: 2,
-    active: true,
-  },
-  {
-    id: "mock-category-shipping",
-    key: "shipping",
-    label: "Shipping",
-    blurb: "Delivery options and order tracking",
-    icon: "BookOpen",
-    sort_order: 3,
-    active: true,
-  },
-  {
-    id: "mock-category-account",
-    key: "account",
-    label: "Account",
-    blurb: "Manage your profile and account settings",
-    icon: "BookOpen",
-    sort_order: 4,
-    active: false,
-  },
-];
+// ── API ↔ Display adapters ───────────────────────────────────────────────────
+const adaptCategory = (c: HelpCategoryAPI): Category => ({
+  key: c.key, label: c.label, sort_order: c.sortOrder, active: c.active,
+});
+const categoryToApi = (c: Category): HelpCategoryAPI => ({
+  key: c.key, label: c.label, sortOrder: c.sort_order, active: c.active,
+});
 
-let MOCK_FAQS: Faq[] = [
-  {
-    id: "mock-faq-1",
-    category_key: "buying",
-    question: "How do I search for a specific item?",
-    answer: "Use the search bar at the top of the page and filter results by category, price range, or location to find exactly what you're looking for.",
-    sort_order: 0,
-    published: true,
-  },
-  {
-    id: "mock-faq-2",
-    category_key: "buying",
-    question: "Can I message a seller before buying?",
-    answer: "Yes, open any listing and tap 'Message seller' to ask questions about the item before making a purchase.",
-    sort_order: 1,
-    published: true,
-  },
-  {
-    id: "mock-faq-3",
-    category_key: "selling",
-    question: "How do I create a new listing?",
-    answer: "Go to your dashboard and click 'New listing'. Add photos, a description, and a price, then publish it for buyers to see.",
-    sort_order: 0,
-    published: true,
-  },
-  {
-    id: "mock-faq-4",
-    category_key: "payments",
-    question: "What payment methods are accepted?",
-    answer: "We support major credit/debit cards and select digital wallets. All payments are processed securely through our checkout flow.",
-    sort_order: 0,
-    published: true,
-  },
-  {
-    id: "mock-faq-5",
-    category_key: "shipping",
-    question: "How do I track my order?",
-    answer: "Once a seller ships your order, a tracking link will appear in your order history under 'My purchases'.",
-    sort_order: 0,
-    published: false,
-  },
-];
+const adaptFaq = (f: HelpFaqAPI): Faq => ({
+  id: f.id, category_key: f.categoryKey, question: f.question,
+  answer: f.answer, sort_order: f.sortOrder, published: f.published,
+});
+const faqToApi = (f: Faq): HelpFaqAPI => ({
+  id: f.id, categoryKey: f.category_key, question: f.question,
+  answer: f.answer, sortOrder: f.sort_order, published: f.published,
+});
 
-let MOCK_TUTORIALS: Tutorial[] = [
-  {
-    id: "mock-tutorial-1",
-    title: "Creating your first listing",
-    icon: "BookOpen",
-    steps: [
-      "Go to your dashboard and click 'New listing'",
-      "Upload clear photos of your item",
-      "Write a short, honest description and set a price",
-      "Publish your listing",
-    ],
-    cta_label: "Create listing",
-    cta_to: "/listings/new",
-    sort_order: 0,
-    published: true,
-  },
-  {
-    id: "mock-tutorial-2",
-    title: "Setting up payouts",
-    icon: "BookOpen",
-    steps: [
-      "Open Settings → Payouts",
-      "Add your bank or wallet details",
-      "Confirm your identity if prompted",
-      "Start receiving payouts after each sale",
-    ],
-    cta_label: "Go to payouts",
-    cta_to: "/settings/payouts",
-    sort_order: 1,
-    published: true,
-  },
-];
+const adaptTutorial = (t: HelpTutorialAPI): Tutorial => ({
+  id: t.id, title: t.title, slug: t.slug, body: t.body,
+  sort_order: t.sortOrder, published: t.published,
+});
+const tutorialToApi = (t: Tutorial): HelpTutorialAPI => ({
+  id: t.id, title: t.title, slug: t.slug, body: t.body,
+  sortOrder: t.sort_order, published: t.published,
+});
 
+// ── Validation ────────────────────────────────────────────────────────────────
 const categorySchema = z.object({
   key: z.string().trim().min(2).max(40).regex(/^[a-z0-9_-]+$/, "Lowercase letters, numbers, _ or -"),
   label: z.string().trim().min(1).max(60),
-  blurb: z.string().trim().max(160),
-  icon: z.string().min(1),
   sort_order: z.number().int().min(0),
 });
 const faqSchema = z.object({
@@ -199,168 +95,68 @@ const faqSchema = z.object({
 });
 const tutorialSchema = z.object({
   title: z.string().trim().min(2).max(80),
-  icon: z.string().min(1),
-  steps: z.array(z.string().trim().min(1)).min(1, "At least one step"),
-  cta_label: z.string().trim().max(40),
-  cta_to: z.string().trim().max(200),
+  slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, - only"),
+  body: z.string().trim().min(3).max(5000),
   sort_order: z.number().int().min(0),
 });
 
-const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-  <Select value={value} onValueChange={onChange}>
-    <SelectTrigger>
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent className="max-h-64">
-      {HELP_ICON_OPTIONS.map((name) => {
-        const Icon = getHelpIcon(name);
-        return (
-          <SelectItem key={name} value={name}>
-            <span className="flex items-center gap-2">
-              <Icon className="h-4 w-4" />
-              {name}
-            </span>
-          </SelectItem>
-        );
-      })}
-    </SelectContent>
-  </Select>
-);
-
 const HelpManagement = () => {
-  const qc = useQueryClient();
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["admin-help-categories"] });
-    qc.invalidateQueries({ queryKey: ["admin-help-faqs"] });
-    qc.invalidateQueries({ queryKey: ["admin-help-tutorials"] });
-    qc.invalidateQueries({ queryKey: ["help-categories"] });
-    qc.invalidateQueries({ queryKey: ["help-faqs"] });
-    qc.invalidateQueries({ queryKey: ["help-tutorials"] });
-  };
+  const { data: settings, isLoading } = useAdminSettings();
+  const updateCategories = useUpdateHelpCategories();
+  const updateFaqs = useUpdateHelpFaqs();
+  const updateTutorials = useUpdateHelpTutorials();
 
-  // ── Queries (admin sees everything, including unpublished) ──
-  const { data: categories = [], isLoading: loadingCats } = useQuery({
-    queryKey: ["admin-help-categories"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_CATEGORIES;
-      const { data, error } = await supabase
-        .from("help_categories")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
-      return data as Category[];
-    },
-  });
-  const { data: faqs = [], isLoading: loadingFaqs } = useQuery({
-    queryKey: ["admin-help-faqs"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_FAQS;
-      const { data, error } = await supabase
-        .from("help_faqs")
-        .select("*")
-        .order("category_key")
-        .order("sort_order");
-      if (error) throw error;
-      return data as Faq[];
-    },
-  });
-  const { data: tutorials = [], isLoading: loadingTuts } = useQuery({
-    queryKey: ["admin-help-tutorials"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_TUTORIALS;
-      const { data, error } = await supabase
-        .from("help_tutorials")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
-      return data as Tutorial[];
-    },
-  });
+  const categories: Category[] = (settings?.helpCategories ?? []).map(adaptCategory);
+  const faqs: Faq[] = (settings?.helpFaqs ?? []).map(adaptFaq);
+  const tutorials: Tutorial[] = (settings?.helpTutorials ?? []).map(adaptTutorial);
 
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
   const [catEdit, setCatEdit] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState({ key: "", label: "", blurb: "", icon: "BookOpen", sort_order: 0 });
+  const [catForm, setCatForm] = useState({ key: "", label: "", sort_order: 0 });
 
   const openCategoryDialog = (c: Category | null) => {
     setCatEdit(c);
-    setCatForm(
-      c
-        ? { key: c.key, label: c.label, blurb: c.blurb, icon: c.icon, sort_order: c.sort_order }
-        : { key: "", label: "", blurb: "", icon: "BookOpen", sort_order: categories.length }
-    );
+    setCatForm(c ? { key: c.key, label: c.label, sort_order: c.sort_order } : { key: "", label: "", sort_order: categories.length });
     setCatOpen(true);
   };
-  const saveCategory = useMutation({
-    mutationFn: async () => {
-      const parsed = categorySchema.safeParse(catForm);
-      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        if (catEdit) {
-          MOCK_CATEGORIES = MOCK_CATEGORIES.map((c) =>
-            c.id === catEdit.id ? { ...c, ...parsed.data } : c
-          );
-        } else {
-          if (MOCK_CATEGORIES.some((c) => c.key === parsed.data.key)) {
-            throw new Error("That key already exists");
-          }
-          const newCategory: Category = {
-            id: `mock-category-${parsed.data.key}`,
-            key: parsed.data.key,
-            label: parsed.data.label,
-            blurb: parsed.data.blurb,
-            icon: parsed.data.icon,
-            sort_order: parsed.data.sort_order,
-            active: true,
-          };
-          MOCK_CATEGORIES = [...MOCK_CATEGORIES, newCategory];
+  const saveCategory = () => {
+    const parsed = categorySchema.safeParse(catForm);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
+    let next: Category[];
+    if (catEdit) {
+      next = categories.map((c) => (c.key === catEdit.key ? { ...c, ...parsed.data } : c));
+    } else {
+      if (categories.some((c) => c.key === parsed.data.key)) return toast.error("That key already exists");
+      const newCategory: Category = {
+        key: parsed.data.key,
+        label: parsed.data.label,
+        sort_order: parsed.data.sort_order,
+        active: true,
+      };
+      next = [...categories, newCategory];
+    }
 
-        }
-        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
-        return;
-      }
+    updateCategories.mutate(next.map(categoryToApi), {
+      onSuccess: () => { toast.success(catEdit ? "Category updated" : "Category added"); setCatOpen(false); },
+      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    });
+  };
 
-      if (catEdit) {
-        const { error } = await supabase.from("help_categories").update(parsed.data).eq("id", catEdit.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("help_categories").insert(parsed.data as Category);
-        if (error) {
-          if (error.code === "23505") throw new Error("That key already exists");
-          throw error;
-        }
-      }
-    },
-    onSuccess: () => { toast.success(catEdit ? "Category updated" : "Category added"); setCatOpen(false); invalidate(); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const toggleCategoryActive = useMutation({
-    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_CATEGORIES = MOCK_CATEGORIES.map((c) => (c.id === id ? { ...c, active } : c));
-        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
-        return;
-      }
-      const { error } = await supabase.from("help_categories").update({ active }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => invalidate(),
-  });
-  const deleteCategory = useMutation({
-    mutationFn: async (id: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_CATEGORIES = MOCK_CATEGORIES.filter((c) => c.id !== id);
-        qc.setQueryData(["admin-help-categories"], MOCK_CATEGORIES);
-        return;
-      }
-      const { error } = await supabase.from("help_categories").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Category removed"); invalidate(); },
-    onError: () => toast.error("Failed to remove category"),
-  });
+  const toggleCategoryActive = (key: string, active: boolean) => {
+    const next = categories.map((c) => (c.key === key ? { ...c, active } : c));
+    updateCategories.mutate(next.map(categoryToApi));
+  };
+
+  const deleteCategory = (key: string) => {
+    const next = categories.filter((c) => c.key !== key);
+    updateCategories.mutate(next.map(categoryToApi), {
+      onSuccess: () => toast.success("Category removed"),
+      onError: () => toast.error("Failed to remove category"),
+    });
+  };
 
   // ── FAQ dialog ──
   const [faqOpen, setFaqOpen] = useState(false);
@@ -376,149 +172,104 @@ const HelpManagement = () => {
     );
     setFaqOpen(true);
   };
-  const saveFaq = useMutation({
-    mutationFn: async () => {
-      const parsed = faqSchema.safeParse(faqForm);
-      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        if (faqEdit) {
-          MOCK_FAQS = MOCK_FAQS.map((f) => (f.id === faqEdit.id ? { ...f, ...parsed.data } : f));
-        } else {
-          const newFaq: Faq = {
-            id: `mock-faq-${MOCK_FAQS.length + 1}`,
-            category_key: parsed.data.category_key,
-            question: parsed.data.question,
-            answer: parsed.data.answer,
-            sort_order: parsed.data.sort_order,
-            published: true,
-          };
-          MOCK_FAQS = [...MOCK_FAQS, newFaq];
-        }
-        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
-        return;
-      }
+  const saveFaq = () => {
+    const parsed = faqSchema.safeParse(faqForm);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
-      if (faqEdit) {
-        const { error } = await supabase.from("help_faqs").update(parsed.data).eq("id", faqEdit.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("help_faqs").insert(parsed.data as Faq);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => { toast.success(faqEdit ? "FAQ updated" : "FAQ added"); setFaqOpen(false); invalidate(); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const toggleFaqPublished = useMutation({
-    mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_FAQS = MOCK_FAQS.map((f) => (f.id === id ? { ...f, published } : f));
-        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
-        return;
-      }
-      const { error } = await supabase.from("help_faqs").update({ published }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => invalidate(),
-  });
-  const deleteFaq = useMutation({
-    mutationFn: async (id: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_FAQS = MOCK_FAQS.filter((f) => f.id !== id);
-        qc.setQueryData(["admin-help-faqs"], MOCK_FAQS);
-        return;
-      }
-      const { error } = await supabase.from("help_faqs").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("FAQ removed"); invalidate(); },
-    onError: () => toast.error("Failed to remove FAQ"),
-  });
+    let next: Faq[];
+    if (faqEdit) {
+      next = faqs.map((f) => (f.id === faqEdit.id ? { ...f, ...parsed.data } : f));
+    } else {
+      const newFaq: Faq = {
+        id: `faq-${Date.now()}`,
+        category_key: parsed.data.category_key,
+        question: parsed.data.question,
+        answer: parsed.data.answer,
+        sort_order: parsed.data.sort_order,
+        published: true,
+      };
+      next = [...faqs, newFaq];
+    }
 
-  // ── Tutorial dialog ──
+    updateFaqs.mutate(next.map(faqToApi), {
+      onSuccess: () => { toast.success(faqEdit ? "FAQ updated" : "FAQ added"); setFaqOpen(false); },
+      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    });
+  };
+
+  const toggleFaqPublished = (id: string, published: boolean) => {
+    const next = faqs.map((f) => (f.id === id ? { ...f, published } : f));
+    updateFaqs.mutate(next.map(faqToApi));
+  };
+
+  const deleteFaq = (id: string) => {
+    const next = faqs.filter((f) => f.id !== id);
+    updateFaqs.mutate(next.map(faqToApi), {
+      onSuccess: () => toast.success("FAQ removed"),
+      onError: () => toast.error("Failed to remove FAQ"),
+    });
+  };
+
+  // ── Tutorial dialog (simplified: title + slug + body — no icon/steps/CTA) ──
   const [tutOpen, setTutOpen] = useState(false);
   const [tutEdit, setTutEdit] = useState<Tutorial | null>(null);
-  const [tutForm, setTutForm] = useState({
-    title: "",
-    icon: "BookOpen",
-    steps: [""] as string[],
-    cta_label: "",
-    cta_to: "",
-    sort_order: 0,
-  });
+  const [tutForm, setTutForm] = useState({ title: "", slug: "", body: "", sort_order: 0 });
 
   const openTutorialDialog = (t: Tutorial | null) => {
     setTutEdit(t);
     setTutForm(
       t
-        ? { title: t.title, icon: t.icon, steps: t.steps.length ? t.steps : [""], cta_label: t.cta_label, cta_to: t.cta_to, sort_order: t.sort_order }
-        : { title: "", icon: "BookOpen", steps: [""], cta_label: "", cta_to: "", sort_order: tutorials.length }
+        ? { title: t.title, slug: t.slug, body: t.body, sort_order: t.sort_order }
+        : { title: "", slug: "", body: "", sort_order: tutorials.length }
     );
     setTutOpen(true);
   };
-  const saveTutorial = useMutation({
-    mutationFn: async () => {
-      const cleanSteps = tutForm.steps.map((s) => s.trim()).filter(Boolean);
-      const parsed = tutorialSchema.safeParse({ ...tutForm, steps: cleanSteps });
-      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        if (tutEdit) {
-          MOCK_TUTORIALS = MOCK_TUTORIALS.map((t) => (t.id === tutEdit.id ? { ...t, ...parsed.data } : t));
-        } else {
-          const newTutorial: Tutorial = {
-            id: `mock-tutorial-${MOCK_TUTORIALS.length + 1}`,
-            title: parsed.data.title,
-            icon: parsed.data.icon,
-            steps: parsed.data.steps,
-            cta_label: parsed.data.cta_label,
-            cta_to: parsed.data.cta_to,
-            sort_order: parsed.data.sort_order,
-            published: true,
-          };
-          MOCK_TUTORIALS = [...MOCK_TUTORIALS, newTutorial];
-        }
-        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
-        return;
-      }
+  const saveTutorial = () => {
+    const parsed = tutorialSchema.safeParse(tutForm);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
-      if (tutEdit) {
-        const { error } = await supabase.from("help_tutorials").update(parsed.data).eq("id", tutEdit.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("help_tutorials").insert(parsed.data as Tutorial);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => { toast.success(tutEdit ? "Tutorial updated" : "Tutorial added"); setTutOpen(false); invalidate(); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const toggleTutorialPublished = useMutation({
-    mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_TUTORIALS = MOCK_TUTORIALS.map((t) => (t.id === id ? { ...t, published } : t));
-        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
-        return;
-      }
-      const { error } = await supabase.from("help_tutorials").update({ published }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => invalidate(),
-  });
-  const deleteTutorial = useMutation({
-    mutationFn: async (id: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        MOCK_TUTORIALS = MOCK_TUTORIALS.filter((t) => t.id !== id);
-        qc.setQueryData(["admin-help-tutorials"], MOCK_TUTORIALS);
-        return;
-      }
-      const { error } = await supabase.from("help_tutorials").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Tutorial removed"); invalidate(); },
-    onError: () => toast.error("Failed to remove tutorial"),
-  });
+    let next: Tutorial[];
+    if (tutEdit) {
+      next = tutorials.map((t) => (t.id === tutEdit.id ? { ...t, ...parsed.data } : t));
+    } else {
+      const newTutorial: Tutorial = {
+        id: `tutorial-${Date.now()}`,
+        title: parsed.data.title,
+        slug: parsed.data.slug,
+        body: parsed.data.body,
+        sort_order: parsed.data.sort_order,
+        published: true,
+      };
+      next = [...tutorials, newTutorial];
+    }
+    updateTutorials.mutate(next.map(tutorialToApi), {
+      onSuccess: () => { toast.success(tutEdit ? "Tutorial updated" : "Tutorial added"); setTutOpen(false); },
+      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    });
+  };
+
+  const toggleTutorialPublished = (id: string, published: boolean) => {
+    const next = tutorials.map((t) => (t.id === id ? { ...t, published } : t));
+    updateTutorials.mutate(next.map(tutorialToApi));
+  };
+
+  const deleteTutorial = (id: string) => {
+    const next = tutorials.filter((t) => t.id !== id);
+    updateTutorials.mutate(next.map(tutorialToApi), {
+      onSuccess: () => toast.success("Tutorial removed"),
+      onError: () => toast.error("Failed to remove tutorial"),
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -543,9 +294,7 @@ const HelpManagement = () => {
               <Plus className="h-4 w-4" /> Add FAQ
             </Button>
           </div>
-          {loadingFaqs ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : faqs.length === 0 ? (
+          {faqs.length === 0 ? (
             <EmptyState label="No FAQs yet" />
           ) : (
             faqs.map((f) => {
@@ -563,14 +312,11 @@ const HelpManagement = () => {
                       <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{f.answer}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Switch
-                        checked={f.published}
-                        onCheckedChange={(v) => toggleFaqPublished.mutate({ id: f.id, published: v })}
-                      />
+                      <Switch checked={f.published} onCheckedChange={(v) => toggleFaqPublished(f.id, v)} />
                       <Button size="icon" variant="ghost" onClick={() => openFaqDialog(f)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteFaq.mutate(f.id)}>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteFaq(f.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -581,53 +327,43 @@ const HelpManagement = () => {
           )}
         </TabsContent>
 
-        {/* ── Tutorials ── */}
+        {/* ── Tutorials (simple articles: title + slug + body) ── */}
         <TabsContent value="tutorials" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openTutorialDialog(null)} className="gap-2">
               <Plus className="h-4 w-4" /> Add tutorial
             </Button>
           </div>
-          {loadingTuts ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : tutorials.length === 0 ? (
+          {tutorials.length === 0 ? (
             <EmptyState label="No tutorials yet" />
           ) : (
-            tutorials.map((t) => {
-              const Icon = getHelpIcon(t.icon);
-              return (
-                <Card key={t.id}>
-                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                      <Icon className="h-5 w-5" />
+            tutorials.map((t) => (
+              <Card key={t.id}>
+                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {!t.published && <Badge variant="outline" className="text-[10px]">Draft</Badge>}
+                      <span className="text-[10px] text-muted-foreground">#{t.sort_order}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">/{t.slug}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {!t.published && <Badge variant="outline" className="text-[10px]">Draft</Badge>}
-                        <span className="text-[10px] text-muted-foreground">#{t.sort_order}</span>
-                      </div>
-                      <p className="mt-1 font-medium text-foreground">{t.title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t.steps.length} step{t.steps.length === 1 ? "" : "s"}
-                        {t.cta_label && t.cta_to ? ` · CTA: ${t.cta_label} → ${t.cta_to}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Switch
-                        checked={t.published}
-                        onCheckedChange={(v) => toggleTutorialPublished.mutate({ id: t.id, published: v })}
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => openTutorialDialog(t)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTutorial.mutate(t.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                    <p className="mt-1 font-medium text-foreground">{t.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{t.body}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch checked={t.published} onCheckedChange={(v) => toggleTutorialPublished(t.id, v)} />
+                    <Button size="icon" variant="ghost" onClick={() => openTutorialDialog(t)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTutorial(t.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </TabsContent>
 
@@ -638,44 +374,35 @@ const HelpManagement = () => {
               <Plus className="h-4 w-4" /> Add category
             </Button>
           </div>
-          {loadingCats ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : categories.length === 0 ? (
+          {categories.length === 0 ? (
             <EmptyState label="No categories yet" />
           ) : (
-            categories.map((c) => {
-              const Icon = getHelpIcon(c.icon);
-              return (
-                <Card key={c.id}>
-                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                      <Icon className="h-5 w-5" />
+            categories.map((c) => (
+              <Card key={c.key}>
+                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="font-mono text-[10px]">{c.key}</Badge>
+                      {!c.active && <Badge variant="outline" className="text-[10px]">Hidden</Badge>}
+                      <span className="text-[10px] text-muted-foreground">#{c.sort_order}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className="font-mono text-[10px]">{c.key}</Badge>
-                        {!c.active && <Badge variant="outline" className="text-[10px]">Hidden</Badge>}
-                        <span className="text-[10px] text-muted-foreground">#{c.sort_order}</span>
-                      </div>
-                      <p className="mt-1 font-medium text-foreground">{c.label}</p>
-                      <p className="mt-0.5 text-sm text-muted-foreground truncate">{c.blurb}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Switch
-                        checked={c.active}
-                        onCheckedChange={(v) => toggleCategoryActive.mutate({ id: c.id, active: v })}
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => openCategoryDialog(c)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteCategory.mutate(c.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                    <p className="mt-1 font-medium text-foreground">{c.label}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch checked={c.active} onCheckedChange={(v) => toggleCategoryActive(c.key, v)} />
+                    <Button size="icon" variant="ghost" onClick={() => openCategoryDialog(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteCategory(c.key)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </TabsContent>
       </Tabs>
@@ -701,28 +428,18 @@ const HelpManagement = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Blurb</Label>
-              <Input value={catForm.blurb} onChange={(e) => setCatForm({ ...catForm, blurb: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Icon</Label>
-                <IconSelect value={catForm.icon} onChange={(v) => setCatForm({ ...catForm, icon: v })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sort order</Label>
-                <Input
-                  type="number"
-                  value={catForm.sort_order}
-                  onChange={(e) => setCatForm({ ...catForm, sort_order: Number(e.target.value) || 0 })}
-                />
-              </div>
+              <Label>Sort order</Label>
+              <Input
+                type="number"
+                value={catForm.sort_order}
+                onChange={(e) => setCatForm({ ...catForm, sort_order: Number(e.target.value) || 0 })}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCatOpen(false)}>Cancel</Button>
-            <Button onClick={() => saveCategory.mutate()} disabled={saveCategory.isPending}>
-              {saveCategory.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={saveCategory} disabled={updateCategories.isPending}>
+              {updateCategories.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>
@@ -740,7 +457,7 @@ const HelpManagement = () => {
                 <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.key}>{c.label}</SelectItem>
+                    <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -769,15 +486,15 @@ const HelpManagement = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFaqOpen(false)}>Cancel</Button>
-            <Button onClick={() => saveFaq.mutate()} disabled={saveFaq.isPending}>
-              {saveFaq.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={saveFaq} disabled={updateFaqs.isPending}>
+              {updateFaqs.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Tutorial dialog ── */}
+      {/* ── Tutorial dialog (simple article — no icon/steps/CTA) ── */}
       <Dialog open={tutOpen} onOpenChange={setTutOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{tutEdit ? "Edit tutorial" : "Add tutorial"}</DialogTitle></DialogHeader>
@@ -798,63 +515,27 @@ const HelpManagement = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Icon</Label>
-              <IconSelect value={tutForm.icon} onChange={(v) => setTutForm({ ...tutForm, icon: v })} />
+              <Label>Slug</Label>
+              <Input
+                value={tutForm.slug}
+                onChange={(e) => setTutForm({ ...tutForm, slug: e.target.value.toLowerCase() })}
+                placeholder="creating-your-first-listing"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Steps</Label>
-              {tutForm.steps.map((s, i) => (
-                <div key={i} className="flex gap-2">
-                  <span className="flex h-9 w-7 shrink-0 items-center justify-center text-xs text-muted-foreground">{i + 1}.</span>
-                  <Input
-                    value={s}
-                    onChange={(e) => {
-                      const next = [...tutForm.steps];
-                      next[i] = e.target.value;
-                      setTutForm({ ...tutForm, steps: next });
-                    }}
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      const next = tutForm.steps.filter((_, idx) => idx !== i);
-                      setTutForm({ ...tutForm, steps: next.length ? next : [""] });
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ""] })}
-                className="gap-2"
-              >
-                <Plus className="h-3.5 w-3.5" /> Add step
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>CTA label (optional)</Label>
-                <Input value={tutForm.cta_label} onChange={(e) => setTutForm({ ...tutForm, cta_label: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>CTA path (optional)</Label>
-                <Input
-                  value={tutForm.cta_to}
-                  onChange={(e) => setTutForm({ ...tutForm, cta_to: e.target.value })}
-                  placeholder="/listings"
-                />
-              </div>
+              <Label>Body</Label>
+              <Textarea
+                rows={10}
+                value={tutForm.body}
+                onChange={(e) => setTutForm({ ...tutForm, body: e.target.value })}
+                placeholder="Write the tutorial content..."
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTutOpen(false)}>Cancel</Button>
-            <Button onClick={() => saveTutorial.mutate()} disabled={saveTutorial.isPending}>
-              {saveTutorial.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={saveTutorial} disabled={updateTutorials.isPending}>
+              {updateTutorials.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>

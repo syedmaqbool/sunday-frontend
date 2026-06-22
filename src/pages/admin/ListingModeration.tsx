@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ListingFeedbackSection as FeedbackHistorySection } from "@/components/ListingFeedbackWidgets";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminListings, useModerateListing } from "@/queries/useAdminListing";
+import type { AdminListing, ListingStatus } from "@/services/listing.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,106 +12,22 @@ import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getWeightLabel } from "@/lib/constants";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
-
-interface ListingRow {
-  id: string;
-  title: string;
-  description: string;
-  brand: string;
-  category: string;
-  condition: string;
-  size: string;
-  price: number;
-  weight: number | null;
-  images: string[];
-  status: string;
-  seller_id: string;
-  created_at: string;
-}
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_ADMIN_LISTINGS: ListingRow[] = [
-  {
-    id: "mock-listing-3",
-    title: "Bohemian Summer Dress",
-    description: "Lightweight floral dress perfect for hot days. Worn twice, no flaws.",
-    brand: "Mango",
-    category: "women",
-    condition: "new_with_tags",
-    size: "S",
-    price: 2800,
-    weight: 1,
-    images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
-    status: "pending",
-    seller_id: "mock-user-id",
-    created_at: "2026-06-15T09:00:00.000Z",
-  },
-  {
-    id: "mock-listing-6",
-    title: "Leather Crossbody Bag",
-    description: "Genuine leather, barely used, comes with dust bag.",
-    brand: "Coach",
-    category: "women",
-    condition: "excellent",
-    size: "One Size",
-    price: 5200,
-    weight: 1,
-    images: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600"],
-    status: "pending",
-    seller_id: "mock-seller-id-2",
-    created_at: "2026-06-16T11:20:00.000Z",
-  },
-  {
-    id: "mock-listing-1",
-    title: "Vintage Leather Jacket",
-    description: "Premium quality oversized leather jacket from the 90s.",
-    brand: "Zara",
-    category: "women",
-    condition: "excellent",
-    size: "M",
-    price: 6500,
-    weight: 2,
-    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"],
-    status: "approved",
-    seller_id: "mock-user-id",
-    created_at: "2026-06-10T10:00:00.000Z",
-  },
-  {
-    id: "mock-listing-4",
-    title: "Kids Denim Dungarees",
-    description: "Comfortable and durable denim dungarees for toddlers.",
-    brand: "H&M",
-    category: "children",
-    condition: "like_new",
-    size: "3-4Y",
-    price: 2200,
-    weight: 1,
-    images: ["https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600"],
-    status: "rejected",
-    seller_id: "mock-seller-id-3",
-    created_at: "2026-06-05T11:15:00.000Z",
-  },
-];
-
-let mockListingsStore = [...MOCK_ADMIN_LISTINGS];
-
-const DetailGallery = ({ images }: { images: string[] }) => {
+const DetailGallery = ({ media }: { media: AdminListing["media"] }) => {
   const [idx, setIdx] = useState(0);
+  const images = media.filter((m) => m.file).map((m) => ({ url: m.file!.url, isVideo: m.type === "VIDEO" }));
   if (!images.length) return <div className="aspect-square rounded-lg bg-muted" />;
   const current = images[idx];
-  const currentIsVideo = isVideoUrl(current);
 
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-        {currentIsVideo ? (
-          <video src={current} className="h-full w-full object-contain bg-black" controls playsInline />
+        {current.isVideo ? (
+          <video src={current.url} className="h-full w-full object-contain bg-black" controls playsInline />
         ) : (
-          <img src={current} alt="" className="h-full w-full object-cover" />
+          <img src={current.url} alt="" className="h-full w-full object-cover" />
         )}
         {images.length > 1 && (
           <>
@@ -135,25 +51,22 @@ const DetailGallery = ({ images }: { images: string[] }) => {
       </div>
       {images.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {images.map((img, i) => {
-            const vid = isVideoUrl(img);
-            return (
-              <button
-                key={i}
-                onClick={() => setIdx(i)}
-                className={`relative h-12 w-12 shrink-0 overflow-hidden rounded border-2 transition ${i === idx ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"}`}
-              >
-                {vid ? (
-                  <>
-                    <video src={img} className="h-full w-full object-cover bg-black" muted preload="metadata" />
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">▶</span>
-                  </>
-                ) : (
-                  <img src={img} alt="" className="h-full w-full object-cover" />
-                )}
-              </button>
-            );
-          })}
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              className={`relative h-12 w-12 shrink-0 overflow-hidden rounded border-2 transition ${i === idx ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"}`}
+            >
+              {img.isVideo ? (
+                <>
+                  <video src={img.url} className="h-full w-full object-cover bg-black" muted preload="metadata" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">▶</span>
+                </>
+              ) : (
+                <img src={img.url} alt="" className="h-full w-full object-cover" />
+              )}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -161,79 +74,41 @@ const DetailGallery = ({ images }: { images: string[] }) => {
 };
 
 const ListingModeration = () => {
-  const [filter, setFilter] = useState("pending");
-  const [reviewListing, setReviewListing] = useState<ListingRow | null>(null);
+  const [filter, setFilter] = useState<ListingStatus | "all">("PENDING");
+  const [reviewListing, setReviewListing] = useState<AdminListing | null>(null);
   const [feedback, setFeedback] = useState("");
-  const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["admin-listings", filter],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return filter === "all"
-          ? mockListingsStore
-          : mockListingsStore.filter((l) => l.status === filter);
-      }
-      let q = supabase.from("listings").select("*").order("created_at", { ascending: false });
-      if (filter !== "all") q = q.eq("status", filter);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as ListingRow[];
-    },
-  });
+  const { data: listings = [], isLoading } = useAdminListings(filter);
+  const moderateListing = useModerateListing();
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status, admin_feedback }: { id: string; status: string; admin_feedback?: string }) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        mockListingsStore = mockListingsStore.map((l) =>
-          l.id === id ? { ...l, status } : l,
-        );
-        return;
-      }
-
-      // Update listing status (also keep admin_feedback column for quick access)
-      const updateData: Record<string, unknown> = { status };
-      if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;
-      if (status === "approved") updateData.admin_feedback = null;
-      const { error } = await supabase.from("listings").update(updateData).eq("id", id);
-      if (error) throw error;
-
-      // Insert into feedback history if feedback provided
-      if (admin_feedback) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from("listing_feedback").insert({
-            listing_id: id,
-            admin_id: user.id,
-            feedback: admin_feedback,
-          } as any);
-        }
-      }
-    },
-    onSuccess: (_, { status }) => {
-      toast.success(`Listing ${status}`);
-      queryClient.invalidateQueries({ queryKey: ["admin-listings"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["listing-feedback"] });
-      setReviewListing(null);
-      setFeedback("");
-    },
-    onError: () => toast.error("Failed to update listing"),
-  });
-
-  const statusColor = (s: string) => {
-    if (s === "approved") return "default" as const;
-    if (s === "rejected") return "destructive" as const;
+  const statusColor = (s: ListingStatus) => {
+    if (s === "APPROVED") return "default" as const;
+    if (s === "REJECTED") return "destructive" as const;
     return "secondary" as const;
   };
 
   // Navigate to next pending listing in review modal
-  const pendingListings = listings.filter((l) => l.status === "pending");
+  const pendingListings = listings.filter((l) => l.status === "PENDING");
   const currentReviewIdx = reviewListing ? pendingListings.findIndex((l) => l.id === reviewListing.id) : -1;
   const goToNext = () => {
     if (currentReviewIdx >= 0 && currentReviewIdx < pendingListings.length - 1) {
       setReviewListing(pendingListings[currentReviewIdx + 1]);
+      setFeedback("");
     }
+  };
+
+  const handleModerate = (id: string, status: "APPROVED" | "REJECTED", feedbackText?: string) => {
+    moderateListing.mutate(
+      { listingId: id, status, feedback: feedbackText },
+      {
+        onSuccess: () => {
+          toast.success(`Listing ${status.toLowerCase()}`);
+          setReviewListing(null);
+          setFeedback("");
+        },
+        onError: (e: any) => toast.error(e.message ?? "Failed to update listing"),
+      },
+    );
   };
 
   return (
@@ -245,15 +120,16 @@ const ListingModeration = () => {
             Review listings to verify photos match descriptions
           </p>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[140px]">
+        <Select value={filter} onValueChange={(v) => setFilter(v as ListingStatus | "all")}>
+          <SelectTrigger className="w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="APPROVED">Approved</SelectItem>
+            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="NEEDS_REVISION">Needs Revision</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -270,7 +146,7 @@ const ListingModeration = () => {
             <Card key={listing.id} className="group">
               <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                 <img
-                  src={listing.images?.[0] || "/placeholder.svg"}
+                  src={listing.coverImage?.url || "/placeholder.svg"}
                   alt={listing.title}
                   className="h-20 w-20 rounded-md object-cover"
                 />
@@ -280,8 +156,8 @@ const ListingModeration = () => {
                     <Badge variant={statusColor(listing.status)}>{listing.status}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {listing.brand} · {listing.category} · R {listing.price.toLocaleString()}
-                    {listing.images?.length > 1 && ` · ${listing.images.length} photos`}
+                    {listing.brand} · {listing.categoryLabel} · Rs {listing.price.toLocaleString()}
+                    {listing.media?.length > 1 && ` · ${listing.media.length} files`}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{listing.description}</p>
                 </div>
@@ -290,28 +166,28 @@ const ListingModeration = () => {
                     size="sm"
                     variant="outline"
                     className="gap-1"
-                    onClick={() => setReviewListing(listing)}
+                    onClick={() => { setReviewListing(listing); setFeedback(""); }}
                   >
                     <Eye className="h-4 w-4" /> Review
                   </Button>
-                  {listing.status !== "approved" && (
+                  {listing.status !== "APPROVED" && (
                     <Button
                       size="sm"
                       variant="outline"
                       className="gap-1 text-primary"
-                      onClick={() => updateStatus.mutate({ id: listing.id, status: "approved" })}
-                      disabled={updateStatus.isPending}
+                      onClick={() => handleModerate(listing.id, "APPROVED")}
+                      disabled={moderateListing.isPending}
                     >
                       <CheckCircle className="h-4 w-4" /> Approve
                     </Button>
                   )}
-                  {listing.status !== "rejected" && (
+                  {listing.status !== "REJECTED" && (
                     <Button
                       size="sm"
                       variant="outline"
                       className="gap-1 text-destructive"
-                      onClick={() => updateStatus.mutate({ id: listing.id, status: "rejected" })}
-                      disabled={updateStatus.isPending}
+                      onClick={() => handleModerate(listing.id, "REJECTED")}
+                      disabled={moderateListing.isPending}
                     >
                       <XCircle className="h-4 w-4" /> Reject
                     </Button>
@@ -337,7 +213,7 @@ const ListingModeration = () => {
 
               <div className="mt-4 grid gap-6 md:grid-cols-2">
                 {/* Images */}
-                <DetailGallery images={reviewListing.images || []} />
+                <DetailGallery media={reviewListing.media || []} />
 
                 {/* Details */}
                 <div className="space-y-4">
@@ -358,7 +234,7 @@ const ListingModeration = () => {
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-[10px] font-medium uppercase text-muted-foreground">Category</p>
-                        <p className="text-sm font-semibold capitalize text-foreground">{reviewListing.category}</p>
+                        <p className="text-sm font-semibold capitalize text-foreground">{reviewListing.categoryLabel}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
@@ -391,9 +267,9 @@ const ListingModeration = () => {
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Submitted {format(new Date(reviewListing.created_at), "MMM d, yyyy 'at' h:mm a")}
+                    Submitted {format(new Date(reviewListing.createdAt), "MMM d, yyyy 'at' h:mm a")}
                     <br />
-                    Seller ID: {reviewListing.seller_id.slice(0, 8)}…
+                    Seller ID: {reviewListing.sellerId.slice(0, 8)}…
                   </div>
 
                   {/* Previous feedback history */}
@@ -415,27 +291,27 @@ const ListingModeration = () => {
 
                   {/* Moderation actions */}
                   <div className="flex gap-3">
-                    {reviewListing.status !== "approved" && (
+                    {reviewListing.status !== "APPROVED" && (
                       <Button
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "approved", admin_feedback: feedback || undefined });
+                          handleModerate(reviewListing.id, "APPROVED", feedback || undefined);
                           goToNext();
                         }}
-                        disabled={updateStatus.isPending}
+                        disabled={moderateListing.isPending}
                       >
                         <CheckCircle className="h-4 w-4" /> Approve
                       </Button>
                     )}
-                    {reviewListing.status !== "rejected" && (
+                    {reviewListing.status !== "REJECTED" && (
                       <Button
                         variant="destructive"
                         className="flex-1 gap-2"
                         onClick={() => {
-                          updateStatus.mutate({ id: reviewListing.id, status: "rejected", admin_feedback: feedback });
+                          handleModerate(reviewListing.id, "REJECTED", feedback);
                           goToNext();
                         }}
-                        disabled={updateStatus.isPending}
+                        disabled={moderateListing.isPending}
                       >
                         <XCircle className="h-4 w-4" /> Reject
                       </Button>

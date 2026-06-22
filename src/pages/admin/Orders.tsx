@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminOrders, useAdminReservedListings } from "@/queries/useAdminOrders";
+import type { AdminOrder, AdminOrderItem } from "@/services/adminOrders.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,321 +9,87 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, Package, ExternalLink } from "lucide-react";
 import { format, startOfDay, startOfMonth, subDays } from "date-fns";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
-type OrderItem = {
-  listing_id?: string;
-  title?: string;
-  price?: number;
-  quantity?: number;
-  seller_id?: string;
-};
-
-type ItemStatusEntry = {
-  status?: string;
-  shipping_method?: string;
-  tracking_number?: string;
-  eta?: string;
-  proof_image_url?: string;
-  updated_at?: string;
-  shipped_at?: string;
-  completed_at?: string;
-  received_at?: string;
-  reminder_24h_sent_at?: string;
-  overdue_at?: string;
-};
-
-type Order = {
-  id: string;
-  buyer_id: string;
-  status: string;
-  items: OrderItem[];
-  item_status: Record<string, ItemStatusEntry>;
-  total: number;
-  created_at: string;
-  shipping_first_name: string | null;
-  shipping_last_name: string | null;
-  shipping_address: string | null;
-  shipping_city: string | null;
-  shipping_postal: string | null;
-  shipping_phone: string | null;
-};
-
-type Row = {
-  orderId: string;
-  created_at: string;
-  buyerName: string;
-  city: string | null;
-  item: OrderItem;
-  effective: string;
-  entry?: ItemStatusEntry;
-  order: Order;
-};
-
-type StatusFilter = "all" | "sold" | "shipped" | "received" | "completed" | "overdue" | "reserved";
+// ── Display types ─────────────────────────────────────────────────────────────
+type EffectiveStatus = "sold" | "shipped" | "delivered";
+type StatusFilter = "all" | EffectiveStatus | "reserved";
 type DateFilter = "all" | "today" | "7d" | "month";
 
-const AUTO_COMPLETE_MS = 48 * 60 * 60 * 1000;
-const SHIPPING_SLA_MS = 48 * 60 * 60 * 1000;
+interface Row {
+  orderId:    string;
+  created_at: string;
+  buyerName:  string;
+  city:       string;
+  item:       AdminOrderItem;
+  effective:  EffectiveStatus;
+  order:      AdminOrder;
+}
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
   if (filter === "today") return startOfDay(now);
-  if (filter === "7d") return subDays(startOfDay(now), 6);
+  if (filter === "7d")    return subDays(startOfDay(now), 6);
   if (filter === "month") return startOfMonth(now);
   return null;
 };
 
-const isShippedLike = (s?: string) => {
-  const v = s?.toLowerCase();
-  return v === "shipped" || v === "delivered" || v === "completed" || v === "received";
+// Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
+const effectiveStatus = (status: AdminOrderItem["status"]): EffectiveStatus => {
+  if (status === "CONFIRMED") return "sold";
+  if (status === "SHIPPED")   return "shipped";
+  return "delivered";
 };
 
-const itemEffectiveStatus = (orderStatus: string, orderCreatedAt: string, entry?: ItemStatusEntry) => {
-  const s = entry?.status?.toLowerCase();
-  if (s === "completed") return "completed";
-  if (s === "received") return "received";
-  if (s === "shipped" || s === "delivered") {
-    const shipTs = entry?.shipped_at ?? entry?.updated_at;
-    if (shipTs) {
-      const shippedAt = new Date(shipTs).getTime();
-      if (Number.isFinite(shippedAt) && Date.now() - shippedAt >= AUTO_COMPLETE_MS) {
-        return "completed";
-      }
-    }
-    return "shipped";
-  }
-  if (orderStatus === "cancelled") return "cancelled";
-  if (entry?.overdue_at) return "overdue";
-  const created = new Date(orderCreatedAt).getTime();
-  if (Number.isFinite(created) && Date.now() - created >= SHIPPING_SLA_MS) return "overdue";
-  return "sold";
-};
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_ADMIN_ORDERS: Order[] = [
-  {
-    id: "ord-8fdf392k",
-    buyer_id: "mock-user-id",
-    status: "shipped",
-    total: 14500,
-    items: [
-      { listing_id: "mock-listing-1", title: "Vintage Leather Jacket", price: 6500, quantity: 1, seller_id: "mock-seller-id" },
-    ],
-    item_status: {
-      "mock-listing-1": {
-        status: "shipped",
-        shipping_method: "Aramex",
-        tracking_number: "ARX998877",
-        shipped_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      },
-    },
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    shipping_first_name: "Bilal",
-    shipping_last_name: "Shaikh",
-    shipping_address: "House 12, Block C, North Nazimabad",
-    shipping_city: "Karachi",
-    shipping_postal: "74700",
-    shipping_phone: "+92 300 1234567",
-  },
-  {
-    id: "ord-1029ab",
-    buyer_id: "mock-buyer-2",
-    status: "completed",
-    total: 3500,
-    items: [
-      { listing_id: "mock-listing-2", title: "Classic White Sneakers", price: 3500, quantity: 1, seller_id: "mock-seller-id-2" },
-    ],
-    item_status: {
-      "mock-listing-2": {
-        status: "completed",
-        shipping_method: "The Courier Guy",
-        tracking_number: "TCG553211",
-        shipped_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    },
-    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    shipping_first_name: "Ayesha",
-    shipping_last_name: "Khan",
-    shipping_address: "Flat 4B, Clifton Block 5",
-    shipping_city: "Karachi",
-    shipping_postal: "75600",
-    shipping_phone: "+92 321 7654321",
-  },
-  {
-    id: "ord-77baad",
-    buyer_id: "mock-buyer-3",
-    status: "sold",
-    total: 2800,
-    items: [
-      { listing_id: "mock-listing-3", title: "Bohemian Summer Dress", price: 2800, quantity: 1, seller_id: "mock-user-id" },
-    ],
-    item_status: {},
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    shipping_first_name: "Sana",
-    shipping_last_name: "Malik",
-    shipping_address: "Plot 22, DHA Phase 6",
-    shipping_city: "Lahore",
-    shipping_postal: "54000",
-    shipping_phone: "+92 333 1122334",
-  },
-  {
-    id: "ord-44ccde",
-    buyer_id: "mock-buyer-4",
-    status: "sold",
-    total: 8900,
-    items: [
-      { listing_id: "mock-listing-5", title: "Wool Winter Coat", price: 8900, quantity: 1, seller_id: "mock-user-id" },
-    ],
-    item_status: {},
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    shipping_first_name: "Hassan",
-    shipping_last_name: "Raza",
-    shipping_address: "Street 9, F-10",
-    shipping_city: "Islamabad",
-    shipping_postal: "44000",
-    shipping_phone: "+92 345 5566778",
-  },
-];
-
-const MOCK_RESERVED_LISTINGS = [
-  {
-    id: "mock-listing-7",
-    title: "Designer Silk Scarf",
-    price: 1800,
-    images: ["https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=600"],
-    seller_id: "mock-seller-id-2",
-    reserved_for: "mock-buyer-2",
-    reserved_until: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    reserved_offer_id: "offer-mock-1",
-    updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-const MOCK_PROFILES_MAP: Record<string, { id: string; full_name: string; avatar_url: string | null; phone: string | null; location: string | null }> = {
-  "mock-user-id": { id: "mock-user-id", full_name: "Muhamad Bilal Shaikh", avatar_url: null, phone: "+92 300 1234567", location: "Karachi, Pakistan" },
-  "mock-seller-id": { id: "mock-seller-id", full_name: "Premium Thrifter", avatar_url: null, phone: "+92 312 9988776", location: "Karachi, Pakistan" },
-  "mock-seller-id-2": { id: "mock-seller-id-2", full_name: "Closet Curator", avatar_url: null, phone: "+92 333 4455667", location: "Lahore, Pakistan" },
-  "mock-buyer-2": { id: "mock-buyer-2", full_name: "Ayesha Khan", avatar_url: null, phone: "+92 321 7654321", location: "Karachi, Pakistan" },
-  "mock-buyer-3": { id: "mock-buyer-3", full_name: "Sana Malik", avatar_url: null, phone: "+92 333 1122334", location: "Lahore, Pakistan" },
-  "mock-buyer-4": { id: "mock-buyer-4", full_name: "Hassan Raza", avatar_url: null, phone: "+92 345 5566778", location: "Islamabad, Pakistan" },
-};
-
-const MOCK_LISTING_LOOKUP: Record<string, { id: string; title: string; seller_id: string; images: string[]; price: number; status: string }> = {
-  "mock-listing-1": { id: "mock-listing-1", title: "Vintage Leather Jacket", seller_id: "mock-seller-id", images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"], price: 6500, status: "approved" },
-  "mock-listing-2": { id: "mock-listing-2", title: "Classic White Sneakers", seller_id: "mock-seller-id-2", images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600"], price: 3500, status: "sold" },
-  "mock-listing-3": { id: "mock-listing-3", title: "Bohemian Summer Dress", seller_id: "mock-user-id", images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"], price: 2800, status: "pending" },
-  "mock-listing-5": { id: "mock-listing-5", title: "Wool Winter Coat", seller_id: "mock-user-id", images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"], price: 8900, status: "sold" },
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
+// ── Component ─────────────────────────────────────────────────────────────────
 const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [selected, setSelected] = useState<Row | null>(null);
+  const [dateFilter,   setDateFilter]   = useState<DateFilter>("all");
+  const [selected,     setSelected]     = useState<Row | null>(null);
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_ADMIN_ORDERS;
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Order[];
-    },
-  });
+  const { data: orders = [], isLoading } = useAdminOrders();
+  const { data: reservedListings = [], isLoading: reservedLoading } =
+    useAdminReservedListings(statusFilter === "reserved");
 
-  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery({
-    queryKey: ["admin-reserved-listings"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_RESERVED_LISTINGS;
-      const { data, error } = await supabase
-        .from("listings")
-        .select("id, title, price, images, seller_id, reserved_for, reserved_until, reserved_offer_id, updated_at")
-        .eq("status", "reserved")
-        .order("reserved_until", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: statusFilter === "reserved",
-  });
-
-  const reservedUserIds = useMemo(
-    () => Array.from(new Set(reservedListings.flatMap((l: any) => [l.seller_id, l.reserved_for].filter(Boolean)))),
-    [reservedListings]
-  );
-
-  const { data: reservedProfiles = [] } = useQuery({
-    queryKey: ["admin-reserved-profiles", reservedUserIds],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return reservedUserIds.map((id) => MOCK_PROFILES_MAP[id]).filter(Boolean);
-      }
-      if (reservedUserIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", reservedUserIds);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: statusFilter === "reserved" && reservedUserIds.length > 0,
-  });
-
+  // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
     const start = dateFilterStart(dateFilter);
     const flat: Row[] = [];
 
     for (const o of orders) {
-      if (start && new Date(o.created_at) < start) continue;
-      const buyerName = [o.shipping_first_name, o.shipping_last_name].filter(Boolean).join(" ") || "—";
-      for (const item of o.items ?? []) {
-        if (!item?.listing_id) continue;
-        const entry = o.item_status?.[item.listing_id];
-        const effective = itemEffectiveStatus(o.status, o.created_at, entry);
-        if (statusFilter !== "all" && effective !== statusFilter) continue;
+      if (start && new Date(o.createdAt) < start) continue;
+      const buyerName = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(" ") || "—";
+
+      for (const item of o.items) {
+        const eff = effectiveStatus(item.status);
+        if (statusFilter !== "all" && statusFilter !== "reserved" && eff !== statusFilter) continue;
+
         flat.push({
-          orderId: o.id,
-          created_at: o.created_at,
+          orderId:    o.id,
+          created_at: o.createdAt,
           buyerName,
-          city: o.shipping_city,
+          city:       o.shippingCity,
           item,
-          effective,
-          entry,
-          order: o,
+          effective:  eff,
+          order:      o,
         });
       }
     }
     return flat;
   }, [orders, statusFilter, dateFilter]);
 
+  // KPI counts — aggregate counts come directly from backend's itemStatusCounts per order
   const counts = useMemo(() => {
     const start = dateFilterStart(dateFilter);
-    let sold = 0;
-    let shipped = 0;
-    let received = 0;
-    let completed = 0;
-    let overdue = 0;
+    let sold = 0, shipped = 0, received = 0, completed = 0;
+
     for (const o of orders) {
-      if (start && new Date(o.created_at) < start) continue;
-      for (const item of o.items ?? []) {
-        if (!item?.listing_id) continue;
-        const eff = itemEffectiveStatus(o.status, o.created_at, o.item_status?.[item.listing_id]);
-        if (eff === "sold") sold++;
-        else if (eff === "shipped") shipped++;
-        else if (eff === "received") received++;
-        else if (eff === "completed") completed++;
-        else if (eff === "overdue") overdue++;
-      }
+      if (start && new Date(o.createdAt) < start) continue;
+      sold      += o.itemStatusCounts.confirmed;
+      shipped   += o.itemStatusCounts.shipped;
+      received  += o.itemStatusCounts.received;
+      completed += o.itemStatusCounts.completed;
     }
-    return { sold, shipped, received, completed, overdue, total: sold + shipped + received + completed + overdue };
+    return { sold, shipped, received, completed, total: sold + shipped + received + completed };
   }, [orders, dateFilter]);
 
   return (
@@ -333,7 +99,7 @@ const AdminOrders = () => {
         <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -367,12 +133,6 @@ const AdminOrders = () => {
             <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
           </CardContent>
         </Card>
-        <Card className={counts.overdue > 0 ? "border-destructive/60" : undefined}>
-          <CardContent className="p-4">
-            <p className="text-xs uppercase text-muted-foreground">Overdue (48h)</p>
-            <p className="font-heading text-2xl font-semibold text-destructive">{counts.overdue}</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -381,9 +141,7 @@ const AdminOrders = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
-            <TabsTrigger value="received">Received</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="overdue">Admin Review</TabsTrigger>
+            <TabsTrigger value="delivered">Delivered</TabsTrigger>
             <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -418,31 +176,25 @@ const AdminOrders = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reservedListings.map((l: any) => {
-                    const seller = reservedProfiles.find((p: any) => p.id === l.seller_id);
-                    const buyer = reservedProfiles.find((p: any) => p.id === l.reserved_for);
-                    const expiresAt = l.reserved_until ? new Date(l.reserved_until) : null;
-                    const expired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+                  {reservedListings.map((l) => {
+                    const expiresAt = new Date(l.reservationExpiresAt);
+                    const expired = expiresAt.getTime() < Date.now();
                     return (
-                      <TableRow key={l.id}>
+                      <TableRow key={l.reservationId}>
                         <TableCell className="font-medium">
-                          <Link to={`/listing/${l.id}`} className="inline-flex items-center gap-1 hover:underline">
-                            {l.title ?? "—"} <ExternalLink className="h-3 w-3" />
+                          <Link to={`/listing/${l.listingId}`} className="inline-flex items-center gap-1 hover:underline">
+                            {l.title} <ExternalLink className="h-3 w-3" />
                           </Link>
                         </TableCell>
-                        <TableCell className="text-sm">{seller?.full_name ?? "—"}</TableCell>
-                        <TableCell className="text-sm">{buyer?.full_name ?? "—"}</TableCell>
+                        <TableCell className="text-sm">{l.sellerFullName}</TableCell>
+                        <TableCell className="text-sm">{l.buyerFullName}</TableCell>
                         <TableCell>
-                          {expiresAt ? (
-                            <Badge variant={expired ? "destructive" : "secondary"}>
-                              {format(expiresAt, "MMM d, p")}
-                            </Badge>
-                          ) : (
-                            "—"
-                          )}
+                          <Badge variant={expired ? "destructive" : "secondary"}>
+                            {format(expiresAt, "MMM d, p")}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          Rs {Number(l.price ?? 0).toLocaleString()}
+                          Rs {l.price.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     );
@@ -474,27 +226,27 @@ const AdminOrders = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r, i) => (
+                  {rows.map((r) => (
                     <TableRow
-                      key={`${r.orderId}-${r.item.listing_id}-${i}`}
+                      key={r.item.id}
                       className="cursor-pointer"
                       onClick={() => setSelected(r)}
                     >
-                      <TableCell className="font-medium">{r.item.title ?? "—"}</TableCell>
+                      <TableCell className="font-medium">{r.item.title}</TableCell>
                       <TableCell>
                         <div className="text-sm">{r.buyerName}</div>
                         {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={r.effective === "overdue" ? "destructive" : r.effective === "shipped" ? "default" : "secondary"}>
+                        <Badge variant={r.effective === "shipped" ? "default" : "secondary"}>
                           {r.effective}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {r.entry?.tracking_number ? (
+                        {r.item.trackingNumber ? (
                           <div>
-                            <div>{r.entry.shipping_method ?? "—"}</div>
-                            <div className="font-mono text-xs">{r.entry.tracking_number}</div>
+                            <div>{r.item.shippingMethod ?? "—"}</div>
+                            <div className="font-mono text-xs">{r.item.trackingNumber}</div>
                           </div>
                         ) : (
                           "—"
@@ -504,7 +256,7 @@ const AdminOrders = () => {
                         {format(new Date(r.created_at), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        Rs {Number(r.item.price ?? 0).toLocaleString()}
+                        Rs {r.item.price.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -520,53 +272,12 @@ const AdminOrders = () => {
   );
 };
 
+// ── Detail dialog — no extra API calls, item already carries all display data ──
 const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => void }) => {
-  const listingId = row?.item.listing_id;
-  const buyerId = row?.order.buyer_id;
-
-  const { data: listing } = useQuery({
-    queryKey: ["admin-order-listing", listingId],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_LISTING_LOOKUP[listingId!] ?? null;
-      const { data, error } = await supabase
-        .from("listings")
-        .select("id, title, seller_id, images, price, status")
-        .eq("id", listingId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!listingId,
-  });
-
-  const sellerId = listing?.seller_id ?? row?.item.seller_id;
-
-  const { data: profiles } = useQuery({
-    queryKey: ["admin-order-profiles", buyerId, sellerId],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const ids = [buyerId, sellerId].filter(Boolean) as string[];
-        return ids.map((id) => MOCK_PROFILES_MAP[id]).filter(Boolean);
-      }
-      const ids = [buyerId, sellerId].filter(Boolean) as string[];
-      if (ids.length === 0) return [];
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, phone, location")
-        .in("id", ids);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!buyerId && !!sellerId,
-  });
-
   if (!row) return null;
 
-  const buyerProfile = profiles?.find((p) => p.id === buyerId);
-  const sellerProfile = profiles?.find((p) => p.id === sellerId);
-  const entry = row.entry;
-  const order = row.order;
-  const shippingAddr = [order.shipping_address, order.shipping_city, order.shipping_postal]
+  const { item, order } = row;
+  const shippingAddr = [order.shippingAddress, order.shippingCity, order.shippingPostal]
     .filter(Boolean)
     .join(", ");
 
@@ -574,31 +285,31 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
     <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">{row.item.title ?? "Order item"}</DialogTitle>
+          <DialogTitle className="font-heading">{item.title}</DialogTitle>
           <DialogDescription>
-            Order #{row.orderId.slice(0, 8)} · {format(new Date(row.created_at), "PPp")}
+            Order #{order.id.slice(0, 8)} · {format(new Date(order.createdAt), "PPp")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           <div className="flex items-center gap-4">
-            {listing?.images?.[0] && (
-              <img src={listing.images[0]} alt="" className="h-24 w-24 rounded-md object-cover" />
+            {item.imageUrl && (
+              <img src={item.imageUrl} alt="" className="h-24 w-24 rounded-md object-cover" />
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <Badge variant={row.effective === "shipped" ? "default" : "secondary"}>{row.effective}</Badge>
-                {listing && (
-                  <Link
-                    to={`/listing/${listing.id}`}
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    View listing <ExternalLink className="h-3 w-3" />
-                  </Link>
-                )}
+                <Badge variant={item.status === "SHIPPED" ? "default" : "secondary"}>
+                  {effectiveStatus(item.status)}
+                </Badge>
+                <Link
+                  to={`/listing/${item.listingId}`}
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View listing <ExternalLink className="h-3 w-3" />
+                </Link>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Price: Rs {Number(row.item.price ?? 0).toLocaleString()}
+                Price: Rs {item.price.toLocaleString()}
               </p>
             </div>
           </div>
@@ -607,42 +318,29 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
             <Card>
               <CardContent className="p-4">
                 <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Buyer</p>
-                <p className="text-sm font-medium">{buyerProfile?.full_name ?? row.buyerName}</p>
-                {buyerProfile?.location && (
-                  <p className="text-xs text-muted-foreground">{buyerProfile.location}</p>
+                <p className="text-sm font-medium">{item.buyerFullName}</p>
+                {order.shippingPhone && (
+                  <p className="text-xs text-muted-foreground">{order.shippingPhone}</p>
                 )}
-                {order.shipping_phone && (
-                  <p className="text-xs text-muted-foreground">{order.shipping_phone}</p>
-                )}
-                {buyerId && (
-                  <Link
-                    to={`/seller/${buyerId}`}
-                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    View profile <ExternalLink className="h-3 w-3" />
-                  </Link>
-                )}
+                <Link
+                  to={`/seller/${item.buyerId}`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View profile <ExternalLink className="h-3 w-3" />
+                </Link>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-4">
                 <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Seller</p>
-                <p className="text-sm font-medium">{sellerProfile?.full_name ?? "—"}</p>
-                {sellerProfile?.location && (
-                  <p className="text-xs text-muted-foreground">{sellerProfile.location}</p>
-                )}
-                {sellerProfile?.phone && (
-                  <p className="text-xs text-muted-foreground">{sellerProfile.phone}</p>
-                )}
-                {sellerId && (
-                  <Link
-                    to={`/seller/${sellerId}`}
-                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    View profile <ExternalLink className="h-3 w-3" />
-                  </Link>
-                )}
+                <p className="text-sm font-medium">{item.sellerFullName}</p>
+                <Link
+                  to={`/seller/${item.sellerId}`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View profile <ExternalLink className="h-3 w-3" />
+                </Link>
               </CardContent>
             </Card>
           </div>
@@ -652,45 +350,49 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
               <p className="text-xs font-semibold uppercase text-muted-foreground">Timeline</p>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Sold (order placed)</span>
-                <span>{format(new Date(order.created_at), "PPp")}</span>
+                <span>{format(new Date(order.createdAt), "PPp")}</span>
               </div>
-              {entry?.updated_at && (
+              {item.shippedAt && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {entry.status === "shipped" || entry.status === "delivered" ? "Shipped" : "Status updated"}
-                  </span>
-                  <span>{format(new Date(entry.updated_at), "PPp")}</span>
+                  <span className="text-muted-foreground">Shipped</span>
+                  <span>{format(new Date(item.shippedAt), "PPp")}</span>
                 </div>
               )}
-              {entry?.eta && (
+              {item.receivedAt && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">ETA</span>
-                  <span>{entry.eta}</span>
+                  <span className="text-muted-foreground">Delivered</span>
+                  <span>{format(new Date(item.receivedAt), "PPp")}</span>
+                </div>
+              )}
+              {item.expectedDelivery && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Expected delivery</span>
+                  <span>{format(new Date(item.expectedDelivery), "PPp")}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {(entry?.tracking_number || entry?.shipping_method || entry?.proof_image_url) && (
+          {(item.trackingNumber || item.shippingMethod || item.proofImageUrl) && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Shipping</p>
-                {entry.shipping_method && (
+                {item.shippingMethod && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Method</span>
-                    <span>{entry.shipping_method}</span>
+                    <span>{item.shippingMethod}</span>
                   </div>
                 )}
-                {entry.tracking_number && (
+                {item.trackingNumber && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tracking</span>
-                    <span className="font-mono text-xs">{entry.tracking_number}</span>
+                    <span className="font-mono text-xs">{item.trackingNumber}</span>
                   </div>
                 )}
-                {entry.proof_image_url && (
-                  <a href={entry.proof_image_url} target="_blank" rel="noreferrer">
+                {item.proofImageUrl && (
+                  <a href={item.proofImageUrl} target="_blank" rel="noreferrer">
                     <img
-                      src={entry.proof_image_url}
+                      src={item.proofImageUrl}
                       alt="Shipping proof"
                       className="mt-2 h-24 w-24 rounded-md object-cover"
                     />

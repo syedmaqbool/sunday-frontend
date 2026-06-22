@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,152 +11,69 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
-type Audience = "user" | "admin";
-
-interface NotificationRow {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  link: string | null;
-  read: boolean;
-  audience: Audience;
-  created_at: string;
-}
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from "@/queries/useNotification";
 
 interface NotificationBellProps {
-  audience?: Audience;
   className?: string;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+interface NotificationRow {
+  id: string;
+  entityId: string | null;
+  userId: string;
+  body: string;
+  audience: "USER" | "ADMIN";
+  entityType: string | null;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
+  title: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const MOCK_NOTIFICATIONS: NotificationRow[] = [
-  {
-    id: "notif-1",
-    type: "offer_accepted",
-    title: "Your offer was accepted!",
-    body: "The seller accepted your offer on 'Vintage Leather Jacket'.",
-    link: "/my-offers",
-    read: false,
-    audience: "user",
-    created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notif-2",
-    type: "item_shipped",
-    title: "Your order has shipped",
-    body: "Tracking number added — your item is on its way via Aramex.",
-    link: "/profile",
-    read: false,
-    audience: "user",
-    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notif-3",
-    type: "new_message",
-    title: "New message from Premium Thrifter",
-    body: "\"Hey, thanks for your purchase! Let me know if you have questions.\"",
-    link: "/messages",
-    read: true,
-    audience: "user",
-    created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notif-4",
-    type: "listing_approved",
-    title: "Your listing is live",
-    body: "'Classic White Sneakers' has been approved and is now visible to buyers.",
-    link: "/my-listings",
-    read: true,
-    audience: "user",
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-const NotificationBell = ({ audience = "user", className }: NotificationBellProps) => {
-  const { user } = useAuth();
-  const { data: isAdmin } = useAdminCheck();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+const NotificationBell = ({ className }: NotificationBellProps) => {
   const [open, setOpen] = useState(false);
 
-  const queryKey = ["notifications", audience, user?.id ?? "anon"];
+  const { data, isLoading } = useNotifications();
 
-  const enabled = NEXT_PUBLIC_USE_MOCK_DATA || (!!user && (audience === "user" || isAdmin === true));
+  const markReadMutation = useMarkNotificationRead();
+  const markAllMutation = useMarkAllNotificationsRead();
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey,
-    enabled,
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return MOCK_NOTIFICATIONS.filter((n) => n.audience === audience);
-      }
-      let q = supabase
-        .from("notifications")
-        .select("*")
-        .eq("audience", audience)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as NotificationRow[];
-    },
-  });
+  const items: NotificationRow[] = data?.data ?? [];
 
-  // Realtime subscription
-  useEffect(() => {
-    if (!enabled || NEXT_PUBLIC_USE_MOCK_DATA) return;
-    const channel = supabase
-      .channel(`notifications-${audience}-${user!.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
-        () => queryClient.invalidateQueries({ queryKey }),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, audience, user?.id]);
-
-  const unread = items.filter((n) => !n.read).length;
-
-  if (!enabled) return null;
+  const unread = items.filter((n) => !n.readAt).length;
 
   const markRead = async (id: string) => {
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      queryClient.setQueryData(queryKey, (old: NotificationRow[] = []) =>
-        old.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
-      return;
+    try {
+      await markReadMutation.mutateAsync(id);
+    } catch (error) {
+      console.error("Failed to mark notification as read", error);
     }
-    await supabase.from("notifications").update({ read: true }).eq("id", id);
-    queryClient.invalidateQueries({ queryKey });
   };
 
   const markAllRead = async () => {
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      queryClient.setQueryData(queryKey, (old: NotificationRow[] = []) =>
-        old.map((n) => ({ ...n, read: true })),
-      );
-      return;
+    try {
+      await markAllMutation.mutateAsync();
+    } catch (error) {
+      console.error("Failed to mark all notifications as read", error);
     }
-    const ids = items.filter((n) => !n.read).map((n) => n.id);
-    if (!ids.length) return;
-    await supabase.from("notifications").update({ read: true }).in("id", ids);
-    queryClient.invalidateQueries({ queryKey });
   };
 
   const onClickItem = async (n: NotificationRow) => {
-    if (!n.read) await markRead(n.id);
+    if (!n.readAt) {
+      await markRead(n.id);
+    }
+
+    // navigation intentionally removed
+    // backend currently does not provide link field
+
     setOpen(false);
-    if (n.link) navigate(n.link);
   };
 
   return (
@@ -169,10 +82,14 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
         <Button
           variant="ghost"
           size="icon"
-          className={cn("relative text-muted-foreground hover:text-foreground", className)}
+          className={cn(
+            "relative text-muted-foreground hover:text-foreground",
+            className
+          )}
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
+
           {unread > 0 && (
             <Badge
               variant="destructive"
@@ -183,22 +100,40 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
           )}
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <p className="text-sm font-semibold">Notifications</p>
+
           {unread > 0 && (
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={markAllRead}>
-              <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              onClick={markAllRead}
+              disabled={markAllMutation.isPending}
+            >
+              {markAllMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Mark all read
+                </>
+              )}
             </Button>
           )}
         </div>
+
         <ScrollArea className="max-h-96">
           {isLoading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : items.length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">No notifications yet.</p>
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No notifications yet.
+            </p>
           ) : (
             <ul className="divide-y divide-border">
               {items.map((n) => (
@@ -208,18 +143,29 @@ const NotificationBell = ({ audience = "user", className }: NotificationBellProp
                     onClick={() => onClickItem(n)}
                     className={cn(
                       "flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                      !n.read && "bg-primary/5",
+                      !n.readAt && "bg-primary/5"
                     )}
                   >
                     <div className="flex w-full items-start gap-2">
-                      {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                      {!n.readAt && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                      )}
+
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">{n.title}</p>
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {n.title}
+                        </p>
+
                         {n.body && (
-                          <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {n.body}
+                          </p>
                         )}
+
                         <p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(n.createdAt), {
+                            addSuffix: true,
+                          })}
                         </p>
                       </div>
                     </div>

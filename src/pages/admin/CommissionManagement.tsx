@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +15,13 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Percent } from "lucide-react";
-import { useCommissionTiers, __mockCommissionStore } from "@/hooks/useCommissionTiers";
-import type { CommissionTier } from "@/lib/commission";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import {
+  useCommissionTiers,
+  useCreateCommissionTier,
+  useUpdateCommissionTier,
+  useDeleteCommissionTier,
+} from "@/queries/useAdminCommission";
+import type { CommissionTier } from "@/services/commission.service";
 
 const blankForm = {
   name: "",
@@ -32,14 +34,15 @@ const blankForm = {
 };
 
 const CommissionManagement = () => {
-  const qc = useQueryClient();
   const { data: tiers, isLoading } = useCommissionTiers();
+  const createTier = useCreateCommissionTier();
+  const updateTier = useUpdateCommissionTier();
+  const deleteTier = useDeleteCommissionTier();
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CommissionTier | null>(null);
   const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
-
-  const refresh = () => qc.invalidateQueries({ queryKey: ["commission-tiers"] });
 
   const openNew = () => {
     setEditing(null);
@@ -52,11 +55,11 @@ const CommissionManagement = () => {
     setForm({
       name: t.name,
       categories: (t.categories ?? []).join(", "),
-      min_price: String(t.min_price ?? 0),
-      max_price: t.max_price == null ? "" : String(t.max_price),
+      min_price: String(t.minPrice ?? 0),
+      max_price: t.maxPrice == null ? "" : String(t.maxPrice),
       rate: String(t.rate),
       active: t.active,
-      sort_order: String(t.sort_order ?? 0),
+      sort_order: String(t.sortOrder ?? 0),
     });
     setOpen(true);
   };
@@ -81,49 +84,23 @@ const CommissionManagement = () => {
     const payload = {
       name: form.name.trim(),
       categories,
-      min_price: minP,
-      max_price: maxP,
+      minPrice: minP,
+      maxPrice: maxP,
       rate,
       active: form.active,
-      sort_order: parseInt(form.sort_order || "0", 10) || 0,
+      sortOrder: parseInt(form.sort_order || "0", 10) || 0,
     };
 
     setSaving(true);
     try {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const current = __mockCommissionStore.get();
-        if (editing) {
-          __mockCommissionStore.set(
-            current.map((t) => (t.id === editing.id ? { ...t, ...payload } : t)),
-          );
-          toast({ title: "Tier updated" });
-        } else {
-          __mockCommissionStore.set([
-            ...current,
-            { id: `mock-tier-${Date.now()}`, ...payload },
-          ]);
-          toast({ title: "Tier created" });
-        }
-        setOpen(false);
-        refresh();
-        setSaving(false);
-        return;
-      }
-
       if (editing) {
-        const { error } = await supabase
-          .from("commission_tiers" as any)
-          .update(payload)
-          .eq("id", editing.id);
-        if (error) throw error;
+        await updateTier.mutateAsync({ commissionTierId: editing.id, payload });
         toast({ title: "Tier updated" });
       } else {
-        const { error } = await supabase.from("commission_tiers" as any).insert(payload);
-        if (error) throw error;
+        await createTier.mutateAsync(payload);
         toast({ title: "Tier created" });
       }
       setOpen(false);
-      refresh();
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -133,35 +110,20 @@ const CommissionManagement = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this commission tier?")) return;
-
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      __mockCommissionStore.set(__mockCommissionStore.get().filter((t) => t.id !== id));
+    try {
+      await deleteTier.mutateAsync(id);
       toast({ title: "Tier deleted" });
-      refresh();
-      return;
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-
-    const { error } = await supabase.from("commission_tiers" as any).delete().eq("id", id);
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
-    toast({ title: "Tier deleted" });
-    refresh();
   };
 
   const toggleActive = async (t: CommissionTier) => {
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      __mockCommissionStore.set(
-        __mockCommissionStore.get().map((x) => (x.id === t.id ? { ...x, active: !x.active } : x)),
-      );
-      refresh();
-      return;
+    try {
+      await updateTier.mutateAsync({ commissionTierId: t.id, payload: { active: !t.active } });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-
-    const { error } = await supabase
-      .from("commission_tiers" as any)
-      .update({ active: !t.active })
-      .eq("id", t.id);
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
-    refresh();
   };
 
   const fmtPrice = (n: number | null) =>
@@ -220,7 +182,7 @@ const CommissionManagement = () => {
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
-                    {fmtPrice(t.min_price)} – {fmtPrice(t.max_price)}
+                    {fmtPrice(t.minPrice)} – {fmtPrice(t.maxPrice)}
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1 font-medium">

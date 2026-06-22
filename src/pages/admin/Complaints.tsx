@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminComplaints, useUpdateComplaintStatus } from "@/queries/useAdminComplaint";
+import type { AdminComplaintStatus, Complaint, ComplaintStatus } from "@/services/complain.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,185 +10,64 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock, MapPin, Truck, PackageCheck } from "lucide-react";
+import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
-const STATUS_LABEL: Record<string, string> = {
-  raised: "Complaint Raised",
-  under_review: "Under Review",
-  return_approved: "Return Approved",
-  return_address_provided: "Return Address Provided",
-  return_in_transit: "Return In Transit",
-  return_received: "Return Received",
-  refunded: "Completed (Refunded)",
-  rejected: "Completed (Rejected)",
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const STATUS_LABEL: Record<ComplaintStatus, string> = {
+  RAISED: "Complaint Raised",
+  UNDER_REVIEW: "Under Review",
+  RETURN_APPROVED: "Return Approved",
+  RETURN_ADDRESS_PROVIDED: "Return Address Provided",
+  RETURN_IN_TRANSIT: "Return In Transit",
+  RETURN_RECEIVED: "Return Received",
+  REFUNDED: "Completed (Refunded)",
+  REJECTED: "Completed (Rejected)",
 };
 
-type StatusFilter = "all" | "raised" | "under_review" | "return_approved" | "return_address_provided" | "return_in_transit" | "return_received" | "refunded" | "rejected";
-
-type ComplaintRow = {
-  id: string;
-  order_id: string;
-  listing_id: string;
-  buyer_id: string;
-  seller_id: string;
-  reason: string;
-  evidence_urls: string[];
-  return_proof_urls: string[];
-  return_carrier: string | null;
-  return_tracking: string | null;
-  return_to_name: string | null;
-  return_to_address: string | null;
-  return_to_city: string | null;
-  return_to_postal: string | null;
-  return_to_phone: string | null;
-  return_to_notes: string | null;
-  status: string;
-  admin_notes: string;
-  created_at: string;
-  updated_at: string;
-};
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-let mockComplaintsStore: ComplaintRow[] = [
-  {
-    id: "cmp-1",
-    order_id: "ord-55deff",
-    listing_id: "mock-listing-6",
-    buyer_id: "mock-buyer-5",
-    seller_id: "mock-seller-id-2",
-    reason: "Bag arrived with a broken zipper, doesn't match the listing photos which showed it fully intact.",
-    evidence_urls: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600"],
-    return_proof_urls: [],
-    return_carrier: null,
-    return_tracking: null,
-    return_to_name: null,
-    return_to_address: null,
-    return_to_city: null,
-    return_to_postal: null,
-    return_to_phone: null,
-    return_to_notes: null,
-    status: "refunded",
-    admin_notes: "Verified zipper damage from photos. Approved refund without requiring return since item value was low relative to return shipping cost.",
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "cmp-2",
-    order_id: "ord-1029ab",
-    listing_id: "mock-listing-2",
-    buyer_id: "mock-buyer-2",
-    seller_id: "mock-seller-id-2",
-    reason: "Sneakers are a size smaller than what was listed.",
-    evidence_urls: [],
-    return_proof_urls: [],
-    return_carrier: null,
-    return_tracking: null,
-    return_to_name: "Closet Curator",
-    return_to_address: "Shop 14, Tariq Road",
-    return_to_city: "Karachi",
-    return_to_postal: "74400",
-    return_to_phone: "+92 333 4455667",
-    return_to_notes: "Please pack securely, original box not required.",
-    status: "return_address_provided",
-    admin_notes: "",
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "cmp-3",
-    order_id: "ord-77baad",
-    listing_id: "mock-listing-3",
-    buyer_id: "mock-buyer-3",
-    seller_id: "mock-user-id",
-    reason: "Dress has a small stain near the hem that wasn't mentioned in the description.",
-    evidence_urls: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
-    return_proof_urls: [],
-    return_carrier: null,
-    return_tracking: null,
-    return_to_name: null,
-    return_to_address: null,
-    return_to_city: null,
-    return_to_postal: null,
-    return_to_phone: null,
-    return_to_notes: null,
-    status: "raised",
-    admin_notes: "",
-    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
-];
+type StatusFilter = ComplaintStatus | "all";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const AdminComplaints = () => {
-  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<StatusFilter>("all");
-  const [selected, setSelected] = useState<ComplaintRow | null>(null);
+  const [selected, setSelected] = useState<Complaint | null>(null);
 
-  const { data: complaints = [], isLoading } = useQuery({
-    queryKey: ["admin-complaints"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockComplaintsStore;
-      const { data, error } = await supabase
-        .from("complaints")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as ComplaintRow[];
-    },
-  });
+  const { data, isLoading } = useAdminComplaints(filter);
+  const updateStatus = useUpdateComplaintStatus();
 
-  const filtered = filter === "all" ? complaints : complaints.filter((c) => c.status === filter);
+  const complaints: Complaint[] = data?.data ?? [];
+  
+
+  const filtered =
+    filter === "all" ? complaints : complaints.filter((c) => c.status === filter);
 
   const counts = complaints.reduce(
     (acc, c) => {
       acc.total++;
-      acc[c.status as keyof typeof acc] = (acc[c.status as keyof typeof acc] ?? 0) + 1;
+      acc[c.status] = (acc[c.status] ?? 0) + 1;
       return acc;
     },
     { total: 0 } as Record<string, number>,
   );
 
-  const updateStatus = async (id: string, status: string, notes?: string) => {
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      mockComplaintsStore = mockComplaintsStore.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status,
-              ...(notes !== undefined ? { admin_notes: notes } : {}),
-              updated_at: new Date().toISOString(),
-            }
-          : c,
-      );
-      toast.success("Complaint updated");
-      queryClient.invalidateQueries({ queryKey: ["admin-complaints"] });
-      setSelected(null);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("complaints")
-      .update({
-        status,
-        ...(notes !== undefined ? { admin_notes: notes } : {}),
-        ...(status === "return_approved" ? { return_approved_at: new Date().toISOString() } : {}),
-        ...(status === "refunded" || status === "rejected" || status === "return_received"
-          ? { resolved_at: new Date().toISOString() }
-          : {}),
-      })
-      .eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Complaint updated");
-    queryClient.invalidateQueries({ queryKey: ["admin-complaints"] });
-    setSelected(null);
+  const handleUpdate = (
+    complaintId: string,
+    status: AdminComplaintStatus,
+    adminNotes?: string,
+  ) => {
+    updateStatus.mutate(
+      { complaintId, status, adminNotes: adminNotes || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Complaint updated");
+          setSelected(null);
+        },
+        onError: (e: any) => toast.error(e.message ?? "Failed to update complaint"),
+      },
+    );
   };
 
   return (
@@ -213,20 +92,20 @@ const AdminComplaints = () => {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Raised</p>
-            <p className="font-heading text-2xl font-semibold">{counts.raised ?? 0}</p>
+            <p className="font-heading text-2xl font-semibold">{counts.RAISED ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Return in transit</p>
-            <p className="font-heading text-2xl font-semibold">{counts.return_in_transit ?? 0}</p>
+            <p className="font-heading text-2xl font-semibold">{counts.RETURN_IN_TRANSIT ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Resolved</p>
             <p className="font-heading text-2xl font-semibold">
-              {(counts.refunded ?? 0) + (counts.rejected ?? 0) + (counts.return_received ?? 0)}
+              {(counts.REFUNDED ?? 0) + (counts.REJECTED ?? 0) + (counts.RETURN_RECEIVED ?? 0)}
             </p>
           </CardContent>
         </Card>
@@ -235,14 +114,14 @@ const AdminComplaints = () => {
       <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="raised">Raised</TabsTrigger>
-          <TabsTrigger value="under_review">Under Review</TabsTrigger>
-          <TabsTrigger value="return_approved">Approved</TabsTrigger>
-          <TabsTrigger value="return_address_provided">Address Provided</TabsTrigger>
-          <TabsTrigger value="return_in_transit">In Transit</TabsTrigger>
-          <TabsTrigger value="return_received">Received</TabsTrigger>
-          <TabsTrigger value="refunded">Refunded</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="RAISED">Raised</TabsTrigger>
+          <TabsTrigger value="UNDER_REVIEW">Under Review</TabsTrigger>
+          <TabsTrigger value="RETURN_APPROVED">Approved</TabsTrigger>
+          <TabsTrigger value="RETURN_ADDRESS_PROVIDED">Address Provided</TabsTrigger>
+          <TabsTrigger value="RETURN_IN_TRANSIT">In Transit</TabsTrigger>
+          <TabsTrigger value="RETURN_RECEIVED">Received</TabsTrigger>
+          <TabsTrigger value="REFUNDED">Refunded</TabsTrigger>
+          <TabsTrigger value="REJECTED">Rejected</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -253,7 +132,9 @@ const AdminComplaints = () => {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <p className="p-12 text-center text-sm text-muted-foreground">No complaints in this view.</p>
+            <p className="p-12 text-center text-sm text-muted-foreground">
+              No complaints in this view.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -268,24 +149,34 @@ const AdminComplaints = () => {
               <TableBody>
                 {filtered.map((c) => (
                   <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelected(c)}>
-                    <TableCell className="max-w-[280px] truncate font-medium">{c.reason || "—"}</TableCell>
+                    <TableCell className="max-w-[280px] truncate font-medium">
+                      {c.reason || "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20">
                         {STATUS_LABEL[c.status] ?? c.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      <Link to={`/listing/${c.listing_id}`} className="text-primary hover:underline">
+                      <Link
+                        to={`/listing/${c.listingId}`}
+                        className="text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         View
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm">
-                      <Link to={`/seller/${c.buyer_id}`} className="text-primary hover:underline">
+                      <Link
+                        to={`/seller/${c.buyerId}`}
+                        className="text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         Profile
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(c.created_at), "dd MMM yyyy")}
+                      {format(new Date(c.createdAt), "dd MMM yyyy")}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -295,27 +186,44 @@ const AdminComplaints = () => {
         </CardContent>
       </Card>
 
-      <ComplaintDetailDialog complaint={selected} onClose={() => setSelected(null)} onUpdate={updateStatus} />
+      <ComplaintDetailDialog
+        complaint={selected}
+        onClose={() => setSelected(null)}
+        onUpdate={handleUpdate}
+        isPending={updateStatus.isPending}
+      />
     </div>
   );
 };
+
+// ─── Detail Dialog ────────────────────────────────────────────────────────────
 
 const ComplaintDetailDialog = ({
   complaint,
   onClose,
   onUpdate,
+  isPending,
 }: {
-  complaint: ComplaintRow | null;
+  complaint: Complaint | null;
   onClose: () => void;
-  onUpdate: (id: string, status: string, notes?: string) => void;
+  onUpdate: (id: string, status: AdminComplaintStatus, notes?: string) => void;
+  isPending: boolean;
 }) => {
-  const [notes, setNotes] = useState(complaint?.admin_notes ?? "");
+  const [notes, setNotes] = useState(complaint?.adminNotes ?? "");
 
   useEffect(() => {
-    setNotes(complaint?.admin_notes ?? "");
-  }, [complaint?.id, complaint?.admin_notes]);
+    setNotes(complaint?.adminNotes ?? "");
+  }, [complaint?.id, complaint?.adminNotes]);
 
   if (!complaint) return null;
+
+  const isReturnInTransit =
+    complaint.status === "RETURN_IN_TRANSIT" ||
+    complaint.status === "RETURN_RECEIVED" ||
+    complaint.status === "REFUNDED";
+
+  const isReturnReceived =
+    complaint.status === "RETURN_RECEIVED" || complaint.status === "REFUNDED";
 
   return (
     <Dialog open={!!complaint} onOpenChange={(o) => !o && onClose()}>
@@ -325,11 +233,13 @@ const ComplaintDetailDialog = ({
             <AlertTriangle className="h-5 w-5 text-amber-600" /> Complaint details
           </DialogTitle>
           <DialogDescription>
-            Order #{complaint.order_id.slice(0, 8)} · {format(new Date(complaint.created_at), "PPp")}
+            Order #{complaint.orderId.slice(0, 8)} ·{" "}
+            {format(new Date(complaint.createdAt), "PPp")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Reason */}
           <Card>
             <CardContent className="space-y-2 p-4 text-sm">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Reason</p>
@@ -337,14 +247,21 @@ const ComplaintDetailDialog = ({
             </CardContent>
           </Card>
 
-          {complaint.evidence_urls?.length > 0 && (
+          {/* Evidence photos */}
+          {complaint.evidenceUrls.length > 0 && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Evidence photos</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Evidence photos
+                </p>
                 <div className="flex flex-wrap gap-2">
-                  {complaint.evidence_urls.map((url, i) => (
+                  {complaint.evidenceUrls.map((url, i) => (
                     <a key={i} href={url} target="_blank" rel="noreferrer">
-                      <img src={url} alt="" className="h-24 w-24 rounded-md border border-border object-cover" />
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-24 w-24 rounded-md border border-border object-cover"
+                      />
                     </a>
                   ))}
                 </div>
@@ -352,18 +269,25 @@ const ComplaintDetailDialog = ({
             </Card>
           )}
 
-          {complaint.return_proof_urls?.length > 0 && (
+          {/* Return proof */}
+          {complaint.returnProofUrls.length > 0 && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Return proof</p>
-                {complaint.return_carrier && <p>Carrier: {complaint.return_carrier}</p>}
-                {complaint.return_tracking && (
-                  <p className="font-mono text-xs">Tracking: {complaint.return_tracking}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Return proof
+                </p>
+                {complaint.returnCarrier && <p>Carrier: {complaint.returnCarrier}</p>}
+                {complaint.returnTracking && (
+                  <p className="font-mono text-xs">Tracking: {complaint.returnTracking}</p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {complaint.return_proof_urls.map((url, i) => (
+                  {complaint.returnProofUrls.map((url, i) => (
                     <a key={i} href={url} target="_blank" rel="noreferrer">
-                      <img src={url} alt="" className="h-24 w-24 rounded-md border border-border object-cover" />
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-24 w-24 rounded-md border border-border object-cover"
+                      />
                     </a>
                   ))}
                 </div>
@@ -371,31 +295,34 @@ const ComplaintDetailDialog = ({
             </Card>
           )}
 
+          {/* Return status */}
           <Card>
             <CardContent className="space-y-3 p-4 text-sm">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Return status</p>
 
-              {/* 1. Return address provided */}
+              {/* 1. Return address */}
               <div className="flex items-start gap-3">
-                {complaint.return_to_address ? (
+                {complaint.returnAddress ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 ) : (
                   <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
                 <div>
                   <p className="font-medium text-foreground">
-                    {complaint.return_to_address ? "Return address provided" : "Return address not provided"}
+                    {complaint.returnAddress
+                      ? "Return address provided"
+                      : "Return address not provided"}
                   </p>
-                  {complaint.return_to_address && (
+                  {complaint.returnAddress && (
                     <div className="mt-1 space-y-0.5 text-muted-foreground">
-                      {complaint.return_to_name && <p className="text-foreground">{complaint.return_to_name}</p>}
-                      <p>{complaint.return_to_address}</p>
-                      <p>
-                        {complaint.return_to_city}
-                        {complaint.return_to_postal ? `, ${complaint.return_to_postal}` : ""}
-                      </p>
-                      {complaint.return_to_phone && <p>{complaint.return_to_phone}</p>}
-                      {complaint.return_to_notes && <p className="text-xs italic">{complaint.return_to_notes}</p>}
+                      {complaint.returnAddressRecipient && (
+                        <p className="text-foreground">{complaint.returnAddressRecipient}</p>
+                      )}
+                      <p>{complaint.returnAddress}</p>
+                      {complaint.returnAddressPhone && <p>{complaint.returnAddressPhone}</p>}
+                      {complaint.returnInstructions && (
+                        <p className="text-xs italic">{complaint.returnInstructions}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -403,36 +330,40 @@ const ComplaintDetailDialog = ({
 
               {/* 2. Buyer returned product */}
               <div className="flex items-start gap-3">
-                {complaint.status === "return_in_transit" || complaint.status === "return_received" || complaint.status === "refunded" ? (
+                {isReturnInTransit ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 ) : (
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
                 <div>
                   <p className="font-medium text-foreground">
-                    {complaint.status === "return_in_transit" || complaint.status === "return_received" || complaint.status === "refunded"
+                    {isReturnInTransit
                       ? "Buyer has returned the product"
                       : "Buyer has not returned the product yet"}
                   </p>
-                  {complaint.return_carrier && (
-                    <p className="text-xs text-muted-foreground">Carrier: {complaint.return_carrier}</p>
+                  {complaint.returnCarrier && (
+                    <p className="text-xs text-muted-foreground">
+                      Carrier: {complaint.returnCarrier}
+                    </p>
                   )}
-                  {complaint.return_tracking && (
-                    <p className="font-mono text-xs text-muted-foreground">Tracking: {complaint.return_tracking}</p>
+                  {complaint.returnTracking && (
+                    <p className="font-mono text-xs text-muted-foreground">
+                      Tracking: {complaint.returnTracking}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* 3. Seller received item */}
               <div className="flex items-start gap-3">
-                {complaint.status === "return_received" || complaint.status === "refunded" ? (
+                {isReturnReceived ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 ) : (
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
                 )}
                 <div>
                   <p className="font-medium text-foreground">
-                    {complaint.status === "return_received" || complaint.status === "refunded"
+                    {isReturnReceived
                       ? "Seller has received the returned item"
                       : "Seller has not received the returned item yet"}
                   </p>
@@ -441,29 +372,39 @@ const ComplaintDetailDialog = ({
             </CardContent>
           </Card>
 
-          <div className="flex flex-wrap gap-2">
+          {/* Links */}
+          <div className="flex flex-wrap items-center gap-3">
             <Link
-              to={`/listing/${complaint.listing_id}`}
+              to={`/listing/${complaint.listingId}`}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               View listing <ExternalLink className="h-3 w-3" />
             </Link>
             <Link
-              to={`/seller/${complaint.buyer_id}`}
+              to={`/seller/${complaint.buyerId}`}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               Buyer profile <ExternalLink className="h-3 w-3" />
             </Link>
             <Link
-              to={`/seller/${complaint.seller_id}`}
+              to={`/seller/${complaint.sellerId}`}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               Seller profile <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
 
+          {/* Resolved by */}
+          {complaint.resolvedAt && (
+            <p className="text-xs text-muted-foreground">
+              Resolved by {complaint.resolverFullName ?? "—"} ·{" "}
+              {format(new Date(complaint.resolvedAt), "PPp")}
+            </p>
+          )}
+
+          {/* Admin notes */}
           <div>
-            <Label htmlFor="admin-notes">Admin notes (visible to buyer & seller)</Label>
+            <Label htmlFor="admin-notes">Admin notes (visible to buyer &amp; seller)</Label>
             <Textarea
               id="admin-notes"
               rows={3}
@@ -475,19 +416,32 @@ const ComplaintDetailDialog = ({
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={() => onUpdate(complaint.id, "under_review", notes || undefined)}>
-            Mark as Under Review
-          </Button>
-          <Button onClick={() => onUpdate(complaint.id, "return_approved", notes || undefined)}>
+          <Button
+            variant="outline"
+            disabled={isPending}
+            onClick={() => onUpdate(complaint.id, "RETURN_APPROVED", notes)}
+          >
             Approve return
           </Button>
-          <Button variant="outline" onClick={() => onUpdate(complaint.id, "return_received", notes || undefined)}>
+          <Button
+            variant="outline"
+            disabled={isPending}
+            onClick={() => onUpdate(complaint.id, "RETURN_RECEIVED", notes)}
+          >
             Mark return received
           </Button>
-          <Button variant="outline" onClick={() => onUpdate(complaint.id, "refunded", notes || undefined)}>
+          <Button
+            variant="outline"
+            disabled={isPending}
+            onClick={() => onUpdate(complaint.id, "REFUNDED", notes)}
+          >
             Complete · Refund buyer
           </Button>
-          <Button variant="ghost" onClick={() => onUpdate(complaint.id, "rejected", notes || undefined)}>
+          <Button
+            variant="ghost"
+            disabled={isPending}
+            onClick={() => onUpdate(complaint.id, "REJECTED", notes)}
+          >
             Reject return request
           </Button>
         </DialogFooter>

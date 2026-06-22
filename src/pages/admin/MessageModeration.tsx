@@ -1,250 +1,47 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  useFlaggedMessages,
+  useDismissFlag,
+  useDeleteMessage,
+} from "@/queries/useAdminMessageModeration";
+import type { FlaggedMessage } from "@/services/messageModeration.service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle, Trash2, Loader2, Eye, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
-
-interface FlaggedMessage {
-  id: string;
-  content: string;
-  flag_reason: string | null;
-  flagged: boolean;
-  created_at: string;
-  sender_id: string;
-  conversation_id: string;
-  read: boolean;
-  sender_profile?: { full_name: string | null } | null;
-  conversation?: {
-    listing_id: string;
-    buyer_id: string;
-    seller_id: string;
-    listing?: { title: string } | null;
-  } | null;
-}
-
-interface ConversationMessage {
-  id: string;
-  content: string;
-  sender_id: string;
-  created_at: string;
-  flagged: boolean;
-  flag_reason: string | null;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-let mockFlaggedMessagesStore: FlaggedMessage[] = [
-  {
-    id: "fmsg-1",
-    content: "hey just whatsapp me at +92 300 1234567 instead, easier to chat there",
-    flag_reason: "phone number",
-    flagged: true,
-    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    sender_id: "mock-seller-id",
-    conversation_id: "convo-1",
-    read: true,
-  },
-  {
-    id: "fmsg-2",
-    content: "you can reach me on insta @closetcurator_pk for faster replies",
-    flag_reason: "social media handle",
-    flagged: true,
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    sender_id: "mock-seller-id-2",
-    conversation_id: "convo-2",
-    read: true,
-  },
-];
-
-const MOCK_SENDER_PROFILES: Record<string, { full_name: string | null }> = {
-  "mock-seller-id": { full_name: "Premium Thrifter" },
-  "mock-seller-id-2": { full_name: "Closet Curator" },
-  "mock-user-id": { full_name: "Muhamad Bilal Shaikh" },
-};
-
-const MOCK_CONVERSATIONS_FULL: Record<string, { listing_id: string; buyer_id: string; seller_id: string; listing: { title: string } }> = {
-  "convo-1": { listing_id: "mock-listing-1", buyer_id: "mock-user-id", seller_id: "mock-seller-id", listing: { title: "Vintage Leather Jacket" } },
-  "convo-2": { listing_id: "mock-listing-3", buyer_id: "mock-user-id", seller_id: "mock-seller-id-2", listing: { title: "Bohemian Summer Dress" } },
-};
-
-const MOCK_CONVERSATION_MESSAGES: Record<string, ConversationMessage[]> = {
-  "convo-1": [
-    {
-      id: "msg-1",
-      content: "Hi! Thanks for accepting the offer. I'll get this packed up soon.",
-      sender_id: "mock-seller-id",
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      flagged: false,
-      flag_reason: null,
-    },
-    {
-      id: "msg-2",
-      content: "Awesome, looking forward to it!",
-      sender_id: "mock-user-id",
-      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      flagged: false,
-      flag_reason: null,
-    },
-    {
-      id: "fmsg-1",
-      content: "hey just whatsapp me at +92 300 1234567 instead, easier to chat there",
-      sender_id: "mock-seller-id",
-      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      flagged: true,
-      flag_reason: "phone number",
-    },
-  ],
-  "convo-2": [
-    {
-      id: "msg-4",
-      content: "Thanks for your purchase!",
-      sender_id: "mock-seller-id-2",
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      flagged: false,
-      flag_reason: null,
-    },
-    {
-      id: "fmsg-2",
-      content: "you can reach me on insta @closetcurator_pk for faster replies",
-      sender_id: "mock-seller-id-2",
-      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      flagged: true,
-      flag_reason: "social media handle",
-    },
-  ],
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const MessageModeration = () => {
-  const [selectedMessage, setSelectedMessage] = useState<FlaggedMessage | null>(null);
-  const [conversationMessages, setConversationMessages] = useState<ConversationMessage[]>([]);
-  const [loadingConvo, setLoadingConvo] = useState(false);
-  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<FlaggedMessage | null>(null);
 
-  const { data: flaggedMessages = [], isLoading } = useQuery({
-    queryKey: ["admin-flagged-messages"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return mockFlaggedMessagesStore.map((m) => ({
-          ...m,
-          sender_profile: MOCK_SENDER_PROFILES[m.sender_id] ?? null,
-        }));
-      }
+  const { data: flaggedMessages = [], isLoading } = useFlaggedMessages();
+  const dismissFlag  = useDismissFlag();
+  const deleteMsg    = useDeleteMessage();
 
-      const { data: msgs, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("flagged", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const senderIds = [...new Set((msgs ?? []).map((m) => m.sender_id))];
-      const { data: profiles } = senderIds.length
-        ? await supabase.from("profiles").select("id, full_name").in("id", senderIds)
-        : { data: [] };
-
-      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-
-      return (msgs ?? []).map((m) => ({
-        ...m,
-        sender_profile: profileMap.get(m.sender_id) ?? null,
-      })) as FlaggedMessage[];
-    },
-  });
-
-  const openConversation = async (msg: FlaggedMessage) => {
-    setSelectedMessage(msg);
-    setLoadingConvo(true);
-    try {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const convo = MOCK_CONVERSATIONS_FULL[msg.conversation_id];
-        if (convo) {
-          setSelectedMessage((prev) => (prev ? { ...prev, conversation: convo } : prev));
-        }
-        setConversationMessages(MOCK_CONVERSATION_MESSAGES[msg.conversation_id] ?? []);
-        return;
-      }
-
-      // Get conversation details
-      const { data: convo } = await supabase
-        .from("conversations")
-        .select("*, listing:listings(title)")
-        .eq("id", msg.conversation_id)
-        .maybeSingle();
-
-      if (convo) {
-        setSelectedMessage((prev) => prev ? { ...prev, conversation: convo } : prev);
-      }
-
-      // Get all messages in this conversation
-      const { data: msgs } = await supabase
-        .from("messages")
-        .select("id, content, sender_id, created_at, flagged, flag_reason")
-        .eq("conversation_id", msg.conversation_id)
-        .order("created_at", { ascending: true });
-
-      setConversationMessages((msgs ?? []) as ConversationMessage[]);
-    } finally {
-      setLoadingConvo(false);
-    }
+  const handleDismiss = (messageId: string) => {
+    dismissFlag.mutate(messageId, {
+      onSuccess: () => { toast.success("Flag dismissed"); setSelected(null); },
+      onError:   () => toast.error("Failed to dismiss flag"),
+    });
   };
 
-  const dismissFlag = useMutation({
-    mutationFn: async (messageId: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        mockFlaggedMessagesStore = mockFlaggedMessagesStore.filter((m) => m.id !== messageId);
-        return;
-      }
-      const { error } = await supabase
-        .from("messages")
-        .update({ flagged: false, flag_reason: null })
-        .eq("id", messageId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Flag dismissed");
-      queryClient.invalidateQueries({ queryKey: ["admin-flagged-messages"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      setSelectedMessage(null);
-    },
-    onError: () => toast.error("Failed to dismiss flag"),
-  });
-
-  const deleteMessage = useMutation({
-    mutationFn: async (messageId: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        mockFlaggedMessagesStore = mockFlaggedMessagesStore.filter((m) => m.id !== messageId);
-        return;
-      }
-      // Update content to show it was removed by admin
-      const { error } = await supabase
-        .from("messages")
-        .update({ content: "[Message removed by admin]", flagged: false, flag_reason: null })
-        .eq("id", messageId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Message removed");
-      queryClient.invalidateQueries({ queryKey: ["admin-flagged-messages"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      setSelectedMessage(null);
-    },
-    onError: () => toast.error("Failed to remove message"),
-  });
+  const handleDelete = (messageId: string) => {
+    deleteMsg.mutate(messageId, {
+      onSuccess: () => { toast.success("Message removed"); setSelected(null); },
+      onError:   () => toast.error("Failed to remove message"),
+    });
+  };
 
   return (
     <div>
       <div>
         <h1 className="font-heading text-3xl font-bold text-foreground">Message Moderation</h1>
         <p className="mt-1 text-muted-foreground">
-          Review flagged messages containing potential contact information
+          Review flagged messages containing potential contact information.
         </p>
       </div>
 
@@ -267,38 +64,36 @@ const MessageModeration = () => {
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
-                      {(msg.sender_profile as any)?.full_name || "Unknown User"}
+                      {msg.senderId === msg.buyerId ? msg.buyerFullName : msg.sellerFullName}
                     </span>
-                    <Badge variant="destructive" className="text-[10px]">
-                      {msg.flag_reason || "Flagged"}
-                    </Badge>
+                    {msg.flagReasons.map((reason) => (
+                      <Badge key={reason} variant="destructive" className="text-[10px]">
+                        {reason}
+                      </Badge>
+                    ))}
                   </div>
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">{msg.content}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {format(new Date(msg.created_at), "MMM d, yyyy 'at' h:mm a")}
+                    {format(new Date(msg.createdAt), "MMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" className="gap-1" onClick={() => openConversation(msg)}>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setSelected(msg)}>
                     <Eye className="h-4 w-4" /> Review
                   </Button>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-primary"
-                    onClick={() => dismissFlag.mutate(msg.id)}
+                    size="sm" variant="outline" className="gap-1 text-primary"
+                    onClick={() => handleDismiss(msg.id)}
                     disabled={dismissFlag.isPending}
                   >
                     <CheckCircle className="h-4 w-4" /> Dismiss
                   </Button>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-destructive"
-                    onClick={() => deleteMessage.mutate(msg.id)}
-                    disabled={deleteMessage.isPending}
+                    size="sm" variant="outline" className="gap-1 text-destructive"
+                    onClick={() => handleDelete(msg.id)}
+                    disabled={deleteMsg.isPending}
                   >
                     <Trash2 className="h-4 w-4" /> Remove
                   </Button>
@@ -309,92 +104,77 @@ const MessageModeration = () => {
         </div>
       )}
 
-      {/* Conversation review dialog */}
-      <Dialog open={!!selectedMessage} onOpenChange={(open) => !open && setSelectedMessage(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {selectedMessage && (
+      {/* Review dialog */}
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="max-w-2xl">
+          {selected && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
-                  <DialogTitle className="font-heading text-xl">
-                    Conversation Review
-                  </DialogTitle>
+                  <DialogTitle className="font-heading text-xl">Message Review</DialogTitle>
                 </div>
-                {selectedMessage.conversation && (
-                  <p className="text-sm text-muted-foreground">
-                    Listing: {(selectedMessage.conversation as any)?.listing?.title || "Unknown"}
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Listing: {selected.listingTitle}
+                </p>
               </DialogHeader>
 
-              {/* Flagged message highlight */}
+              {/* Flagged message */}
               <div className="rounded-lg border-2 border-destructive/30 bg-destructive/5 p-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm font-semibold text-destructive">
-                    {selectedMessage.flag_reason}
-                  </span>
+                  {selected.flagReasons.map((reason) => (
+                    <span key={reason} className="text-sm font-semibold text-destructive">{reason}</span>
+                  ))}
                 </div>
-                <p className="text-sm text-foreground">{selectedMessage.content}</p>
+                <p className="text-sm text-foreground">{selected.content}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Sent by {(selectedMessage.sender_profile as any)?.full_name || "Unknown"} · {format(new Date(selectedMessage.created_at), "MMM d 'at' h:mm a")}
+                  Sent by {selected.senderId === selected.buyerId ? selected.buyerFullName : selected.sellerFullName}
+                  {" · "}
+                  {format(new Date(selected.createdAt), "MMM d 'at' h:mm a")}
                 </p>
               </div>
 
-              {/* Conversation context */}
-              <div>
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {/* Context info */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-sm">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                   Conversation Context
-                </h3>
-                {loadingConvo ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3">
-                    {conversationMessages.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`rounded-md p-2.5 text-sm ${
-                          m.id === selectedMessage.id
-                            ? "border border-destructive/40 bg-destructive/10"
-                            : "bg-background"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {m.sender_id === selectedMessage.conversation?.buyer_id ? "Buyer" : "Seller"}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(m.created_at), "h:mm a")}
-                          </span>
-                          {m.flagged && m.id !== selectedMessage.id && (
-                            <Badge variant="destructive" className="text-[9px] px-1 py-0">⚠</Badge>
-                          )}
-                        </div>
-                        <p className="mt-0.5 text-foreground">{m.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </p>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Buyer</span>
+                  <span className="font-medium">{selected.buyerFullName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Seller</span>
+                  <span className="font-medium">{selected.sellerFullName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Listing</span>
+                  <span className="font-medium">{selected.listingTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Conversation started</span>
+                  <span>{format(new Date(selected.conversationCreatedAt), "MMM d, yyyy")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Sender role</span>
+                  <span>{selected.senderId === selected.buyerId ? "Buyer" : "Seller"}</span>
+                </div>
               </div>
 
               {/* Actions */}
               <div className="flex gap-3 border-t border-border pt-4">
                 <Button
-                  className="flex-1 gap-2"
-                  variant="outline"
-                  onClick={() => dismissFlag.mutate(selectedMessage.id)}
-                  disabled={dismissFlag.isPending || deleteMessage.isPending}
+                  className="flex-1 gap-2" variant="outline"
+                  onClick={() => handleDismiss(selected.id)}
+                  disabled={dismissFlag.isPending || deleteMsg.isPending}
                 >
                   <CheckCircle className="h-4 w-4" /> Dismiss Flag
                 </Button>
                 <Button
-                  className="flex-1 gap-2"
-                  variant="destructive"
-                  onClick={() => deleteMessage.mutate(selectedMessage.id)}
-                  disabled={dismissFlag.isPending || deleteMessage.isPending}
+                  className="flex-1 gap-2" variant="destructive"
+                  onClick={() => handleDelete(selected.id)}
+                  disabled={dismissFlag.isPending || deleteMsg.isPending}
                 >
                   <Trash2 className="h-4 w-4" /> Remove Message
                 </Button>

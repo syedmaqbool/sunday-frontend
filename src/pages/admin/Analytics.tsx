@@ -1,71 +1,54 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { useAdminAnalytics, useAdminMarketingLeads } from "@/queries/useAdminAnalytics";
+import type { DimKey } from "@/services/adminAnalytics.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
+  ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import {
-  Loader2,
-  Download,
-  TrendingUp,
-  TrendingDown,
-  ShoppingCart,
-  DollarSign,
-  RotateCcw,
-  Target,
-  Users,
-  ShoppingBag,
-  CheckCircle2,
-  Search,
-  Zap,
+  Loader2, Download, ShoppingCart, DollarSign, RotateCcw, Target,
+  Users, ShoppingBag, CheckCircle2, Search, Zap,
 } from "lucide-react";
-import { differenceInYears } from "date-fns";
 import { cn } from "@/lib/utils";
 
-type Dim = "location" | "category" | "price_range" | "age" | "size";
-
-const DIMS: { key: Dim; label: string }[] = [
+// ── Dimension config ─────────────────────────────────────────────────────────
+const DIMS: { key: DimKey; label: string }[] = [
   { key: "location", label: "Location" },
   { key: "category", label: "Category" },
-  { key: "price_range", label: "Price Range" },
-  { key: "age", label: "Age" },
-  { key: "size", label: "Size" },
+  { key: "priceRange", label: "Price Range" },
+  { key: "buyerAgeBucket", label: "Age" },
+  { key: "listingSize", label: "Size" },
 ];
-const DIM_LABELS = Object.fromEntries(DIMS.map((d) => [d.key, d.label])) as Record<Dim, string>;
+const DIM_LABELS = Object.fromEntries(DIMS.map((d) => [d.key, d.label])) as Record<DimKey, string>;
 
-const PRICE_BUCKETS = [
-  { label: "0–50", min: 0, max: 50 },
-  { label: "50–150", min: 50, max: 150 },
-  { label: "150–500", min: 150, max: 500 },
-  { label: "500–1500", min: 500, max: 1500 },
-  { label: "1500+", min: 1500, max: Infinity },
-];
-const AGE_BUCKETS = [
-  { label: "<18", min: 0, max: 18 },
-  { label: "18–24", min: 18, max: 25 },
-  { label: "25–34", min: 25, max: 35 },
-  { label: "35–44", min: 35, max: 45 },
-  { label: "45–54", min: 45, max: 55 },
-  { label: "55+", min: 55, max: 200 },
-];
-const bucket = (v: number, b: typeof PRICE_BUCKETS) =>
-  b.find((x) => v >= x.min && v < x.max)?.label ?? "Unknown";
+// ── Backend bucket key → human label ─────────────────────────────────────────
+const PRICE_RANGE_LABELS: Record<string, string> = {
+  PKR_0_4999: "Rs 0–4,999",
+  PKR_5000_9999: "Rs 5,000–9,999",
+  PKR_10000_19999: "Rs 10,000–19,999",
+  PKR_20000_PLUS: "Rs 20,000+",
+  UNKNOWN: "Unknown",
+};
+const AGE_BUCKET_LABELS: Record<string, string> = {
+  AGE_13_17: "13–17",
+  AGE_18_24: "18–24",
+  AGE_25_34: "25–34",
+  AGE_35_44: "35–44",
+  AGE_45_PLUS: "45+",
+  UNKNOWN: "Unknown",
+};
+const humanizeKey = (dim: DimKey, key: string) => {
+  if (dim === "priceRange") return PRICE_RANGE_LABELS[key] ?? key;
+  if (dim === "buyerAgeBucket") return AGE_BUCKET_LABELS[key] ?? key;
+  if (key === "UNKNOWN") return "Unknown";
+  return key;
+};
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -75,244 +58,6 @@ const CHART_COLORS = [
   "hsl(140 50% 45%)",
   "hsl(270 50% 55%)",
   "hsl(0 65% 55%)",
-];
-
-// ── Mock data types (shared shape between mock and Supabase branches) ──
-interface AnalyticsOrder {
-  id: string;
-  buyer_id: string;
-  items: { listing_id: string; price: number; quantity: number }[];
-  subtotal: number;
-  total: number;
-  created_at: string;
-  shipping_city: string | null;
-}
-interface AnalyticsListing {
-  id: string;
-  category: string | null;
-  price: number;
-  size: string | null;
-  seller_id: string;
-  title: string;
-}
-interface AnalyticsProfile {
-  id: string;
-  location: string | null;
-  date_of_birth: string | null;
-  phone: string | null;
-  full_name: string | null;
-}
-interface AnalyticsComplaint {
-  id: string;
-  buyer_id: string;
-  listing_id: string;
-  status: string;
-  created_at: string;
-}
-interface AnalyticsOffer {
-  id: string;
-  buyer_id: string;
-  listing_id: string;
-  amount: number;
-  counter_amount: number | null;
-  status: string;
-  created_at: string;
-}
-
-// ── Mock data (used when NEXT_PUBLIC_USE_MOCK_DATA = true) ──
-// IDs are interconnected: orders/complaints/offers reference mock-user-* (buyers)
-// and mock-listing-* (which reference mock-seller-*), so joins/filters in this
-// page (dimKey, marketingLeads, funnel) resolve correctly.
-const MOCK_PROFILES: AnalyticsProfile[] = [
-  {
-    id: "mock-user-1",
-    location: "Karachi",
-    date_of_birth: "1996-03-15",
-    phone: "+923001234567",
-    full_name: "Ayesha Khan",
-  },
-  {
-    id: "mock-user-2",
-    location: "Lahore",
-    date_of_birth: "1989-07-22",
-    phone: "+923004567890",
-    full_name: "Bilal Ahmed",
-  },
-  {
-    id: "mock-user-3",
-    location: "Islamabad",
-    date_of_birth: "2001-11-05",
-    phone: "+923331234567",
-    full_name: "Sara Malik",
-  },
-  {
-    id: "mock-user-4",
-    location: "Karachi",
-    date_of_birth: "1979-02-10",
-    phone: "+923211234567",
-    full_name: "Usman Tariq",
-  },
-  {
-    id: "mock-user-5",
-    location: "Lahore",
-    date_of_birth: "1994-09-30",
-    phone: "+923451234567",
-    full_name: "Fatima Noor",
-  },
-];
-
-const MOCK_LISTINGS: AnalyticsListing[] = [
-  {
-    id: "mock-listing-1",
-    category: "Dresses",
-    price: 2500,
-    size: "M",
-    seller_id: "mock-seller-1",
-    title: "Floral Summer Dress",
-  },
-  {
-    id: "mock-listing-2",
-    category: "Shoes",
-    price: 3200,
-    size: "8",
-    seller_id: "mock-seller-1",
-    title: "Leather Sneakers",
-  },
-  {
-    id: "mock-listing-3",
-    category: "Bags",
-    price: 1800,
-    size: "-",
-    seller_id: "mock-seller-2",
-    title: "Canvas Tote Bag",
-  },
-  {
-    id: "mock-listing-4",
-    category: "Jackets",
-    price: 4500,
-    size: "L",
-    seller_id: "mock-seller-2",
-    title: "Denim Jacket",
-  },
-  {
-    id: "mock-listing-5",
-    category: "Dresses",
-    price: 1200,
-    size: "S",
-    seller_id: "mock-seller-1",
-    title: "Casual Maxi Dress",
-  },
-];
-
-const MOCK_ORDERS: AnalyticsOrder[] = [
-  {
-    id: "mock-order-1",
-    buyer_id: "mock-user-1",
-    items: [{ listing_id: "mock-listing-1", price: 2500, quantity: 1 }],
-    subtotal: 2500,
-    total: 2700,
-    created_at: "2026-05-12T11:00:00Z",
-    shipping_city: "Karachi",
-  },
-  {
-    id: "mock-order-2",
-    buyer_id: "mock-user-1",
-    items: [{ listing_id: "mock-listing-2", price: 3200, quantity: 1 }],
-    subtotal: 3200,
-    total: 3400,
-    created_at: "2026-05-20T11:00:00Z",
-    shipping_city: "Karachi",
-  },
-  {
-    id: "mock-order-3",
-    buyer_id: "mock-user-2",
-    items: [{ listing_id: "mock-listing-4", price: 4500, quantity: 1 }],
-    subtotal: 4500,
-    total: 4700,
-    created_at: "2026-05-18T10:00:00Z",
-    shipping_city: "Lahore",
-  },
-  {
-    id: "mock-order-4",
-    buyer_id: "mock-user-3",
-    items: [{ listing_id: "mock-listing-3", price: 1800, quantity: 2 }],
-    subtotal: 3600,
-    total: 3800,
-    created_at: "2026-05-28T09:30:00Z",
-    shipping_city: "Islamabad",
-  },
-  {
-    id: "mock-order-5",
-    buyer_id: "mock-user-1",
-    items: [{ listing_id: "mock-listing-5", price: 1200, quantity: 1 }],
-    subtotal: 1200,
-    total: 1400,
-    created_at: "2026-06-02T14:00:00Z",
-    shipping_city: "Karachi",
-  },
-];
-
-const MOCK_COMPLAINTS: AnalyticsComplaint[] = [
-  {
-    id: "mock-complaint-1",
-    buyer_id: "mock-user-2",
-    listing_id: "mock-listing-4",
-    status: "refunded",
-    created_at: "2026-05-22T12:00:00Z",
-  },
-  {
-    id: "mock-complaint-2",
-    buyer_id: "mock-user-3",
-    listing_id: "mock-listing-3",
-    status: "open",
-    created_at: "2026-05-30T12:00:00Z",
-  },
-  {
-    id: "mock-complaint-3",
-    buyer_id: "mock-user-1",
-    listing_id: "mock-listing-1",
-    status: "resolved",
-    created_at: "2026-05-15T12:00:00Z",
-  },
-];
-
-const MOCK_OFFERS: AnalyticsOffer[] = [
-  {
-    id: "mock-offer-1",
-    buyer_id: "mock-user-1",
-    listing_id: "mock-listing-1",
-    amount: 2200,
-    counter_amount: 2500,
-    status: "accepted",
-    created_at: "2026-05-10T09:00:00Z",
-  },
-  {
-    id: "mock-offer-2",
-    buyer_id: "mock-user-2",
-    listing_id: "mock-listing-4",
-    amount: 4000,
-    counter_amount: 4500,
-    status: "accepted",
-    created_at: "2026-05-15T09:00:00Z",
-  },
-  {
-    id: "mock-offer-3",
-    buyer_id: "mock-user-3",
-    listing_id: "mock-listing-3",
-    amount: 1500,
-    counter_amount: null,
-    status: "pending",
-    created_at: "2026-05-25T09:00:00Z",
-  },
-  {
-    id: "mock-offer-4",
-    buyer_id: "mock-user-4",
-    listing_id: "mock-listing-2",
-    amount: 2800,
-    counter_amount: null,
-    status: "rejected",
-    created_at: "2026-06-01T09:00:00Z",
-  },
 ];
 
 const downloadCSV = (rows: any[], filename: string) => {
@@ -331,7 +76,7 @@ const downloadCSV = (rows: any[], filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const DimChips = ({ value, onChange }: { value: Dim; onChange: (d: Dim) => void }) => (
+const DimChips = ({ value, onChange }: { value: DimKey; onChange: (d: DimKey) => void }) => (
   <div className="flex flex-wrap gap-1 rounded-full border border-border bg-muted/40 p-1">
     {DIMS.map((d) => (
       <button
@@ -351,36 +96,14 @@ const DimChips = ({ value, onChange }: { value: Dim; onChange: (d: Dim) => void 
 );
 
 const KPI = ({
-  label,
-  value,
-  delta,
-  icon: Icon,
-  highlight,
+  label, value, icon: Icon, highlight,
 }: {
-  label: string;
-  value: string;
-  delta?: number;
-  icon: any;
-  highlight?: boolean;
+  label: string; value: string; icon: any; highlight?: boolean;
 }) => (
   <Card className={cn("transition-shadow", highlight && "ring-1 ring-destructive/40")}>
     <CardContent className="flex flex-col gap-2 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-        {delta !== undefined && (
-          <span
-            className={cn(
-              "flex items-center gap-0.5 text-xs font-semibold",
-              delta >= 0 ? "text-emerald-600" : "text-destructive",
-            )}
-          >
-            {delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {delta >= 0 ? "+" : ""}
-            {delta}%
-          </span>
-        )}
+      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+        <Icon className="h-4 w-4 text-primary" />
       </div>
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="font-heading text-2xl font-bold text-foreground">{value}</p>
@@ -388,258 +111,89 @@ const KPI = ({
   </Card>
 );
 
-const Analytics = () => {
-  const [orderDim, setOrderDim] = useState<Dim>("location");
-  const [salesDim, setSalesDim] = useState<Dim>("category");
-  const [refundDim, setRefundDim] = useState<Dim>("size");
-  const [convDim, setConvDim] = useState<Dim>("age");
-  const [offersDim, setOffersDim] = useState<Dim>("category");
-  const [leadSearch, setLeadSearch] = useState("");
+const LEAD_STATUS_META: Record<string, { label: string; tone: string }> = {
+  CUSTOMER: { label: "Customer", tone: "bg-emerald-100 text-emerald-700" },
+  ENGAGED:  { label: "Engaged",  tone: "bg-orange-100 text-orange-700" },
+  NEW:      { label: "New",      tone: "bg-muted text-muted-foreground" },
+};
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-analytics-data"],
-    queryFn: async (): Promise<{
-      orders: AnalyticsOrder[];
-      listings: AnalyticsListing[];
-      profiles: AnalyticsProfile[];
-      complaints: AnalyticsComplaint[];
-      offers: AnalyticsOffer[];
-    }> => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        return {
-          orders: MOCK_ORDERS,
-          listings: MOCK_LISTINGS,
-          profiles: MOCK_PROFILES,
-          complaints: MOCK_COMPLAINTS,
-          offers: MOCK_OFFERS,
-        };
-      }
-      const [orders, listings, profiles, complaints, offers] = await Promise.all([
-        supabase.from("orders").select("id, buyer_id, items, subtotal, total, created_at, shipping_city"),
-        supabase.from("listings").select("id, category, price, size, seller_id, title"),
-        supabase.from("profiles").select("id, location, date_of_birth, phone, full_name"),
-        supabase.from("complaints").select("id, buyer_id, listing_id, status, created_at"),
-        supabase.from("offers").select("id, buyer_id, listing_id, amount, counter_amount, status, created_at"),
-      ]);
-      return {
-        orders: (orders.data ?? []) as AnalyticsOrder[],
-        listings: (listings.data ?? []) as AnalyticsListing[],
-        profiles: (profiles.data ?? []) as AnalyticsProfile[],
-        complaints: (complaints.data ?? []) as AnalyticsComplaint[],
-        offers: (offers.data ?? []) as AnalyticsOffer[],
-      };
-    },
+const Analytics = () => {
+  const [orderDim, setOrderDim]     = useState<DimKey>("location");
+  const [salesDim, setSalesDim]     = useState<DimKey>("category");
+  const [refundDim, setRefundDim]   = useState<DimKey>("listingSize");
+  const [convDim, setConvDim]       = useState<DimKey>("buyerAgeBucket");
+  const [offersDim, setOffersDim]   = useState<DimKey>("category");
+  const [leadSearch, setLeadSearch] = useState("");
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>("");
+
+  const { data, isLoading } = useAdminAnalytics();
+  const { data: leadsResult, isLoading: leadsLoading } = useAdminMarketingLeads({
+    size: 50,
+    search: leadSearch || undefined,
+    leadStatus: leadStatusFilter || undefined,
   });
 
-  const listingMap = useMemo(
-    () => new Map((data?.listings ?? []).map((l) => [l.id, l])),
-    [data],
-  );
-  const profileMap = useMemo(
-    () => new Map((data?.profiles ?? []).map((p) => [p.id, p])),
-    [data],
-  );
+  const leads = leadsResult?.data ?? [];
+  const leadsTotal = leadsResult?.pagination?.total ?? 0;
 
-  const dimKey = (
-    dim: Dim,
-    buyerId: string | null,
-    listingId: string | null,
-    cityFallback: string | null,
-    priceFallback: number | null,
-  ): string => {
-    const listing = listingId ? (listingMap.get(listingId) as any) : null;
-    const profile = buyerId ? (profileMap.get(buyerId) as any) : null;
-    switch (dim) {
-      case "location":
-        return profile?.location || cityFallback || "Unknown";
-      case "category":
-        return listing?.category || "Unknown";
-      case "price_range":
-        return bucket(Number(listing?.price ?? priceFallback ?? 0), PRICE_BUCKETS);
-      case "age": {
-        if (!profile?.date_of_birth) return "Unknown";
-        return bucket(differenceInYears(new Date(), new Date(profile.date_of_birth)), AGE_BUCKETS);
-      }
-      case "size":
-        return listing?.size || "Unknown";
-    }
-  };
-
-  const orderItemRows = useMemo(() => {
-    const rows: { buyer: string; listing_id: string; price: number; qty: number; city: string | null; created_at: string }[] = [];
-    for (const o of data?.orders ?? []) {
-      for (const it of (o.items as any[]) ?? []) {
-        rows.push({
-          buyer: o.buyer_id,
-          listing_id: it.listing_id,
-          price: Number(it.price ?? 0),
-          qty: Number(it.quantity ?? 1),
-          city: o.shipping_city,
-          created_at: o.created_at,
-        });
-      }
-    }
-    return rows;
-  }, [data]);
-
-  const kpis = useMemo(() => {
-    const orders = data?.orders ?? [];
-    const totalRevenue = orders.reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const orderCount = orders.length;
-    const itemsSold = orderItemRows.reduce((s, r) => s + r.qty, 0);
-    const refundCount = (data?.complaints ?? []).filter((c) => c.status === "refunded").length;
-    const refundRate = orderCount ? (refundCount / orderCount) * 100 : 0;
-    const acceptedOffers = (data?.offers ?? []).filter((o) => o.status === "accepted").length;
-    const totalOffers = (data?.offers ?? []).length;
-    const conv = totalOffers ? (acceptedOffers / totalOffers) * 100 : 0;
-    return { totalRevenue, orderCount, itemsSold, refundRate, conv };
-  }, [data, orderItemRows]);
-
+  // ── Order volume (already sorted desc by orderCount from backend) ──────────
   const orderVolumeData = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of orderItemRows) {
-      const k = dimKey(orderDim, r.buyer, r.listing_id, r.city, r.price);
-      m.set(k, (m.get(k) ?? 0) + r.qty);
-    }
-    return Array.from(m, ([key, value]) => ({ key, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [orderItemRows, orderDim, listingMap, profileMap]);
+    const rows = data?.breakdowns[orderDim] ?? [];
+    return rows.slice(0, 8).map((r) => ({ key: humanizeKey(orderDim, r.key), value: r.orderCount }));
+  }, [data, orderDim]);
 
+  // ── Sales volume — re-sort by salesVolume (backend sorts by orderCount) ────
   const salesVolumeData = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of orderItemRows) {
-      const k = dimKey(salesDim, r.buyer, r.listing_id, r.city, r.price);
-      m.set(k, (m.get(k) ?? 0) + r.price * r.qty);
-    }
-    const rows = Array.from(m, ([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value);
-    const total = rows.reduce((s, x) => s + x.value, 0) || 1;
-    return rows.slice(0, 6).map((r) => ({ ...r, pct: Math.round((r.value / total) * 100) }));
-  }, [orderItemRows, salesDim, listingMap, profileMap]);
+    const rows = [...(data?.breakdowns[salesDim] ?? [])].sort((a, b) => b.salesVolume - a.salesVolume);
+    const total = rows.reduce((s, r) => s + r.salesVolume, 0) || 1;
+    return rows.slice(0, 6).map((r) => ({
+      key: humanizeKey(salesDim, r.key),
+      value: r.salesVolume,
+      pct: Math.round((r.salesVolume / total) * 100),
+    }));
+  }, [data, salesDim]);
 
+  // ── Refunds ──────────────────────────────────────────────────────────────
   const refundsData = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const c of data?.complaints ?? []) {
-      if (c.status !== "refunded") continue;
-      const k = dimKey(refundDim, c.buyer_id, c.listing_id, null, null);
-      m.set(k, (m.get(k) ?? 0) + 1);
-    }
-    return Array.from(m, ([key, value]) => ({ key, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [data, refundDim, listingMap, profileMap]);
+    const rows = (data?.breakdowns[refundDim] ?? []).filter((r) => r.refundedComplaintCount > 0);
+    return [...rows]
+      .sort((a, b) => b.refundedComplaintCount - a.refundedComplaintCount)
+      .slice(0, 5)
+      .map((r) => ({ key: humanizeKey(refundDim, r.key), value: r.refundedComplaintCount }));
+  }, [data, refundDim]);
 
+  // ── Funnel — already sorted desc by engagedOfferPairs ───────────────────────
   const funnelData = useMemo(() => {
-    const offerSet = new Map<string, Set<string>>();
-    for (const o of data?.offers ?? []) {
-      const k = dimKey(convDim, o.buyer_id, o.listing_id, null, Number(o.amount));
-      if (!offerSet.has(k)) offerSet.set(k, new Set());
-      offerSet.get(k)!.add(`${o.buyer_id}|${o.listing_id}`);
-    }
-    const acceptedSet = new Map<string, Set<string>>();
-    for (const o of (data?.offers ?? []).filter((o) => o.status === "accepted")) {
-      const k = dimKey(convDim, o.buyer_id, o.listing_id, null, Number(o.amount));
-      if (!acceptedSet.has(k)) acceptedSet.set(k, new Set());
-      acceptedSet.get(k)!.add(`${o.buyer_id}|${o.listing_id}`);
-    }
-    const orderedSet = new Map<string, Set<string>>();
-    for (const r of orderItemRows) {
-      const k = dimKey(convDim, r.buyer, r.listing_id, r.city, r.price);
-      if (!orderedSet.has(k)) orderedSet.set(k, new Set());
-      orderedSet.get(k)!.add(`${r.buyer}|${r.listing_id}`);
-    }
-    const all = Array.from(new Set([...offerSet.keys(), ...orderedSet.keys()]));
-    return all
-      .map((k) => ({
-        key: k,
-        engaged: offerSet.get(k)?.size ?? 0,
-        accepted: acceptedSet.get(k)?.size ?? 0,
-        ordered: orderedSet.get(k)?.size ?? 0,
-      }))
-      .sort((a, b) => b.engaged - a.engaged);
-  }, [data, orderItemRows, convDim, listingMap, profileMap]);
+    const rows = data?.funnels[convDim] ?? [];
+    return rows.map((r) => ({
+      key: humanizeKey(convDim, r.key),
+      engaged: r.engagedOfferPairs,
+      accepted: r.acceptedOfferPairs,
+      ordered: r.orderedPairs,
+    }));
+  }, [data, convDim]);
+  const topFunnel = funnelData[0];
 
+  // ── Avg offers before purchase — already sorted desc by orderedPairs ───────
   const avgOffersTiles = useMemo(() => {
-    const offersByPair = new Map<string, any[]>();
-    for (const o of data?.offers ?? []) {
-      const k = `${o.buyer_id}|${o.listing_id}`;
-      if (!offersByPair.has(k)) offersByPair.set(k, []);
-      offersByPair.get(k)!.push(o);
-    }
-    const agg = new Map<string, { sum: number; count: number }>();
-    for (const r of orderItemRows) {
-      const offers = offersByPair.get(`${r.buyer}|${r.listing_id}`) ?? [];
-      const before = offers.filter((o) => new Date(o.created_at) <= new Date(r.created_at)).length;
-      const k = dimKey(offersDim, r.buyer, r.listing_id, r.city, r.price);
-      if (!agg.has(k)) agg.set(k, { sum: 0, count: 0 });
-      const a = agg.get(k)!;
-      a.sum += before;
-      a.count += 1;
-    }
-    return Array.from(agg, ([key, v]) => ({
-      key,
-      avg: v.count ? Math.round((v.sum / v.count) * 10) / 10 : 0,
-      samples: v.count,
-    }))
-      .sort((a, b) => b.samples - a.samples)
-      .slice(0, 4);
-  }, [data, orderItemRows, offersDim, listingMap, profileMap]);
+    const rows = data?.averageOffersBeforePurchase[offersDim] ?? [];
+    return rows.slice(0, 4).map((r) => ({
+      key: humanizeKey(offersDim, r.key),
+      avg: r.averageOffersBeforePurchase,
+      samples: r.orderedPairs,
+    }));
+  }, [data, offersDim]);
 
-  const priceVariance = useMemo(() => {
-    let sumDiff = 0;
-    let sumPct = 0;
-    let n = 0;
-    for (const o of data?.offers ?? []) {
-      if (o.status !== "accepted") continue;
-      const l = listingMap.get(o.listing_id) as any;
-      if (!l) continue;
-      const accepted = Number(o.counter_amount ?? o.amount);
-      const original = Number(l.price);
-      if (!original) continue;
-      sumDiff += accepted - original;
-      sumPct += ((accepted - original) / original) * 100;
-      n += 1;
-    }
-    return {
-      avgDiff: n ? Math.round((sumDiff / n) * 100) / 100 : 0,
-      avgPct: n ? Math.round((sumPct / n) * 100) / 100 : 0,
-      n,
-    };
-  }, [data, listingMap]);
-
-  const marketingLeads = useMemo(() => {
-    const orderCount = new Map<string, number>();
-    for (const r of orderItemRows) orderCount.set(r.buyer, (orderCount.get(r.buyer) ?? 0) + 1);
-    const offerCount = new Map<string, number>();
-    for (const o of data?.offers ?? []) offerCount.set(o.buyer_id, (offerCount.get(o.buyer_id) ?? 0) + 1);
-
-    const all = (data?.profiles ?? []).map((p: any) => {
-      const orders = orderCount.get(p.id) ?? 0;
-      const offers = offerCount.get(p.id) ?? 0;
-      let status: { label: string; tone: string } = { label: "New", tone: "bg-muted text-muted-foreground" };
-      if (orders >= 3) status = { label: "Qualified", tone: "bg-emerald-100 text-emerald-700" };
-      else if (orders >= 1) status = { label: "Hot Lead", tone: "bg-orange-100 text-orange-700" };
-      else if (offers >= 1) status = { label: "Nurturing", tone: "bg-sky-100 text-sky-700" };
-      else status = { label: "At Risk", tone: "bg-rose-100 text-rose-700" };
-      return {
-        id: p.id,
-        name: p.full_name || "—",
-        phone: p.phone || "",
-        location: p.location || "",
-        orders,
-        offers,
-        status,
-      };
-    });
-    return leadSearch
-      ? all.filter(
-          (l) =>
-            l.name.toLowerCase().includes(leadSearch.toLowerCase()) ||
-            l.phone.includes(leadSearch) ||
-            l.location.toLowerCase().includes(leadSearch.toLowerCase()),
-        )
-      : all;
-  }, [data, orderItemRows, leadSearch]);
+  // ── Price variance — per-dimension breakdown (no single global number) ─────
+  const priceVarianceTiles = useMemo(() => {
+    const rows = [...(data?.priceVariance[offersDim] ?? [])]
+      .sort((a, b) => Math.abs(b.averageVariancePercentage) - Math.abs(a.averageVariancePercentage));
+    return rows.slice(0, 4).map((r) => ({
+      key: humanizeKey(offersDim, r.key),
+      avgDiff: r.averageVarianceAmount,
+      avgPct: r.averageVariancePercentage,
+    }));
+  }, [data, offersDim]);
 
   if (isLoading) {
     return (
@@ -649,29 +203,38 @@ const Analytics = () => {
     );
   }
 
-  const topFunnel = funnelData[0];
+  const kpis = data?.kpis;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-heading text-2xl font-bold text-foreground">Analytics Overview</h2>
-          <p className="text-sm text-muted-foreground">Real-time performance metrics for the marketplace</p>
+          <p className="text-sm text-muted-foreground">Performance metrics for the marketplace</p>
         </div>
         <Button
           size="sm"
-          onClick={() => downloadCSV(marketingLeads.map(({ status, ...r }) => ({ ...r, status: status.label })), "leads-report.csv")}
+          onClick={() =>
+            downloadCSV(
+              leads.map((l) => ({
+                name: l.name, phone: l.phone, location: l.location,
+                orders: l.orderCount, offers: l.offerCount,
+                status: LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
+              })),
+              "leads-report.csv",
+            )
+          }
         >
           <Download className="mr-2 h-4 w-4" /> Export Report
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KPI label="Total Revenue" value={`Rs ${kpis.totalRevenue.toLocaleString()}`} icon={DollarSign} delta={12.4} />
-        <KPI label="Order Volume" value={kpis.orderCount.toLocaleString()} icon={ShoppingCart} delta={8.1} />
-        <KPI label="Sales Volume" value={kpis.itemsSold.toLocaleString()} icon={ShoppingBag} delta={-2.4} />
-        <KPI label="Refund Rate" value={`${kpis.refundRate.toFixed(1)}%`} icon={RotateCcw} delta={-0.5} highlight />
-        <KPI label="Avg Conv. Rate" value={`${kpis.conv.toFixed(2)}%`} icon={Target} delta={4.2} />
+        <KPI label="Total Revenue" value={`Rs ${(kpis?.totalRevenue ?? 0).toLocaleString()}`} icon={DollarSign} />
+        <KPI label="Order Volume" value={(kpis?.orderCount ?? 0).toLocaleString()} icon={ShoppingCart} />
+        <KPI label="Items Sold" value={(kpis?.itemsSold ?? 0).toLocaleString()} icon={ShoppingBag} />
+        <KPI label="Refund Rate" value={`${(kpis?.refundRate ?? 0).toFixed(1)}%`} icon={RotateCcw} highlight />
+        <KPI label="Offer→Order Conv." value={`${(kpis?.averageOfferToOrderConversionRate ?? 0).toFixed(2)}%`} icon={Target} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -752,21 +315,9 @@ const Analytics = () => {
               <p className="py-12 text-center text-sm text-muted-foreground">No refund data</p>
             ) : (
               <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
-                <ChartContainer
-                  config={{ value: { label: "Refunds" } } satisfies ChartConfig}
-                  className="h-[220px] w-full"
-                >
+                <ChartContainer config={{ value: { label: "Refunds" } } satisfies ChartConfig} className="h-[220px] w-full">
                   <PieChart>
-                    <Pie
-                      data={refundsData}
-                      dataKey="value"
-                      nameKey="key"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={2}
-                    >
+                    <Pie data={refundsData} dataKey="value" nameKey="key" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
                       {refundsData.map((_, i) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
@@ -778,10 +329,7 @@ const Analytics = () => {
                   {refundsData.map((r, i) => (
                     <div key={r.key} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
-                        />
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
                         <span className="text-foreground">{r.key}</span>
                       </div>
                       <span className="font-semibold text-foreground">{r.value}</span>
@@ -865,22 +413,21 @@ const Analytics = () => {
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
               <Zap className="h-3 w-3" /> Price Variation
             </p>
-            <CardTitle className="text-base">Market Bid Delta</CardTitle>
+            <CardTitle className="text-base">Bid Delta by {DIM_LABELS[offersDim]}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">Avg difference between listing price and accepted offer</p>
-            <p
-              className={cn(
-                "font-heading text-4xl font-bold",
-                priceVariance.avgPct < 0 ? "text-destructive" : "text-emerald-600",
-              )}
-            >
-              {priceVariance.avgPct >= 0 ? "+" : ""}
-              {priceVariance.avgPct}%
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {priceVariance.avgDiff >= 0 ? "+" : ""}R {priceVariance.avgDiff} avg · {priceVariance.n} accepted
-            </p>
+          <CardContent className="space-y-3">
+            {priceVarianceTiles.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">No accepted offers yet</p>
+            ) : (
+              priceVarianceTiles.map((t) => (
+                <div key={t.key} className="flex items-center justify-between text-sm">
+                  <span className="truncate text-foreground">{t.key}</span>
+                  <span className={cn("font-semibold", t.avgPct < 0 ? "text-destructive" : "text-emerald-600")}>
+                    {t.avgPct >= 0 ? "+" : ""}{t.avgPct}%
+                  </span>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -889,7 +436,7 @@ const Analytics = () => {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-base">Marketing Leads</CardTitle>
-            <p className="text-xs text-muted-foreground">High-potential buyers tracked from interest signals</p>
+            <p className="text-xs text-muted-foreground">{leadsTotal} total leads</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -906,7 +453,11 @@ const Analytics = () => {
               variant="outline"
               onClick={() =>
                 downloadCSV(
-                  marketingLeads.map(({ status, ...r }) => ({ ...r, status: status.label })),
+                  leads.map((l) => ({
+                    name: l.name, phone: l.phone, location: l.location,
+                    orders: l.orderCount, offers: l.offerCount,
+                    status: LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
+                  })),
                   "marketing-leads.csv",
                 )
               }
@@ -916,57 +467,59 @@ const Analytics = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>WhatsApp / Phone</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead className="text-right">Orders</TableHead>
-                <TableHead className="text-right">Offers</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {marketingLeads.length === 0 ? (
+          {leadsLoading ? (
+            <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    No leads
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>WhatsApp / Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-right">Orders</TableHead>
+                  <TableHead className="text-right">Offers</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ) : (
-                marketingLeads.slice(0, 50).map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold uppercase text-primary">
-                          {l.name.slice(0, 2)}
-                        </div>
-                        <span className="font-medium text-foreground">{l.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{l.phone || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{l.location || "—"}</TableCell>
-                    <TableCell className="text-right text-sm">{l.orders}</TableCell>
-                    <TableCell className="text-right text-sm">{l.offers}</TableCell>
-                    <TableCell>
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                          l.status.tone,
-                        )}
-                      >
-                        {l.status.label}
-                      </span>
+              </TableHeader>
+              <TableBody>
+                {leads.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                      No leads
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          {marketingLeads.length > 50 && (
+                ) : (
+                  leads.map((l) => {
+                    const status = LEAD_STATUS_META[l.leadStatus] ?? LEAD_STATUS_META.NEW;
+                    return (
+                      <TableRow key={l.userId}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold uppercase text-primary">
+                              {l.name.slice(0, 2)}
+                            </div>
+                            <span className="font-medium text-foreground">{l.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{l.phone || "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{l.location || "—"}</TableCell>
+                        <TableCell className="text-right text-sm">{l.orderCount}</TableCell>
+                        <TableCell className="text-right text-sm">{l.offerCount}</TableCell>
+                        <TableCell>
+                          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", status.tone)}>
+                            {status.label}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
+          {leadsTotal > leads.length && (
             <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-              Showing 50 of {marketingLeads.length} leads
+              Showing {leads.length} of {leadsTotal} leads
             </div>
           )}
         </CardContent>

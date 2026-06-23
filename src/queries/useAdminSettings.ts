@@ -54,6 +54,16 @@ export const useUpdateHelpTutorials = () => {
       adminSettingsService.updateHelpTutorials(helpTutorials),
     onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
   });
+  
+};
+
+export const useUpdateEmailTemplates = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (emailTemplates: import("@/services/adminSettings.service").EmailTemplateAPI[]) =>
+      adminSettingsService.updateEmailTemplates(emailTemplates),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
+  });
 };
 
 

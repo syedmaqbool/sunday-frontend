@@ -14,7 +14,7 @@ export interface BoostPackageAPI {
 
 export interface AdminSettings {
   boostPackages: BoostPackageAPI[];
-  emailTemplates: unknown[];
+  emailTemplates: EmailTemplateAPI[];
   flagKeywords: string[];
   helpCategories: unknown[];
   helpContent: unknown[];
@@ -51,6 +51,13 @@ export interface HelpTutorialAPI {
   title: string;
 }
 
+export interface EmailTemplateAPI {
+  id:      string;
+  body:    string;
+  key:     string;
+  subject: string;
+}
+
 export const adminSettingsService = {
   // ... existing get(), updateBoostPackages() yahan rahenge ...
 get: () =>
@@ -83,6 +90,13 @@ get: () =>
       "/api/v1/admin/settings",
       { helpTutorials },
     ),
+
+    updateEmailTemplates: (emailTemplates: EmailTemplateAPI[]) =>
+  apiClient.patch<ItemResponse<AdminSettings>>(
+    "/api/v1/admin/settings",
+    { emailTemplates },
+  ),
+
 };
 
 

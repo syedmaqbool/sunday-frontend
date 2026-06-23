@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useBoostPackages, useUpdateBoostPackages, useAdminBoosts } from "@/queries/useAdminBoost";
+import type { BoostPackage, BoostPlacement, ListingBoost } from "@/services/adminBoost.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,23 +33,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Trash2, Pencil, Rocket, TrendingUp, Sparkles, Search } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, TrendingUp, Sparkles, Search } from "lucide-react";
 import { toast } from "sonner";
-import type { BoostPackage, BoostPlacement, ListingBoost } from "@/hooks/useBoosts";
 import { format } from "date-fns";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { nanoid } from "nanoid"; // or use crypto.randomUUID()
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const placementMeta: Record<BoostPlacement, { label: string; icon: any; color: string }> = {
-  trending: { label: "Trending Now", icon: TrendingUp, color: "text-orange-500" },
-  for_you: { label: "Picked for You", icon: Sparkles, color: "text-primary" },
-  search: { label: "Search & Browse", icon: Search, color: "text-blue-500" },
+  TRENDING: { label: "Trending Now", icon: TrendingUp, color: "text-orange-500" },
+  FOR_YOU: { label: "Picked for You", icon: Sparkles, color: "text-primary" },
+  SEARCH: { label: "Search & Browse", icon: Search, color: "text-blue-500" },
 };
+
+// ─── Package Form ─────────────────────────────────────────────────────────────
 
 interface PackageFormState {
   id?: string;
   name: string;
   placement: BoostPlacement;
-  duration_days: number;
+  durationDays: number;
+  credits: number;
   price: number;
   description: string;
   active: boolean;
@@ -57,130 +61,54 @@ interface PackageFormState {
 
 const emptyPackage: PackageFormState = {
   name: "",
-  placement: "trending",
-  duration_days: 7,
-  price: 9.99,
+  placement: "TRENDING",
+  durationDays: 7,
+  credits: 0,
+  price: 500,
   description: "",
   active: true,
 };
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_ADMIN_PACKAGES: BoostPackage[] = [
-  { id: "pkg-1", name: "Trending Boost · 3 Days",  placement: "trending", duration_days: 3,  price: 500,  description: "Show up in Trending Now for 3 days.",     active: true },
-  { id: "pkg-2", name: "Trending Boost · 7 Days",  placement: "trending", duration_days: 7,  price: 1000, description: "Show up in Trending Now for a week.",     active: true },
-  { id: "pkg-3", name: "For You Boost · 3 Days",   placement: "for_you",  duration_days: 3,  price: 450,  description: "Get featured in personalized feeds.",     active: true },
-  { id: "pkg-4", name: "Search Boost · 3 Days",    placement: "search",   duration_days: 3,  price: 400,  description: "Rank higher in search & browse results.", active: true },
-  { id: "pkg-5", name: "Search Boost · 7 Days",    placement: "search",   duration_days: 7,  price: 850,  description: "Rank higher in search for a full week.",  active: false },
-];
-
-const nowTs = Date.now();
-const MOCK_ADMIN_BOOSTS: ListingBoost[] = [
-  {
-    id: "boost-1",
-    listing_id: "mock-listing-1",
-    seller_id: "mock-user-id",
-    placement: "trending",
-    starts_at: new Date(nowTs - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    ends_at: new Date(nowTs + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    price_paid: 500,
-    payment_status: "mock",
-  },
-  {
-    id: "boost-2",
-    listing_id: "mock-listing-5",
-    seller_id: "mock-user-id",
-    placement: "search",
-    starts_at: new Date(nowTs - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    ends_at: new Date(nowTs - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    price_paid: 400,
-    payment_status: "paid",
-  },
-  {
-    id: "boost-3",
-    listing_id: "mock-listing-2",
-    seller_id: "mock-seller-id-2",
-    placement: "for_you",
-    starts_at: new Date(nowTs - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    ends_at: new Date(nowTs + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    price_paid: 450,
-    payment_status: "paid",
-  },
-];
-
-let mockPackagesStore = [...MOCK_ADMIN_PACKAGES];
-let mockBoostsStore = [...MOCK_ADMIN_BOOSTS];
-
-const MOCK_LISTING_TITLES: Record<string, string> = {
-  "mock-listing-1": "Vintage Leather Jacket",
-  "mock-listing-2": "Classic White Sneakers",
-  "mock-listing-5": "Wool Winter Coat",
-};
-
-const MOCK_SELLER_NAMES: Record<string, string> = {
-  "mock-user-id": "Muhamad Bilal Shaikh",
-  "mock-seller-id-2": "Closet Curator",
-};
-
-// ─── Components ───────────────────────────────────────────────────────────────
-
 const PackageDialog = ({
   initial,
   trigger,
+  allPackages,
+  onSave,
+  isPending,
 }: {
   initial?: PackageFormState;
   trigger: React.ReactNode;
+  allPackages: BoostPackage[];
+  onSave: (packages: BoostPackage[]) => void;
+  isPending: boolean;
 }) => {
-  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<PackageFormState>(initial ?? emptyPackage);
 
-  const save = useMutation({
-    mutationFn: async () => {
-      if (!form.name.trim()) throw new Error("Name is required");
-      if (form.duration_days < 1) throw new Error("Duration must be at least 1 day");
-      if (form.price < 0) throw new Error("Price cannot be negative");
+  const handleSave = () => {
+    if (!form.name.trim()) { toast.error("Name is required"); return; }
+    if (form.durationDays < 1) { toast.error("Duration must be at least 1 day"); return; }
+    if (form.price < 0) { toast.error("Price cannot be negative"); return; }
 
-      const payload = {
-        name: form.name,
-        placement: form.placement,
-        duration_days: form.duration_days,
-        price: form.price,
-        description: form.description,
-        active: form.active,
-      };
+    const pkg: BoostPackage = {
+      id: form.id ?? (typeof crypto !== "undefined" ? crypto.randomUUID() : nanoid()),
+      name: form.name.trim(),
+      placement: form.placement,
+      durationDays: form.durationDays,
+      credits: form.credits,
+      price: form.price,
+      description: form.description.trim(),
+      active: form.active,
+    };
 
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        if (form.id) {
-          mockPackagesStore = mockPackagesStore.map((p) =>
-            p.id === form.id ? { ...p, ...payload } : p,
-          );
-        } else {
-          mockPackagesStore = [...mockPackagesStore, { id: `mock-pkg-${Date.now()}`, ...payload }];
-        }
-        return;
-      }
+    const updated = form.id
+      ? allPackages.map((p) => (p.id === form.id ? pkg : p))
+      : [pkg, ...allPackages];
 
-      if (form.id) {
-        const { error } = await supabase
-          .from("boost_packages" as any)
-          .update(payload)
-          .eq("id", form.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("boost_packages" as any).insert(payload);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success(form.id ? "Package updated" : "Package created");
-      qc.invalidateQueries({ queryKey: ["admin-boost-packages"] });
-      qc.invalidateQueries({ queryKey: ["boost-packages"] });
-      setOpen(false);
-      if (!form.id) setForm(emptyPackage);
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed to save"),
-  });
+    onSave(updated);
+    setOpen(false);
+    if (!form.id) setForm(emptyPackage);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -188,9 +116,7 @@ const PackageDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{form.id ? "Edit boost package" : "New boost package"}</DialogTitle>
-          <DialogDescription>
-            Quick à la carte boost shown to sellers.
-          </DialogDescription>
+          <DialogDescription>Quick à la carte boost shown to sellers.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -212,9 +138,9 @@ const PackageDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="trending">Trending Now</SelectItem>
-                  <SelectItem value="for_you">Picked for You</SelectItem>
-                  <SelectItem value="search">Search & Browse</SelectItem>
+                  <SelectItem value="TRENDING">Trending Now</SelectItem>
+                  <SelectItem value="FOR_YOU">Picked for You</SelectItem>
+                  <SelectItem value="SEARCH">Search &amp; Browse</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -234,9 +160,9 @@ const PackageDialog = ({
               <Input
                 type="number"
                 min={1}
-                value={form.duration_days}
+                value={form.durationDays}
                 onChange={(e) =>
-                  setForm({ ...form, duration_days: Math.max(1, Number(e.target.value) || 1) })
+                  setForm({ ...form, durationDays: Math.max(1, Number(e.target.value) || 1) })
                 }
               />
             </div>
@@ -245,7 +171,7 @@ const PackageDialog = ({
               <Input
                 type="number"
                 min={0}
-                step={0.01}
+                step={1}
                 value={form.price}
                 onChange={(e) =>
                   setForm({ ...form, price: Math.max(0, Number(e.target.value) || 0) })
@@ -266,8 +192,8 @@ const PackageDialog = ({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save
           </Button>
         </DialogFooter>
@@ -276,125 +202,33 @@ const PackageDialog = ({
   );
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const BoostManagement = () => {
-  const qc = useQueryClient();
+  const { data: packages = [], isLoading: pkgLoading } = useBoostPackages();
+  const updatePackages = useUpdateBoostPackages();
 
-  const { data: packages = [], isLoading: pkgLoading } = useQuery({
-    queryKey: ["admin-boost-packages"],
-    queryFn: async (): Promise<BoostPackage[]> => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockPackagesStore;
-      const { data, error } = await supabase
-        .from("boost_packages" as any)
-        .select("*")
-        .order("placement")
-        .order("duration_days");
-      if (error) throw error;
-      return (data as any[]) ?? [];
-    },
-  });
+  const { data: boostsResponse, isLoading: boostLoading } = useAdminBoosts({ size: 100 });
+  const boosts: ListingBoost[] = boostsResponse?.data ?? [];
 
-  const { data: boosts = [], isLoading: boostLoading } = useQuery({
-    queryKey: ["admin-all-boosts"],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return mockBoostsStore;
-      const { data, error } = await supabase
-        .from("listing_boosts" as any)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data as any[]) as ListingBoost[];
-    },
-  });
+  const handleSavePackages = (updated: BoostPackage[]) => {
+    updatePackages.mutate(updated, {
+      onSuccess: () => toast.success("Package saved"),
+      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    });
+  };
 
-  // Fetch listing titles + seller names for displayed boosts
-  const listingIds = useMemo(() => [...new Set(boosts.map((b) => b.listing_id))], [boosts]);
-  const sellerIds = useMemo(() => [...new Set(boosts.map((b) => b.seller_id))], [boosts]);
-
-  const { data: listingMap = {} } = useQuery({
-    queryKey: ["admin-boost-listings", listingIds],
-    enabled: listingIds.length > 0,
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const m: Record<string, string> = {};
-        listingIds.forEach((id) => (m[id] = MOCK_LISTING_TITLES[id] ?? id));
-        return m;
-      }
-      const { data, error } = await supabase
-        .from("listings")
-        .select("id,title")
-        .in("id", listingIds);
-      if (error) throw error;
-      const m: Record<string, string> = {};
-      (data ?? []).forEach((l: any) => (m[l.id] = l.title));
-      return m;
-    },
-  });
-
-  const { data: sellerMap = {} } = useQuery({
-    queryKey: ["admin-boost-sellers", sellerIds],
-    enabled: sellerIds.length > 0,
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const m: Record<string, string> = {};
-        sellerIds.forEach((id) => (m[id] = MOCK_SELLER_NAMES[id] ?? "—"));
-        return m;
-      }
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,full_name")
-        .in("id", sellerIds);
-      if (error) throw error;
-      const m: Record<string, string> = {};
-      (data ?? []).forEach((p: any) => (m[p.id] = p.full_name ?? "—"));
-      return m;
-    },
-  });
-
-  const deletePkg = useMutation({
-    mutationFn: async (id: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        mockPackagesStore = mockPackagesStore.filter((p) => p.id !== id);
-        return;
-      }
-      const { error } = await supabase.from("boost_packages" as any).delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Package deleted");
-      qc.invalidateQueries({ queryKey: ["admin-boost-packages"] });
-      qc.invalidateQueries({ queryKey: ["boost-packages"] });
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed to delete"),
-  });
-
-  const cancelBoost = useMutation({
-    mutationFn: async (id: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        mockBoostsStore = mockBoostsStore.map((b) =>
-          b.id === id ? { ...b, ends_at: new Date().toISOString(), payment_status: "cancelled" } : b,
-        );
-        return;
-      }
-      const { error } = await supabase
-        .from("listing_boosts" as any)
-        .update({ ends_at: new Date().toISOString(), payment_status: "cancelled" })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Campaign cancelled");
-      qc.invalidateQueries({ queryKey: ["admin-all-boosts"] });
-      qc.invalidateQueries({ queryKey: ["active-boosts"] });
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed to cancel"),
-  });
+  const handleDeletePackage = (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"?`)) return;
+    handleSavePackages(packages.filter((p) => p.id !== id));
+    toast.success("Package deleted");
+  };
 
   const now = new Date();
   const activeCount = boosts.filter(
-    (b) => new Date(b.ends_at) > now && ["paid", "mock"].includes(b.payment_status),
+    (b) => new Date(b.endsAt) > now && ["PAID", "MOCK"].includes(b.paymentStatus),
   ).length;
-  const totalRevenue = boosts.reduce((s, b) => s + Number(b.price_paid ?? 0), 0);
+  const totalRevenue = boosts.reduce((s, b) => s + Number(b.pricePaid ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -406,6 +240,9 @@ const BoostManagement = () => {
           </p>
         </div>
         <PackageDialog
+          allPackages={packages}
+          onSave={handleSavePackages}
+          isPending={updatePackages.isPending}
           trigger={
             <Button>
               <Plus className="mr-2 h-4 w-4" /> New package
@@ -414,6 +251,7 @@ const BoostManagement = () => {
         />
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Active campaigns</p>
@@ -435,6 +273,7 @@ const BoostManagement = () => {
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
         </TabsList>
 
+        {/* ── Packages tab ── */}
         <TabsContent value="packages" className="pt-4">
           {pkgLoading ? (
             <div className="flex justify-center py-12">
@@ -474,7 +313,7 @@ const BoostManagement = () => {
                             <Icon className={`h-3.5 w-3.5 ${M.color}`} /> {M.label}
                           </span>
                         </TableCell>
-                        <TableCell>{p.duration_days} days</TableCell>
+                        <TableCell>{p.durationDays} days</TableCell>
                         <TableCell>Rs {Number(p.price).toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={p.active ? "default" : "secondary"}>
@@ -488,11 +327,15 @@ const BoostManagement = () => {
                                 id: p.id,
                                 name: p.name,
                                 placement: p.placement,
-                                duration_days: p.duration_days,
+                                durationDays: p.durationDays,
+                                credits: p.credits,
                                 price: Number(p.price),
                                 description: p.description,
                                 active: p.active,
                               }}
+                              allPackages={packages}
+                              onSave={handleSavePackages}
+                              isPending={updatePackages.isPending}
                               trigger={
                                 <Button size="icon" variant="ghost">
                                   <Pencil className="h-4 w-4" />
@@ -502,9 +345,8 @@ const BoostManagement = () => {
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => {
-                                if (confirm(`Delete "${p.name}"?`)) deletePkg.mutate(p.id);
-                              }}
+                              onClick={() => handleDeletePackage(p.id, p.name)}
+                              disabled={updatePackages.isPending}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -519,11 +361,17 @@ const BoostManagement = () => {
           )}
         </TabsContent>
 
+        {/* ── Campaigns tab ── */}
         <TabsContent value="campaigns" className="pt-4">
           {boostLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          ) : !boostsResponse ? (
+            // Admin boosts endpoint may not exist yet
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              Campaign data not available yet.
+            </Card>
           ) : boosts.length === 0 ? (
             <Card className="p-8 text-center text-sm text-muted-foreground">
               No campaigns have been launched yet.
@@ -534,12 +382,11 @@ const BoostManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Listing</TableHead>
-                    <TableHead>Seller</TableHead>
+                    <TableHead>Package</TableHead>
                     <TableHead>Placement</TableHead>
                     <TableHead>Period</TableHead>
                     <TableHead>Spend</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -547,15 +394,15 @@ const BoostManagement = () => {
                     const M = placementMeta[b.placement];
                     const Icon = M.icon;
                     const isActive =
-                      new Date(b.ends_at) > now &&
-                      ["paid", "mock"].includes(b.payment_status);
+                      new Date(b.endsAt) > now &&
+                      ["PAID", "MOCK"].includes(b.paymentStatus);
                     return (
                       <TableRow key={b.id}>
-                        <TableCell className="max-w-[220px] truncate">
-                          {listingMap[b.listing_id] ?? b.listing_id.slice(0, 8)}
+                        <TableCell className="max-w-[180px] truncate font-mono text-xs text-muted-foreground">
+                          {b.listingId.slice(0, 8)}…
                         </TableCell>
-                        <TableCell className="max-w-[160px] truncate">
-                          {sellerMap[b.seller_id] ?? "—"}
+                        <TableCell className="max-w-[160px] truncate text-sm">
+                          {b.packageName ?? "Custom campaign"}
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 text-sm">
@@ -563,27 +410,18 @@ const BoostManagement = () => {
                           </span>
                         </TableCell>
                         <TableCell className="text-xs">
-                          {format(new Date(b.starts_at), "MMM d")} →{" "}
-                          {format(new Date(b.ends_at), "MMM d, yyyy")}
+                          {format(new Date(b.startsAt), "MMM d")} →{" "}
+                          {format(new Date(b.endsAt), "MMM d, yyyy")}
                         </TableCell>
-                        <TableCell>Rs {Number(b.price_paid).toFixed(2)}</TableCell>
+                        <TableCell>Rs {Number(b.pricePaid).toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={isActive ? "default" : "secondary"}>
-                            {isActive ? "Active" : b.payment_status === "cancelled" ? "Cancelled" : "Ended"}
+                            {isActive
+                              ? "Active"
+                              : b.paymentStatus === "CANCELLED"
+                              ? "Cancelled"
+                              : "Ended"}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isActive && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                if (confirm("Cancel this campaign now?")) cancelBoost.mutate(b.id);
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          )}
                         </TableCell>
                       </TableRow>
                     );

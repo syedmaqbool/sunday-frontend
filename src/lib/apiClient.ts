@@ -36,11 +36,12 @@ async function attemptRefresh(): Promise<string | null> {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const hasBody = options.body !== undefined && options.body !== null;
+
+  const isFormData = options.body instanceof FormData;
+const hasBody = options.body !== undefined && options.body !== null;
 
   const makeHeaders = (token: string | null): Record<string, string> => ({
-    // ← Fix: Content-Type sirf tab jab body ho (logout jaisi empty POST pe nahi)
-    ...(hasBody ? { "Content-Type": "application/json" } : {}),
+  ...(hasBody && !isFormData ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string> | undefined),
   });
@@ -84,6 +85,11 @@ export const apiClient = {
   get:    <T>(path: string)                 => request<T>(path),
   post:   <T>(path: string, data?: unknown) => request<T>(path, { method: "POST",   body: data !== undefined ? JSON.stringify(data) : undefined }),
   patch:  <T>(path: string, data: unknown)  => request<T>(path, { method: "PATCH",  body: JSON.stringify(data) }),
+  upload: <T>(path: string, formData: FormData) =>
+  request<T>(path, {
+    method: "POST",
+    body: formData,
+  }),
   put:    <T>(path: string, data: unknown)  => request<T>(path, { method: "PUT",    body: JSON.stringify(data) }),
   delete: <T>(path: string)                 => request<T>(path, { method: "DELETE" }),
 };

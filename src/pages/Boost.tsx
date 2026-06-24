@@ -1,9 +1,6 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useMyBoosts } from "@/hooks/useBoosts";
+import { useMyBoosts, useBoostableListings } from "@/queries/useClientBoost";
+import type { ListingBoost, BoostableListingItem } from "@/services/boost-client.service";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BoostDialog from "@/components/BoostDialog";
@@ -11,81 +8,49 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Rocket, TrendingUp, Sparkles, Search, Loader2, Package } from "lucide-react";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const placementIcon: Record<string, any> = {
-  trending: TrendingUp,
-  for_you: Sparkles,
-  search: Search,
+  TRENDING: TrendingUp,
+  FOR_YOU: Sparkles,
+  SEARCH: Search,
 };
 
 const placementLabel: Record<string, string> = {
-  trending: "Trending Now",
-  for_you: "Picked for You",
-  search: "Search & Browse",
+  TRENDING: "Trending Now",
+  FOR_YOU: "Picked for You",
+  SEARCH: "Search & Browse",
 };
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_APPROVED_LISTINGS = [
-  {
-    id: "mock-listing-1",
-    title: "Vintage Leather Jacket",
-    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"],
-    price: 6500,
-  },
-  {
-    id: "mock-listing-5",
-    title: "Wool Winter Coat",
-    images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"],
-    price: 8900,
-  },
-];
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const Boost = () => {
-  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const { data: listings = [], isLoading: listingsLoading } = useQuery({
-    queryKey: ["my-approved-listings", user?.id],
-    queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_APPROVED_LISTINGS;
-      const { data, error } = await supabase
-        .from("listings")
-        .select("id, title, images, price")
-        .eq("seller_id", user!.id)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
-  });
+  const { data: boostsResponse, isLoading: boostsLoading } = useMyBoosts();
+  const { data: listingsResponse, isLoading: listingsLoading } = useBoostableListings();
 
-  const { data: myBoosts = [], isLoading: boostsLoading } = useMyBoosts();
-
-  useEffect(() => {
-    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
-  }, [authLoading, user, navigate]);
-
-  if (authLoading) return null;
-  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
+  const allBoosts: ListingBoost[] = boostsResponse?.data ?? [];
+  const listings: BoostableListingItem[] = listingsResponse?.data ?? [];
 
   const now = Date.now();
-  const activeBoosts = myBoosts.filter((b) => new Date(b.ends_at).getTime() > now);
-  const expiredBoosts = myBoosts.filter((b) => new Date(b.ends_at).getTime() <= now);
+  const activeBoosts = allBoosts.filter((b) => new Date(b.endsAt).getTime() > now);
+  const expiredBoosts = allBoosts.filter((b) => new Date(b.endsAt).getTime() <= now);
 
-  const boostsByListing = new Map<string, typeof activeBoosts>();
+  // group active boosts by listingId for the listings section
+  const boostsByListing = new Map<string, ListingBoost[]>();
   for (const b of activeBoosts) {
-    const arr = boostsByListing.get(b.listing_id) ?? [];
+    const arr = boostsByListing.get(b.listingId) ?? [];
     arr.push(b);
-    boostsByListing.set(b.listing_id, arr);
+    boostsByListing.set(b.listingId, arr);
   }
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container max-w-4xl flex-1 py-8">
+        {/* Header */}
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-primary/10 p-3">
             <Rocket className="h-6 w-6 text-primary" />
@@ -115,7 +80,7 @@ const Boost = () => {
             <div className="mt-3 space-y-2">
               {activeBoosts.map((b) => {
                 const Icon = placementIcon[b.placement] ?? Rocket;
-                const listing = listings.find((l) => l.id === b.listing_id);
+                const listing = listings.find((l) => l.id === b.listingId);
                 return (
                   <Card key={b.id}>
                     <CardContent className="flex items-center gap-3 p-3">
@@ -125,11 +90,11 @@ const Boost = () => {
                           {listing?.title ?? "Listing"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {placementLabel[b.placement]} · ends{" "}
-                          {new Date(b.ends_at).toLocaleDateString()}
+                          {placementLabel[b.placement] ?? b.placement} · ends{" "}
+                          {new Date(b.endsAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge variant="secondary">Rs {Number(b.price_paid).toFixed(2)}</Badge>
+                      <Badge variant="secondary">Rs {Number(b.pricePaid).toFixed(2)}</Badge>
                     </CardContent>
                   </Card>
                 );
@@ -162,7 +127,7 @@ const Boost = () => {
             </div>
           ) : (
             <div className="mt-3 space-y-2">
-              {listings.map((l: any) => {
+              {listings.map((l) => {
                 const active = boostsByListing.get(l.id) ?? [];
                 return (
                   <Card key={l.id}>
@@ -175,7 +140,7 @@ const Boost = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground truncate">{l.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          R {Number(l.price).toLocaleString()}
+                          Rs {Number(l.price).toLocaleString()}
                           {active.length > 0 && (
                             <span className="ml-2 text-primary">
                               · {active.length} active boost{active.length > 1 ? "s" : ""}
@@ -192,12 +157,13 @@ const Boost = () => {
           )}
         </section>
 
+        {/* Boost history */}
         {expiredBoosts.length > 0 && (
           <section className="mt-10">
             <h2 className="font-heading text-xl font-semibold text-foreground">Boost History</h2>
             <div className="mt-3 space-y-2">
               {expiredBoosts.slice(0, 10).map((b) => {
-                const listing = listings.find((l) => l.id === b.listing_id);
+                const listing = listings.find((l) => l.id === b.listingId);
                 return (
                   <div
                     key={b.id}
@@ -206,11 +172,11 @@ const Boost = () => {
                     <div className="min-w-0">
                       <p className="truncate text-foreground">{listing?.title ?? "Listing"}</p>
                       <p className="text-xs text-muted-foreground">
-                        {placementLabel[b.placement]} · ended{" "}
-                        {new Date(b.ends_at).toLocaleDateString()}
+                        {placementLabel[b.placement] ?? b.placement} · ended{" "}
+                        {new Date(b.endsAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="outline">Rs {Number(b.price_paid).toFixed(2)}</Badge>
+                    <Badge variant="outline">Rs {Number(b.pricePaid).toFixed(2)}</Badge>
                   </div>
                 );
               })}

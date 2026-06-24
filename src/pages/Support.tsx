@@ -27,12 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   Send,
@@ -70,10 +65,7 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-const STATUS_VARIANTS: Record<
-  string,
-  { label: string; className: string }
-> = {
+const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   OPEN: {
     label: "Open",
     className:
@@ -103,11 +95,11 @@ const Support = () => {
   const queryClient = useQueryClient();
 
   const [activeTicket, setActiveTicket] = useState<string | null>(
-    searchParams.get("ticket")
+    searchParams.get("ticket"),
   );
 
   const [tab, setTab] = useState<string>(
-    searchParams.get("ticket") ? "chat" : "tickets"
+    searchParams.get("ticket") ? "chat" : "tickets",
   );
 
   const [newMessage, setNewMessage] = useState("");
@@ -125,18 +117,14 @@ const Support = () => {
   }, [user, authLoading, navigate]);
 
   // GET tickets
-  const {
-    data: ticketsResponse,
-    isLoading: ticketsLoading,
-  } = useSupportTickets();
+  const { data: ticketsResponse, isLoading: ticketsLoading } =
+    useSupportTickets();
 
   const tickets = ticketsResponse ?? [];
 
   // GET messages
-  const {
-    data: messagesResponse,
-    isLoading: messagesLoading,
-  } = useSupportMessages(activeTicket || "");
+  const { data: messagesResponse, isLoading: messagesLoading } =
+    useSupportMessages(activeTicket || "");
 
   const messages = messagesResponse ?? [];
 
@@ -157,8 +145,7 @@ const Support = () => {
     });
 
     if (!parsed.success) {
-      const first =
-        Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+      const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
 
       toast({
         title: "Validation error",
@@ -204,7 +191,7 @@ const Support = () => {
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -227,13 +214,11 @@ const Support = () => {
             queryKey: ["support-messages", activeTicket],
           });
         },
-      }
+      },
     );
   };
 
-  const activeTicketData = tickets.find(
-    (t) => t.id === activeTicket
-  );
+  const activeTicketData = tickets.find((t) => t.id === activeTicket);
 
   if (authLoading) return null;
 
@@ -250,9 +235,7 @@ const Support = () => {
               Customer Support
             </h1>
 
-            <p className="text-sm text-muted-foreground">
-              We're here to help.
-            </p>
+            <p className="text-sm text-muted-foreground">We're here to help.</p>
           </div>
         </div>
 
@@ -260,12 +243,8 @@ const Support = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="tickets">
               My tickets
-
               {tickets.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-2"
-                >
+                <Badge variant="secondary" className="ml-2">
                   {tickets.length}
                 </Badge>
               )}
@@ -277,9 +256,7 @@ const Support = () => {
             </TabsTrigger>
 
             {activeTicket && (
-              <TabsTrigger value="chat">
-                Conversation
-              </TabsTrigger>
+              <TabsTrigger value="chat">Conversation</TabsTrigger>
             )}
           </TabsList>
 
@@ -300,10 +277,7 @@ const Support = () => {
                       No tickets found
                     </p>
 
-                    <Button
-                      onClick={() => setTab("new")}
-                      size="sm"
-                    >
+                    <Button onClick={() => setTab("new")} size="sm">
                       <Plus className="h-4 w-4 mr-1" />
                       New ticket
                     </Button>
@@ -311,8 +285,7 @@ const Support = () => {
                 ) : (
                   <div className="divide-y divide-border">
                     {tickets.map((t) => {
-                      const variant =
-                        STATUS_VARIANTS[t.status];
+                      const variant = STATUS_VARIANTS[t.status];
 
                       return (
                         <button
@@ -344,7 +317,7 @@ const Support = () => {
                             <p className="text-xs text-muted-foreground">
                               {format(
                                 new Date(t.lastMessageAt),
-                                "MMM d, h:mm a"
+                                "MMM d, h:mm a",
                               )}
                             </p>
                           </div>
@@ -367,9 +340,7 @@ const Support = () => {
                   Contact support
                 </CardTitle>
 
-                <CardDescription>
-                  Send support request
-                </CardDescription>
+                <CardDescription>Send support request</CardDescription>
               </CardHeader>
 
               <CardContent>
@@ -385,29 +356,21 @@ const Support = () => {
 
                     <Input
                       value={subject}
-                      onChange={(e) =>
-                        setSubject(e.target.value)
-                      }
+                      onChange={(e) => setSubject(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label>Category</label>
 
-                    <Select
-                      value={category}
-                      onValueChange={setCategory}
-                    >
+                    <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
 
                       <SelectContent>
                         {CATEGORIES.map((c) => (
-                          <SelectItem
-                            key={c.value}
-                            value={c.value}
-                          >
+                          <SelectItem key={c.value} value={c.value}>
                             {c.label}
                           </SelectItem>
                         ))}
@@ -421,20 +384,14 @@ const Support = () => {
                     <Textarea
                       rows={6}
                       value={message}
-                      onChange={(e) =>
-                        setMessage(e.target.value)
-                      }
+                      onChange={(e) => setMessage(e.target.value)}
                     />
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={createTicket.isPending}
-                  >
+                  <Button type="submit" disabled={createTicket.isPending}>
                     {createTicket.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-
                     Submit ticket
                   </Button>
                 </form>
@@ -446,7 +403,6 @@ const Support = () => {
           {activeTicket && (
             <TabsContent value="chat">
               <Card className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
-
                 {/* Header */}
 
                 <div className="flex items-center gap-3 p-4 border-b border-border">
@@ -471,16 +427,11 @@ const Support = () => {
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
                           variant="outline"
-                          className={`text-xs ${STATUS_VARIANTS[
-                              activeTicketData.status
-                            ]?.className
-                            }`}
+                          className={`text-xs ${
+                            STATUS_VARIANTS[activeTicketData.status]?.className
+                          }`}
                         >
-                          {
-                            STATUS_VARIANTS[
-                              activeTicketData.status
-                            ]?.label
-                          }
+                          {STATUS_VARIANTS[activeTicketData.status]?.label}
                         </Badge>
                       </div>
                     )}
@@ -497,19 +448,16 @@ const Support = () => {
                   ) : (
                     <div className="space-y-3">
                       {messages.map((m) => {
-                        const isMine =
-                          m.senderId === user?.id;
+                        const isMine = m.senderId === user?.id;
 
                         return (
                           <div
                             key={m.id}
-                            className={`flex ${isMine
-                                ? "justify-end"
-                                : "justify-start"
-                              }`}
+                            className={`flex ${
+                              isMine ? "justify-end" : "justify-start"
+                            }`}
                           >
                             <div className="flex flex-col gap-1 max-w-[80%]">
-
                               {!isMine && (
                                 <span className="text-[11px] font-medium text-primary px-1">
                                   Support team
@@ -517,24 +465,26 @@ const Support = () => {
                               )}
 
                               <div
-                                className={`rounded-2xl px-4 py-2.5 ${isMine
+                                className={`rounded-2xl px-4 py-2.5 ${
+                                  isMine
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-muted text-foreground"
-                                  }`}
+                                }`}
                               >
                                 <p className="text-sm whitespace-pre-wrap">
                                   {m.content}
                                 </p>
 
                                 <p
-                                  className={`text-[10px] mt-1 ${isMine
+                                  className={`text-[10px] mt-1 ${
+                                    isMine
                                       ? "text-primary-foreground/60"
                                       : "text-muted-foreground"
-                                    }`}
+                                  }`}
                                 >
                                   {format(
                                     new Date(m.createdAt),
-                                    "MMM d, h:mm a"
+                                    "MMM d, h:mm a",
                                   )}
                                 </p>
                               </div>
@@ -561,19 +511,14 @@ const Support = () => {
                     <Input
                       placeholder="Type your reply..."
                       value={newMessage}
-                      onChange={(e) =>
-                        setNewMessage(e.target.value)
-                      }
+                      onChange={(e) => setNewMessage(e.target.value)}
                       className="flex-1"
                     />
 
                     <Button
                       type="submit"
                       size="icon"
-                      disabled={
-                        !newMessage.trim() ||
-                        sendReply.isPending
-                      }
+                      disabled={!newMessage.trim() || sendReply.isPending}
                     >
                       {sendReply.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

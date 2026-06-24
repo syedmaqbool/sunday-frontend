@@ -1,13 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import { useMyBoosts, useBoostableListings } from "@/queries/useClientBoost";
-import type { ListingBoost, BoostableListingItem } from "@/services/boost-client.service";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getBoostableListingsOptions,
+  getMyBoostsOptions,
+} from "@/queries/useClientBoost";
+import type { BoostableListingItem, ListingBoost } from "@/types/boost";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BoostDialog from "@/components/BoostDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Rocket, TrendingUp, Sparkles, Search, Loader2, Package } from "lucide-react";
+import {
+  Rocket,
+  TrendingUp,
+  Sparkles,
+  Search,
+  Loader2,
+  Package,
+} from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -28,15 +39,22 @@ const placementLabel: Record<string, string> = {
 const Boost = () => {
   const navigate = useNavigate();
 
-  const { data: boostsResponse, isLoading: boostsLoading } = useMyBoosts();
-  const { data: listingsResponse, isLoading: listingsLoading } = useBoostableListings();
+  const { data: boostsResponse, isLoading: boostsLoading } =
+    useQuery(getMyBoostsOptions());
+  const { data: listingsResponse, isLoading: listingsLoading } = useQuery(
+    getBoostableListingsOptions(),
+  );
 
   const allBoosts: ListingBoost[] = boostsResponse?.data ?? [];
   const listings: BoostableListingItem[] = listingsResponse?.data ?? [];
 
   const now = Date.now();
-  const activeBoosts = allBoosts.filter((b) => new Date(b.endsAt).getTime() > now);
-  const expiredBoosts = allBoosts.filter((b) => new Date(b.endsAt).getTime() <= now);
+  const activeBoosts = allBoosts.filter(
+    (b) => new Date(b.endsAt).getTime() > now,
+  );
+  const expiredBoosts = allBoosts.filter(
+    (b) => new Date(b.endsAt).getTime() <= now,
+  );
 
   // group active boosts by listingId for the listings section
   const boostsByListing = new Map<string, ListingBoost[]>();
@@ -56,9 +74,12 @@ const Boost = () => {
             <Rocket className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-heading text-3xl font-bold text-foreground">Boost Listings</h1>
+            <h1 className="font-heading text-3xl font-bold text-foreground">
+              Boost Listings
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Promote your products in Trending, Picked for You, and Search results.
+              Promote your products in Trending, Picked for You, and Search
+              results.
             </p>
           </div>
         </div>
@@ -94,7 +115,9 @@ const Boost = () => {
                           {new Date(b.endsAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge variant="secondary">Rs {Number(b.pricePaid).toFixed(2)}</Badge>
+                      <Badge variant="secondary">
+                        Rs {Number(b.pricePaid).toFixed(2)}
+                      </Badge>
                     </CardContent>
                   </Card>
                 );
@@ -121,7 +144,10 @@ const Boost = () => {
               <p className="mt-1 text-sm text-muted-foreground">
                 Once a listing is approved, you can promote it here.
               </p>
-              <Button className="mt-4" onClick={() => navigate("/create-listing")}>
+              <Button
+                className="mt-4"
+                onClick={() => navigate("/create-listing")}
+              >
                 Create Listing
               </Button>
             </div>
@@ -138,12 +164,15 @@ const Boost = () => {
                         className="h-14 w-14 rounded-md object-cover"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{l.title}</p>
+                        <p className="font-medium text-foreground truncate">
+                          {l.title}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           Rs {Number(l.price).toLocaleString()}
                           {active.length > 0 && (
                             <span className="ml-2 text-primary">
-                              · {active.length} active boost{active.length > 1 ? "s" : ""}
+                              · {active.length} active boost
+                              {active.length > 1 ? "s" : ""}
                             </span>
                           )}
                         </p>
@@ -160,7 +189,9 @@ const Boost = () => {
         {/* Boost history */}
         {expiredBoosts.length > 0 && (
           <section className="mt-10">
-            <h2 className="font-heading text-xl font-semibold text-foreground">Boost History</h2>
+            <h2 className="font-heading text-xl font-semibold text-foreground">
+              Boost History
+            </h2>
             <div className="mt-3 space-y-2">
               {expiredBoosts.slice(0, 10).map((b) => {
                 const listing = listings.find((l) => l.id === b.listingId);
@@ -170,13 +201,17 @@ const Boost = () => {
                     className="flex items-center justify-between rounded-md border border-border p-3 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-foreground">{listing?.title ?? "Listing"}</p>
+                      <p className="truncate text-foreground">
+                        {listing?.title ?? "Listing"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {placementLabel[b.placement] ?? b.placement} · ended{" "}
                         {new Date(b.endsAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="outline">Rs {Number(b.pricePaid).toFixed(2)}</Badge>
+                    <Badge variant="outline">
+                      Rs {Number(b.pricePaid).toFixed(2)}
+                    </Badge>
                   </div>
                 );
               })}

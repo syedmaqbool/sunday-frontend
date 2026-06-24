@@ -1,51 +1,32 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type { CommissionTier, CommissionTierPayload } from "@/types/commission";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export interface CommissionTier {
-  id: string;
-  name: string;
-  categories: string[];
-  minPrice: number;
-  maxPrice: number | null;
-  rate: number;
-  active: boolean;
-  sortOrder: number;
-  createdAt: string;
+export function listCommissionTiers() {
+  return authInstance
+    .get("/api/v1/admin/settings/commission-tiers")
+    .json<PaginatedResponse<CommissionTier>>();
 }
 
-export interface CommissionTierPayload {
-  name: string;
-  categories: string[];
-  minPrice?: number;
-  maxPrice?: number | null;
-  rate: number;
-  active?: boolean;
-  sortOrder?: number;
+export function createCommissionTier(payload: CommissionTierPayload) {
+  return authInstance
+    .post("/api/v1/admin/settings/commission-tiers", { json: payload })
+    .json<Response<CommissionTier>>();
 }
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
+export function updateCommissionTier(
+  commissionTierId: string,
+  payload: Partial<CommissionTierPayload>,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/settings/commission-tiers/${commissionTierId}`, {
+      json: payload,
+    })
+    .json<Response<CommissionTier>>();
 }
 
-interface ItemResponse<T> {
-  data: T;
+export function deleteCommissionTier(commissionTierId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/settings/commission-tiers/${commissionTierId}`)
+    .json<Response>();
 }
-
-export const commissionService = {
-  list: () => 
-    apiClient.get<ListResponse<CommissionTier>>("/api/v1/admin/settings/commission-tiers"),
-
-  create: (payload: CommissionTierPayload) => 
-    apiClient.post<ItemResponse<CommissionTier>>("/api/v1/admin/settings/commission-tiers", payload),
-
-  update: (commissionTierId: string, payload: Partial<CommissionTierPayload>) => 
-    apiClient.patch<ItemResponse<CommissionTier>>(
-      `/api/v1/admin/settings/commission-tiers/${commissionTierId}`, 
-      payload
-    ),
-
-  delete: (commissionTierId: string) => 
-    apiClient.delete<void>(`/api/v1/admin/settings/commission-tiers/${commissionTierId}`),
-};
-
-

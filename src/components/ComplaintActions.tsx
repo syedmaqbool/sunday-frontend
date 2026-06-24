@@ -13,10 +13,17 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Truck, Loader2, Upload, X, PackageCheck, Clock } from "lucide-react";
+import {
+  AlertTriangle,
+  Truck,
+  Loader2,
+  Upload,
+  X,
+  PackageCheck,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
-
 
 interface ComplaintActionsProps {
   orderId: string;
@@ -60,7 +67,12 @@ const uploadFiles = async (files: File[], folder: string) => {
   return urls;
 };
 
-export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: ComplaintActionsProps) {
+export function ComplaintActions({
+  orderId,
+  listingId,
+  sellerId,
+  buyerId,
+}: ComplaintActionsProps) {
   const queryClient = useQueryClient();
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
@@ -79,7 +91,9 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes")
+        .select(
+          "id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes",
+        )
         .eq("order_id", orderId)
         .eq("listing_id", listingId)
         .maybeSingle();
@@ -98,7 +112,10 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
         .maybeSingle();
       if (error) throw error;
       const entry = (data?.item_status as any)?.[listingId] ?? null;
-      return entry as { expected_delivery?: string; shipped_at?: string } | null;
+      return entry as {
+        expected_delivery?: string;
+        shipped_at?: string;
+      } | null;
     },
   });
 
@@ -129,7 +146,10 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     }
     setBusy(true);
     try {
-      const urls = await uploadFiles(evidenceFiles, `${buyerId}/complaints/${orderId}-${listingId}/evidence`);
+      const urls = await uploadFiles(
+        evidenceFiles,
+        `${buyerId}/complaints/${orderId}-${listingId}/evidence`,
+      );
       const { error } = await supabase.from("complaints").insert({
         order_id: orderId,
         listing_id: listingId,
@@ -171,7 +191,10 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
     }
     setBusy(true);
     try {
-      const urls = await uploadFiles(proofFiles, `${buyerId}/complaints/${orderId}-${listingId}/return`);
+      const urls = await uploadFiles(
+        proofFiles,
+        `${buyerId}/complaints/${orderId}-${listingId}/return`,
+      );
       const { error } = await supabase
         .from("complaints")
         .update({
@@ -195,7 +218,12 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
   };
 
   // Already-resolved states
-  if (complaint && (complaint.status === "refunded" || complaint.status === "rejected" || complaint.status === "return_received")) {
+  if (
+    complaint &&
+    (complaint.status === "refunded" ||
+      complaint.status === "rejected" ||
+      complaint.status === "return_received")
+  ) {
     return <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />;
   }
 
@@ -205,7 +233,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
       <>
         <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {(complaint.status === "raised" || complaint.status === "under_review") && (
+          {(complaint.status === "raised" ||
+            complaint.status === "under_review") && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Awaiting admin review
@@ -218,7 +247,12 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
             </span>
           )}
           {complaint.status === "return_address_provided" && (
-            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setReturnOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 text-xs"
+              onClick={() => setReturnOpen(true)}
+            >
               <Truck className="h-3 w-3" />
               Mark return as shipped
             </Button>
@@ -226,7 +260,9 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
           {complaint.status === "return_in_transit" && (
             <span className="text-xs text-muted-foreground">
               Awaiting seller / admin confirmation
-              {complaint.return_tracking ? ` · Tracking ${complaint.return_tracking}` : ""}
+              {complaint.return_tracking
+                ? ` · Tracking ${complaint.return_tracking}`
+                : ""}
             </span>
           )}
         </div>
@@ -238,8 +274,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
                 <PackageCheck className="h-5 w-5" /> Mark return as shipped
               </DialogTitle>
               <DialogDescription>
-                Provide the carrier, tracking number, expected delivery date and at least one shipment photo. All
-                fields are required.
+                Provide the carrier, tracking number, expected delivery date and
+                at least one shipment photo. All fields are required.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -247,7 +283,9 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
                 <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
                   Original shipment ETA was{" "}
                   <span className="font-medium text-foreground">
-                    {new Date(originalShipment.expected_delivery).toLocaleDateString()}
+                    {new Date(
+                      originalShipment.expected_delivery,
+                    ).toLocaleDateString()}
                   </span>
                   . Please pick a realistic return delivery date.
                 </div>
@@ -280,7 +318,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
               </div>
               <div>
                 <Label htmlFor="return-expected-date">
-                  Expected delivery date <span className="text-destructive">*</span>
+                  Expected delivery date{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="return-expected-date"
@@ -293,7 +332,8 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
               </div>
               <div>
                 <Label>
-                  Return shipment photo(s) <span className="text-destructive">*</span>
+                  Return shipment photo(s){" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <FilePicker
                   id="return-proof"
@@ -304,11 +344,19 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setReturnOpen(false)} disabled={busy}>
+              <Button
+                variant="ghost"
+                onClick={() => setReturnOpen(false)}
+                disabled={busy}
+              >
                 Cancel
               </Button>
               <Button onClick={handleReturnProof} disabled={busy}>
-                {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
+                {busy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Truck className="mr-2 h-4 w-4" />
+                )}
                 Mark as Return In Transit
               </Button>
             </DialogFooter>
@@ -335,11 +383,13 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
-              <AlertTriangle className="h-5 w-5 text-amber-600" /> Raise a quality complaint
+              <AlertTriangle className="h-5 w-5 text-amber-600" /> Raise a
+              quality complaint
             </DialogTitle>
             <DialogDescription>
-              Tell us what's wrong with the item and attach clear photos. Our admin team will review your return
-              request before the seller is involved.
+              Tell us what's wrong with the item and attach clear photos. Our
+              admin team will review your return request before the seller is
+              involved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -361,11 +411,19 @@ export function ComplaintActions({ orderId, listingId, sellerId, buyerId }: Comp
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRaiseOpen(false)} disabled={busy}>
+            <Button
+              variant="ghost"
+              onClick={() => setRaiseOpen(false)}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button onClick={handleRaise} disabled={busy}>
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <AlertTriangle className="mr-2 h-4 w-4" />
+              )}
               Submit for review
             </Button>
           </DialogFooter>
@@ -391,8 +449,15 @@ function FilePicker({
       <Label htmlFor={id}>{label}</Label>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {files.map((f, i) => (
-          <div key={i} className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted">
-            <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
+          <div
+            key={i}
+            className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted"
+          >
+            <img
+              src={URL.createObjectURL(f)}
+              alt=""
+              className="h-full w-full object-cover"
+            />
             <button
               type="button"
               className="absolute right-0 top-0 rounded-bl-md bg-background/80 p-0.5 text-foreground"

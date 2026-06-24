@@ -21,12 +21,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
-import {
-  Send,
-  ArrowLeft,
-  MessageSquare,
-  Loader2,
-} from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Loader2 } from "lucide-react";
 
 /* TYPES */
 
@@ -68,7 +63,7 @@ const Messages = () => {
   const queryClient = useQueryClient();
 
   const [activeConvo, setActiveConvo] = useState<string | null>(
-    searchParams.get("conversation")
+    searchParams.get("conversation"),
   );
 
   const [newMessage, setNewMessage] = useState("");
@@ -85,17 +80,13 @@ const Messages = () => {
 
   /* FETCH CONVERSATIONS */
 
-  const {
-    data: conversations = [],
-    isLoading: convosLoading,
-  } = useConversations();
+  const { data: conversations = [], isLoading: convosLoading } =
+    useConversations();
 
   /* FETCH MESSAGES */
 
-  const {
-    data: messages = [],
-    isLoading: msgsLoading,
-  } = useConversationMessages(activeConvo || undefined);
+  const { data: messages = [], isLoading: msgsLoading } =
+    useConversationMessages(activeConvo || undefined);
 
   /* SEND MESSAGE */
 
@@ -109,17 +100,11 @@ const Messages = () => {
     const token = tokenStorage.getAccess();
     if (!token) return;
 
-    const base =
-      import.meta.env.VITE_API_BASE_URL ??
-      "http://localhost:3000";
+    const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
     const wsUrl =
-      base
-        .replace("http://", "ws://")
-        .replace("https://", "wss://") +
-      `/api/v1/me/realtime/stream?token=${encodeURIComponent(
-        token
-      )}`;
+      base.replace("http://", "ws://").replace("https://", "wss://") +
+      `/api/v1/me/realtime/stream?token=${encodeURIComponent(token)}`;
 
     const socket = new WebSocket(wsUrl);
 
@@ -161,48 +146,37 @@ const Messages = () => {
   }, [messages]);
 
   const activeConversation = conversations.find(
-    (c: Conversation) => c.id === activeConvo
+    (c: Conversation) => c.id === activeConvo,
   );
 
   if (authLoading) return null;
-    return (
+  return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
       <main className="flex-1 container py-6">
-        <h1 className="text-2xl font-bold mb-4">
-          Messages
-        </h1>
+        <h1 className="text-2xl font-bold mb-4">Messages</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-220px)] min-h-[500px]">
-
           {/* LEFT SIDEBAR */}
 
           <Card
-            className={`md:col-span-1 ${
-              activeConvo ? "hidden md:block" : ""
-            }`}
+            className={`md:col-span-1 ${activeConvo ? "hidden md:block" : ""}`}
           >
             <CardContent className="p-0">
-
               <ScrollArea className="h-[calc(100vh-280px)] min-h-[440px]">
-
                 {convosLoading ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-
                 ) : conversations.length === 0 ? (
-
                   <div className="flex flex-col items-center justify-center p-8 text-center">
                     <MessageSquare className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
                       No conversations
                     </p>
                   </div>
-
                 ) : (
-
                   conversations.map((conversation: Conversation) => {
                     const otherName =
                       conversation.buyerId === user?.id
@@ -212,17 +186,12 @@ const Messages = () => {
                     return (
                       <button
                         key={conversation.id}
-                        onClick={() =>
-                          setActiveConvo(conversation.id)
-                        }
+                        onClick={() => setActiveConvo(conversation.id)}
                         className={`w-full p-3 border-b text-left hover:bg-accent/50 transition-colors ${
-                          activeConvo === conversation.id
-                            ? "bg-accent"
-                            : ""
+                          activeConvo === conversation.id ? "bg-accent" : ""
                         }`}
                       >
                         <div className="flex items-center justify-between">
-
                           <p className="text-sm font-medium truncate">
                             {otherName}
                           </p>
@@ -239,8 +208,7 @@ const Messages = () => {
                         </p>
 
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          {conversation.lastMessageContent ??
-                            "No messages"}
+                          {conversation.lastMessageContent ?? "No messages"}
                         </p>
                       </button>
                     );
@@ -262,7 +230,6 @@ const Messages = () => {
                 {/* HEADER */}
 
                 <div className="flex items-center gap-3 p-3 border-b">
-
                   <Button
                     variant="ghost"
                     size="icon"
@@ -274,8 +241,7 @@ const Messages = () => {
 
                   <div>
                     <p className="text-sm font-medium">
-                      {activeConversation.buyerId ===
-                      user?.id
+                      {activeConversation.buyerId === user?.id
                         ? activeConversation.sellerFullName
                         : activeConversation.buyerFullName}
                     </p>
@@ -289,38 +255,27 @@ const Messages = () => {
                 {/* MESSAGE LIST */}
 
                 <ScrollArea className="flex-1 p-4">
-
                   {msgsLoading ? (
-
                     <div className="flex justify-center p-8">
                       <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
-
                   ) : messages.length === 0 ? (
-
                     <p className="text-center text-sm text-muted-foreground py-8">
                       Start conversation
                     </p>
-
                   ) : (
-
                     <div className="space-y-3">
-
                       {messages.map((message: Message) => {
-                        const isMine =
-                          message.senderId === user?.id;
+                        const isMine = message.senderId === user?.id;
 
                         return (
                           <div
                             key={message.id}
                             className={`flex ${
-                              isMine
-                                ? "justify-end"
-                                : "justify-start"
+                              isMine ? "justify-end" : "justify-start"
                             }`}
                           >
                             <div className="max-w-[75%]">
-
                               <div
                                 className={`rounded-2xl px-4 py-2 ${
                                   isMine
@@ -340,10 +295,8 @@ const Messages = () => {
                                   }`}
                                 >
                                   {format(
-                                    new Date(
-                                      message.createdAt
-                                    ),
-                                    "MMM d, h:mm a"
+                                    new Date(message.createdAt),
+                                    "MMM d, h:mm a",
                                   )}
                                 </p>
                               </div>
@@ -366,17 +319,12 @@ const Messages = () => {
                 {/* INPUT */}
 
                 <div className="p-3 border-t">
-
                   <form
                     className="flex gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
 
-                      if (
-                        !activeConvo ||
-                        !newMessage.trim()
-                      )
-                        return;
+                      if (!activeConvo || !newMessage.trim()) return;
 
                       sendMessage.mutate(
                         {
@@ -387,26 +335,21 @@ const Messages = () => {
                           onSuccess: () => {
                             setNewMessage("");
                           },
-                        }
+                        },
                       );
                     }}
                   >
                     <Input
                       placeholder="Type message..."
                       value={newMessage}
-                      onChange={(e) =>
-                        setNewMessage(e.target.value)
-                      }
+                      onChange={(e) => setNewMessage(e.target.value)}
                       className="flex-1"
                     />
 
                     <Button
                       type="submit"
                       size="icon"
-                      disabled={
-                        !newMessage.trim() ||
-                        sendMessage.isPending
-                      }
+                      disabled={!newMessage.trim() || sendMessage.isPending}
                     >
                       <Send className="h-4 w-4" />
                     </Button>

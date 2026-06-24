@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { conversationService } from "@/services/conversation.service";
+import {
+  listConversationMessages,
+  listConversations,
+  markConversationRead,
+  sendConversationMessage,
+} from "@/services/conversation.service";
 
 const CONVERSATIONS_KEY = ["conversations"];
 
@@ -7,20 +12,16 @@ export const useConversations = () =>
   useQuery({
     queryKey: CONVERSATIONS_KEY,
     queryFn: async () => {
-      const res = await conversationService.getConversations();
+      const res = await listConversations();
       return res.data;
     },
   });
 
-export const useConversationMessages = (
-  conversationId?: string
-) =>
+export const useConversationMessages = (conversationId?: string) =>
   useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async () => {
-      const res = await conversationService.getMessages(
-        conversationId!
-      );
+      const res = await listConversationMessages(conversationId!);
       return res.data;
     },
     enabled: !!conversationId,
@@ -36,11 +37,7 @@ export const useSendMessage = () => {
     }: {
       conversationId: string;
       content: string;
-    }) =>
-      conversationService.sendMessage(
-        conversationId,
-        content
-      ),
+    }) => sendConversationMessage(conversationId, content),
 
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
@@ -59,7 +56,7 @@ export const useMarkConversationRead = () => {
 
   return useMutation({
     mutationFn: (conversationId: string) =>
-      conversationService.markRead(conversationId),
+      markConversationRead(conversationId),
 
     onSuccess: (_, conversationId) => {
       qc.invalidateQueries({

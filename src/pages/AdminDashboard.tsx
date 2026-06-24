@@ -1,35 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
+import NotificationBell from "@/components/NotificationBell";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import {
-  LayoutDashboard,
-  ShieldCheck,
-  Users,
-  Loader2,
-  ArrowLeft,
-  MessageSquareWarning,
-  Tag,
-  FolderTree,
-  Filter,
-  LifeBuoy,
-  Flag,
-  Package,
-  AlertTriangle,
-  Percent,
-  Mail,
-  Headphones,
-  Rocket,
-  BarChart3,
-  Wallet,
-  Percent as PercentIcon,
-  Menu,
-  X,
-  Image as ImageIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import NotificationBell from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BarChart3,
+  Filter,
+  Flag,
+  FolderTree,
+  Headphones,
+  Image as ImageIcon,
+  LayoutDashboard,
+  LifeBuoy,
+  Loader2,
+  Mail,
+  Menu,
+  MessageSquareWarning,
+  Package,
+  Percent,
+  Percent as PercentIcon,
+  Rocket,
+  ShieldCheck,
+  Tag,
+  Users,
+  Wallet,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 type NavItem = {
   label: string;
@@ -70,7 +70,11 @@ const navSections: NavSection[] = [
     label: "Trust & Safety",
     items: [
       { label: "Complaints", path: "/admin/complaints", icon: AlertTriangle },
-      { label: "Messages", path: "/admin/messages", icon: MessageSquareWarning },
+      {
+        label: "Messages",
+        path: "/admin/messages",
+        icon: MessageSquareWarning,
+      },
       { label: "Keywords", path: "/admin/flag-keywords", icon: Filter },
       { label: "Reports", path: "/admin/reports", icon: Flag },
     ],
@@ -90,15 +94,15 @@ const allItems: NavItem[] = navSections.flatMap((s) => s.items);
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { data: isAdmin, isLoading } = useAdminCheck();
+  const { data: isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
-    if (!isLoading && !authLoading && user && isAdmin === false) navigate("/");
-  }, [authLoading, user, isAdmin, isLoading, navigate]);
+    if (!authLoading && user && isAdmin === false) navigate("/");
+  }, [authLoading, user, isAdmin, navigate]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -107,12 +111,14 @@ const AdminDashboard = () => {
   const currentItem = useMemo(
     () =>
       allItems.find((i) =>
-        i.path === "/admin" ? location.pathname === "/admin" : location.pathname.startsWith(i.path),
+        i.path === "/admin"
+          ? location.pathname === "/admin"
+          : location.pathname.startsWith(i.path),
       ),
     [location.pathname],
   );
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -153,7 +159,9 @@ const AdminDashboard = () => {
                   <item.icon
                     className={cn(
                       "h-4 w-4 shrink-0 transition-colors",
-                      active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                      active
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground",
                     )}
                   />
                   <span className="truncate">{item.label}</span>
@@ -175,8 +183,12 @@ const AdminDashboard = () => {
             <ShieldCheck className="h-4.5 w-4.5 text-primary" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-heading text-sm font-semibold text-foreground">Admin Panel</span>
-            <span className="text-[11px] text-muted-foreground">Marketplace control</span>
+            <span className="font-heading text-sm font-semibold text-foreground">
+              Admin Panel
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Marketplace control
+            </span>
           </div>
         </div>
         <NavList />
@@ -207,15 +219,26 @@ const AdminDashboard = () => {
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
                   <ShieldCheck className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-heading text-sm font-semibold text-foreground">Admin Panel</span>
+                <span className="font-heading text-sm font-semibold text-foreground">
+                  Admin Panel
+                </span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileOpen(false)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <NavList onNavigate={() => setMobileOpen(false)} />
             <div className="border-t border-border p-3">
-              <Button variant="ghost" size="sm" className="w-full justify-start gap-2" asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2"
+                asChild
+              >
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4" /> Back to store
                 </Link>
@@ -238,7 +261,9 @@ const AdminDashboard = () => {
           </Button>
 
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="hidden text-sm text-muted-foreground sm:inline">Admin</span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              Admin
+            </span>
             <span className="hidden text-muted-foreground/50 sm:inline">/</span>
             <h1 className="truncate font-heading text-base font-semibold text-foreground sm:text-lg">
               {currentItem?.label ?? "Dashboard"}

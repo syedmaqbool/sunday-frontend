@@ -1,26 +1,42 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { myOrdersService } from "@/services/myorders.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  listOrders,
+  listSales,
+  updateItemStatus,
+} from "@/services/myorders.service";
 
-const ORDERS_KEY = ["my-orders"];
-const SALES_KEY  = ["my-sales"];
+export const myOrdersQueryKey = {
+  all: () => ["my-orders"] as const,
+  list: () => [...myOrdersQueryKey.all(), "list"] as const,
+  sales: () => ["my-sales", "list"] as const,
+};
 
-export const useMyOrders = () =>
-  useQuery({
-    queryKey: ORDERS_KEY,
+export const getMyOrdersOptions = () =>
+  queryOptions({
+    queryKey: myOrdersQueryKey.list(),
     queryFn: async () => {
-      const res = await myOrdersService.listOrders();
+      const res = await listOrders();
       return res.data;
     },
   });
 
-export const useMySales = () =>
-  useQuery({
-    queryKey: SALES_KEY,
+export const getMySalesOptions = () =>
+  queryOptions({
+    queryKey: myOrdersQueryKey.sales(),
     queryFn: async () => {
-      const res = await myOrdersService.listSales();
+      const res = await listSales();
       return res.data;
     },
   });
+
+export const useMyOrders = () => useQuery(getMyOrdersOptions());
+
+export const useMySales = () => useQuery(getMySalesOptions());
 
 export const useUpdateOrderItemStatus = () => {
   const qc = useQueryClient();
@@ -38,10 +54,10 @@ export const useUpdateOrderItemStatus = () => {
         trackingNumber?: string;
         expectedDelivery?: string;
       };
-    }) => myOrdersService.updateItemStatus(orderId, orderItemId, payload),
+    }) => updateItemStatus(orderId, orderItemId, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ORDERS_KEY });
-      qc.invalidateQueries({ queryKey: SALES_KEY });
+      qc.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      qc.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     },
   });
 };

@@ -1,69 +1,87 @@
-
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  adminSettingsService,
-  type BoostPackageAPI,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getAdminSettings,
+  updateAdminBoostPackages,
+  updateEmailTemplates,
+  updateHelpCategories,
+  updateHelpFaqs,
+  updateHelpTutorials,
 } from "@/services/adminSettings.service";
+import type {
+  EmailTemplateAPI,
+  HelpCategoryAPI,
+  HelpFaqAPI,
+  HelpTutorialAPI,
+} from "@/types/admin/settings";
+import type { BoostPackageAPI } from "@/types/boost";
 
-const ADMIN_SETTINGS_KEY = ["admin-settings"];
+export const adminSettingsQueryKey = {
+  all: () => ["admin-settings"] as const,
+  details: () => [...adminSettingsQueryKey.all(), "details"] as const,
+};
 
-export const useAdminSettings = () =>
-  useQuery({
-    queryKey: ADMIN_SETTINGS_KEY,
+export const getAdminSettingsOptions = () =>
+  queryOptions({
+    queryKey: adminSettingsQueryKey.details(),
     queryFn: async () => {
-      const res = await adminSettingsService.get();
+      const res = await getAdminSettings();
       return res.data;
     },
   });
+
+export const useAdminSettings = () => useQuery(getAdminSettingsOptions());
 
 export const useUpdateBoostPackages = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (boostPackages: BoostPackageAPI[]) =>
-      adminSettingsService.updateBoostPackages(boostPackages),
+      updateAdminBoostPackages(boostPackages),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY });
+      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() });
     },
   });
 };
 
-
 export const useUpdateHelpCategories = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (helpCategories: import("@/services/adminSettings.service").HelpCategoryAPI[]) =>
-      adminSettingsService.updateHelpCategories(helpCategories),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
+    mutationFn: (helpCategories: HelpCategoryAPI[]) =>
+      updateHelpCategories(helpCategories),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 };
 
 export const useUpdateHelpFaqs = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (helpFaqs: import("@/services/adminSettings.service").HelpFaqAPI[]) =>
-      adminSettingsService.updateHelpFaqs(helpFaqs),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
+    mutationFn: (helpFaqs: HelpFaqAPI[]) => updateHelpFaqs(helpFaqs),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 };
 
 export const useUpdateHelpTutorials = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (helpTutorials: import("@/services/adminSettings.service").HelpTutorialAPI[]) =>
-      adminSettingsService.updateHelpTutorials(helpTutorials),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
+    mutationFn: (helpTutorials: HelpTutorialAPI[]) =>
+      updateHelpTutorials(helpTutorials),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
-  
 };
 
 export const useUpdateEmailTemplates = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (emailTemplates: import("@/services/adminSettings.service").EmailTemplateAPI[]) =>
-      adminSettingsService.updateEmailTemplates(emailTemplates),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_SETTINGS_KEY }),
+    mutationFn: (emailTemplates: EmailTemplateAPI[]) =>
+      updateEmailTemplates(emailTemplates),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 };
-
-

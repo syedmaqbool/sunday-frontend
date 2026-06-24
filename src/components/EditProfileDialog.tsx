@@ -21,7 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Upload, Pencil } from "lucide-react";
 
 import { useUpdateProfile } from "@/queries/useMyProfile";
-import { profileService, type Profile } from "@/services/profile.service";
+import { uploadProfileFile } from "@/services/profile.service";
+import type { Profile } from "@/types/profile";
 
 const profileSchema = z.object({
   fullName: z.string().trim().max(80).optional().or(z.literal("")),
@@ -42,7 +43,7 @@ export const EditProfileDialog = ({ profile }: Props) => {
 
   const [avatarUrl, setAvatarUrl] = useState(profile?.image?.url ?? "");
   const [imageId, setImageId] = useState<string | null>(
-    profile?.image?.id ?? null
+    profile?.image?.id ?? null,
   );
 
   const [fullName, setFullName] = useState(profile?.fullName ?? "");
@@ -59,9 +60,7 @@ export const EditProfileDialog = ({ profile }: Props) => {
     .toUpperCase()
     .slice(0, 2);
 
-  const handleAvatarUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -74,7 +73,7 @@ export const EditProfileDialog = ({ profile }: Props) => {
     setUploading(true);
 
     try {
-      const res = await profileService.uploadFile(file);
+      const res = await uploadProfileFile(file);
 
       setAvatarUrl(res.data.url);
       setImageId(res.data.id);
@@ -116,7 +115,7 @@ export const EditProfileDialog = ({ profile }: Props) => {
         onError: (err: any) => {
           toast.error(err.message || "Failed to save");
         },
-      }
+      },
     );
   };
 

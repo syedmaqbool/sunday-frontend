@@ -25,7 +25,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
 
-  // Already logged in → home 
+  // Already logged in → home
   useEffect(() => {
     if (user) navigate("/", { replace: true });
   }, [user, navigate]);
@@ -48,16 +48,29 @@ const Auth = () => {
 
         const dobDate = new Date(dob);
         if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
-          toast({ title: "Invalid date of birth", description: "Please enter a valid date.", variant: "destructive" });
+          toast({
+            title: "Invalid date of birth",
+            description: "Please enter a valid date.",
+            variant: "destructive",
+          });
           return;
         }
-        const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        const age =
+          (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
         if (age < 13) {
-          toast({ title: "Age requirement", description: "You must be at least 13 years old.", variant: "destructive" });
+          toast({
+            title: "Age requirement",
+            description: "You must be at least 13 years old.",
+            variant: "destructive",
+          });
           return;
         }
         if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
-          toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
+          toast({
+            title: "Invalid phone",
+            description: "Please enter a valid phone number.",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -72,7 +85,10 @@ const Auth = () => {
           termsAccepted: true,
         });
 
-        trackEvent("sign_up", { method: "email", marketing_consent: marketingConsent });
+        trackEvent("sign_up", {
+          method: "email",
+          marketing_consent: marketingConsent,
+        });
 
         // Backend OTP email bhejta hai — Supabase wala redirect nahi
         toast({
@@ -82,7 +98,6 @@ const Auth = () => {
 
         // Register ke baad seedha preferences onboarding pe
         navigate("/preferences");
-
       } else {
         // ── Login API call ────────────────────────────────────────────────
         const data = await signIn(email, password);
@@ -101,7 +116,7 @@ const Auth = () => {
         }
       }
     } catch (err: any) {
-      // apiClient already Error throw karta hai message ke saath
+      // API layer already throws Error with the backend message
       toast({
         title: "Error",
         description: err?.message ?? "Something went wrong. Please try again.",
@@ -127,7 +142,9 @@ const Auth = () => {
               {mode === "login" ? "Welcome back" : "Create account"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {mode === "login" ? "Sign in to your account" : "Join the fashion marketplace"}
+              {mode === "login"
+                ? "Sign in to your account"
+                : "Join the fashion marketplace"}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -135,25 +152,61 @@ const Auth = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} required />
+                    <Input
+                      id="name"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+92 ..." value={phone} onChange={e => setPhone(e.target.value)} required maxLength={20} />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+92 ..."
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      maxLength={20}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dob">Date of Birth</Label>
-                    <Input id="dob" type="date" value={dob} onChange={e => setDob(e.target.value)} required max={new Date().toISOString().split("T")[0]} />
+                    <Input
+                      id="dob"
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      required
+                      max={new Date().toISOString().split("T")[0]}
+                    />
                   </div>
                 </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
               </div>
 
               {mode === "register" && (
@@ -162,32 +215,57 @@ const Auth = () => {
                     <Checkbox
                       id="terms"
                       checked={termsAccepted}
-                      onCheckedChange={checked => setTermsAccepted(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setTermsAccepted(checked === true)
+                      }
                       required
                     />
-                    <Label htmlFor="terms" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
+                    <Label
+                      htmlFor="terms"
+                      className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+                    >
                       I agree to the{" "}
-                      <Link to="/terms" target="_blank" className="text-primary underline hover:text-primary/80">
+                      <Link
+                        to="/terms"
+                        target="_blank"
+                        className="text-primary underline hover:text-primary/80"
+                      >
                         Terms & Conditions
                       </Link>{" "}
-                      and understand that my account may be suspended if I violate them.
+                      and understand that my account may be suspended if I
+                      violate them.
                     </Label>
                   </div>
                   <div className="flex items-start gap-2">
                     <Checkbox
                       id="marketing"
                       checked={marketingConsent}
-                      onCheckedChange={checked => setMarketingConsent(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setMarketingConsent(checked === true)
+                      }
                     />
-                    <Label htmlFor="marketing" className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
-                      I would like to receive marketing emails about new arrivals, promotions, and platform updates. (Optional)
+                    <Label
+                      htmlFor="marketing"
+                      className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+                    >
+                      I would like to receive marketing emails about new
+                      arrivals, promotions, and platform updates. (Optional)
                     </Label>
                   </div>
                 </div>
               )}
 
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={loading}
+              >
+                {loading
+                  ? "Please wait..."
+                  : mode === "login"
+                    ? "Sign In"
+                    : "Create Account"}
               </Button>
             </form>
 
@@ -195,14 +273,20 @@ const Auth = () => {
               {mode === "login" ? (
                 <>
                   Don't have an account?{" "}
-                  <button onClick={() => setMode("register")} className="font-medium text-primary hover:underline">
+                  <button
+                    onClick={() => setMode("register")}
+                    className="font-medium text-primary hover:underline"
+                  >
                     Sign up
                   </button>
                 </>
               ) : (
                 <>
                   Already have an account?{" "}
-                  <button onClick={() => setMode("login")} className="font-medium text-primary hover:underline">
+                  <button
+                    onClick={() => setMode("login")}
+                    className="font-medium text-primary hover:underline"
+                  >
                     Sign in
                   </button>
                 </>

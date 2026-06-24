@@ -1,29 +1,44 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { messageModerationService } from "@/services/messageModeration.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  deleteMessage,
+  dismissFlaggedMessage,
+  listFlaggedMessages,
+} from "@/services/messageModeration.service";
 
-const FLAGGED_KEY = ["admin-flagged-messages"];
+export const messageModerationQueryKey = {
+  flagged: () => ["admin-flagged-messages"] as const,
+};
 
-export const useFlaggedMessages = () =>
-  useQuery({
-    queryKey: FLAGGED_KEY,
+export const getFlaggedMessagesOptions = () =>
+  queryOptions({
+    queryKey: messageModerationQueryKey.flagged(),
     queryFn: async () => {
-      const res = await messageModerationService.listFlagged({ size: 100 });
+      const res = await listFlaggedMessages({ size: 100 });
       return res.data;
     },
   });
 
+export const useFlaggedMessages = () => useQuery(getFlaggedMessagesOptions());
+
 export const useDismissFlag = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => messageModerationService.dismiss(messageId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FLAGGED_KEY }),
+    mutationFn: (messageId: string) => dismissFlaggedMessage(messageId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: messageModerationQueryKey.flagged() }),
   });
 };
 
 export const useDeleteMessage = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => messageModerationService.delete(messageId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: FLAGGED_KEY }),
+    mutationFn: (messageId: string) => deleteMessage(messageId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: messageModerationQueryKey.flagged() }),
   });
 };

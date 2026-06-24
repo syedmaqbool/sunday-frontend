@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { useAdminSettings, useUpdateEmailTemplates } from "@/queries/useAdminSettings";
-import type { EmailTemplateAPI } from "@/services/adminSettings.service";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAdminSettingsOptions,
+  useUpdateEmailTemplates,
+} from "@/queries/useAdminSettings";
+import type { EmailTemplateAPI } from "@/types/admin/settings";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,20 +20,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Mail } from "lucide-react";
 
 const PLACEHOLDERS: Record<string, string[]> = {
-  order_confirmation:    ["{{buyer_name}}", "{{order_id}}", "{{order_total}}"],
+  order_confirmation: ["{{buyer_name}}", "{{order_id}}", "{{order_total}}"],
   shipping_notification: ["{{buyer_name}}", "{{order_id}}", "{{item_title}}"],
-  password_reset:        ["{{reset_link}}"],
+  password_reset: ["{{reset_link}}"],
 };
 
 const EmailTemplates = () => {
   const { toast } = useToast();
 
-  const { data: settings, isLoading } = useAdminSettings();
+  const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
   const updateTemplates = useUpdateEmailTemplates();
 
   const [localTemplates, setLocalTemplates] = useState<EmailTemplateAPI[]>([]);
-  const [initialized,    setInitialized]    = useState(false);
-  const [savingId,       setSavingId]       = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   // Sync from server once on first load
   if (!initialized && settings?.emailTemplates?.length) {
@@ -33,7 +43,11 @@ const EmailTemplates = () => {
 
   const templates = localTemplates;
 
-  const updateField = (id: string, field: keyof EmailTemplateAPI, value: string) => {
+  const updateField = (
+    id: string,
+    field: keyof EmailTemplateAPI,
+    value: string,
+  ) => {
     setLocalTemplates((prev) =>
       prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)),
     );
@@ -48,7 +62,11 @@ const EmailTemplates = () => {
         setSavingId(null);
       },
       onError: (e: any) => {
-        toast({ title: "Save failed", description: e.message, variant: "destructive" });
+        toast({
+          title: "Save failed",
+          description: e.message,
+          variant: "destructive",
+        });
         setSavingId(null);
       },
     });
@@ -66,15 +84,20 @@ const EmailTemplates = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="font-heading text-3xl font-semibold text-foreground">Email Templates</h1>
+          <h1 className="font-heading text-3xl font-semibold text-foreground">
+            Email Templates
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage subject lines and body content for automated email notifications.
+            Manage subject lines and body content for automated email
+            notifications.
           </p>
         </div>
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
           <Mail className="h-12 w-12" />
           <p className="text-sm">No email templates configured yet.</p>
-          <p className="text-xs">Ask the backend team to seed initial templates.</p>
+          <p className="text-xs">
+            Ask the backend team to seed initial templates.
+          </p>
         </div>
       </div>
     );
@@ -83,9 +106,12 @@ const EmailTemplates = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-semibold text-foreground">Email Templates</h1>
+        <h1 className="font-heading text-3xl font-semibold text-foreground">
+          Email Templates
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage subject lines and body content for automated email notifications.
+          Manage subject lines and body content for automated email
+          notifications.
         </p>
       </div>
 
@@ -102,7 +128,9 @@ const EmailTemplates = () => {
                   </div>
                   <div>
                     <CardTitle className="text-xl">{tpl.key}</CardTitle>
-                    <CardDescription className="mt-1 font-mono text-xs">{tpl.id}</CardDescription>
+                    <CardDescription className="mt-1 font-mono text-xs">
+                      {tpl.id}
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -111,24 +139,33 @@ const EmailTemplates = () => {
                   <Label>Subject</Label>
                   <Input
                     value={tpl.subject}
-                    onChange={(e) => updateField(tpl.id, "subject", e.target.value)}
+                    onChange={(e) =>
+                      updateField(tpl.id, "subject", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Body</Label>
                   <Textarea
                     value={tpl.body}
-                    onChange={(e) => updateField(tpl.id, "body", e.target.value)}
+                    onChange={(e) =>
+                      updateField(tpl.id, "body", e.target.value)
+                    }
                     rows={10}
                     className="font-mono text-sm"
                   />
                 </div>
                 {placeholders.length > 0 && (
                   <div className="rounded-md border border-border bg-muted/40 p-3">
-                    <p className="mb-2 text-xs font-medium text-foreground">Available placeholders:</p>
+                    <p className="mb-2 text-xs font-medium text-foreground">
+                      Available placeholders:
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {placeholders.map((p) => (
-                        <code key={p} className="rounded bg-background px-2 py-0.5 text-xs text-primary">
+                        <code
+                          key={p}
+                          className="rounded bg-background px-2 py-0.5 text-xs text-primary"
+                        >
                           {p}
                         </code>
                       ))}
@@ -137,9 +174,11 @@ const EmailTemplates = () => {
                 )}
                 <div className="flex justify-end">
                   <Button onClick={() => save(tpl)} disabled={isSaving}>
-                    {isSaving
-                      ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      : <Save className="mr-2 h-4 w-4" />}
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>

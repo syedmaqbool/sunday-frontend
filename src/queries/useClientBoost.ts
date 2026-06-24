@@ -1,30 +1,55 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { boostClientService } from "@/services/boost-client.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  boostWithCampaign,
+  boostWithPackage,
+  listBoostableListings,
+  listBoostPackages,
+  listMyBoosts,
+} from "@/services/boost-client.service";
 
-const PACKAGES_KEY = ["boost-packages"];
-const MY_BOOSTS_KEY = ["my-boosts"];
-const BOOSTABLE_LISTINGS_KEY = ["my-boostable-listings"];
+export const clientBoostQueryKey = {
+  packages: () => ["boost-packages"] as const,
+  myBoosts: (params: BoostListParams = {}) => ["my-boosts", params] as const,
+  boostableListings: (params: BoostListParams = {}) =>
+    ["my-boostable-listings", params] as const,
+};
+
+export type BoostListParams = { page?: number; size?: number };
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export const useBoostPackages = () =>
-  useQuery({
-    queryKey: PACKAGES_KEY,
-    queryFn: () => boostClientService.getPackages(),
+export const getBoostPackagesOptions = () =>
+  queryOptions({
+    queryKey: clientBoostQueryKey.packages(),
+    queryFn: () => listBoostPackages(),
     staleTime: 5 * 60 * 1000, // packages rarely change
   });
 
-export const useMyBoosts = (params: { page?: number; size?: number } = {}) =>
-  useQuery({
-    queryKey: [...MY_BOOSTS_KEY, params],
-    queryFn: () => boostClientService.getMyBoosts({ ...params, size: params.size ?? 100 }),
+export const useBoostPackages = () => useQuery(getBoostPackagesOptions());
+
+export const getMyBoostsOptions = (params: BoostListParams = {}) =>
+  queryOptions({
+    queryKey: clientBoostQueryKey.myBoosts(params),
+    queryFn: () => listMyBoosts({ ...params, size: params.size ?? 100 }),
   });
 
-export const useBoostableListings = (params: { page?: number; size?: number } = {}) =>
-  useQuery({
-    queryKey: [...BOOSTABLE_LISTINGS_KEY, params],
-    queryFn: () => boostClientService.getBoostableListings({ ...params, size: params.size ?? 100 }),
+export const useMyBoosts = (params: BoostListParams = {}) =>
+  useQuery(getMyBoostsOptions(params));
+
+export const getBoostableListingsOptions = (params: BoostListParams = {}) =>
+  queryOptions({
+    queryKey: clientBoostQueryKey.boostableListings(params),
+    queryFn: () =>
+      listBoostableListings({ ...params, size: params.size ?? 100 }),
   });
+
+export const useBoostableListings = (params: BoostListParams = {}) =>
+  useQuery(getBoostableListingsOptions(params));
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -39,10 +64,9 @@ export const useBoostWithPackage = () => {
       listingId: string;
       packageId: string;
       paymentStatus?: "MOCK" | "PAID";
-    }) =>
-      boostClientService.boostWithPackage(listingId, { packageId, paymentStatus }),
+    }) => boostWithPackage(listingId, { packageId, paymentStatus }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MY_BOOSTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
     },
   });
 };
@@ -63,14 +87,14 @@ export const useBoostWithCampaign = () => {
       endsAt: string;
       paymentStatus?: "MOCK" | "PAID";
     }) =>
-      boostClientService.boostWithCampaign(listingId, {
+      boostWithCampaign(listingId, {
         placement,
         startsAt,
         endsAt,
         paymentStatus,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MY_BOOSTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["my-boosts"] });
     },
   });
 };

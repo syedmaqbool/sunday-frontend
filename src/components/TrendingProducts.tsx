@@ -5,7 +5,7 @@ import ListingCard from "./ListingCard";
 import { TrendingUp } from "lucide-react";
 import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import type { Listing } from "@/lib/constants";
-// Mock data configuration configuration import 
+// Mock data configuration configuration  import
 import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const TrendingProducts = () => {
@@ -34,13 +34,20 @@ const TrendingProducts = () => {
       if (error) throw error;
       return (data || []).map((row: any) => ({
         ...row,
-        images: row.images?.length ? row.images : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+        images: row.images?.length
+          ? row.images
+          : [
+              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600",
+            ],
         seller_name: "Seller",
       }));
     },
   });
 
-  const trending = useMemo(() => applyBoostRanking(dbTrending, boostMap), [dbTrending, boostMap]);
+  const trending = useMemo(
+    () => applyBoostRanking(dbTrending, boostMap),
+    [dbTrending, boostMap],
+  );
 
   if (trending.length === 0) return null;
 

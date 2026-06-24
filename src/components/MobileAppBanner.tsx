@@ -23,7 +23,8 @@ const MobileAppBanner = () => (
             Sunday Mobile App
           </h2>
           <p className="text-base leading-relaxed text-surface-dark-foreground/70 md:text-lg">
-            Shop pre-loved fashion on the go. Get notified about new drops, offers, and messages — all from your pocket.
+            Shop pre-loved fashion on the go. Get notified about new drops,
+            offers, and messages — all from your pocket.
           </p>
         </div>
       </div>

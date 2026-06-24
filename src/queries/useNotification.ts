@@ -1,29 +1,41 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { notificationService } from "@/services/notification.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "@/services/notification.service";
 import { tokenStorage } from "@/lib/tokenStorage";
 
-const NOTIFICATION_KEY = ["notifications"];
+export const notificationsQueryKey = {
+  all: () => ["notifications"] as const,
+};
 
-export const useNotifications = () =>
-  useQuery({
-    queryKey: NOTIFICATION_KEY,
+export const getNotificationsOptions = () =>
+  queryOptions({
+    queryKey: notificationsQueryKey.all(),
     queryFn: async () => {
-      const res = await notificationService.list();
+      const res = await listNotifications();
       return res;
     },
     enabled: !!tokenStorage.getAccess(),
   });
 
+export const useNotifications = () => useQuery(getNotificationsOptions());
+
 export const useMarkNotificationRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) =>
-      notificationService.markRead(id),
+    mutationFn: (id: string) => markNotificationRead(id),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: NOTIFICATION_KEY,
+        queryKey: notificationsQueryKey.all(),
       });
     },
   });
@@ -33,14 +45,12 @@ export const useMarkAllNotificationsRead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      notificationService.markAllRead(),
+    mutationFn: () => markAllNotificationsRead(),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: NOTIFICATION_KEY,
+        queryKey: notificationsQueryKey.all(),
       });
     },
   });
 };
-

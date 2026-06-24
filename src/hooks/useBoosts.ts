@@ -29,11 +29,51 @@ export interface ListingBoost {
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_BOOST_PACKAGES: BoostPackage[] = [
-  { id: "pkg-1", name: "Trending Boost · 3 Days",  placement: "trending", duration_days: 3,  price: 500,  description: "Show up in Trending Now for 3 days.",     active: true },
-  { id: "pkg-2", name: "Trending Boost · 7 Days",  placement: "trending", duration_days: 7,  price: 1000, description: "Show up in Trending Now for a week.",     active: true },
-  { id: "pkg-3", name: "For You Boost · 3 Days",   placement: "for_you",  duration_days: 3,  price: 450,  description: "Get featured in personalized feeds.",     active: true },
-  { id: "pkg-4", name: "Search Boost · 3 Days",    placement: "search",   duration_days: 3,  price: 400,  description: "Rank higher in search & browse results.", active: true },
-  { id: "pkg-5", name: "Search Boost · 7 Days",    placement: "search",   duration_days: 7,  price: 850,  description: "Rank higher in search for a full week.",  active: true },
+  {
+    id: "pkg-1",
+    name: "Trending Boost · 3 Days",
+    placement: "trending",
+    duration_days: 3,
+    price: 500,
+    description: "Show up in Trending Now for 3 days.",
+    active: true,
+  },
+  {
+    id: "pkg-2",
+    name: "Trending Boost · 7 Days",
+    placement: "trending",
+    duration_days: 7,
+    price: 1000,
+    description: "Show up in Trending Now for a week.",
+    active: true,
+  },
+  {
+    id: "pkg-3",
+    name: "For You Boost · 3 Days",
+    placement: "for_you",
+    duration_days: 3,
+    price: 450,
+    description: "Get featured in personalized feeds.",
+    active: true,
+  },
+  {
+    id: "pkg-4",
+    name: "Search Boost · 3 Days",
+    placement: "search",
+    duration_days: 3,
+    price: 400,
+    description: "Rank higher in search & browse results.",
+    active: true,
+  },
+  {
+    id: "pkg-5",
+    name: "Search Boost · 7 Days",
+    placement: "search",
+    duration_days: 7,
+    price: 850,
+    description: "Rank higher in search for a full week.",
+    active: true,
+  },
 ];
 
 const now = Date.now();
@@ -68,8 +108,12 @@ export const useActiveBoosts = (placement?: BoostPlacement) => {
     queryKey: ["active-boosts", placement ?? "all"],
     queryFn: async (): Promise<ListingBoost[]> => {
       if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        const activeOnly = MOCK_MY_BOOSTS.filter((b) => new Date(b.ends_at).getTime() > Date.now());
-        return placement ? activeOnly.filter((b) => b.placement === placement) : activeOnly;
+        const activeOnly = MOCK_MY_BOOSTS.filter(
+          (b) => new Date(b.ends_at).getTime() > Date.now(),
+        );
+        return placement
+          ? activeOnly.filter((b) => b.placement === placement)
+          : activeOnly;
       }
       let q = supabase
         .from("listing_boosts" as any)
@@ -89,16 +133,19 @@ export const useActiveBoosts = (placement?: BoostPlacement) => {
 export const useBoostScoreMap = (placement: BoostPlacement) => {
   const { data: boosts = [] } = useActiveBoosts(placement);
   const map = new Map<string, number>();
-  for (const b of boosts) map.set(b.listing_id, (map.get(b.listing_id) ?? 0) + 1);
+  for (const b of boosts)
+    map.set(b.listing_id, (map.get(b.listing_id) ?? 0) + 1);
   return map;
 };
 
 /** Sort: boosted listings first, preserve existing order otherwise. */
 export const applyBoostRanking = <T extends { id: string }>(
   listings: T[],
-  boostMap: Map<string, number>
+  boostMap: Map<string, number>,
 ): T[] => {
-  return [...listings].sort((a, b) => (boostMap.get(b.id) ?? 0) - (boostMap.get(a.id) ?? 0));
+  return [...listings].sort(
+    (a, b) => (boostMap.get(b.id) ?? 0) - (boostMap.get(a.id) ?? 0),
+  );
 };
 
 export const useBoostPackages = () => {

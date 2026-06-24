@@ -1,80 +1,140 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  categoryService,
-  subcategoryService,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createCategory,
+  createSubcategory,
+  deleteCategory,
+  deleteSubcategory,
+  listCategories,
+  listSubcategories,
+  updateCategory,
+  updateSubcategory,
 } from "@/services/adminCategoryManagement.service";
 
-const CATS_KEY  = ["admin-categories"];
-const SUBS_KEY  = ["admin-subcategories"];
+export const categoryManagementQueryKey = {
+  categories: () => ["admin-categories"] as const,
+  subcategories: () => ["admin-subcategories"] as const,
+};
 
 // ── Categories ────────────────────────────────────────────────────────────────
-export const useAdminCategories = () =>
-  useQuery({
-    queryKey: CATS_KEY,
+export const getAdminCategoriesOptions = () =>
+  queryOptions({
+    queryKey: categoryManagementQueryKey.categories(),
     queryFn: async () => {
-      const res = await categoryService.list();
+      const res = await listCategories();
       return res.data;
     },
   });
 
+export const useAdminCategories = () => useQuery(getAdminCategoriesOptions());
+
 export const useCreateCategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { label: string; value: string; icon?: string; sortOrder?: number }) =>
-      categoryService.create(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CATS_KEY }),
+    mutationFn: (payload: {
+      label: string;
+      value: string;
+      icon?: string;
+      sortOrder?: number;
+    }) => createCategory(payload),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.categories(),
+      }),
   });
 };
 
 export const useUpdateCategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { label?: string; icon?: string; sortOrder?: number } }) =>
-      categoryService.update(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CATS_KEY }),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { label?: string; icon?: string; sortOrder?: number };
+    }) => updateCategory(id, payload),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.categories(),
+      }),
   });
 };
 
 export const useDeleteCategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => categoryService.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CATS_KEY }),
+    mutationFn: (id: string) => deleteCategory(id),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.categories(),
+      }),
   });
 };
 
 // ── Subcategories ─────────────────────────────────────────────────────────────
-export const useAdminSubcategories = () =>
-  useQuery({
-    queryKey: SUBS_KEY,
+export const getAdminSubcategoriesOptions = () =>
+  queryOptions({
+    queryKey: categoryManagementQueryKey.subcategories(),
     queryFn: async () => {
-      const res = await subcategoryService.list();
+      const res = await listSubcategories();
       return res.data;
     },
   });
 
+export const useAdminSubcategories = () =>
+  useQuery(getAdminSubcategoriesOptions());
+
 export const useCreateSubcategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { categoryId: string; label: string; value: string; icon?: string; sortOrder?: number }) =>
-      subcategoryService.create(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SUBS_KEY }),
+    mutationFn: (payload: {
+      categoryId: string;
+      label: string;
+      value: string;
+      icon?: string;
+      sortOrder?: number;
+    }) => createSubcategory(payload),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.subcategories(),
+      }),
   });
 };
 
 export const useUpdateSubcategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { label?: string; icon?: string; sortOrder?: number; categoryId?: string } }) =>
-      subcategoryService.update(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SUBS_KEY }),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        label?: string;
+        icon?: string;
+        sortOrder?: number;
+        categoryId?: string;
+      };
+    }) => updateSubcategory(id, payload),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.subcategories(),
+      }),
   });
 };
 
 export const useDeleteSubcategory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => subcategoryService.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SUBS_KEY }),
+    mutationFn: (id: string) => deleteSubcategory(id),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: categoryManagementQueryKey.subcategories(),
+      }),
   });
 };

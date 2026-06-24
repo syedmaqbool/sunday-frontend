@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Star, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ReviewForm } from "@/components/ReviewForm";
-//  Mock switcher config import 
+//  Mock switcher config  import
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface OfferWithListing {
@@ -26,7 +26,12 @@ interface OfferWithListing {
   seller_message: string;
   created_at: string;
   updated_at: string;
-  listings: { title: string; price: number; images: string[]; brand: string } | null;
+  listings: {
+    title: string;
+    price: number;
+    images: string[];
+    brand: string;
+  } | null;
 }
 
 const statusBadge = (s: string) => {
@@ -72,7 +77,9 @@ const MyOffers = () => {
             listings: {
               title: "Bleu de Chanel Eau de Parfum",
               price: 28500,
-              images: ["https://images.unsplash.com/photo-1541643600914-78b084683601?w=600"],
+              images: [
+                "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600",
+              ],
               brand: "Chanel",
             },
           },
@@ -91,7 +98,9 @@ const MyOffers = () => {
             listings: {
               title: "Classic White Sneakers",
               price: 35000,
-              images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600"],
+              images: [
+                "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600",
+              ],
               brand: "Nike",
             },
           },
@@ -113,7 +122,7 @@ const MyOffers = () => {
     queryKey: ["reviews", "mine", user?.id],
     queryFn: async () => {
       if (NEXT_PUBLIC_USE_MOCK_DATA) return ["mock-reviewed-id-completed"]; // Mock protection
-      
+
       const { data, error } = await supabase
         .from("reviews")
         .select("offer_id")
@@ -128,9 +137,13 @@ const MyOffers = () => {
     if (!user || NEXT_PUBLIC_USE_MOCK_DATA) return; // Disable realtime listening in mock config
     const channel = supabase
       .channel("offers-sent-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "offers" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["offers-sent"] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "offers" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["offers-sent"] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -143,10 +156,16 @@ const MyOffers = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container max-w-3xl flex-1 py-8">
-        <h1 className="font-heading text-3xl font-bold text-foreground">My Offers</h1>
+        <h1 className="font-heading text-3xl font-bold text-foreground">
+          My Offers
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Offers you've made on other sellers' listings. Offers received on your own listings appear under{" "}
-          <button className="underline text-primary hover:text-primary/80 font-medium" onClick={() => navigate("/my-listings")}>
+          Offers you've made on other sellers' listings. Offers received on your
+          own listings appear under{" "}
+          <button
+            className="underline text-primary hover:text-primary/80 font-medium"
+            onClick={() => navigate("/my-listings")}
+          >
             My Listings
           </button>
           .
@@ -170,7 +189,10 @@ const MyOffers = () => {
           ) : (
             <div className="space-y-3">
               {sent.map((offer) => (
-                <Card key={offer.id} className="overflow-hidden transition-all hover:shadow-sm">
+                <Card
+                  key={offer.id}
+                  className="overflow-hidden transition-all hover:shadow-sm"
+                >
                   <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                     <img
                       src={offer.listings?.images?.[0] || "/placeholder.svg"}
@@ -182,11 +204,15 @@ const MyOffers = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <h3
                           className="truncate text-sm font-semibold text-foreground cursor-pointer hover:text-primary"
-                          onClick={() => navigate(`/listing/${offer.listing_id}`)}
+                          onClick={() =>
+                            navigate(`/listing/${offer.listing_id}`)
+                          }
                         >
                           {offer.listings?.title ?? "Listing"}
                         </h3>
-                        <Badge variant={statusBadge(offer.status)}>{offer.status}</Badge>
+                        <Badge variant={statusBadge(offer.status)}>
+                          {offer.status}
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         Listed Rs {offer.listings?.price?.toLocaleString()} ·{" "}
@@ -195,7 +221,7 @@ const MyOffers = () => {
                       <p className="mt-1.5 text-sm font-semibold text-foreground">
                         Your offer: Rs {offer.amount.toLocaleString()}
                       </p>
-                      
+
                       {offer.status === "countered" && offer.counter_amount && (
                         <div className="mt-2 rounded bg-muted/60 border p-2 max-w-md">
                           <p className="text-xs font-semibold text-foreground">
@@ -219,8 +245,16 @@ const MyOffers = () => {
                             {/* 👇 Mock conditional feedback interceptor for UI safety */}
                             {NEXT_PUBLIC_USE_MOCK_DATA ? (
                               <div className="space-y-2">
-                                <p className="text-xs text-muted-foreground italic">Mock Mode: Feedback Submission Simulated Successfully!</p>
-                                <Button size="sm" onClick={() => setReviewingOffer(null)}>Close Panel</Button>
+                                <p className="text-xs text-muted-foreground italic">
+                                  Mock Mode: Feedback Submission Simulated
+                                  Successfully!
+                                </p>
+                                <Button
+                                  size="sm"
+                                  onClick={() => setReviewingOffer(null)}
+                                >
+                                  Close Panel
+                                </Button>
                               </div>
                             ) : (
                               <ReviewForm
@@ -242,11 +276,12 @@ const MyOffers = () => {
                             <Star className="h-3.5 w-3.5" /> Leave Review
                           </Button>
                         ))}
-                      {offer.status === "accepted" && myReviews.includes(offer.id) && (
-                        <span className="mt-2 inline-flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                          ✓ Reviewed
-                        </span>
-                      )}
+                      {offer.status === "accepted" &&
+                        myReviews.includes(offer.id) && (
+                          <span className="mt-2 inline-flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                            ✓ Reviewed
+                          </span>
+                        )}
                     </div>
                   </CardContent>
                 </Card>

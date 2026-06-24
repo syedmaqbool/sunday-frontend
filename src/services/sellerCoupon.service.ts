@@ -1,84 +1,34 @@
+import { authInstance } from "@/services/ky.instance";
+import type {
+  CreateSellerCouponPayload,
+  SellerCoupon,
+  UpdateSellerCouponPayload,
+} from "@/types/seller-coupon";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-import { apiClient } from "@/lib/apiClient";
-
-export interface SellerCoupon {
-  id: string;
-  listingId: string | null;
-  sellerId: string;
-  active: boolean;
-  code: string;
-  currentUses: number;
-  discountType: "PERCENTAGE" | "FIXED";
-  discountValue: number;
-  expiresAt: string | null;
-  maxUses: number | null;
-  minOrderAmount: number;
-  perUserLimit: number | null;
-  scope: "SELLER_WIDE" | "ITEM_BASED";
-  startsAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+export function listSellerCoupons() {
+  return authInstance
+    .get("/api/v1/admin/seller-coupons")
+    .json<PaginatedResponse<SellerCoupon>>();
 }
 
-export interface CreateSellerCouponPayload {
-  listingId?: string | null;
-  sellerId: string;
-  active?: boolean;
-  code: string;
-  discountType: string;
-  discountValue: number;
-  expiresAt?: string | null;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  perUserLimit?: number | null;
-  scope: string;
-  startsAt?: string | null;
+export function createSellerCoupon(payload: CreateSellerCouponPayload) {
+  return authInstance
+    .post("/api/v1/admin/seller-coupons", { json: payload })
+    .json<Response<SellerCoupon>>();
 }
 
-export interface UpdateSellerCouponPayload {
-  listingId?: string | null;
-  sellerId?: string;
-  active?: boolean;
-  code?: string;
-  discountType?: string;
-  discountValue?: number;
-  expiresAt?: string | null;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  perUserLimit?: number | null;
-  scope?: string;
-  startsAt?: string | null;
+export function updateSellerCoupon(
+  id: string,
+  payload: UpdateSellerCouponPayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/seller-coupons/${id}`, { json: payload })
+    .json<Response<SellerCoupon>>();
 }
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
+export function deleteSellerCoupon(id: string) {
+  return authInstance
+    .delete(`/api/v1/admin/seller-coupons/${id}`)
+    .json<Response>();
 }
-
-interface ItemResponse<T> {
-  data: T;
-}
-
-export const sellerCouponService = {
-  list: () =>
-    apiClient.get<ListResponse<SellerCoupon>>(
-      "/api/v1/admin/seller-coupons"
-    ),
-
-  create: (payload: CreateSellerCouponPayload) =>
-    apiClient.post<ItemResponse<SellerCoupon>>(
-      "/api/v1/admin/seller-coupons",
-      payload
-    ),
-
-  update: (id: string, payload: UpdateSellerCouponPayload) =>
-    apiClient.patch<ItemResponse<SellerCoupon>>(
-      `/api/v1/admin/seller-coupons/${id}`,
-      payload
-    ),
-
-  delete: (id: string) =>
-    apiClient.delete<void>(
-      `/api/v1/admin/seller-coupons/${id}`
-    ),
-};

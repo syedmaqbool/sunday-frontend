@@ -1,21 +1,30 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useTaxSettings,
+  getTaxSettingsOptions,
   useCreateTaxSetting,
   useUpdateTaxSetting,
   useDeleteTaxSetting,
 } from "@/queries/useAdminTaxSettings";
-import type { TaxSetting } from "@/services/taxSetting.service";
+import type { TaxSetting } from "@/types/tax-setting";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -23,13 +32,13 @@ import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 
 const TaxSettings = () => {
   const qc = useQueryClient();
-  const [open,    setOpen]    = useState(false);
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaxSetting | null>(null);
-  const [form,    setForm]    = useState({ name: "", rate: "", active: true });
-  const [saving,  setSaving]  = useState(false);
+  const [form, setForm] = useState({ name: "", rate: "", active: true });
+  const [saving, setSaving] = useState(false);
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
-  const { data: taxes = [], isLoading } = useTaxSettings();
+  const { data: taxes = [], isLoading } = useQuery(getTaxSettingsOptions());
   const createTax = useCreateTaxSetting();
   const updateTax = useUpdateTaxSetting();
   const deleteTax = useDeleteTaxSetting();
@@ -62,9 +71,9 @@ const TaxSettings = () => {
     const rate = parseFloat(form.rate);
     if (!form.name.trim() || isNaN(rate) || rate < 0 || rate > 100) {
       toast({
-        title:       "Invalid input",
+        title: "Invalid input",
         description: "Provide a name and rate between 0 and 100.",
-        variant:     "destructive",
+        variant: "destructive",
       });
       return;
     }
@@ -81,7 +90,7 @@ const TaxSettings = () => {
         toast({ title: "Tax updated" });
       } else {
         await createTax.mutateAsync({
-          name:   form.name.trim(),
+          name: form.name.trim(),
           rate,
           active: form.active,
         });
@@ -172,10 +181,18 @@ const TaxSettings = () => {
                     </button>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEdit(t)}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(t.id)}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -226,9 +243,7 @@ const TaxSettings = () => {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : "Save"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

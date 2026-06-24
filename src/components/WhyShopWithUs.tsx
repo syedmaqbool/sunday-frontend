@@ -32,7 +32,9 @@ const WhyShopWithUs = () => (
           <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Icon className="h-8 w-8" strokeWidth={1.5} />
           </div>
-          <h3 className="font-heading text-base font-semibold text-foreground">{title}</h3>
+          <h3 className="font-heading text-base font-semibold text-foreground">
+            {title}
+          </h3>
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">{desc}</p>
         </div>
       ))}
@@ -42,7 +44,9 @@ const WhyShopWithUs = () => (
       <blockquote className="font-heading text-2xl italic text-foreground md:text-3xl max-w-2xl leading-snug">
         “This is the self-care practice I didn't know I needed.”
       </blockquote>
-      <p className="mt-4 text-xs font-medium tracking-[0.2em] text-muted-foreground">— NIKKI</p>
+      <p className="mt-4 text-xs font-medium tracking-[0.2em] text-muted-foreground">
+        — NIKKI
+      </p>
     </div>
   </section>
 );

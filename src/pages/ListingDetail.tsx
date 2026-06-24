@@ -5,7 +5,18 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
-import { ShoppingBag, Shield, ArrowLeft, Loader2, Check, Pencil, Trash2, Weight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ShoppingBag,
+  Shield,
+  ArrowLeft,
+  Loader2,
+  Check,
+  Pencil,
+  Trash2,
+  Weight,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
 import { ReportDialog } from "@/components/ReportDialog";
 import { ReviewsList } from "@/components/ReviewsList";
@@ -28,13 +39,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-//  Mock configuration data import 
+//  Mock configuration data  import
 import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const fetchListing = async (id: string): Promise<Listing | null> => {
   // Agar mock toggle active hai toh array me se product dhoond kar return karein
   if (NEXT_PUBLIC_USE_MOCK_DATA) {
-    const matchedMock = DUMMY_LISTINGS.find((item) => String(item.id) === String(id));
+    const matchedMock = DUMMY_LISTINGS.find(
+      (item) => String(item.id) === String(id),
+    );
     if (matchedMock) {
       return {
         ...matchedMock,
@@ -60,7 +73,9 @@ const fetchListing = async (id: string): Promise<Listing | null> => {
     title: data.title,
     description: data.description,
     price: data.price,
-    images: (data.images as string[])?.length ? (data.images as string[]) : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+    images: (data.images as string[])?.length
+      ? (data.images as string[])
+      : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
     category: data.category,
     condition: data.condition,
     size: data.size,
@@ -95,7 +110,15 @@ function useCountdown(target?: string | null) {
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
-const ImageGallery = ({ images, title, status }: { images: string[]; title: string; status?: string }) => {
+const ImageGallery = ({
+  images,
+  title,
+  status,
+}: {
+  images: string[];
+  title: string;
+  status?: string;
+}) => {
   const [selected, setSelected] = useState(0);
   const current = images[selected];
   const currentIsVideo = isVideoUrl(current);
@@ -124,7 +147,9 @@ const ImageGallery = ({ images, title, status }: { images: string[]; title: stri
         {images.length > 1 && (
           <>
             <button
-              onClick={() => setSelected((p) => (p - 1 + images.length) % images.length)}
+              onClick={() =>
+                setSelected((p) => (p - 1 + images.length) % images.length)
+              }
               className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background"
               aria-label="Previous photo"
             >
@@ -162,11 +187,22 @@ const ImageGallery = ({ images, title, status }: { images: string[]; title: stri
               >
                 {vid ? (
                   <>
-                    <video src={img} className="h-full w-full bg-black object-cover" muted preload="metadata" />
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">▶</span>
-                  </                  >
+                    <video
+                      src={img}
+                      className="h-full w-full bg-black object-cover"
+                      muted
+                      preload="metadata"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">
+                      ▶
+                    </span>
+                  </>
                 ) : (
-                  <img src={img} alt={`${title} thumbnail ${i + 1}`} className={`h-full w-full object-cover ${isUnavailable ? "grayscale opacity-60" : ""}`} />
+                  <img
+                    src={img}
+                    alt={`${title} thumbnail ${i + 1}`}
+                    className={`h-full w-full object-cover ${isUnavailable ? "grayscale opacity-60" : ""}`}
+                  />
                 )}
               </button>
             );
@@ -196,14 +232,23 @@ const ListingDetail = () => {
       trackEvent("view_item", {
         currency: "PKR",
         value: listing.price,
-        items: [{ item_id: listing.id, item_name: listing.title, item_category: listing.category, item_brand: listing.brand, price: listing.price }],
+        items: [
+          {
+            item_id: listing.id,
+            item_name: listing.title,
+            item_category: listing.category,
+            item_brand: listing.brand,
+            price: listing.price,
+          },
+        ],
       });
     }
-  }, [listing?.id]);
+  }, [listing, listing.id]);
 
   const isOwner = listing && user && listing.seller_id === user.id;
   const isReserved = listing?.status === "reserved";
-  const isReservedForMe = isReserved && !!user && listing?.reserved_for === user.id;
+  const isReservedForMe =
+    isReserved && !!user && listing?.reserved_for === user.id;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
 
@@ -224,7 +269,10 @@ const ListingDetail = () => {
     enabled: !!(isReservedForMe && listing?.reserved_offer_id),
   });
 
-  const effectivePrice = isReservedForMe && reservedOfferAmount ? reservedOfferAmount : listing?.price ?? 0;
+  const effectivePrice =
+    isReservedForMe && reservedOfferAmount
+      ? reservedOfferAmount
+      : (listing?.price ?? 0);
 
   const cancelReservation = useMutation({
     mutationFn: async () => {
@@ -272,8 +320,12 @@ const ListingDetail = () => {
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="container flex flex-1 flex-col items-center justify-center py-20">
-          <h1 className="font-heading text-3xl font-bold text-foreground">Listing not found</h1>
-          <Link to="/listings" className="mt-4 text-primary hover:underline">Back to browse</Link>
+          <h1 className="font-heading text-3xl font-bold text-foreground">
+            Listing not found
+          </h1>
+          <Link to="/listings" className="mt-4 text-primary hover:underline">
+            Back to browse
+          </Link>
         </main>
         <Footer />
       </div>
@@ -284,66 +336,120 @@ const ListingDetail = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container flex-1 py-8">
-        <Link to="/listings" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/listings"
+          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <ImageGallery images={listing.images} title={listing.title} status={listing.status} />
+          <ImageGallery
+            images={listing.images}
+            title={listing.title}
+            status={listing.status}
+          />
 
           <div className="flex flex-col justify-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{listing.brand}</p>
-            <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{listing.title}</h1>
-            {isReservedForMe && reservedOfferAmount && reservedOfferAmount !== listing.price ? (
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {listing.brand}
+            </p>
+            <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">
+              {listing.title}
+            </h1>
+            {isReservedForMe &&
+            reservedOfferAmount &&
+            reservedOfferAmount !== listing.price ? (
               <div className="mt-4 flex items-baseline gap-3">
-                <p className="text-3xl font-bold text-foreground">Rs {reservedOfferAmount.toLocaleString()}</p>
-                <p className="text-lg text-muted-foreground line-through">Rs {listing.price.toLocaleString()}</p>
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Your accepted offer</span>
+                <p className="text-3xl font-bold text-foreground">
+                  Rs {reservedOfferAmount.toLocaleString()}
+                </p>
+                <p className="text-lg text-muted-foreground line-through">
+                  Rs {listing.price.toLocaleString()}
+                </p>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Your accepted offer
+                </span>
               </div>
             ) : (
-              <p className="mt-4 text-3xl font-bold text-foreground">Rs {listing.price.toLocaleString()}</p>
+              <p className="mt-4 text-3xl font-bold text-foreground">
+                Rs {listing.price.toLocaleString()}
+              </p>
             )}
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Size {listing.size}</span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.condition.replace("_", " ")}</span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">{listing.category}</span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                Size {listing.size}
+              </span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
+                {listing.condition.replace("_", " ")}
+              </span>
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
+                {listing.category}
+              </span>
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                  <Weight className="h-3 w-3" /> {getWeightLabel(listing.weight)}
+                  <Weight className="h-3 w-3" />{" "}
+                  {getWeightLabel(listing.weight)}
                 </span>
               )}
             </div>
 
-            <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
+            <p className="mt-6 leading-relaxed text-muted-foreground">
+              {listing.description}
+            </p>
 
             {isOwner && <ListingFeedbackSection listingId={listing.id} />}
 
             {listing.status === "sold" && !isOwner && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
-                <p className="font-heading text-lg font-semibold text-foreground">Sold</p>
-                <p className="mt-1 text-sm text-muted-foreground">This item has already been purchased and is no longer available.</p>
-                <Button variant="outline" className="mt-4" onClick={() => navigate("/listings")}>Browse other listings</Button>
+                <p className="font-heading text-lg font-semibold text-foreground">
+                  Sold
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This item has already been purchased and is no longer
+                  available.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => navigate("/listings")}
+                >
+                  Browse other listings
+                </Button>
               </div>
             )}
 
             {isReserved && (
-              <div className={`mt-6 rounded-lg border px-4 py-3 text-sm ${isReservedForMe ? "border-primary/40 bg-primary/5 text-foreground" : "border-border bg-muted text-muted-foreground"}`}>
+              <div
+                className={`mt-6 rounded-lg border px-4 py-3 text-sm ${isReservedForMe ? "border-primary/40 bg-primary/5 text-foreground" : "border-border bg-muted text-muted-foreground"}`}
+              >
                 {isReservedForMe ? (
                   <p>
-                    <span className="font-semibold text-primary">Reserved for you.</span>{" "}
+                    <span className="font-semibold text-primary">
+                      Reserved for you.
+                    </span>{" "}
                     Complete your purchase within{" "}
-                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                    <span className="font-mono font-semibold text-foreground">
+                      {countdown}
+                    </span>
+                    .
                   </p>
                 ) : isOwner ? (
                   <p>
                     Reserved for an approved buyer · expires in{" "}
-                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                    <span className="font-mono font-semibold text-foreground">
+                      {countdown}
+                    </span>
+                    .
                   </p>
                 ) : (
                   <p>
                     Currently reserved for another buyer · available again in{" "}
-                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                    <span className="font-mono font-semibold text-foreground">
+                      {countdown}
+                    </span>
+                    .
                   </p>
                 )}
               </div>
@@ -351,7 +457,12 @@ const ListingDetail = () => {
 
             {isOwner ? (
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button size="lg" variant="outline" className="flex-1 gap-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                >
                   <Pencil className="h-4 w-4" /> Edit Listing
                 </Button>
                 {isReserved && (
@@ -366,7 +477,11 @@ const ListingDetail = () => {
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button size="lg" variant="outline" className="gap-2 text-destructive">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="gap-2 text-destructive"
+                    >
                       <Trash2 className="h-4 w-4" /> Delete
                     </Button>
                   </AlertDialogTrigger>
@@ -374,7 +489,8 @@ const ListingDetail = () => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete listing?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently remove "{listing.title}" and cannot be undone.
+                        This will permanently remove "{listing.title}" and
+                        cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -395,14 +511,24 @@ const ListingDetail = () => {
                   size="lg"
                   className="min-w-0 flex-1 gap-2"
                   disabled={inCart || isReservedForOther}
-                  onClick={() => addItem(listing, isReservedForMe ? effectivePrice : undefined)}
+                  onClick={() =>
+                    addItem(
+                      listing,
+                      isReservedForMe ? effectivePrice : undefined,
+                    )
+                  }
                 >
                   {inCart ? (
-                    <><Check className="h-4 w-4" /> In Cart</>
+                    <>
+                      <Check className="h-4 w-4" /> In Cart
+                    </>
                   ) : isReservedForOther ? (
                     <>Currently Reserved</>
                   ) : (
-                    <><ShoppingBag className="h-4 w-4" /> {isReservedForMe ? "Complete Purchase" : "Add to Cart"}</>
+                    <>
+                      <ShoppingBag className="h-4 w-4" />{" "}
+                      {isReservedForMe ? "Complete Purchase" : "Add to Cart"}
+                    </>
                   )}
                 </Button>
                 {!isReserved && (
@@ -418,9 +544,17 @@ const ListingDetail = () => {
 
             {!isOwner && (
               <div className="mt-3 flex justify-end gap-2">
-                <ReportDialog targetType="listing" targetId={listing.id} label="Report listing" />
+                <ReportDialog
+                  targetType="listing"
+                  targetId={listing.id}
+                  label="Report listing"
+                />
                 {listing.seller_id && (
-                  <ReportDialog targetType="user" targetId={listing.seller_id} label="Report seller" />
+                  <ReportDialog
+                    targetType="user"
+                    targetId={listing.seller_id}
+                    label="Report seller"
+                  />
                 )}
               </div>
             )}
@@ -428,24 +562,30 @@ const ListingDetail = () => {
             <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
               <Shield className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-sm font-medium text-foreground">Buyer Protection</p>
-                <p className="text-xs text-muted-foreground">Money-back guarantee if item isn't as described</p>
+                <p className="text-sm font-medium text-foreground">
+                  Buyer Protection
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Money-back guarantee if item isn't as described
+                </p>
               </div>
             </div>
 
             <div className="mt-6 border-t border-border pt-4">
               <p className="text-sm text-muted-foreground mt-4">
-  Sold by{" "}
-  <Link 
-    to={`/seller/${listing?.seller_id || "mock-seller-id"}`} 
-    className="text-primary font-medium hover:underline transition-colors"
-  >
-    {listing?.seller_name || "Mock Seller"}
-  </Link>
-</p>
+                Sold by{" "}
+                <Link
+                  to={`/seller/${listing?.seller_id || "mock-seller-id"}`}
+                  className="text-primary font-medium hover:underline transition-colors"
+                >
+                  {listing?.seller_name || "Mock Seller"}
+                </Link>
+              </p>
               {listing.seller_id && !NEXT_PUBLIC_USE_MOCK_DATA && (
                 <div className="mt-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Seller Reviews</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Seller Reviews
+                  </p>
                   <ReviewsList userId={listing.seller_id} limit={5} />
                 </div>
               )}

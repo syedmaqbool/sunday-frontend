@@ -36,19 +36,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   const addItem = (listing: Listing, priceOverride?: number) => {
-    if (listing.status === "reserved" && listing.reserved_for && listing.reserved_for !== user?.id) {
+    if (
+      listing.status === "reserved" &&
+      listing.reserved_for &&
+      listing.reserved_for !== user?.id
+    ) {
       toast.error("This item is currently reserved for another buyer.");
       return;
     }
-    const effectivePrice = typeof priceOverride === "number" && priceOverride > 0 ? priceOverride : listing.price;
-    const finalListing: Listing = effectivePrice !== listing.price ? { ...listing, price: effectivePrice } : listing;
+    const effectivePrice =
+      typeof priceOverride === "number" && priceOverride > 0
+        ? priceOverride
+        : listing.price;
+    const finalListing: Listing =
+      effectivePrice !== listing.price
+        ? { ...listing, price: effectivePrice }
+        : listing;
     setItems((prev) => {
       const existing = prev.find((i) => i.listing.id === listing.id);
       if (existing) return prev; // no duplicates for unique items
       trackEvent("add_to_cart", {
         currency: "PKR",
         value: effectivePrice,
-        items: [{ item_id: listing.id, item_name: listing.title, item_category: (listing as any).category, price: effectivePrice, quantity: 1 }],
+        items: [
+          {
+            item_id: listing.id,
+            item_name: listing.title,
+            item_category: (listing as any).category,
+            price: effectivePrice,
+            quantity: 1,
+          },
+        ],
       });
       return [...prev, { listing: finalListing, quantity: 1 }];
     });
@@ -61,17 +79,30 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const updateQuantity = (listingId: string, quantity: number) => {
     if (quantity < 1) return removeItem(listingId);
     setItems((prev) =>
-      prev.map((i) => (i.listing.id === listingId ? { ...i, quantity } : i))
+      prev.map((i) => (i.listing.id === listingId ? { ...i, quantity } : i)),
     );
   };
 
   const clearCart = () => setItems([]);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.listing.price * i.quantity, 0);
+  const totalPrice = items.reduce(
+    (sum, i) => sum + i.listing.price * i.quantity,
+    0,
+  );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        totalItems,
+        totalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

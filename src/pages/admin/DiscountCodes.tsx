@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
-  useDiscountCodes,
+  getDiscountCodesOptions,
   useCreateDiscountCode,
   useUpdateDiscountCode,
   useDeleteDiscountCode,
@@ -41,7 +42,7 @@ import { Plus, Loader2, Trash2, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const DiscountCodes = () => {
-  const { data: codes = [], isLoading } = useDiscountCodes();
+  const { data: codes = [], isLoading } = useQuery(getDiscountCodesOptions());
 
   const createMutation = useCreateDiscountCode();
   const updateMutation = useUpdateDiscountCode();
@@ -94,10 +95,7 @@ const DiscountCodes = () => {
     }
   };
 
-  const toggleActive = async (
-    id: string,
-    active: boolean
-  ) => {
+  const toggleActive = async (id: string, active: boolean) => {
     try {
       await updateMutation.mutateAsync({
         discountCodeId: id,
@@ -171,9 +169,7 @@ const DiscountCodes = () => {
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                Create Discount Code
-              </DialogTitle>
+              <DialogTitle>Create Discount Code</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-4 py-2">
@@ -183,11 +179,7 @@ const DiscountCodes = () => {
                 <Input
                   placeholder="SUMMER20"
                   value={code}
-                  onChange={(e) =>
-                    setCode(
-                      e.target.value.toUpperCase()
-                    )
-                  }
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="uppercase"
                 />
               </div>
@@ -196,22 +188,15 @@ const DiscountCodes = () => {
                 <div className="space-y-2">
                   <Label>Type</Label>
 
-                  <Select
-                    value={discountType}
-                    onValueChange={setDiscountType}
-                  >
+                  <Select value={discountType} onValueChange={setDiscountType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
 
                     <SelectContent>
-                      <SelectItem value="PERCENTAGE">
-                        Percentage (%)
-                      </SelectItem>
+                      <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
 
-                      <SelectItem value="FIXED">
-                        Fixed (Rs)
-                      </SelectItem>
+                      <SelectItem value="FIXED">Fixed (Rs)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -223,11 +208,7 @@ const DiscountCodes = () => {
                     type="number"
                     value={discountValue}
                     placeholder="20"
-                    onChange={(e) =>
-                      setDiscountValue(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setDiscountValue(e.target.value)}
                   />
                 </div>
               </div>
@@ -240,11 +221,7 @@ const DiscountCodes = () => {
                     type="number"
                     placeholder="0"
                     value={minOrder}
-                    onChange={(e) =>
-                      setMinOrder(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setMinOrder(e.target.value)}
                   />
                 </div>
 
@@ -255,11 +232,7 @@ const DiscountCodes = () => {
                     type="number"
                     placeholder="Unlimited"
                     value={maxUses}
-                    onChange={(e) =>
-                      setMaxUses(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setMaxUses(e.target.value)}
                   />
                 </div>
               </div>
@@ -270,20 +243,14 @@ const DiscountCodes = () => {
                 <Input
                   type="datetime-local"
                   value={expiresAt}
-                  onChange={(e) =>
-                    setExpiresAt(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setExpiresAt(e.target.value)}
                 />
               </div>
 
               <Button
                 onClick={handleCreate}
                 disabled={
-                  createMutation.isPending ||
-                  !code.trim() ||
-                  !discountValue
+                  createMutation.isPending || !code.trim() || !discountValue
                 }
               >
                 {createMutation.isPending ? (
@@ -301,9 +268,7 @@ const DiscountCodes = () => {
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
           <Tag className="h-10 w-10 text-muted-foreground/40 mb-3" />
 
-          <p className="text-sm text-muted-foreground">
-            No discount codes yet
-          </p>
+          <p className="text-sm text-muted-foreground">No discount codes yet</p>
         </div>
       ) : (
         <div className="rounded-lg border border-border">
@@ -329,8 +294,7 @@ const DiscountCodes = () => {
 
                   <TableCell>
                     <Badge variant="secondary">
-                      {c.discountType ===
-                      "PERCENTAGE"
+                      {c.discountType === "PERCENTAGE"
                         ? `${c.discountValue}%`
                         : `Rs ${c.discountValue.toLocaleString()}`}
                     </Badge>
@@ -344,28 +308,19 @@ const DiscountCodes = () => {
 
                   <TableCell className="text-muted-foreground">
                     {c.currentUses}
-                    {c.maxUses !== null
-                      ? ` / ${c.maxUses}`
-                      : ""}
+                    {c.maxUses !== null ? ` / ${c.maxUses}` : ""}
                   </TableCell>
 
                   <TableCell className="text-muted-foreground text-xs">
                     {c.expiresAt
-                      ? new Date(
-                          c.expiresAt
-                        ).toLocaleDateString()
+                      ? new Date(c.expiresAt).toLocaleDateString()
                       : "Never"}
                   </TableCell>
 
                   <TableCell>
                     <Switch
                       checked={c.active}
-                      onCheckedChange={() =>
-                        toggleActive(
-                          c.id,
-                          c.active
-                        )
-                      }
+                      onCheckedChange={() => toggleActive(c.id, c.active)}
                     />
                   </TableCell>
 
@@ -374,9 +329,7 @@ const DiscountCodes = () => {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() =>
-                        deleteCode(c.id)
-                      }
+                      onClick={() => deleteCode(c.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

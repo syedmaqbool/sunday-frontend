@@ -8,12 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { MessageSquare, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { trackEvent } from "@/lib/analytics";
-//  Mock config import 
+//  Mock config  import
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface Offer {
@@ -34,7 +40,12 @@ interface MakeOfferProps {
   listingTitle: string;
 }
 
-export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitle }: MakeOfferProps) => {
+export const MakeOfferButton = ({
+  listingId,
+  sellerId,
+  listingPrice,
+  listingTitle,
+}: MakeOfferProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -53,7 +64,7 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
       seller_message: "Can do slightly lower but not that much. Let me know!",
       created_at: new Date(Date.now() - 86400000).toISOString(),
       updated_at: new Date(Date.now() - 86400000).toISOString(),
-    }
+    },
   ]);
 
   // Fetch existing offers from this buyer on this listing
@@ -125,7 +136,15 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
       if (NEXT_PUBLIC_USE_MOCK_DATA) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         setLocalMockOffers((prev) =>
-          prev.map((o) => (o.id === offerId ? { ...o, status: "accepted", updated_at: new Date().toISOString() } : o))
+          prev.map((o) =>
+            o.id === offerId
+              ? {
+                  ...o,
+                  status: "accepted",
+                  updated_at: new Date().toISOString(),
+                }
+              : o,
+          ),
         );
         return;
       }
@@ -144,7 +163,9 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
       });
     },
     onSuccess: () => {
-      toast.success("Counter-offer accepted! Check your Messages to chat with the seller.");
+      toast.success(
+        "Counter-offer accepted! Check your Messages to chat with the seller.",
+      );
       queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
     },
   });
@@ -154,7 +175,15 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
       if (NEXT_PUBLIC_USE_MOCK_DATA) {
         await new Promise((resolve) => setTimeout(resolve, 400));
         setLocalMockOffers((prev) =>
-          prev.map((o) => (o.id === offerId ? { ...o, status: "withdrawn", updated_at: new Date().toISOString() } : o))
+          prev.map((o) =>
+            o.id === offerId
+              ? {
+                  ...o,
+                  status: "withdrawn",
+                  updated_at: new Date().toISOString(),
+                }
+              : o,
+          ),
         );
         return;
       }
@@ -172,15 +201,22 @@ export const MakeOfferButton = ({ listingId, sellerId, listingPrice, listingTitl
   });
 
   // Agar mock data active ho toh auth check bypass ho jaye
-if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
-  return (
-    <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/auth")}>
-      <MessageSquare className="h-4 w-4" /> Make Offer
-    </Button>
-  );
-}
+  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
+    return (
+      <Button
+        variant="outline"
+        size="lg"
+        className="w-full sm:w-auto gap-2"
+        onClick={() => navigate("/auth")}
+      >
+        <MessageSquare className="h-4 w-4" /> Make Offer
+      </Button>
+    );
+  }
 
-  const activeOffer = existingOffers.find((o) => o.status === "pending" || o.status === "countered");
+  const activeOffer = existingOffers.find(
+    (o) => o.status === "pending" || o.status === "countered",
+  );
 
   const statusBadge = (s: string) => {
     const map: Record<string, "default" | "secondary" | "destructive"> = {
@@ -213,20 +249,27 @@ if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
         {existingOffers.length > 0 && (
           <div className="max-h-48 space-y-2 overflow-y-auto my-2 pr-1">
             {existingOffers.map((offer) => (
-              <div key={offer.id} className="rounded-lg border border-border p-3 bg-card">
+              <div
+                key={offer.id}
+                className="rounded-lg border border-border p-3 bg-card"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
                       Rs {offer.amount.toLocaleString()}
                     </span>
-                    <Badge variant={statusBadge(offer.status)}>{offer.status}</Badge>
+                    <Badge variant={statusBadge(offer.status)}>
+                      {offer.status}
+                    </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(offer.created_at), "MMM d")}
                   </span>
                 </div>
                 {offer.message && (
-                  <p className="mt-1 text-xs text-muted-foreground bg-muted/40 p-1.5 rounded">{offer.message}</p>
+                  <p className="mt-1 text-xs text-muted-foreground bg-muted/40 p-1.5 rounded">
+                    {offer.message}
+                  </p>
                 )}
                 {offer.status === "countered" && offer.counter_amount && (
                   <div className="mt-2 rounded-md bg-muted p-2 border border-border/60">
@@ -234,7 +277,9 @@ if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
                       Counter: Rs {offer.counter_amount.toLocaleString()}
                     </p>
                     {offer.seller_message && (
-                      <p className="text-xs text-muted-foreground mt-0.5 italic">"{offer.seller_message}"</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 italic">
+                        "{offer.seller_message}"
+                      </p>
                     )}
                     <div className="mt-2 flex gap-2">
                       <Button
@@ -299,10 +344,14 @@ if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
             </div>
             <Button
               className="w-full"
-              disabled={!amount || parseFloat(amount) <= 0 || submitOffer.isPending}
+              disabled={
+                !amount || parseFloat(amount) <= 0 || submitOffer.isPending
+              }
               onClick={() => submitOffer.mutate()}
             >
-              {submitOffer.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitOffer.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Send Offer
             </Button>
           </div>

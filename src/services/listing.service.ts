@@ -1,61 +1,30 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  AdminListing,
+  ListingStatus,
+  ModerateListingPayload,
+} from "@/types/admin/listing";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export type ListingStatus = "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_REVISION" | "SOLD" | "RESERVED";
-
-export interface ListingMediaFile {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  url: string;
+export function listAdminListings(
+  params: { status?: ListingStatus; page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get("/api/v1/admin/listings", {
+      searchParams: {
+        status: params.status,
+        page: params.page ?? 1,
+        size: params.size ?? 100,
+      },
+    })
+    .json<PaginatedResponse<AdminListing>>();
 }
 
-export interface ListingMedia {
-  id: string;
-  type: "IMAGE" | "VIDEO";
-  sortOrder: number;
-  createdAt: string;
-  file: ListingMediaFile | null;
+export function moderateListing(
+  listingId: string,
+  payload: ModerateListingPayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/listings/${listingId}/moderate`, { json: payload })
+    .json<Response<AdminListing>>();
 }
-
-export interface AdminListing {
-  id: string;
-  sellerId: string;
-  categoryId: string;
-  subcategoryId: string;
-  title: string;
-  description: string;
-  price: number;
-  reservedUntil: string | null;
-  brand: string;
-  condition: string;
-  size: string;
-  weight: number | null;
-  status: ListingStatus;
-  createdAt: string;
-  updatedAt: string;
-  categoryLabel: string;
-  categoryValue: string;
-  subcategoryLabel: string;
-  subcategoryValue: string;
-  coverImage: ListingMediaFile | null;
-  media: ListingMedia[];
-}
-
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
-}
-
-export const listingService = {
-  listAdmin: (params: { status?: ListingStatus; page?: number; size?: number } = {}) => {
-    const query = new URLSearchParams();
-    if (params.status) query.set("status", params.status);
-    query.set("page", String(params.page ?? 1));
-    query.set("size", String(params.size ?? 100));
-    return apiClient.get<ListResponse<AdminListing>>(`/api/v1/admin/listings?${query.toString()}`);
-  },
-
-  moderate: (listingId: string, payload: { status: "APPROVED" | "REJECTED" | "NEEDS_REVISION"; feedback?: string }) =>
-    apiClient.patch<{ data: AdminListing }>(`/api/v1/admin/listings/${listingId}/moderate`, payload),
-};

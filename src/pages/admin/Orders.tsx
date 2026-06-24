@@ -1,12 +1,29 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAdminOrders, useAdminReservedListings } from "@/queries/useAdminOrders";
-import type { AdminOrder, AdminOrderItem } from "@/services/adminOrders.service";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAdminOrdersOptions,
+  getAdminReservedListingsOptions,
+} from "@/queries/useAdminOrders";
+import type { AdminOrder, AdminOrderItem } from "@/types/admin/order";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Loader2, Package, ExternalLink } from "lucide-react";
 import { format, startOfDay, startOfMonth, subDays } from "date-fns";
 
@@ -16,19 +33,19 @@ type StatusFilter = "all" | EffectiveStatus | "reserved";
 type DateFilter = "all" | "today" | "7d" | "month";
 
 interface Row {
-  orderId:    string;
+  orderId: string;
   created_at: string;
-  buyerName:  string;
-  city:       string;
-  item:       AdminOrderItem;
-  effective:  EffectiveStatus;
-  order:      AdminOrder;
+  buyerName: string;
+  city: string;
+  item: AdminOrderItem;
+  effective: EffectiveStatus;
+  order: AdminOrder;
 }
 
 const dateFilterStart = (filter: DateFilter) => {
   const now = new Date();
   if (filter === "today") return startOfDay(now);
-  if (filter === "7d")    return subDays(startOfDay(now), 6);
+  if (filter === "7d") return subDays(startOfDay(now), 6);
   if (filter === "month") return startOfMonth(now);
   return null;
 };
@@ -36,19 +53,20 @@ const dateFilterStart = (filter: DateFilter) => {
 // Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
 const effectiveStatus = (status: AdminOrderItem["status"]): EffectiveStatus => {
   if (status === "CONFIRMED") return "sold";
-  if (status === "SHIPPED")   return "shipped";
+  if (status === "SHIPPED") return "shipped";
   return "delivered";
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [dateFilter,   setDateFilter]   = useState<DateFilter>("all");
-  const [selected,     setSelected]     = useState<Row | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [selected, setSelected] = useState<Row | null>(null);
 
-  const { data: orders = [], isLoading } = useAdminOrders();
-  const { data: reservedListings = [], isLoading: reservedLoading } =
-    useAdminReservedListings(statusFilter === "reserved");
+  const { data: orders = [], isLoading } = useQuery(getAdminOrdersOptions());
+  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery(
+    getAdminReservedListingsOptions(statusFilter === "reserved"),
+  );
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
@@ -57,20 +75,27 @@ const AdminOrders = () => {
 
     for (const o of orders) {
       if (start && new Date(o.createdAt) < start) continue;
-      const buyerName = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(" ") || "—";
+      const buyerName =
+        [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(" ") ||
+        "—";
 
       for (const item of o.items) {
         const eff = effectiveStatus(item.status);
-        if (statusFilter !== "all" && statusFilter !== "reserved" && eff !== statusFilter) continue;
+        if (
+          statusFilter !== "all" &&
+          statusFilter !== "reserved" &&
+          eff !== statusFilter
+        )
+          continue;
 
         flat.push({
-          orderId:    o.id,
+          orderId: o.id,
           created_at: o.createdAt,
           buyerName,
-          city:       o.shippingCity,
+          city: o.shippingCity,
           item,
-          effective:  eff,
-          order:      o,
+          effective: eff,
+          order: o,
         });
       }
     }
@@ -80,31 +105,48 @@ const AdminOrders = () => {
   // KPI counts — aggregate counts come directly from backend's itemStatusCounts per order
   const counts = useMemo(() => {
     const start = dateFilterStart(dateFilter);
-    let sold = 0, shipped = 0, received = 0, completed = 0;
+    let sold = 0,
+      shipped = 0,
+      received = 0,
+      completed = 0;
 
     for (const o of orders) {
       if (start && new Date(o.createdAt) < start) continue;
-      sold      += o.itemStatusCounts.confirmed;
-      shipped   += o.itemStatusCounts.shipped;
-      received  += o.itemStatusCounts.received;
+      sold += o.itemStatusCounts.confirmed;
+      shipped += o.itemStatusCounts.shipped;
+      received += o.itemStatusCounts.received;
       completed += o.itemStatusCounts.completed;
     }
-    return { sold, shipped, received, completed, total: sold + shipped + received + completed };
+    return {
+      sold,
+      shipped,
+      received,
+      completed,
+      total: sold + shipped + received + completed,
+    };
   }, [orders, dateFilter]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">Orders</h1>
-        <p className="text-sm text-muted-foreground">Track sold and shipped items across the marketplace.</p>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">
+          Orders
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Track sold and shipped items across the marketplace.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs uppercase text-muted-foreground">Total items</p>
-              <p className="font-heading text-2xl font-semibold">{counts.total}</p>
+              <p className="text-xs uppercase text-muted-foreground">
+                Total items
+              </p>
+              <p className="font-heading text-2xl font-semibold">
+                {counts.total}
+              </p>
             </div>
             <Package className="h-5 w-5 text-muted-foreground" />
           </CardContent>
@@ -118,25 +160,34 @@ const AdminOrders = () => {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Shipped</p>
-            <p className="font-heading text-2xl font-semibold">{counts.shipped}</p>
+            <p className="font-heading text-2xl font-semibold">
+              {counts.shipped}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Received</p>
-            <p className="font-heading text-2xl font-semibold">{counts.received}</p>
+            <p className="font-heading text-2xl font-semibold">
+              {counts.received}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Completed</p>
-            <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
+            <p className="font-heading text-2xl font-semibold">
+              {counts.completed}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+        <Tabs
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+        >
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
@@ -145,7 +196,10 @@ const AdminOrders = () => {
             <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+        <Tabs
+          value={dateFilter}
+          onValueChange={(v) => setDateFilter(v as DateFilter)}
+        >
           <TabsList>
             <TabsTrigger value="all">All time</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
@@ -163,7 +217,9 @@ const AdminOrders = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : reservedListings.length === 0 ? (
-              <p className="p-12 text-center text-sm text-muted-foreground">No reserved listings right now.</p>
+              <p className="p-12 text-center text-sm text-muted-foreground">
+                No reserved listings right now.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -182,14 +238,23 @@ const AdminOrders = () => {
                     return (
                       <TableRow key={l.reservationId}>
                         <TableCell className="font-medium">
-                          <Link to={`/listing/${l.listingId}`} className="inline-flex items-center gap-1 hover:underline">
+                          <Link
+                            to={`/listing/${l.listingId}`}
+                            className="inline-flex items-center gap-1 hover:underline"
+                          >
                             {l.title} <ExternalLink className="h-3 w-3" />
                           </Link>
                         </TableCell>
-                        <TableCell className="text-sm">{l.sellerFullName}</TableCell>
-                        <TableCell className="text-sm">{l.buyerFullName}</TableCell>
+                        <TableCell className="text-sm">
+                          {l.sellerFullName}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {l.buyerFullName}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant={expired ? "destructive" : "secondary"}>
+                          <Badge
+                            variant={expired ? "destructive" : "secondary"}
+                          >
                             {format(expiresAt, "MMM d, p")}
                           </Badge>
                         </TableCell>
@@ -212,7 +277,9 @@ const AdminOrders = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : rows.length === 0 ? (
-              <p className="p-12 text-center text-sm text-muted-foreground">No orders match these filters.</p>
+              <p className="p-12 text-center text-sm text-muted-foreground">
+                No orders match these filters.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -232,13 +299,23 @@ const AdminOrders = () => {
                       className="cursor-pointer"
                       onClick={() => setSelected(r)}
                     >
-                      <TableCell className="font-medium">{r.item.title}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">{r.buyerName}</div>
-                        {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
+                      <TableCell className="font-medium">
+                        {r.item.title}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={r.effective === "shipped" ? "default" : "secondary"}>
+                        <div className="text-sm">{r.buyerName}</div>
+                        {r.city && (
+                          <div className="text-xs text-muted-foreground">
+                            {r.city}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            r.effective === "shipped" ? "default" : "secondary"
+                          }
+                        >
                           {r.effective}
                         </Badge>
                       </TableCell>
@@ -246,7 +323,9 @@ const AdminOrders = () => {
                         {r.item.trackingNumber ? (
                           <div>
                             <div>{r.item.shippingMethod ?? "—"}</div>
-                            <div className="font-mono text-xs">{r.item.trackingNumber}</div>
+                            <div className="font-mono text-xs">
+                              {r.item.trackingNumber}
+                            </div>
                           </div>
                         ) : (
                           "—"
@@ -273,11 +352,21 @@ const AdminOrders = () => {
 };
 
 // ── Detail dialog — no extra API calls, item already carries all display data ──
-const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => void }) => {
+const OrderDetailDialog = ({
+  row,
+  onClose,
+}: {
+  row: Row | null;
+  onClose: () => void;
+}) => {
   if (!row) return null;
 
   const { item, order } = row;
-  const shippingAddr = [order.shippingAddress, order.shippingCity, order.shippingPostal]
+  const shippingAddr = [
+    order.shippingAddress,
+    order.shippingCity,
+    order.shippingPostal,
+  ]
     .filter(Boolean)
     .join(", ");
 
@@ -287,18 +376,25 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
         <DialogHeader>
           <DialogTitle className="font-heading">{item.title}</DialogTitle>
           <DialogDescription>
-            Order #{order.id.slice(0, 8)} · {format(new Date(order.createdAt), "PPp")}
+            Order #{order.id.slice(0, 8)} ·{" "}
+            {format(new Date(order.createdAt), "PPp")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           <div className="flex items-center gap-4">
             {item.imageUrl && (
-              <img src={item.imageUrl} alt="" className="h-24 w-24 rounded-md object-cover" />
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="h-24 w-24 rounded-md object-cover"
+              />
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <Badge variant={item.status === "SHIPPED" ? "default" : "secondary"}>
+                <Badge
+                  variant={item.status === "SHIPPED" ? "default" : "secondary"}
+                >
                   {effectiveStatus(item.status)}
                 </Badge>
                 <Link
@@ -317,10 +413,14 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <CardContent className="p-4">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Buyer</p>
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                  Buyer
+                </p>
                 <p className="text-sm font-medium">{item.buyerFullName}</p>
                 {order.shippingPhone && (
-                  <p className="text-xs text-muted-foreground">{order.shippingPhone}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {order.shippingPhone}
+                  </p>
                 )}
                 <Link
                   to={`/seller/${item.buyerId}`}
@@ -333,7 +433,9 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
 
             <Card>
               <CardContent className="p-4">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Seller</p>
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                  Seller
+                </p>
                 <p className="text-sm font-medium">{item.sellerFullName}</p>
                 <Link
                   to={`/seller/${item.sellerId}`}
@@ -347,9 +449,13 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
 
           <Card>
             <CardContent className="space-y-2 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Timeline</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Timeline
+              </p>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Sold (order placed)</span>
+                <span className="text-muted-foreground">
+                  Sold (order placed)
+                </span>
                 <span>{format(new Date(order.createdAt), "PPp")}</span>
               </div>
               {item.shippedAt && (
@@ -366,17 +472,23 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
               )}
               {item.expectedDelivery && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expected delivery</span>
+                  <span className="text-muted-foreground">
+                    Expected delivery
+                  </span>
                   <span>{format(new Date(item.expectedDelivery), "PPp")}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {(item.trackingNumber || item.shippingMethod || item.proofImageUrl) && (
+          {(item.trackingNumber ||
+            item.shippingMethod ||
+            item.proofImageUrl) && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Shipping</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Shipping
+                </p>
                 {item.shippingMethod && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Method</span>
@@ -386,7 +498,9 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
                 {item.trackingNumber && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tracking</span>
-                    <span className="font-mono text-xs">{item.trackingNumber}</span>
+                    <span className="font-mono text-xs">
+                      {item.trackingNumber}
+                    </span>
                   </div>
                 )}
                 {item.proofImageUrl && (
@@ -405,7 +519,9 @@ const OrderDetailDialog = ({ row, onClose }: { row: Row | null; onClose: () => v
           {shippingAddr && (
             <Card>
               <CardContent className="p-4 text-sm">
-                <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Shipping address</p>
+                <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                  Shipping address
+                </p>
                 <p>{shippingAddr}</p>
               </CardContent>
             </Card>

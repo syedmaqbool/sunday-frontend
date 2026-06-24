@@ -1,61 +1,64 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  Category,
+  CreateCategoryPayload,
+  CreateSubcategoryPayload,
+  Subcategory,
+  UpdateCategoryPayload,
+  UpdateSubcategoryPayload,
+} from "@/types/admin/category";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export interface Category {
-  id:        string;
-  icon:      string;
-  label:     string;
-  sortOrder: number;
-  value:     string;
-  createdAt: string;
-  updatedAt: string;
+export function listCategories() {
+  return authInstance
+    .get("/api/v1/admin/categories")
+    .json<PaginatedResponse<Category>>();
 }
 
-export interface Subcategory {
-  id:             string;
-  categoryId:     string;
-  categoryLabel:  string;
-  categoryValue:  string;
-  icon:           string;
-  label:          string;
-  sortOrder:      number;
-  value:          string;
-  createdAt:      string;
-  updatedAt:      string;
+export function createCategory(payload: CreateCategoryPayload) {
+  return authInstance
+    .post("/api/v1/admin/categories", { json: payload })
+    .json<Response<Category>>();
 }
 
-interface ListResponse<T> { data: T[]; pagination: unknown; }
-interface ItemResponse<T> { data: T; }
+export function updateCategory(
+  categoryId: string,
+  payload: UpdateCategoryPayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/categories/${categoryId}`, { json: payload })
+    .json<Response<Category>>();
+}
 
-export const categoryService = {
-  list: () =>
-    apiClient.get<ListResponse<Category>>("/api/v1/admin/categories"),
+export function deleteCategory(categoryId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/categories/${categoryId}`)
+    .json<Response>();
+}
 
-  create: (payload: { label: string; value: string; icon?: string; sortOrder?: number }) =>
-    apiClient.post<ItemResponse<Category>>("/api/v1/admin/categories", payload),
+export function listSubcategories() {
+  return authInstance
+    .get("/api/v1/admin/subcategories")
+    .json<PaginatedResponse<Subcategory>>();
+}
 
-  update: (categoryId: string, payload: { label?: string; icon?: string; sortOrder?: number }) =>
-    apiClient.patch<ItemResponse<Category>>(
-      `/api/v1/admin/categories/${categoryId}`,
-      payload,
-    ),
+export function createSubcategory(payload: CreateSubcategoryPayload) {
+  return authInstance
+    .post("/api/v1/admin/subcategories", { json: payload })
+    .json<Response<Subcategory>>();
+}
 
-  delete: (categoryId: string) =>
-    apiClient.delete<void>(`/api/v1/admin/categories/${categoryId}`),
-};
+export function updateSubcategory(
+  subcategoryId: string,
+  payload: UpdateSubcategoryPayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/subcategories/${subcategoryId}`, { json: payload })
+    .json<Response<Subcategory>>();
+}
 
-export const subcategoryService = {
-  list: () =>
-    apiClient.get<ListResponse<Subcategory>>("/api/v1/admin/subcategories"),
-
-  create: (payload: { categoryId: string; label: string; value: string; icon?: string; sortOrder?: number }) =>
-    apiClient.post<ItemResponse<Subcategory>>("/api/v1/admin/subcategories", payload),
-
-  update: (subcategoryId: string, payload: { label?: string; icon?: string; sortOrder?: number; categoryId?: string }) =>
-    apiClient.patch<ItemResponse<Subcategory>>(
-      `/api/v1/admin/subcategories/${subcategoryId}`,
-      payload,
-    ),
-
-  delete: (subcategoryId: string) =>
-    apiClient.delete<void>(`/api/v1/admin/subcategories/${subcategoryId}`),
-};
+export function deleteSubcategory(subcategoryId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/subcategories/${subcategoryId}`)
+    .json<Response>();
+}

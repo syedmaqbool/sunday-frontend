@@ -1,16 +1,45 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAdminComplaints, useUpdateComplaintStatus } from "@/queries/useAdminComplaint";
-import type { AdminComplaintStatus, Complaint, ComplaintStatus } from "@/services/complain.service";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAdminComplaintsOptions,
+  useUpdateComplaintStatus,
+} from "@/queries/useAdminComplaint";
+import type {
+  AdminComplaintStatus,
+  Complaint,
+  ComplaintStatus,
+} from "@/types/complaint";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Loader2, ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -35,14 +64,15 @@ const AdminComplaints = () => {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<Complaint | null>(null);
 
-  const { data, isLoading } = useAdminComplaints(filter);
+  const { data, isLoading } = useQuery(getAdminComplaintsOptions(filter));
   const updateStatus = useUpdateComplaintStatus();
 
   const complaints: Complaint[] = data?.data ?? [];
-  
 
   const filtered =
-    filter === "all" ? complaints : complaints.filter((c) => c.status === filter);
+    filter === "all"
+      ? complaints
+      : complaints.filter((c) => c.status === filter);
 
   const counts = complaints.reduce(
     (acc, c) => {
@@ -65,7 +95,8 @@ const AdminComplaints = () => {
           toast.success("Complaint updated");
           setSelected(null);
         },
-        onError: (e: any) => toast.error(e.message ?? "Failed to update complaint"),
+        onError: (e: any) =>
+          toast.error(e.message ?? "Failed to update complaint"),
       },
     );
   };
@@ -73,9 +104,12 @@ const AdminComplaints = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">Complaints</h1>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">
+          Complaints
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Buyer-raised inadequate-quality returns. Review evidence, track returns, and resolve.
+          Buyer-raised inadequate-quality returns. Review evidence, track
+          returns, and resolve.
         </p>
       </div>
 
@@ -84,7 +118,9 @@ const AdminComplaints = () => {
           <CardContent className="flex items-center justify-between p-4">
             <div>
               <p className="text-xs uppercase text-muted-foreground">Total</p>
-              <p className="font-heading text-2xl font-semibold">{counts.total ?? 0}</p>
+              <p className="font-heading text-2xl font-semibold">
+                {counts.total ?? 0}
+              </p>
             </div>
             <AlertTriangle className="h-5 w-5 text-amber-600" />
           </CardContent>
@@ -92,20 +128,28 @@ const AdminComplaints = () => {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Raised</p>
-            <p className="font-heading text-2xl font-semibold">{counts.RAISED ?? 0}</p>
+            <p className="font-heading text-2xl font-semibold">
+              {counts.RAISED ?? 0}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs uppercase text-muted-foreground">Return in transit</p>
-            <p className="font-heading text-2xl font-semibold">{counts.RETURN_IN_TRANSIT ?? 0}</p>
+            <p className="text-xs uppercase text-muted-foreground">
+              Return in transit
+            </p>
+            <p className="font-heading text-2xl font-semibold">
+              {counts.RETURN_IN_TRANSIT ?? 0}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Resolved</p>
             <p className="font-heading text-2xl font-semibold">
-              {(counts.REFUNDED ?? 0) + (counts.REJECTED ?? 0) + (counts.RETURN_RECEIVED ?? 0)}
+              {(counts.REFUNDED ?? 0) +
+                (counts.REJECTED ?? 0) +
+                (counts.RETURN_RECEIVED ?? 0)}
             </p>
           </CardContent>
         </Card>
@@ -117,7 +161,9 @@ const AdminComplaints = () => {
           <TabsTrigger value="RAISED">Raised</TabsTrigger>
           <TabsTrigger value="UNDER_REVIEW">Under Review</TabsTrigger>
           <TabsTrigger value="RETURN_APPROVED">Approved</TabsTrigger>
-          <TabsTrigger value="RETURN_ADDRESS_PROVIDED">Address Provided</TabsTrigger>
+          <TabsTrigger value="RETURN_ADDRESS_PROVIDED">
+            Address Provided
+          </TabsTrigger>
           <TabsTrigger value="RETURN_IN_TRANSIT">In Transit</TabsTrigger>
           <TabsTrigger value="RETURN_RECEIVED">Received</TabsTrigger>
           <TabsTrigger value="REFUNDED">Refunded</TabsTrigger>
@@ -148,7 +194,11 @@ const AdminComplaints = () => {
               </TableHeader>
               <TableBody>
                 {filtered.map((c) => (
-                  <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelected(c)}>
+                  <TableRow
+                    key={c.id}
+                    className="cursor-pointer"
+                    onClick={() => setSelected(c)}
+                  >
                     <TableCell className="max-w-[280px] truncate font-medium">
                       {c.reason || "—"}
                     </TableCell>
@@ -230,7 +280,8 @@ const ComplaintDetailDialog = ({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-heading">
-            <AlertTriangle className="h-5 w-5 text-amber-600" /> Complaint details
+            <AlertTriangle className="h-5 w-5 text-amber-600" /> Complaint
+            details
           </DialogTitle>
           <DialogDescription>
             Order #{complaint.orderId.slice(0, 8)} ·{" "}
@@ -242,7 +293,9 @@ const ComplaintDetailDialog = ({
           {/* Reason */}
           <Card>
             <CardContent className="space-y-2 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Reason</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Reason
+              </p>
               <p>{complaint.reason}</p>
             </CardContent>
           </Card>
@@ -276,9 +329,13 @@ const ComplaintDetailDialog = ({
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
                   Return proof
                 </p>
-                {complaint.returnCarrier && <p>Carrier: {complaint.returnCarrier}</p>}
+                {complaint.returnCarrier && (
+                  <p>Carrier: {complaint.returnCarrier}</p>
+                )}
                 {complaint.returnTracking && (
-                  <p className="font-mono text-xs">Tracking: {complaint.returnTracking}</p>
+                  <p className="font-mono text-xs">
+                    Tracking: {complaint.returnTracking}
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {complaint.returnProofUrls.map((url, i) => (
@@ -298,7 +355,9 @@ const ComplaintDetailDialog = ({
           {/* Return status */}
           <Card>
             <CardContent className="space-y-3 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Return status</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Return status
+              </p>
 
               {/* 1. Return address */}
               <div className="flex items-start gap-3">
@@ -316,12 +375,18 @@ const ComplaintDetailDialog = ({
                   {complaint.returnAddress && (
                     <div className="mt-1 space-y-0.5 text-muted-foreground">
                       {complaint.returnAddressRecipient && (
-                        <p className="text-foreground">{complaint.returnAddressRecipient}</p>
+                        <p className="text-foreground">
+                          {complaint.returnAddressRecipient}
+                        </p>
                       )}
                       <p>{complaint.returnAddress}</p>
-                      {complaint.returnAddressPhone && <p>{complaint.returnAddressPhone}</p>}
+                      {complaint.returnAddressPhone && (
+                        <p>{complaint.returnAddressPhone}</p>
+                      )}
                       {complaint.returnInstructions && (
-                        <p className="text-xs italic">{complaint.returnInstructions}</p>
+                        <p className="text-xs italic">
+                          {complaint.returnInstructions}
+                        </p>
                       )}
                     </div>
                   )}
@@ -404,7 +469,9 @@ const ComplaintDetailDialog = ({
 
           {/* Admin notes */}
           <div>
-            <Label htmlFor="admin-notes">Admin notes (visible to buyer &amp; seller)</Label>
+            <Label htmlFor="admin-notes">
+              Admin notes (visible to buyer &amp; seller)
+            </Label>
             <Textarea
               id="admin-notes"
               rows={3}

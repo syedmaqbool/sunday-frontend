@@ -1,70 +1,36 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  CreateDiscountCodePayload,
+  DiscountCode,
+  UpdateDiscountCodePayload,
+} from "@/types/discount-code";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export interface DiscountCode {
-  id: string;
-  active: boolean;
-  code: string;
-  currentUses: number;
-  discountType: string;
-  discountValue: number;
-  expiresAt: string | null;
-  maxUses: number | null;
-  minOrderAmount: number;
-  createdAt: string;
+export function listDiscountCodes() {
+  return authInstance
+    .get("/api/v1/admin/settings/discount-codes")
+    .json<PaginatedResponse<DiscountCode>>();
 }
 
-export interface CreateDiscountCodePayload {
-  code: string;
-  active?: boolean;
-  discountType: string;
-  discountValue: number;
-  expiresAt?: string | null;
-  maxUses?: number | null;
-  minOrderAmount?: number;
+export function createDiscountCode(payload: CreateDiscountCodePayload) {
+  return authInstance
+    .post("/api/v1/admin/settings/discount-codes", { json: payload })
+    .json<Response<DiscountCode>>();
 }
 
-export interface UpdateDiscountCodePayload {
-  code?: string;
-  active?: boolean;
-  discountType?: string;
-  discountValue?: number;
-  expiresAt?: string | null;
-  maxUses?: number | null;
-  minOrderAmount?: number;
+export function updateDiscountCode(
+  discountCodeId: string,
+  payload: UpdateDiscountCodePayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/settings/discount-codes/${discountCodeId}`, {
+      json: payload,
+    })
+    .json<Response<DiscountCode>>();
 }
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
+export function deleteDiscountCode(discountCodeId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/settings/discount-codes/${discountCodeId}`)
+    .json<Response>();
 }
-
-interface ItemResponse<T> {
-  data: T;
-}
-
-export const discountCodeService = {
-  list: () =>
-    apiClient.get<ListResponse<DiscountCode>>(
-      "/api/v1/admin/settings/discount-codes"
-    ),
-
-  create: (payload: CreateDiscountCodePayload) =>
-    apiClient.post<ItemResponse<DiscountCode>>(
-      "/api/v1/admin/settings/discount-codes",
-      payload
-    ),
-
-  update: (
-    discountCodeId: string,
-    payload: UpdateDiscountCodePayload
-  ) =>
-    apiClient.patch<ItemResponse<DiscountCode>>(
-      `/api/v1/admin/settings/discount-codes/${discountCodeId}`,
-      payload
-    ),
-
-  delete: (discountCodeId: string) =>
-    apiClient.delete<void>(
-      `/api/v1/admin/settings/discount-codes/${discountCodeId}`
-    ),
-};

@@ -1,9 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { useSellerAnalytics } from "@/queries/useSellerAnalytic";
+import { useQuery } from "@tanstack/react-query";
+import { getSellerAnalyticsOptions } from "@/queries/useSellerAnalytic";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp, DollarSign, Package, Star, ShoppingBag } from "lucide-react";
+import {
+  Loader2,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Star,
+  ShoppingBag,
+} from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -52,7 +60,7 @@ const OFFER_STATUS_COLORS: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const SellerAnalytics = () => {
-  const { data: response, isLoading } = useSellerAnalytics();
+  const { data: response, isLoading } = useQuery(getSellerAnalyticsOptions());
   const analytics = response?.data;
 
   // Chart data derived from API response

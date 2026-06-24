@@ -10,7 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Pencil, Trash2, Plus, Package, RotateCcw, Rocket, Inbox } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+  Package,
+  RotateCcw,
+  Rocket,
+  Inbox,
+} from "lucide-react";
 import { ListingFeedbackInline } from "@/components/ListingFeedbackWidgets";
 import BoostDialog from "@/components/BoostDialog";
 import { ReceivedOffers } from "@/components/ReceivedOffers";
@@ -26,7 +35,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -61,7 +76,9 @@ const MOCK_LISTINGS = [
     price: 2800,
     weight: "light",
     status: "pending",
-    images: ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600"],
+    images: [
+      "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600",
+    ],
     reserved_until: null,
     created_at: "2026-06-15T09:00:00.000Z",
   },
@@ -83,7 +100,9 @@ const MOCK_LISTINGS = [
     price: 8900,
     weight: "heavy",
     status: "sold",
-    images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600"],
+    images: [
+      "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600",
+    ],
     reserved_until: null,
     created_at: "2026-05-28T16:45:00.000Z",
   },
@@ -165,7 +184,11 @@ const MyListings = () => {
       toast.success("Reservation cancelled");
       if (NEXT_PUBLIC_USE_MOCK_DATA) {
         queryClient.setQueryData(["my-listings", user?.id], (old: any[] = []) =>
-          old.map((l) => (l.id === id ? { ...l, status: "approved", reserved_until: null } : l)),
+          old.map((l) =>
+            l.id === id
+              ? { ...l, status: "approved", reserved_until: null }
+              : l,
+          ),
         );
       } else {
         queryClient.invalidateQueries({ queryKey: ["my-listings"] });
@@ -175,7 +198,8 @@ const MyListings = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA)
+      navigate("/auth", { replace: true });
   }, [authLoading, user, navigate]);
 
   if (authLoading) return null;
@@ -188,13 +212,17 @@ const MyListings = () => {
     return "secondary";
   };
 
-  const approvedListings = listings.filter((l: any) => l.status === "approved" || l.status === "reserved");
+  const approvedListings = listings.filter(
+    (l: any) => l.status === "approved" || l.status === "reserved",
+  );
   const soldListings = listings.filter((l: any) => l.status === "sold");
   const pendingListings = listings.filter(
-    (l: any) => l.status !== "approved" && l.status !== "reserved" && l.status !== "sold"
+    (l: any) =>
+      l.status !== "approved" && l.status !== "reserved" && l.status !== "sold",
   );
 
-  const isReadOnly = (status: string) => status === "approved" || status === "sold" || status === "reserved";
+  const isReadOnly = (status: string) =>
+    status === "approved" || status === "sold" || status === "reserved";
 
   const renderListingCard = (listing: any) => (
     <Card key={listing.id}>
@@ -206,8 +234,12 @@ const MyListings = () => {
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="truncate font-semibold text-foreground">{listing.title}</h3>
-            <Badge variant={statusColor(listing.status)}>{listing.status}</Badge>
+            <h3 className="truncate font-semibold text-foreground">
+              {listing.title}
+            </h3>
+            <Badge variant={statusColor(listing.status)}>
+              {listing.status}
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
             {listing.brand} · R {listing.price.toLocaleString()}
@@ -215,13 +247,16 @@ const MyListings = () => {
           </p>
           {listing.status === "reserved" && listing.reserved_until && (
             <p className="mt-1 text-xs text-primary">
-              Reserved · expires {new Date(listing.reserved_until).toLocaleString()}
+              Reserved · expires{" "}
+              {new Date(listing.reserved_until).toLocaleString()}
             </p>
           )}
           <ListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex gap-2 shrink-0">
-          {(listing.status === "approved" || listing.status === "sold" || listing.status === "reserved") && (
+          {(listing.status === "approved" ||
+            listing.status === "sold" ||
+            listing.status === "reserved") && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
@@ -230,7 +265,9 @@ const MyListings = () => {
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-heading">Offers · {listing.title}</DialogTitle>
+                  <DialogTitle className="font-heading">
+                    Offers · {listing.title}
+                  </DialogTitle>
                 </DialogHeader>
                 <ReceivedOffers listingId={listing.id} />
               </DialogContent>
@@ -252,7 +289,11 @@ const MyListings = () => {
               listingId={listing.id}
               listingTitle={listing.title}
               trigger={
-                <Button variant="outline" size="sm" className="gap-1 text-primary">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-primary"
+                >
                   <Rocket className="h-3.5 w-3.5" /> Boost
                 </Button>
               }
@@ -281,7 +322,11 @@ const MyListings = () => {
           )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 text-destructive">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-destructive"
+              >
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </Button>
             </AlertDialogTrigger>
@@ -289,7 +334,8 @@ const MyListings = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete listing?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently remove "{listing.title}" and cannot be undone.
+                  This will permanently remove "{listing.title}" and cannot be
+                  undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -314,14 +360,25 @@ const MyListings = () => {
       <main className="container max-w-3xl flex-1 py-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-3xl font-bold text-foreground">My Listings</h1>
-            <p className="mt-1 text-muted-foreground">{listings.length} items listed</p>
+            <h1 className="font-heading text-3xl font-bold text-foreground">
+              My Listings
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              {listings.length} items listed
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-1" onClick={() => navigate("/boost")}>
+            <Button
+              variant="outline"
+              className="gap-1"
+              onClick={() => navigate("/boost")}
+            >
               <Rocket className="h-4 w-4" /> Boost
             </Button>
-            <Button className="gap-1" onClick={() => navigate("/create-listing")}>
+            <Button
+              className="gap-1"
+              onClick={() => navigate("/create-listing")}
+            >
               <Plus className="h-4 w-4" /> New Listing
             </Button>
           </div>
@@ -334,18 +391,31 @@ const MyListings = () => {
         ) : listings.length === 0 ? (
           <div className="mt-12 flex flex-col items-center text-center">
             <Package className="h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 font-heading text-xl font-semibold text-foreground">No listings yet</p>
-            <p className="mt-1 text-muted-foreground">Start selling by creating your first listing</p>
-            <Button className="mt-4 gap-1" onClick={() => navigate("/create-listing")}>
+            <p className="mt-4 font-heading text-xl font-semibold text-foreground">
+              No listings yet
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Start selling by creating your first listing
+            </p>
+            <Button
+              className="mt-4 gap-1"
+              onClick={() => navigate("/create-listing")}
+            >
               <Plus className="h-4 w-4" /> Create Listing
             </Button>
           </div>
         ) : (
           <Tabs defaultValue="approved" className="mt-6">
             <TabsList>
-              <TabsTrigger value="approved">Approved ({approvedListings.length})</TabsTrigger>
-              <TabsTrigger value="pending">Pending ({pendingListings.length})</TabsTrigger>
-              <TabsTrigger value="sold">Sold ({soldListings.length})</TabsTrigger>
+              <TabsTrigger value="approved">
+                Approved ({approvedListings.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending ({pendingListings.length})
+              </TabsTrigger>
+              <TabsTrigger value="sold">
+                Sold ({soldListings.length})
+              </TabsTrigger>
               <TabsTrigger value="offers" className="gap-1.5">
                 <Inbox className="h-4 w-4" /> Offers Received
               </TabsTrigger>
@@ -363,7 +433,9 @@ const MyListings = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">{approvedListings.map(renderListingCard)}</div>
+                <div className="space-y-3">
+                  {approvedListings.map(renderListingCard)}
+                </div>
               )}
             </TabsContent>
 
@@ -375,11 +447,14 @@ const MyListings = () => {
                     Nothing pending review
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Listings awaiting review or needing changes will show up here.
+                    Listings awaiting review or needing changes will show up
+                    here.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">{pendingListings.map(renderListingCard)}</div>
+                <div className="space-y-3">
+                  {pendingListings.map(renderListingCard)}
+                </div>
               )}
             </TabsContent>
 
@@ -395,7 +470,9 @@ const MyListings = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">{soldListings.map(renderListingCard)}</div>
+                <div className="space-y-3">
+                  {soldListings.map(renderListingCard)}
+                </div>
               )}
             </TabsContent>
 

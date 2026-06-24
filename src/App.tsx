@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/queries/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -49,65 +50,63 @@ import SiteSettings from "./pages/admin/SiteSettings";
 import SellerCoupons from "./pages/admin/SellerCoupons";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
-const queryClient = new QueryClient();
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AnalyticsTracker />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/listings" element={<Listings />} />
-            <Route path="/listing/:id" element={<ListingDetail />} />
-            <Route path="/create-listing" element={<CreateListing />} />
-            <Route path="/edit-listing/:id" element={<CreateListing />} />
-            <Route path="/my-listings" element={<MyListings />} />
-            <Route path="/boost" element={<Boost />} />
-            <Route path="/my-offers" element={<MyOffers />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/preferences" element={<Preferences />} />
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/returns" element={<ReturnsPolicy />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/seller-analytics" element={<SellerAnalytics />} />
-            <Route path="/seller/:id" element={<SellerProfile />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<AdminDashboard />}>
-              <Route index element={<Overview />} />
-              <Route path="listings" element={<ListingModeration />} />
-              <Route path="messages" element={<MessageModeration />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="categories" element={<CategoryManagement />} />
-              <Route path="brands" element={<BrandManagement />} />
-              <Route path="discounts" element={<DiscountCodes />} />
-              <Route path="flag-keywords" element={<FlagKeywords />} />
-              <Route path="help" element={<HelpManagement />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="complaints" element={<AdminComplaints />} />
-              <Route path="tax" element={<TaxSettings />} />
-              <Route path="email-templates" element={<EmailTemplates />} />
-              <Route path="support" element={<AdminSupport />} />
-              <Route path="boosts" element={<BoostManagement />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="payouts" element={<AdminPayouts />} />
-              <Route path="commission" element={<CommissionManagement />} />
-              <Route path="site-settings" element={<SiteSettings />} />
-              <Route path="seller-coupons" element={<SellerCoupons />} />
-            </Route>
-            <Route path="/unsubscribe" element={<Unsubscribe />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AnalyticsTracker />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/listings" element={<Listings />} />
+              <Route path="/listing/:id" element={<ListingDetail />} />
+              <Route path="/create-listing" element={<CreateListing />} />
+              <Route path="/edit-listing/:id" element={<CreateListing />} />
+              <Route path="/my-listings" element={<MyListings />} />
+              <Route path="/boost" element={<Boost />} />
+              <Route path="/my-offers" element={<MyOffers />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/preferences" element={<Preferences />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/returns" element={<ReturnsPolicy />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/seller-analytics" element={<SellerAnalytics />} />
+              <Route path="/seller/:id" element={<SellerProfile />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin" element={<AdminDashboard />}>
+                <Route index element={<Overview />} />
+                <Route path="listings" element={<ListingModeration />} />
+                <Route path="messages" element={<MessageModeration />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="categories" element={<CategoryManagement />} />
+                <Route path="brands" element={<BrandManagement />} />
+                <Route path="discounts" element={<DiscountCodes />} />
+                <Route path="flag-keywords" element={<FlagKeywords />} />
+                <Route path="help" element={<HelpManagement />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="complaints" element={<AdminComplaints />} />
+                <Route path="tax" element={<TaxSettings />} />
+                <Route path="email-templates" element={<EmailTemplates />} />
+                <Route path="support" element={<AdminSupport />} />
+                <Route path="boosts" element={<BoostManagement />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="payouts" element={<AdminPayouts />} />
+                <Route path="commission" element={<CommissionManagement />} />
+                <Route path="site-settings" element={<SiteSettings />} />
+                <Route path="seller-coupons" element={<SellerCoupons />} />
+              </Route>
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>

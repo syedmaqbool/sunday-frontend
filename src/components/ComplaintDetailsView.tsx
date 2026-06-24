@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AlertTriangle, PackageCheck, CheckCircle2, ImageIcon, MapPin } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertTriangle,
+  PackageCheck,
+  CheckCircle2,
+  ImageIcon,
+  MapPin,
+} from "lucide-react";
 import { format } from "date-fns";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -44,17 +56,24 @@ export function ComplaintDetailsView({
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const isCompleted = complaint.status === "refunded" || complaint.status === "rejected";
+  const isCompleted =
+    complaint.status === "refunded" || complaint.status === "rejected";
   const isReturn =
     complaint.status === "return_in_transit" ||
     complaint.status === "return_received" ||
     complaint.status === "return_address_provided" ||
     complaint.status === "return_approved";
-  const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
+  const Icon = isCompleted
+    ? CheckCircle2
+    : isReturn
+      ? PackageCheck
+      : AlertTriangle;
 
   const evidence = complaint.evidence_urls ?? [];
   const proofs = complaint.return_proof_urls ?? [];
-  const hasReturnAddress = !!(complaint.return_to_address || complaint.return_to_name);
+  const hasReturnAddress = !!(
+    complaint.return_to_address || complaint.return_to_name
+  );
 
   return (
     <div className={`mt-2 ${className ?? ""}`}>
@@ -90,14 +109,17 @@ export function ComplaintDetailsView({
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {viewerRole === "seller" ? "Buyer's message" : "Your message"}
                 </p>
-                <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{complaint.reason}</p>
+                <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">
+                  {complaint.reason}
+                </p>
               </div>
             )}
 
             {evidence.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                  <ImageIcon className="h-3 w-3" /> Evidence photos ({evidence.length})
+                  <ImageIcon className="h-3 w-3" /> Evidence photos (
+                  {evidence.length})
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {evidence.map((url, i) => (
@@ -107,7 +129,11 @@ export function ComplaintDetailsView({
                       onClick={() => setPreview(url)}
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"
                     >
-                      <img src={url} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
+                      <img
+                        src={url}
+                        alt={`Evidence ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -120,19 +146,29 @@ export function ComplaintDetailsView({
                   <MapPin className="h-3 w-3" /> Ship return to
                 </p>
                 <div className="mt-1 space-y-0.5 text-sm text-foreground">
-                  {complaint.return_to_name && <p className="font-medium">{complaint.return_to_name}</p>}
-                  {complaint.return_to_address && <p>{complaint.return_to_address}</p>}
+                  {complaint.return_to_name && (
+                    <p className="font-medium">{complaint.return_to_name}</p>
+                  )}
+                  {complaint.return_to_address && (
+                    <p>{complaint.return_to_address}</p>
+                  )}
                   {(complaint.return_to_city || complaint.return_to_postal) && (
                     <p className="text-muted-foreground">
                       {complaint.return_to_city}
-                      {complaint.return_to_postal ? `, ${complaint.return_to_postal}` : ""}
+                      {complaint.return_to_postal
+                        ? `, ${complaint.return_to_postal}`
+                        : ""}
                     </p>
                   )}
                   {complaint.return_to_phone && (
-                    <p className="text-muted-foreground">{complaint.return_to_phone}</p>
+                    <p className="text-muted-foreground">
+                      {complaint.return_to_phone}
+                    </p>
                   )}
                   {complaint.return_to_notes && (
-                    <p className="text-xs text-muted-foreground italic">{complaint.return_to_notes}</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      {complaint.return_to_notes}
+                    </p>
                   )}
                 </div>
               </div>
@@ -141,12 +177,15 @@ export function ComplaintDetailsView({
             {proofs.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                  <PackageCheck className="h-3 w-3" /> Return proof ({proofs.length})
+                  <PackageCheck className="h-3 w-3" /> Return proof (
+                  {proofs.length})
                 </p>
                 {(complaint.return_carrier || complaint.return_tracking) && (
                   <p className="text-xs text-muted-foreground">
                     {complaint.return_carrier ?? ""}
-                    {complaint.return_tracking ? ` · ${complaint.return_tracking}` : ""}
+                    {complaint.return_tracking
+                      ? ` · ${complaint.return_tracking}`
+                      : ""}
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -157,7 +196,11 @@ export function ComplaintDetailsView({
                       onClick={() => setPreview(url)}
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"
                     >
-                      <img src={url} alt={`Return proof ${i + 1}`} className="h-full w-full object-cover" />
+                      <img
+                        src={url}
+                        alt={`Return proof ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -169,7 +212,9 @@ export function ComplaintDetailsView({
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Admin note
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">{complaint.admin_notes}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {complaint.admin_notes}
+                </p>
               </div>
             )}
           </div>
@@ -182,7 +227,11 @@ export function ComplaintDetailsView({
             <DialogTitle className="font-heading">Photo</DialogTitle>
           </DialogHeader>
           {preview && (
-            <img src={preview} alt="Complaint attachment" className="max-h-[75vh] w-full object-contain" />
+            <img
+              src={preview}
+              alt="Complaint attachment"
+              className="max-h-[75vh] w-full object-contain"
+            />
           )}
         </DialogContent>
       </Dialog>

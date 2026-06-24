@@ -1,14 +1,41 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ListingFeedbackSection as FeedbackHistorySection } from "@/components/ListingFeedbackWidgets";
-import { useAdminListings, useModerateListing } from "@/queries/useAdminListing";
-import type { AdminListing, ListingStatus } from "@/services/listing.service";
+import {
+  getAdminListingsOptions,
+  useModerateListing,
+} from "@/queries/useAdminListing";
+import type { AdminListing, ListingStatus } from "@/types/admin/listing";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Loader2, Eye, ChevronLeft, ChevronRight, Weight, Tag, Ruler, Package, MessageSquare } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Weight,
+  Tag,
+  Ruler,
+  Package,
+  MessageSquare,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getWeightLabel } from "@/lib/constants";
@@ -17,22 +44,36 @@ const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
 
 const DetailGallery = ({ media }: { media: AdminListing["media"] }) => {
   const [idx, setIdx] = useState(0);
-  const images = media.filter((m) => m.file).map((m) => ({ url: m.file!.url, isVideo: m.type === "VIDEO" }));
-  if (!images.length) return <div className="aspect-square rounded-lg bg-muted" />;
+  const images = media
+    .filter((m) => m.file)
+    .map((m) => ({ url: m.file!.url, isVideo: m.type === "VIDEO" }));
+  if (!images.length)
+    return <div className="aspect-square rounded-lg bg-muted" />;
   const current = images[idx];
 
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
         {current.isVideo ? (
-          <video src={current.url} className="h-full w-full object-contain bg-black" controls playsInline />
+          <video
+            src={current.url}
+            className="h-full w-full object-contain bg-black"
+            controls
+            playsInline
+          />
         ) : (
-          <img src={current.url} alt="" className="h-full w-full object-cover" />
+          <img
+            src={current.url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         )}
         {images.length > 1 && (
           <>
             <button
-              onClick={() => setIdx((p) => (p - 1 + images.length) % images.length)}
+              onClick={() =>
+                setIdx((p) => (p - 1 + images.length) % images.length)
+              }
               className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1 text-foreground backdrop-blur-sm hover:bg-background"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -59,11 +100,22 @@ const DetailGallery = ({ media }: { media: AdminListing["media"] }) => {
             >
               {img.isVideo ? (
                 <>
-                  <video src={img.url} className="h-full w-full object-cover bg-black" muted preload="metadata" />
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">▶</span>
+                  <video
+                    src={img.url}
+                    className="h-full w-full object-cover bg-black"
+                    muted
+                    preload="metadata"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">
+                    ▶
+                  </span>
                 </>
               ) : (
-                <img src={img.url} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={img.url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               )}
             </button>
           ))}
@@ -78,7 +130,9 @@ const ListingModeration = () => {
   const [reviewListing, setReviewListing] = useState<AdminListing | null>(null);
   const [feedback, setFeedback] = useState("");
 
-  const { data: listings = [], isLoading } = useAdminListings(filter);
+  const { data: listings = [], isLoading } = useQuery(
+    getAdminListingsOptions(filter),
+  );
   const moderateListing = useModerateListing();
 
   const statusColor = (s: ListingStatus) => {
@@ -89,15 +143,24 @@ const ListingModeration = () => {
 
   // Navigate to next pending listing in review modal
   const pendingListings = listings.filter((l) => l.status === "PENDING");
-  const currentReviewIdx = reviewListing ? pendingListings.findIndex((l) => l.id === reviewListing.id) : -1;
+  const currentReviewIdx = reviewListing
+    ? pendingListings.findIndex((l) => l.id === reviewListing.id)
+    : -1;
   const goToNext = () => {
-    if (currentReviewIdx >= 0 && currentReviewIdx < pendingListings.length - 1) {
+    if (
+      currentReviewIdx >= 0 &&
+      currentReviewIdx < pendingListings.length - 1
+    ) {
       setReviewListing(pendingListings[currentReviewIdx + 1]);
       setFeedback("");
     }
   };
 
-  const handleModerate = (id: string, status: "APPROVED" | "REJECTED", feedbackText?: string) => {
+  const handleModerate = (
+    id: string,
+    status: "APPROVED" | "REJECTED",
+    feedbackText?: string,
+  ) => {
     moderateListing.mutate(
       { listingId: id, status, feedback: feedbackText },
       {
@@ -106,7 +169,8 @@ const ListingModeration = () => {
           setReviewListing(null);
           setFeedback("");
         },
-        onError: (e: any) => toast.error(e.message ?? "Failed to update listing"),
+        onError: (e: any) =>
+          toast.error(e.message ?? "Failed to update listing"),
       },
     );
   };
@@ -115,12 +179,17 @@ const ListingModeration = () => {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Listing Moderation</h1>
+          <h1 className="font-heading text-3xl font-bold text-foreground">
+            Listing Moderation
+          </h1>
           <p className="mt-1 text-muted-foreground">
             Review listings to verify photos match descriptions
           </p>
         </div>
-        <Select value={filter} onValueChange={(v) => setFilter(v as ListingStatus | "all")}>
+        <Select
+          value={filter}
+          onValueChange={(v) => setFilter(v as ListingStatus | "all")}
+        >
           <SelectTrigger className="w-[160px]">
             <SelectValue />
           </SelectTrigger>
@@ -139,7 +208,9 @@ const ListingModeration = () => {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : listings.length === 0 ? (
-        <div className="mt-8 text-center text-muted-foreground">No listings found</div>
+        <div className="mt-8 text-center text-muted-foreground">
+          No listings found
+        </div>
       ) : (
         <div className="mt-6 space-y-3">
           {listings.map((listing) => (
@@ -152,21 +223,32 @@ const ListingModeration = () => {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate font-semibold text-foreground">{listing.title}</h3>
-                    <Badge variant={statusColor(listing.status)}>{listing.status}</Badge>
+                    <h3 className="truncate font-semibold text-foreground">
+                      {listing.title}
+                    </h3>
+                    <Badge variant={statusColor(listing.status)}>
+                      {listing.status}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {listing.brand} · {listing.categoryLabel} · Rs {listing.price.toLocaleString()}
-                    {listing.media?.length > 1 && ` · ${listing.media.length} files`}
+                    {listing.brand} · {listing.categoryLabel} · Rs{" "}
+                    {listing.price.toLocaleString()}
+                    {listing.media?.length > 1 &&
+                      ` · ${listing.media.length} files`}
                   </p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{listing.description}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {listing.description}
+                  </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
                     className="gap-1"
-                    onClick={() => { setReviewListing(listing); setFeedback(""); }}
+                    onClick={() => {
+                      setReviewListing(listing);
+                      setFeedback("");
+                    }}
                   >
                     <Eye className="h-4 w-4" /> Review
                   </Button>
@@ -200,14 +282,21 @@ const ListingModeration = () => {
       )}
 
       {/* Full review modal */}
-      <Dialog open={!!reviewListing} onOpenChange={(open) => !open && setReviewListing(null)}>
+      <Dialog
+        open={!!reviewListing}
+        onOpenChange={(open) => !open && setReviewListing(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           {reviewListing && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3">
-                  <DialogTitle className="font-heading text-xl">{reviewListing.title}</DialogTitle>
-                  <Badge variant={statusColor(reviewListing.status)}>{reviewListing.status}</Badge>
+                  <DialogTitle className="font-heading text-xl">
+                    {reviewListing.title}
+                  </DialogTitle>
+                  <Badge variant={statusColor(reviewListing.status)}>
+                    {reviewListing.status}
+                  </Badge>
                 </div>
               </DialogHeader>
 
@@ -218,68 +307,102 @@ const ListingModeration = () => {
                 {/* Details */}
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-foreground">{reviewListing.description || "No description provided"}</p>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Description
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-foreground">
+                      {reviewListing.description || "No description provided"}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
                       <Tag className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-medium uppercase text-muted-foreground">Brand</p>
-                        <p className="text-sm font-semibold text-foreground">{reviewListing.brand}</p>
+                        <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                          Brand
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">
+                          {reviewListing.brand}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-medium uppercase text-muted-foreground">Category</p>
-                        <p className="text-sm font-semibold capitalize text-foreground">{reviewListing.categoryLabel}</p>
+                        <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                          Category
+                        </p>
+                        <p className="text-sm font-semibold capitalize text-foreground">
+                          {reviewListing.categoryLabel}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
                       <Ruler className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-medium uppercase text-muted-foreground">Size</p>
-                        <p className="text-sm font-semibold text-foreground">{reviewListing.size}</p>
+                        <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                          Size
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">
+                          {reviewListing.size}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
                       <CheckCircle className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-medium uppercase text-muted-foreground">Condition</p>
-                        <p className="text-sm font-semibold capitalize text-foreground">{reviewListing.condition.replace("_", " ")}</p>
+                        <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                          Condition
+                        </p>
+                        <p className="text-sm font-semibold capitalize text-foreground">
+                          {reviewListing.condition.replace("_", " ")}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="text-[10px] font-medium uppercase text-muted-foreground">Price</p>
-                      <p className="text-2xl font-bold text-foreground">Rs {reviewListing.price.toLocaleString()}</p>
+                      <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                        Price
+                      </p>
+                      <p className="text-2xl font-bold text-foreground">
+                        Rs {reviewListing.price.toLocaleString()}
+                      </p>
                     </div>
                     {reviewListing.weight && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Weight className="h-4 w-4" />
-                        <span className="text-sm">{getWeightLabel(reviewListing.weight)}</span>
+                        <span className="text-sm">
+                          {getWeightLabel(reviewListing.weight)}
+                        </span>
                       </div>
                     )}
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Submitted {format(new Date(reviewListing.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                    Submitted{" "}
+                    {format(
+                      new Date(reviewListing.createdAt),
+                      "MMM d, yyyy 'at' h:mm a",
+                    )}
                     <br />
                     Seller ID: {reviewListing.sellerId.slice(0, 8)}…
                   </div>
 
                   {/* Previous feedback history */}
-                  {reviewListing && <FeedbackHistorySection listingId={reviewListing.id} />}
+                  {reviewListing && (
+                    <FeedbackHistorySection listingId={reviewListing.id} />
+                  )}
 
                   {/* New Feedback */}
                   <div className="space-y-2 border-t border-border pt-4">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New Feedback</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        New Feedback
+                      </p>
                     </div>
                     <Textarea
                       placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
@@ -295,7 +418,11 @@ const ListingModeration = () => {
                       <Button
                         className="flex-1 gap-2"
                         onClick={() => {
-                          handleModerate(reviewListing.id, "APPROVED", feedback || undefined);
+                          handleModerate(
+                            reviewListing.id,
+                            "APPROVED",
+                            feedback || undefined,
+                          );
                           goToNext();
                         }}
                         disabled={moderateListing.isPending}
@@ -308,7 +435,11 @@ const ListingModeration = () => {
                         variant="destructive"
                         className="flex-1 gap-2"
                         onClick={() => {
-                          handleModerate(reviewListing.id, "REJECTED", feedback);
+                          handleModerate(
+                            reviewListing.id,
+                            "REJECTED",
+                            feedback,
+                          );
                           goToNext();
                         }}
                         disabled={moderateListing.isPending}
@@ -320,7 +451,8 @@ const ListingModeration = () => {
 
                   {currentReviewIdx >= 0 && pendingListings.length > 1 && (
                     <p className="text-center text-xs text-muted-foreground">
-                      Reviewing {currentReviewIdx + 1} of {pendingListings.length} pending
+                      Reviewing {currentReviewIdx + 1} of{" "}
+                      {pendingListings.length} pending
                     </p>
                   )}
                 </div>

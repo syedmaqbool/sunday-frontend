@@ -1,32 +1,47 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  sellerCouponService,
-  type CreateSellerCouponPayload,
-  type UpdateSellerCouponPayload,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createSellerCoupon,
+  deleteSellerCoupon,
+  listSellerCoupons,
+  updateSellerCoupon,
 } from "@/services/sellerCoupon.service";
+import type {
+  CreateSellerCouponPayload,
+  UpdateSellerCouponPayload,
+} from "@/types/seller-coupon";
 
-const SELLER_COUPONS_KEY = ["seller-coupons"];
+export const sellerCouponsQueryKey = {
+  all: () => ["seller-coupons"] as const,
+  list: () => [...sellerCouponsQueryKey.all(), "list"] as const,
+};
 
-export const useSellerCoupons = () =>
-  useQuery({
-    queryKey: SELLER_COUPONS_KEY,
+export const getSellerCouponsOptions = () =>
+  queryOptions({
+    queryKey: sellerCouponsQueryKey.list(),
     queryFn: async () => {
-      const res = await sellerCouponService.list();
+      const res = await listSellerCoupons();
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
   });
+
+export const useSellerCoupons = () => useQuery(getSellerCouponsOptions());
 
 export const useCreateSellerCoupon = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: CreateSellerCouponPayload) =>
-      sellerCouponService.create(payload),
+      createSellerCoupon(payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: SELLER_COUPONS_KEY,
+        queryKey: sellerCouponsQueryKey.all(),
       });
     },
   });
@@ -42,12 +57,11 @@ export const useUpdateSellerCoupon = () => {
     }: {
       id: string;
       payload: UpdateSellerCouponPayload;
-    }) =>
-      sellerCouponService.update(id, payload),
+    }) => updateSellerCoupon(id, payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: SELLER_COUPONS_KEY,
+        queryKey: sellerCouponsQueryKey.all(),
       });
     },
   });
@@ -57,14 +71,12 @@ export const useDeleteSellerCoupon = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) =>
-      sellerCouponService.delete(id),
+    mutationFn: (id: string) => deleteSellerCoupon(id),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: SELLER_COUPONS_KEY,
+        queryKey: sellerCouponsQueryKey.all(),
       });
     },
   });
 };
-

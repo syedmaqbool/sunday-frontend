@@ -20,7 +20,12 @@ const MAX_VIDEO_SIZE = 30 * 1024 * 1024;
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
-export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: OrderItemReviewProps) => {
+export const OrderItemReview = ({
+  orderId,
+  listingId,
+  sellerId,
+  sellerName,
+}: OrderItemReviewProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -106,7 +111,9 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
             .upload(path, file, { contentType: file.type, upsert: false });
           if (upErr) throw upErr;
           uploadedPaths.push(path);
-          const { data: pub } = supabase.storage.from("review-media").getPublicUrl(path);
+          const { data: pub } = supabase.storage
+            .from("review-media")
+            .getPublicUrl(path);
           imageUrls.push(pub.publicUrl);
         }
 
@@ -118,7 +125,9 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
             .upload(path, video, { contentType: video.type, upsert: false });
           if (upErr) throw upErr;
           uploadedPaths.push(path);
-          const { data: pub } = supabase.storage.from("review-media").getPublicUrl(path);
+          const { data: pub } = supabase.storage
+            .from("review-media")
+            .getPublicUrl(path);
           videoUrl = pub.publicUrl;
         }
 
@@ -144,7 +153,9 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
     },
     onSuccess: () => {
       toast.success("Review submitted");
-      queryClient.invalidateQueries({ queryKey: ["order-review", orderId, listingId] });
+      queryClient.invalidateQueries({
+        queryKey: ["order-review", orderId, listingId],
+      });
       queryClient.invalidateQueries({ queryKey: ["reviews", sellerId] });
       queryClient.invalidateQueries({ queryKey: ["seller-rating", sellerId] });
       setOpen(false);
@@ -154,7 +165,11 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
       setRating(0);
     },
     onError: (e: any) => {
-      toast.error(e.message?.includes("duplicate") ? "Already reviewed" : e.message || "Failed to submit review");
+      toast.error(
+        e.message?.includes("duplicate")
+          ? "Already reviewed"
+          : e.message || "Failed to submit review",
+      );
     },
   });
 
@@ -170,7 +185,9 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
             <Star
               key={s}
               className={`h-3 w-3 ${
-                s <= existing.rating ? "fill-primary text-primary" : "text-muted-foreground/30"
+                s <= existing.rating
+                  ? "fill-primary text-primary"
+                  : "text-muted-foreground/30"
               }`}
             />
           ))}
@@ -209,12 +226,16 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
           >
             <Star
               className={`h-5 w-5 transition-colors ${
-                star <= display ? "fill-primary text-primary" : "text-muted-foreground/30"
+                star <= display
+                  ? "fill-primary text-primary"
+                  : "text-muted-foreground/30"
               }`}
             />
           </button>
         ))}
-        {rating > 0 && <span className="ml-1 text-xs text-muted-foreground">{rating}/5</span>}
+        {rating > 0 && (
+          <span className="ml-1 text-xs text-muted-foreground">{rating}/5</span>
+        )}
       </div>
       <Textarea
         placeholder="Share your experience (optional)"
@@ -231,11 +252,16 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
           {images.map((file, i) => {
             const url = URL.createObjectURL(file);
             return (
-              <div key={i} className="relative h-16 w-16 overflow-hidden rounded-md border border-border">
+              <div
+                key={i}
+                className="relative h-16 w-16 overflow-hidden rounded-md border border-border"
+              >
                 <img src={url} alt="" className="h-full w-full object-cover" />
                 <button
                   type="button"
-                  onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
+                  onClick={() =>
+                    setImages((prev) => prev.filter((_, idx) => idx !== i))
+                  }
                   className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 text-foreground shadow"
                   aria-label="Remove image"
                 >
@@ -322,7 +348,12 @@ export const OrderItemReview = ({ orderId, listingId, sellerId, sellerName }: Or
           {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {uploading ? "Uploading..." : "Submit"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={uploading}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setOpen(false)}
+          disabled={uploading}
+        >
           Cancel
         </Button>
       </div>

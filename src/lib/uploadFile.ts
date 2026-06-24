@@ -1,3 +1,5 @@
+import { authInstance } from "@/services/ky.instance";
+
 export interface UploadedFile {
   id: string;
   url: string;
@@ -7,21 +9,11 @@ export interface UploadedFile {
 }
 
 export async function uploadFile(file: File): Promise<UploadedFile> {
-  const token = localStorage.getItem("sunday_access_token");
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("http://localhost:3000/api/upload-file", {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message ?? "File upload failed");
-  }
-
-  const data = await response.json();
+  const data = await authInstance
+    .post("/api/upload-file", { body: formData })
+    .json<{ data: UploadedFile }>();
   return data.data as UploadedFile;
 }

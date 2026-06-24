@@ -1,57 +1,9 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type { SellerAnalytics } from "@/types/seller-analytics";
+import type { Response } from "@/types/response.type";
 
-// ─── Types (from SellerAnalyticsSchema) ──────────────────────────────────────
-
-export type OfferStatus =
-  | "PENDING"
-  | "COUNTERED"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "WITHDRAWN"
-  | "EXPIRED";
-
-export interface OfferStatusCount {
-  count: number;
-  status: OfferStatus;
+export function getSellerAnalytics() {
+  return authInstance
+    .get("/api/v1/me/seller-analytics")
+    .json<Response<SellerAnalytics>>();
 }
-
-export interface CategoryDistribution {
-  category: string;
-  count: number;
-}
-
-export interface MonthlyValue {
-  label: string;
-  month: string;
-  totalValue: number;
-}
-
-export interface SellerAnalytics {
-  acceptedOffers: number;
-  activeListings: number;
-  averageRating: number;
-  conversionRate: number;
-  currency: "PKR";
-  listingCategoryDistribution: CategoryDistribution[];
-  monthlyAcceptedOfferValue: MonthlyValue[];
-  offerStatusCounts: OfferStatusCount[];
-  pendingOffers: number;
-  rejectedOffers: number;
-  reviewCount: number;
-  totalAcceptedOfferValue: number;
-  totalOffers: number;
-}
-
-interface ApiItemResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
-
-// ─── Service ──────────────────────────────────────────────────────────────────
-
-export const sellerAnalyticsService = {
-  // GET /api/v1/me/seller-analytics
-  get: () =>
-    apiClient.get<ApiItemResponse<SellerAnalytics>>("/api/v1/me/seller-analytics"),
-};

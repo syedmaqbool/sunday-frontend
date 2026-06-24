@@ -16,7 +16,13 @@ interface ReviewFormProps {
   onSuccess?: () => void;
 }
 
-export const ReviewForm = ({ offerId, listingId, reviewedId, role, onSuccess }: ReviewFormProps) => {
+export const ReviewForm = ({
+  offerId,
+  listingId,
+  reviewedId,
+  role,
+  onSuccess,
+}: ReviewFormProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -38,7 +44,12 @@ export const ReviewForm = ({ offerId, listingId, reviewedId, role, onSuccess }: 
       if (error) throw error;
     },
     onSuccess: () => {
-      trackEvent("review_submitted", { listing_id: listingId, offer_id: offerId, role, rating });
+      trackEvent("review_submitted", {
+        listing_id: listingId,
+        offer_id: offerId,
+        role,
+        rating,
+      });
       toast.success("Review submitted!");
       queryClient.invalidateQueries({ queryKey: ["reviews"] });
       onSuccess?.();
@@ -92,7 +103,9 @@ export const ReviewForm = ({ offerId, listingId, reviewedId, role, onSuccess }: 
         onClick={() => submitReview.mutate()}
         className="gap-1.5"
       >
-        {submitReview.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+        {submitReview.isPending && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        )}
         Submit Review
       </Button>
     </div>

@@ -1,25 +1,42 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { boostManagementService, type BoostPackage } from "@/services/adminBoost.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getBoostPackages,
+  listBoosts,
+  updateBoostPackages,
+} from "@/services/adminBoost.service";
+import type { BoostPackage } from "@/types/boost";
 
-const PACKAGES_KEY = ["admin-boost-packages"];
-const BOOSTS_KEY = ["admin-all-boosts"];
+export const adminBoostQueryKey = {
+  packages: () => ["admin-boost-packages"] as const,
+  boosts: (params: AdminBoostsParams = {}) =>
+    ["admin-all-boosts", params] as const,
+};
+
+export type AdminBoostsParams = { page?: number; size?: number };
 
 // ── Packages ──────────────────────────────────────────────────────────────────
 
-export const useBoostPackages = () =>
-  useQuery({
-    queryKey: PACKAGES_KEY,
-    queryFn: () => boostManagementService.getPackages(),
-    // data is BoostPackage[] directly
+export const getAdminBoostPackagesOptions = () =>
+  queryOptions({
+    queryKey: adminBoostQueryKey.packages(),
+    queryFn: () => getBoostPackages(),
   });
+
+export const useBoostPackages = () => useQuery(getAdminBoostPackagesOptions());
 
 export const useUpdateBoostPackages = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (packages: BoostPackage[]) =>
-      boostManagementService.updatePackages(packages),
+    mutationFn: (packages: BoostPackage[]) => updateBoostPackages(packages),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PACKAGES_KEY });
+      queryClient.invalidateQueries({
+        queryKey: adminBoostQueryKey.packages(),
+      });
       queryClient.invalidateQueries({ queryKey: ["boost-packages"] }); // seller-facing cache
     },
   });
@@ -27,9 +44,11 @@ export const useUpdateBoostPackages = () => {
 
 // ── Campaigns ─────────────────────────────────────────────────────────────────
 
-export const useAdminBoosts = (params: { page?: number; size?: number } = {}) =>
-  useQuery({
-    queryKey: [...BOOSTS_KEY, params],
-    queryFn: () => boostManagementService.getBoosts(params),
-    // data is ApiListResponse<ListingBoost> — access data.data in component
+export const getAdminBoostsOptions = (params: AdminBoostsParams = {}) =>
+  queryOptions({
+    queryKey: adminBoostQueryKey.boosts(params),
+    queryFn: () => listBoosts(params),
   });
+
+export const useAdminBoosts = (params: AdminBoostsParams = {}) =>
+  useQuery(getAdminBoostsOptions(params));

@@ -64,7 +64,12 @@ interface ReportDialogProps {
   label?: string;
 }
 
-export const ReportDialog = ({ targetType, targetId, trigger, label = "Report" }: ReportDialogProps) => {
+export const ReportDialog = ({
+  targetType,
+  targetId,
+  trigger,
+  label = "Report",
+}: ReportDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -106,7 +111,11 @@ export const ReportDialog = ({ targetType, targetId, trigger, label = "Report" }
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-destructive">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-destructive"
+          >
             <Flag className="h-4 w-4" /> {label}
           </Button>
         )}
@@ -115,7 +124,8 @@ export const ReportDialog = ({ targetType, targetId, trigger, label = "Report" }
         <DialogHeader>
           <DialogTitle>Report {targetType}</DialogTitle>
           <DialogDescription>
-            Help us keep the marketplace safe. Reports are reviewed by our moderation team.
+            Help us keep the marketplace safe. Reports are reviewed by our
+            moderation team.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -143,11 +153,17 @@ export const ReportDialog = ({ targetType, targetId, trigger, label = "Report" }
               maxLength={1000}
               rows={4}
             />
-            <p className="text-xs text-muted-foreground">{details.length}/1000</p>
+            <p className="text-xs text-muted-foreground">
+              {details.length}/1000
+            </p>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={submitting || !reason}>

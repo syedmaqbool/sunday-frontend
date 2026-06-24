@@ -50,13 +50,18 @@ const HeroSection = () => {
     staleTime: 60_000,
   });
 
-  const heroImage = (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
+  const heroImage =
+    (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
   const c = { ...DEFAULTS, ...(data || {}) };
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroImage} alt="Fashion editorial" className="h-full w-full object-cover" />
+        <img
+          src={heroImage}
+          alt="Fashion editorial"
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <div className="container relative z-10">
@@ -70,11 +75,19 @@ const HeroSection = () => {
             {c.badge}
           </span>
           <h1 className="font-heading text-5xl font-bold leading-tight text-surface-dark-foreground md:text-7xl">
-            <span style={c.title_line1_color ? { color: c.title_line1_color } : undefined}>{c.title_line1}</span>
+            <span
+              style={
+                c.title_line1_color ? { color: c.title_line1_color } : undefined
+              }
+            >
+              {c.title_line1}
+            </span>
             <br />
             <span
               className={c.title_line2_color ? "italic" : "italic text-gold"}
-              style={c.title_line2_color ? { color: c.title_line2_color } : undefined}
+              style={
+                c.title_line2_color ? { color: c.title_line2_color } : undefined
+              }
             >
               {c.title_line2}
             </span>
@@ -86,7 +99,11 @@ const HeroSection = () => {
             {c.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" className="gap-2" onClick={() => navigate("/listings")}>
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={() => navigate("/listings")}
+            >
               {c.primary_cta}
               <ArrowRight className="h-4 w-4" />
             </Button>

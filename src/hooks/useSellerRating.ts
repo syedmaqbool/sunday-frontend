@@ -17,7 +17,9 @@ export const useSellerRating = (sellerId: string | undefined) => {
       if (error) throw error;
       const ratings = data ?? [];
       return {
-        avgRating: ratings.length ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length : 0,
+        avgRating: ratings.length
+          ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
+          : 0,
         totalReviews: ratings.length,
       };
     },
@@ -43,7 +45,9 @@ export const useSellerRatings = (sellerIds: string[]) => {
       for (const id of uniqueIds) {
         const ratings = (data ?? []).filter((r) => r.reviewed_id === id);
         map.set(id, {
-          avgRating: ratings.length ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length : 0,
+          avgRating: ratings.length
+            ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
+            : 0,
           totalReviews: ratings.length,
         });
       }

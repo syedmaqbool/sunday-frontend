@@ -1,72 +1,45 @@
+import { authInstance } from "@/services/ky.instance";
+import type {
+  SupportTicket,
+  SupportTicketMessage,
+  SupportTicketStatus,
+} from "@/types/support";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-import { apiClient } from "@/lib/apiClient";
-
-export type SupportTicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
-
-export interface SupportTicket {
-  id:                   string;
-  lastMessageSenderId:  string | null;
-  userId:               string;
-  lastMessageAt:        string;
-  lastMessageContent:   string | null;
-  messageCount:         number;
-  status:               SupportTicketStatus;
-  subject:              string;
-  userEmail:            string;
-  userFullName:         string;
-  createdAt:            string;
-  updatedAt:            string;
+export function listAdminSupportTickets(
+  params: { page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get("/api/v1/admin/support-tickets", { searchParams: params })
+    .json<PaginatedResponse<SupportTicket>>();
 }
 
-export interface SupportTicketMessage {
-  id:               string;
-  senderId:         string;
-  supportTicketId:  string;
-  content:          string;
-  senderFullName:   string;
-  createdAt:        string;
-  updatedAt:        string;
+export function listAdminSupportMessages(
+  ticketId: string,
+  params: { page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get(`/api/v1/admin/support-tickets/${ticketId}/messages`, {
+      searchParams: params,
+    })
+    .json<PaginatedResponse<SupportTicketMessage>>();
 }
 
-interface ListResponse<T> {
-  data:       T[];
-  pagination: { currentPage: number; lastPage: number; total: number };
+export function replyToSupportTicket(ticketId: string, content: string) {
+  return authInstance
+    .post(`/api/v1/admin/support-tickets/${ticketId}/messages`, {
+      json: { content },
+    })
+    .json<Response<SupportTicketMessage>>();
 }
-interface ItemResponse<T> {
-  data: T;
+
+export function updateSupportTicketStatus(
+  ticketId: string,
+  status: SupportTicketStatus,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/support-tickets/${ticketId}/status`, {
+      json: { status },
+    })
+    .json<Response>();
 }
-
-export const adminSupportService = {
-  listTickets: (params: { page?: number; size?: number } = {}) => {
-    const qs = new URLSearchParams();
-    if (params.page) qs.set("page", String(params.page));
-    if (params.size) qs.set("size", String(params.size));
-    const query = qs.toString();
-    return apiClient.get<ListResponse<SupportTicket>>(
-      `/api/v1/admin/support-tickets${query ? `?${query}` : ""}`,
-    );
-  },
-
-  listMessages: (ticketId: string, params: { page?: number; size?: number } = {}) => {
-    const qs = new URLSearchParams();
-    if (params.page) qs.set("page", String(params.page));
-    if (params.size) qs.set("size", String(params.size));
-    const query = qs.toString();
-    return apiClient.get<ListResponse<SupportTicketMessage>>(
-      `/api/v1/admin/support-tickets/${ticketId}/messages${query ? `?${query}` : ""}`,
-    );
-  },
-
-  reply: (ticketId: string, content: string) =>
-    apiClient.post<ItemResponse<SupportTicketMessage>>(
-      `/api/v1/admin/support-tickets/${ticketId}/messages`,
-      { content },
-    ),
-
-  updateStatus: (ticketId: string, status: SupportTicketStatus) =>
-    apiClient.patch<void>(
-      `/api/v1/admin/support-tickets/${ticketId}/status`,
-      { status },
-    ),
-};
-

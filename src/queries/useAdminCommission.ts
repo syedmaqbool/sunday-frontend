@@ -1,22 +1,40 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { commissionService, type CommissionTierPayload } from "@/services/commission.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createCommissionTier,
+  deleteCommissionTier,
+  listCommissionTiers,
+  updateCommissionTier,
+} from "@/services/commission.service";
+import type { CommissionTierPayload } from "@/types/commission";
 
-const COMMISSION_KEY = ["commission-tiers"];
+export const commissionQueryKey = {
+  all: () => ["commission-tiers"] as const,
+  list: () => [...commissionQueryKey.all(), "list"] as const,
+};
 
-export const useCommissionTiers = () =>
-  useQuery({
-    queryKey: COMMISSION_KEY,
+export const getCommissionTiersOptions = () =>
+  queryOptions({
+    queryKey: commissionQueryKey.list(),
     queryFn: async () => {
-      const res = await commissionService.list();
+      const res = await listCommissionTiers();
       return res.data;
     },
   });
 
+export const useCommissionTiers = () => useQuery(getCommissionTiersOptions());
+
 export const useCreateCommissionTier = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CommissionTierPayload) => commissionService.create(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: COMMISSION_KEY }),
+    mutationFn: (payload: CommissionTierPayload) =>
+      createCommissionTier(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 };
 
@@ -29,15 +47,18 @@ export const useUpdateCommissionTier = () => {
     }: {
       commissionTierId: string;
       payload: Partial<CommissionTierPayload>;
-    }) => commissionService.update(commissionTierId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: COMMISSION_KEY }),
+    }) => updateCommissionTier(commissionTierId, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 };
 
 export const useDeleteCommissionTier = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (commissionTierId: string) => commissionService.delete(commissionTierId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: COMMISSION_KEY }),
+    mutationFn: (commissionTierId: string) =>
+      deleteCommissionTier(commissionTierId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 };

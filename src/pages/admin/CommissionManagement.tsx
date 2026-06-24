@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,16 +13,23 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Percent } from "lucide-react";
 import {
-  useCommissionTiers,
+  getCommissionTiersOptions,
   useCreateCommissionTier,
   useUpdateCommissionTier,
   useDeleteCommissionTier,
 } from "@/queries/useAdminCommission";
-import type { CommissionTier } from "@/services/commission.service";
+import type { CommissionTier } from "@/types/commission";
 
 const blankForm = {
   name: "",
@@ -34,7 +42,7 @@ const blankForm = {
 };
 
 const CommissionManagement = () => {
-  const { data: tiers, isLoading } = useCommissionTiers();
+  const { data: tiers, isLoading } = useQuery(getCommissionTiersOptions());
   const createTier = useCreateCommissionTier();
   const updateTier = useUpdateCommissionTier();
   const deleteTier = useDeleteCommissionTier();
@@ -67,13 +75,22 @@ const CommissionManagement = () => {
   const handleSave = async () => {
     const rate = parseFloat(form.rate);
     const minP = parseFloat(form.min_price || "0");
-    const maxP = form.max_price.trim() === "" ? null : parseFloat(form.max_price);
+    const maxP =
+      form.max_price.trim() === "" ? null : parseFloat(form.max_price);
     if (!form.name.trim() || isNaN(rate) || rate < 0 || rate > 100) {
-      toast({ title: "Invalid input", description: "Name and rate (0–100) required.", variant: "destructive" });
+      toast({
+        title: "Invalid input",
+        description: "Name and rate (0–100) required.",
+        variant: "destructive",
+      });
       return;
     }
     if (isNaN(minP) || (maxP !== null && (isNaN(maxP) || maxP < minP))) {
-      toast({ title: "Invalid price range", description: "Max price must be ≥ min price.", variant: "destructive" });
+      toast({
+        title: "Invalid price range",
+        description: "Max price must be ≥ min price.",
+        variant: "destructive",
+      });
       return;
     }
     const categories = form.categories
@@ -120,7 +137,10 @@ const CommissionManagement = () => {
 
   const toggleActive = async (t: CommissionTier) => {
     try {
-      await updateTier.mutateAsync({ commissionTierId: t.id, payload: { active: !t.active } });
+      await updateTier.mutateAsync({
+        commissionTierId: t.id,
+        payload: { active: !t.active },
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -133,7 +153,9 @@ const CommissionManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">Commission Management</h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">
+            Commission Management
+          </h1>
           <p className="text-sm text-muted-foreground">
             Platform fees applied to listings by category and price range.
           </p>
@@ -150,7 +172,8 @@ const CommissionManagement = () => {
           </div>
         ) : !tiers || tiers.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            No commission tiers configured. Sales will be paid without platform fees.
+            No commission tiers configured. Sales will be paid without platform
+            fees.
           </div>
         ) : (
           <Table>
@@ -170,11 +193,17 @@ const CommissionManagement = () => {
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell>
                     {t.categories.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">Any category</span>
+                      <span className="text-xs text-muted-foreground">
+                        Any category
+                      </span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {t.categories.map((c) => (
-                          <Badge key={c} variant="secondary" className="text-xs">
+                          <Badge
+                            key={c}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {c}
                           </Badge>
                         ))}
@@ -198,10 +227,18 @@ const CommissionManagement = () => {
                     </button>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEdit(t)}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(t.id)}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -215,9 +252,12 @@ const CommissionManagement = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit commission tier" : "Add commission tier"}</DialogTitle>
+            <DialogTitle>
+              {editing ? "Edit commission tier" : "Add commission tier"}
+            </DialogTitle>
             <DialogDescription>
-              Match listings by category tag and price range, then charge the configured percentage.
+              Match listings by category tag and price range, then charge the
+              configured percentage.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -231,15 +271,20 @@ const CommissionManagement = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categories">Categories (comma separated, blank = any)</Label>
+              <Label htmlFor="categories">
+                Categories (comma separated, blank = any)
+              </Label>
               <Input
                 id="categories"
                 placeholder="formals, eastern, luxury"
                 value={form.categories}
-                onChange={(e) => setForm({ ...form, categories: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, categories: e.target.value })
+                }
               />
               <p className="text-xs text-muted-foreground">
-                Matched against listing category tokens (lowercase). Leave empty to apply to every category.
+                Matched against listing category tokens (lowercase). Leave empty
+                to apply to every category.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -250,7 +295,9 @@ const CommissionManagement = () => {
                   type="number"
                   min="0"
                   value={form.min_price}
-                  onChange={(e) => setForm({ ...form, min_price: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, min_price: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -260,7 +307,9 @@ const CommissionManagement = () => {
                   type="number"
                   min="0"
                   value={form.max_price}
-                  onChange={(e) => setForm({ ...form, max_price: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, max_price: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -283,7 +332,9 @@ const CommissionManagement = () => {
                   id="sort_order"
                   type="number"
                   value={form.sort_order}
-                  onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, sort_order: e.target.value })
+                  }
                 />
               </div>
             </div>

@@ -22,11 +22,7 @@ const bankSchema = z.object({
     .min(2, "Account holder name is required")
     .max(100),
 
-  bank_name: z
-    .string()
-    .trim()
-    .min(2, "Bank name is required")
-    .max(80),
+  bank_name: z.string().trim().min(2, "Bank name is required").max(80),
 
   bank_account_number: z
     .string()
@@ -44,10 +40,7 @@ const bankSchema = z.object({
         .string()
         .min(15, "IBAN must be 15–34 characters")
         .max(34, "IBAN must be 15–34 characters")
-        .regex(
-          /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/,
-          "Invalid IBAN format"
-        )
+        .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/, "Invalid IBAN format"),
     ),
 
   bank_swift: z
@@ -59,8 +52,8 @@ const bankSchema = z.object({
         .string()
         .regex(
           /^([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)?$/,
-          "Invalid SWIFT/BIC format"
-        )
+          "Invalid SWIFT/BIC format",
+        ),
     )
     .optional(),
 });
@@ -121,9 +114,7 @@ const BankDetailsModal = ({
     const result = bankSchema.safeParse(form);
 
     if (!result.success) {
-      const fieldErrors: Partial<
-        Record<keyof BankFormValues, string>
-      > = {};
+      const fieldErrors: Partial<Record<keyof BankFormValues, string>> = {};
 
       result.error.issues.forEach((issue) => {
         const key = issue.path[0] as keyof BankFormValues;
@@ -149,9 +140,7 @@ const BankDetailsModal = ({
       {
         onSuccess: () => {
           toast.success(
-            isEditing
-              ? "Payout details updated"
-              : "Payout details saved"
+            isEditing ? "Payout details updated" : "Payout details saved",
           );
           onSaved();
         },
@@ -159,7 +148,7 @@ const BankDetailsModal = ({
         onError: (err: any) => {
           toast.error(err.message || "Failed to save");
         },
-      }
+      },
     );
   };
 
@@ -172,9 +161,7 @@ const BankDetailsModal = ({
           </div>
 
           <DialogTitle>
-            {isEditing
-              ? "Edit payout details"
-              : "Add your payout details"}
+            {isEditing ? "Edit payout details" : "Add your payout details"}
           </DialogTitle>
 
           <DialogDescription>
@@ -187,8 +174,8 @@ const BankDetailsModal = ({
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
           <p>
-            Add correct bank details for smooth payout. Incorrect
-            details may delay payments.
+            Add correct bank details for smooth payout. Incorrect details may
+            delay payments.
           </p>
         </div>
 
@@ -223,9 +210,7 @@ const BankDetailsModal = ({
               }
             />
             {errors.bank_name && (
-              <p className="text-xs text-destructive">
-                {errors.bank_name}
-              </p>
+              <p className="text-xs text-destructive">{errors.bank_name}</p>
             )}
           </div>
 
@@ -260,9 +245,7 @@ const BankDetailsModal = ({
               }
             />
             {errors.bank_iban && (
-              <p className="text-xs text-destructive">
-                {errors.bank_iban}
-              </p>
+              <p className="text-xs text-destructive">{errors.bank_iban}</p>
             )}
           </div>
 
@@ -278,9 +261,7 @@ const BankDetailsModal = ({
               }
             />
             {errors.bank_swift && (
-              <p className="text-xs text-destructive">
-                {errors.bank_swift}
-              </p>
+              <p className="text-xs text-destructive">{errors.bank_swift}</p>
             )}
           </div>
         </div>
@@ -294,10 +275,7 @@ const BankDetailsModal = ({
             Cancel
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={updateBankDetails.isPending}
-          >
+          <Button onClick={handleSave} disabled={updateBankDetails.isPending}>
             {updateBankDetails.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}

@@ -1,19 +1,49 @@
 import { useMemo, useState } from "react";
-import { useAdminAnalytics, useAdminMarketingLeads } from "@/queries/useAdminAnalytics";
-import type { DimKey } from "@/services/adminAnalytics.service";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAdminAnalyticsQueryOptions,
+  getAdminMarketingLeadsQueryOptions,
+} from "@/queries/useAdminAnalytics";
+import type { DimKey } from "@/types/admin/analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
 } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import {
-  Loader2, Download, ShoppingCart, DollarSign, RotateCcw, Target,
-  Users, ShoppingBag, CheckCircle2, Search, Zap,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Loader2,
+  Download,
+  ShoppingCart,
+  DollarSign,
+  RotateCcw,
+  Target,
+  Users,
+  ShoppingBag,
+  CheckCircle2,
+  Search,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +55,9 @@ const DIMS: { key: DimKey; label: string }[] = [
   { key: "buyerAgeBucket", label: "Age" },
   { key: "listingSize", label: "Size" },
 ];
-const DIM_LABELS = Object.fromEntries(DIMS.map((d) => [d.key, d.label])) as Record<DimKey, string>;
+const DIM_LABELS = Object.fromEntries(
+  DIMS.map((d) => [d.key, d.label]),
+) as Record<DimKey, string>;
 
 // ── Backend bucket key → human label ─────────────────────────────────────────
 const PRICE_RANGE_LABELS: Record<string, string> = {
@@ -65,7 +97,9 @@ const downloadCSV = (rows: any[], filename: string) => {
   const headers = Object.keys(rows[0]);
   const csv = [
     headers.join(","),
-    ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? "")).join(",")),
+    ...rows.map((r) =>
+      headers.map((h) => JSON.stringify(r[h] ?? "")).join(","),
+    ),
   ].join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -76,7 +110,13 @@ const downloadCSV = (rows: any[], filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const DimChips = ({ value, onChange }: { value: DimKey; onChange: (d: DimKey) => void }) => (
+const DimChips = ({
+  value,
+  onChange,
+}: {
+  value: DimKey;
+  onChange: (d: DimKey) => void;
+}) => (
   <div className="flex flex-wrap gap-1 rounded-full border border-border bg-muted/40 p-1">
     {DIMS.map((d) => (
       <button
@@ -96,16 +136,29 @@ const DimChips = ({ value, onChange }: { value: DimKey; onChange: (d: DimKey) =>
 );
 
 const KPI = ({
-  label, value, icon: Icon, highlight,
+  label,
+  value,
+  icon: Icon,
+  highlight,
 }: {
-  label: string; value: string; icon: any; highlight?: boolean;
+  label: string;
+  value: string;
+  icon: any;
+  highlight?: boolean;
 }) => (
-  <Card className={cn("transition-shadow", highlight && "ring-1 ring-destructive/40")}>
+  <Card
+    className={cn(
+      "transition-shadow",
+      highlight && "ring-1 ring-destructive/40",
+    )}
+  >
     <CardContent className="flex flex-col gap-2 p-4">
       <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
         <Icon className="h-4 w-4 text-primary" />
       </div>
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
       <p className="font-heading text-2xl font-bold text-foreground">{value}</p>
     </CardContent>
   </Card>
@@ -113,25 +166,27 @@ const KPI = ({
 
 const LEAD_STATUS_META: Record<string, { label: string; tone: string }> = {
   CUSTOMER: { label: "Customer", tone: "bg-emerald-100 text-emerald-700" },
-  ENGAGED:  { label: "Engaged",  tone: "bg-orange-100 text-orange-700" },
-  NEW:      { label: "New",      tone: "bg-muted text-muted-foreground" },
+  ENGAGED: { label: "Engaged", tone: "bg-orange-100 text-orange-700" },
+  NEW: { label: "New", tone: "bg-muted text-muted-foreground" },
 };
 
 const Analytics = () => {
-  const [orderDim, setOrderDim]     = useState<DimKey>("location");
-  const [salesDim, setSalesDim]     = useState<DimKey>("category");
-  const [refundDim, setRefundDim]   = useState<DimKey>("listingSize");
-  const [convDim, setConvDim]       = useState<DimKey>("buyerAgeBucket");
-  const [offersDim, setOffersDim]   = useState<DimKey>("category");
+  const [orderDim, setOrderDim] = useState<DimKey>("location");
+  const [salesDim, setSalesDim] = useState<DimKey>("category");
+  const [refundDim, setRefundDim] = useState<DimKey>("listingSize");
+  const [convDim, setConvDim] = useState<DimKey>("buyerAgeBucket");
+  const [offersDim, setOffersDim] = useState<DimKey>("category");
   const [leadSearch, setLeadSearch] = useState("");
   const [leadStatusFilter, setLeadStatusFilter] = useState<string>("");
 
-  const { data, isLoading } = useAdminAnalytics();
-  const { data: leadsResult, isLoading: leadsLoading } = useAdminMarketingLeads({
-    size: 50,
-    search: leadSearch || undefined,
-    leadStatus: leadStatusFilter || undefined,
-  });
+  const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
+  const { data: leadsResult, isLoading: leadsLoading } = useQuery(
+    getAdminMarketingLeadsQueryOptions({
+      size: 50,
+      search: leadSearch || undefined,
+      leadStatus: leadStatusFilter || undefined,
+    }),
+  );
 
   const leads = leadsResult?.data ?? [];
   const leadsTotal = leadsResult?.pagination?.total ?? 0;
@@ -139,12 +194,16 @@ const Analytics = () => {
   // ── Order volume (already sorted desc by orderCount from backend) ──────────
   const orderVolumeData = useMemo(() => {
     const rows = data?.breakdowns[orderDim] ?? [];
-    return rows.slice(0, 8).map((r) => ({ key: humanizeKey(orderDim, r.key), value: r.orderCount }));
+    return rows
+      .slice(0, 8)
+      .map((r) => ({ key: humanizeKey(orderDim, r.key), value: r.orderCount }));
   }, [data, orderDim]);
 
   // ── Sales volume — re-sort by salesVolume (backend sorts by orderCount) ────
   const salesVolumeData = useMemo(() => {
-    const rows = [...(data?.breakdowns[salesDim] ?? [])].sort((a, b) => b.salesVolume - a.salesVolume);
+    const rows = [...(data?.breakdowns[salesDim] ?? [])].sort(
+      (a, b) => b.salesVolume - a.salesVolume,
+    );
     const total = rows.reduce((s, r) => s + r.salesVolume, 0) || 1;
     return rows.slice(0, 6).map((r) => ({
       key: humanizeKey(salesDim, r.key),
@@ -155,11 +214,16 @@ const Analytics = () => {
 
   // ── Refunds ──────────────────────────────────────────────────────────────
   const refundsData = useMemo(() => {
-    const rows = (data?.breakdowns[refundDim] ?? []).filter((r) => r.refundedComplaintCount > 0);
+    const rows = (data?.breakdowns[refundDim] ?? []).filter(
+      (r) => r.refundedComplaintCount > 0,
+    );
     return [...rows]
       .sort((a, b) => b.refundedComplaintCount - a.refundedComplaintCount)
       .slice(0, 5)
-      .map((r) => ({ key: humanizeKey(refundDim, r.key), value: r.refundedComplaintCount }));
+      .map((r) => ({
+        key: humanizeKey(refundDim, r.key),
+        value: r.refundedComplaintCount,
+      }));
   }, [data, refundDim]);
 
   // ── Funnel — already sorted desc by engagedOfferPairs ───────────────────────
@@ -186,8 +250,11 @@ const Analytics = () => {
 
   // ── Price variance — per-dimension breakdown (no single global number) ─────
   const priceVarianceTiles = useMemo(() => {
-    const rows = [...(data?.priceVariance[offersDim] ?? [])]
-      .sort((a, b) => Math.abs(b.averageVariancePercentage) - Math.abs(a.averageVariancePercentage));
+    const rows = [...(data?.priceVariance[offersDim] ?? [])].sort(
+      (a, b) =>
+        Math.abs(b.averageVariancePercentage) -
+        Math.abs(a.averageVariancePercentage),
+    );
     return rows.slice(0, 4).map((r) => ({
       key: humanizeKey(offersDim, r.key),
       avgDiff: r.averageVarianceAmount,
@@ -209,16 +276,23 @@ const Analytics = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-heading text-2xl font-bold text-foreground">Analytics Overview</h2>
-          <p className="text-sm text-muted-foreground">Performance metrics for the marketplace</p>
+          <h2 className="font-heading text-2xl font-bold text-foreground">
+            Analytics Overview
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Performance metrics for the marketplace
+          </p>
         </div>
         <Button
           size="sm"
           onClick={() =>
             downloadCSV(
               leads.map((l) => ({
-                name: l.name, phone: l.phone, location: l.location,
-                orders: l.orderCount, offers: l.offerCount,
+                name: l.name,
+                phone: l.phone,
+                location: l.location,
+                orders: l.orderCount,
+                offers: l.offerCount,
                 status: LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
               })),
               "leads-report.csv",
@@ -230,11 +304,32 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KPI label="Total Revenue" value={`Rs ${(kpis?.totalRevenue ?? 0).toLocaleString()}`} icon={DollarSign} />
-        <KPI label="Order Volume" value={(kpis?.orderCount ?? 0).toLocaleString()} icon={ShoppingCart} />
-        <KPI label="Items Sold" value={(kpis?.itemsSold ?? 0).toLocaleString()} icon={ShoppingBag} />
-        <KPI label="Refund Rate" value={`${(kpis?.refundRate ?? 0).toFixed(1)}%`} icon={RotateCcw} highlight />
-        <KPI label="Offer→Order Conv." value={`${(kpis?.averageOfferToOrderConversionRate ?? 0).toFixed(2)}%`} icon={Target} />
+        <KPI
+          label="Total Revenue"
+          value={`Rs ${(kpis?.totalRevenue ?? 0).toLocaleString()}`}
+          icon={DollarSign}
+        />
+        <KPI
+          label="Order Volume"
+          value={(kpis?.orderCount ?? 0).toLocaleString()}
+          icon={ShoppingCart}
+        />
+        <KPI
+          label="Items Sold"
+          value={(kpis?.itemsSold ?? 0).toLocaleString()}
+          icon={ShoppingBag}
+        />
+        <KPI
+          label="Refund Rate"
+          value={`${(kpis?.refundRate ?? 0).toFixed(1)}%`}
+          icon={RotateCcw}
+          highlight
+        />
+        <KPI
+          label="Offer→Order Conv."
+          value={`${(kpis?.averageOfferToOrderConversionRate ?? 0).toFixed(2)}%`}
+          icon={Target}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -242,26 +337,57 @@ const Analytics = () => {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Order Volume</CardTitle>
-              <p className="text-xs text-muted-foreground">Distribution by {DIM_LABELS[orderDim]}</p>
+              <p className="text-xs text-muted-foreground">
+                Distribution by {DIM_LABELS[orderDim]}
+              </p>
             </div>
             <DimChips value={orderDim} onChange={setOrderDim} />
           </CardHeader>
           <CardContent>
             {orderVolumeData.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No data
+              </p>
             ) : (
               <ChartContainer
-                config={{ value: { label: "Orders", color: "hsl(var(--primary))" } } satisfies ChartConfig}
+                config={
+                  {
+                    value: { label: "Orders", color: "hsl(var(--primary))" },
+                  } satisfies ChartConfig
+                }
                 className="h-[260px] w-full"
               >
-                <BarChart data={orderVolumeData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
-                  <XAxis dataKey="key" className="text-[10px]" tickLine={false} axisLine={false} />
-                  <YAxis className="text-[10px]" tickLine={false} axisLine={false} />
+                <BarChart
+                  data={orderVolumeData}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-border/40"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="key"
+                    className="text-[10px]"
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    className="text-[10px]"
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                     {orderVolumeData.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.25)"} />
+                      <Cell
+                        key={i}
+                        fill={
+                          i === 0
+                            ? "hsl(var(--primary))"
+                            : "hsl(var(--primary) / 0.25)"
+                        }
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -274,25 +400,36 @@ const Analytics = () => {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Sales Volume</CardTitle>
-              <p className="text-xs text-muted-foreground">Revenue share by {DIM_LABELS[salesDim]}</p>
+              <p className="text-xs text-muted-foreground">
+                Revenue share by {DIM_LABELS[salesDim]}
+              </p>
             </div>
             <DimChips value={salesDim} onChange={setSalesDim} />
           </CardHeader>
           <CardContent>
             {salesVolumeData.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No data
+              </p>
             ) : (
               <div className="space-y-4 py-2">
                 {salesVolumeData.map((r) => (
                   <div key={r.key} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-foreground">{r.key}</span>
+                      <span className="font-medium text-foreground">
+                        {r.key}
+                      </span>
                       <span className="text-muted-foreground">{r.pct}%</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${r.pct}%` }} />
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${r.pct}%` }}
+                      />
                     </div>
-                    <p className="text-[11px] text-muted-foreground">Rs {Math.round(r.value).toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Rs {Math.round(r.value).toLocaleString()}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -306,20 +443,39 @@ const Analytics = () => {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Refunds Analytics</CardTitle>
-              <p className="text-xs text-muted-foreground">Top {DIM_LABELS[refundDim]} buckets</p>
+              <p className="text-xs text-muted-foreground">
+                Top {DIM_LABELS[refundDim]} buckets
+              </p>
             </div>
             <DimChips value={refundDim} onChange={setRefundDim} />
           </CardHeader>
           <CardContent>
             {refundsData.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No refund data</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No refund data
+              </p>
             ) : (
               <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
-                <ChartContainer config={{ value: { label: "Refunds" } } satisfies ChartConfig} className="h-[220px] w-full">
+                <ChartContainer
+                  config={{ value: { label: "Refunds" } } satisfies ChartConfig}
+                  className="h-[220px] w-full"
+                >
                   <PieChart>
-                    <Pie data={refundsData} dataKey="value" nameKey="key" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
+                    <Pie
+                      data={refundsData}
+                      dataKey="value"
+                      nameKey="key"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={2}
+                    >
                       {refundsData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        <Cell
+                          key={i}
+                          fill={CHART_COLORS[i % CHART_COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -327,12 +483,22 @@ const Analytics = () => {
                 </ChartContainer>
                 <div className="space-y-2">
                   {refundsData.map((r, i) => (
-                    <div key={r.key} className="flex items-center justify-between text-sm">
+                    <div
+                      key={r.key}
+                      className="flex items-center justify-between text-sm"
+                    >
                       <div className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            background: CHART_COLORS[i % CHART_COLORS.length],
+                          }}
+                        />
                         <span className="text-foreground">{r.key}</span>
                       </div>
-                      <span className="font-semibold text-foreground">{r.value}</span>
+                      <span className="font-semibold text-foreground">
+                        {r.value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -345,33 +511,64 @@ const Analytics = () => {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Conversion Funnel</CardTitle>
-              <p className="text-xs text-muted-foreground">Engaged → Accepted → Purchased by {DIM_LABELS[convDim]}</p>
+              <p className="text-xs text-muted-foreground">
+                Engaged → Accepted → Purchased by {DIM_LABELS[convDim]}
+              </p>
             </div>
             <DimChips value={convDim} onChange={setConvDim} />
           </CardHeader>
           <CardContent>
             {!topFunnel ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">
+                No data
+              </p>
             ) : (
               <div className="space-y-3">
                 {[
-                  { label: `Engaged · ${topFunnel.key}`, value: topFunnel.engaged, icon: Users, tint: "bg-rose-100 text-rose-600" },
-                  { label: "Offer Accepted", value: topFunnel.accepted, icon: ShoppingBag, tint: "bg-amber-100 text-amber-600" },
-                  { label: "Purchased", value: topFunnel.ordered, icon: CheckCircle2, tint: "bg-emerald-100 text-emerald-600" },
+                  {
+                    label: `Engaged · ${topFunnel.key}`,
+                    value: topFunnel.engaged,
+                    icon: Users,
+                    tint: "bg-rose-100 text-rose-600",
+                  },
+                  {
+                    label: "Offer Accepted",
+                    value: topFunnel.accepted,
+                    icon: ShoppingBag,
+                    tint: "bg-amber-100 text-amber-600",
+                  },
+                  {
+                    label: "Purchased",
+                    value: topFunnel.ordered,
+                    icon: CheckCircle2,
+                    tint: "bg-emerald-100 text-emerald-600",
+                  },
                 ].map((s) => {
                   const max = Math.max(topFunnel.engaged, 1);
                   return (
                     <div key={s.label} className="flex items-center gap-3">
-                      <div className={cn("flex h-9 w-9 items-center justify-center rounded-full", s.tint)}>
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-full",
+                          s.tint,
+                        )}
+                      >
                         <s.icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-foreground">{s.label}</span>
-                          <span className="text-muted-foreground">{s.value.toLocaleString()}</span>
+                          <span className="font-medium text-foreground">
+                            {s.label}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {s.value.toLocaleString()}
+                          </span>
                         </div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-primary" style={{ width: `${(s.value / max) * 100}%` }} />
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${(s.value / max) * 100}%` }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -387,20 +584,33 @@ const Analytics = () => {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
-              <CardTitle className="text-base">Avg Number of Offers Before Order</CardTitle>
-              <p className="text-xs text-muted-foreground">Sorted by {DIM_LABELS[offersDim]}</p>
+              <CardTitle className="text-base">
+                Avg Number of Offers Before Order
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Sorted by {DIM_LABELS[offersDim]}
+              </p>
             </div>
             <DimChips value={offersDim} onChange={setOffersDim} />
           </CardHeader>
           <CardContent>
             {avgOffersTiles.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No data
+              </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {avgOffersTiles.map((t) => (
-                  <div key={t.key} className="rounded-lg border border-border bg-muted/30 p-4 text-center">
-                    <p className="font-heading text-3xl font-bold text-primary">{t.avg}</p>
-                    <p className="mt-1 truncate text-[11px] uppercase tracking-wider text-muted-foreground">{t.key}</p>
+                  <div
+                    key={t.key}
+                    className="rounded-lg border border-border bg-muted/30 p-4 text-center"
+                  >
+                    <p className="font-heading text-3xl font-bold text-primary">
+                      {t.avg}
+                    </p>
+                    <p className="mt-1 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {t.key}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -413,17 +623,30 @@ const Analytics = () => {
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
               <Zap className="h-3 w-3" /> Price Variation
             </p>
-            <CardTitle className="text-base">Bid Delta by {DIM_LABELS[offersDim]}</CardTitle>
+            <CardTitle className="text-base">
+              Bid Delta by {DIM_LABELS[offersDim]}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {priceVarianceTiles.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">No accepted offers yet</p>
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No accepted offers yet
+              </p>
             ) : (
               priceVarianceTiles.map((t) => (
-                <div key={t.key} className="flex items-center justify-between text-sm">
+                <div
+                  key={t.key}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span className="truncate text-foreground">{t.key}</span>
-                  <span className={cn("font-semibold", t.avgPct < 0 ? "text-destructive" : "text-emerald-600")}>
-                    {t.avgPct >= 0 ? "+" : ""}{t.avgPct}%
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      t.avgPct < 0 ? "text-destructive" : "text-emerald-600",
+                    )}
+                  >
+                    {t.avgPct >= 0 ? "+" : ""}
+                    {t.avgPct}%
                   </span>
                 </div>
               ))
@@ -436,7 +659,9 @@ const Analytics = () => {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-base">Marketing Leads</CardTitle>
-            <p className="text-xs text-muted-foreground">{leadsTotal} total leads</p>
+            <p className="text-xs text-muted-foreground">
+              {leadsTotal} total leads
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -454,9 +679,13 @@ const Analytics = () => {
               onClick={() =>
                 downloadCSV(
                   leads.map((l) => ({
-                    name: l.name, phone: l.phone, location: l.location,
-                    orders: l.orderCount, offers: l.offerCount,
-                    status: LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
+                    name: l.name,
+                    phone: l.phone,
+                    location: l.location,
+                    orders: l.orderCount,
+                    offers: l.offerCount,
+                    status:
+                      LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
                   })),
                   "marketing-leads.csv",
                 )
@@ -468,7 +697,9 @@ const Analytics = () => {
         </CardHeader>
         <CardContent className="p-0">
           {leadsLoading ? (
-            <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -484,13 +715,17 @@ const Analytics = () => {
               <TableBody>
                 {leads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       No leads
                     </TableCell>
                   </TableRow>
                 ) : (
                   leads.map((l) => {
-                    const status = LEAD_STATUS_META[l.leadStatus] ?? LEAD_STATUS_META.NEW;
+                    const status =
+                      LEAD_STATUS_META[l.leadStatus] ?? LEAD_STATUS_META.NEW;
                     return (
                       <TableRow key={l.userId}>
                         <TableCell>
@@ -498,15 +733,30 @@ const Analytics = () => {
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold uppercase text-primary">
                               {l.name.slice(0, 2)}
                             </div>
-                            <span className="font-medium text-foreground">{l.name}</span>
+                            <span className="font-medium text-foreground">
+                              {l.name}
+                            </span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{l.phone || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{l.location || "—"}</TableCell>
-                        <TableCell className="text-right text-sm">{l.orderCount}</TableCell>
-                        <TableCell className="text-right text-sm">{l.offerCount}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {l.phone || "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {l.location || "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {l.orderCount}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {l.offerCount}
+                        </TableCell>
                         <TableCell>
-                          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", status.tone)}>
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                              status.tone,
+                            )}
+                          >
                             {status.label}
                           </span>
                         </TableCell>

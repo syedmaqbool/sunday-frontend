@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
-import { useBoostPackages, useUpdateBoostPackages, useAdminBoosts } from "@/queries/useAdminBoost";
-import type { BoostPackage, BoostPlacement, ListingBoost } from "@/services/adminBoost.service";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getAdminBoostPackagesOptions,
+  getAdminBoostsOptions,
+  useUpdateBoostPackages,
+} from "@/queries/useAdminBoost";
+import type { BoostPackage, BoostPlacement, ListingBoost } from "@/types/boost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,15 +38,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Trash2, Pencil, TrendingUp, Sparkles, Search } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  Pencil,
+  TrendingUp,
+  Sparkles,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { nanoid } from "nanoid"; // or use crypto.randomUUID()
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const placementMeta: Record<BoostPlacement, { label: string; icon: any; color: string }> = {
-  TRENDING: { label: "Trending Now", icon: TrendingUp, color: "text-orange-500" },
+const placementMeta: Record<
+  BoostPlacement,
+  { label: string; icon: any; color: string }
+> = {
+  TRENDING: {
+    label: "Trending Now",
+    icon: TrendingUp,
+    color: "text-orange-500",
+  },
   FOR_YOU: { label: "Picked for You", icon: Sparkles, color: "text-primary" },
   SEARCH: { label: "Search & Browse", icon: Search, color: "text-blue-500" },
 };
@@ -86,12 +106,23 @@ const PackageDialog = ({
   const [form, setForm] = useState<PackageFormState>(initial ?? emptyPackage);
 
   const handleSave = () => {
-    if (!form.name.trim()) { toast.error("Name is required"); return; }
-    if (form.durationDays < 1) { toast.error("Duration must be at least 1 day"); return; }
-    if (form.price < 0) { toast.error("Price cannot be negative"); return; }
+    if (!form.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (form.durationDays < 1) {
+      toast.error("Duration must be at least 1 day");
+      return;
+    }
+    if (form.price < 0) {
+      toast.error("Price cannot be negative");
+      return;
+    }
 
     const pkg: BoostPackage = {
-      id: form.id ?? (typeof crypto !== "undefined" ? crypto.randomUUID() : nanoid()),
+      id:
+        form.id ??
+        (typeof crypto !== "undefined" ? crypto.randomUUID() : nanoid()),
       name: form.name.trim(),
       placement: form.placement,
       durationDays: form.durationDays,
@@ -115,8 +146,12 @@ const PackageDialog = ({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{form.id ? "Edit boost package" : "New boost package"}</DialogTitle>
-          <DialogDescription>Quick à la carte boost shown to sellers.</DialogDescription>
+          <DialogTitle>
+            {form.id ? "Edit boost package" : "New boost package"}
+          </DialogTitle>
+          <DialogDescription>
+            Quick à la carte boost shown to sellers.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -132,7 +167,9 @@ const PackageDialog = ({
               <Label>Placement</Label>
               <Select
                 value={form.placement}
-                onValueChange={(v) => setForm({ ...form, placement: v as BoostPlacement })}
+                onValueChange={(v) =>
+                  setForm({ ...form, placement: v as BoostPlacement })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -162,7 +199,10 @@ const PackageDialog = ({
                 min={1}
                 value={form.durationDays}
                 onChange={(e) =>
-                  setForm({ ...form, durationDays: Math.max(1, Number(e.target.value) || 1) })
+                  setForm({
+                    ...form,
+                    durationDays: Math.max(1, Number(e.target.value) || 1),
+                  })
                 }
               />
             </div>
@@ -174,7 +214,10 @@ const PackageDialog = ({
                 step={1}
                 value={form.price}
                 onChange={(e) =>
-                  setForm({ ...form, price: Math.max(0, Number(e.target.value) || 0) })
+                  setForm({
+                    ...form,
+                    price: Math.max(0, Number(e.target.value) || 0),
+                  })
                 }
               />
             </div>
@@ -184,7 +227,9 @@ const PackageDialog = ({
             <Textarea
               rows={3}
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
             />
           </div>
         </div>
@@ -205,10 +250,14 @@ const PackageDialog = ({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const BoostManagement = () => {
-  const { data: packages = [], isLoading: pkgLoading } = useBoostPackages();
+  const { data: packages = [], isLoading: pkgLoading } = useQuery(
+    getAdminBoostPackagesOptions(),
+  );
   const updatePackages = useUpdateBoostPackages();
 
-  const { data: boostsResponse, isLoading: boostLoading } = useAdminBoosts({ size: 100 });
+  const { data: boostsResponse, isLoading: boostLoading } = useQuery(
+    getAdminBoostsOptions({ size: 100 }),
+  );
   const boosts: ListingBoost[] = boostsResponse?.data ?? [];
 
   const handleSavePackages = (updated: BoostPackage[]) => {
@@ -226,7 +275,8 @@ const BoostManagement = () => {
 
   const now = new Date();
   const activeCount = boosts.filter(
-    (b) => new Date(b.endsAt) > now && ["PAID", "MOCK"].includes(b.paymentStatus),
+    (b) =>
+      new Date(b.endsAt) > now && ["PAID", "MOCK"].includes(b.paymentStatus),
   ).length;
   const totalRevenue = boosts.reduce((s, b) => s + Number(b.pricePaid ?? 0), 0);
 
@@ -234,7 +284,9 @@ const BoostManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-heading text-2xl font-bold text-foreground">Paid Boosting</h2>
+          <h2 className="font-heading text-2xl font-bold text-foreground">
+            Paid Boosting
+          </h2>
           <p className="text-sm text-muted-foreground">
             Manage à la carte packages and monitor active campaigns.
           </p>
@@ -254,16 +306,24 @@ const BoostManagement = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Active campaigns</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Active campaigns
+          </p>
           <p className="font-heading text-2xl font-bold">{activeCount}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Total campaigns</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Total campaigns
+          </p>
           <p className="font-heading text-2xl font-bold">{boosts.length}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime revenue</p>
-          <p className="font-heading text-2xl font-bold">Rs {totalRevenue.toFixed(2)}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Lifetime revenue
+          </p>
+          <p className="font-heading text-2xl font-bold">
+            Rs {totalRevenue.toFixed(2)}
+          </p>
         </Card>
       </div>
 
@@ -293,7 +353,9 @@ const BoostManagement = () => {
                     <TableHead>Duration</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[120px] text-right">Actions</TableHead>
+                    <TableHead className="w-[120px] text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -310,7 +372,8 @@ const BoostManagement = () => {
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 text-sm">
-                            <Icon className={`h-3.5 w-3.5 ${M.color}`} /> {M.label}
+                            <Icon className={`h-3.5 w-3.5 ${M.color}`} />{" "}
+                            {M.label}
                           </span>
                         </TableCell>
                         <TableCell>{p.durationDays} days</TableCell>
@@ -406,21 +469,24 @@ const BoostManagement = () => {
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 text-sm">
-                            <Icon className={`h-3.5 w-3.5 ${M.color}`} /> {M.label}
+                            <Icon className={`h-3.5 w-3.5 ${M.color}`} />{" "}
+                            {M.label}
                           </span>
                         </TableCell>
                         <TableCell className="text-xs">
                           {format(new Date(b.startsAt), "MMM d")} →{" "}
                           {format(new Date(b.endsAt), "MMM d, yyyy")}
                         </TableCell>
-                        <TableCell>Rs {Number(b.pricePaid).toFixed(2)}</TableCell>
+                        <TableCell>
+                          Rs {Number(b.pricePaid).toFixed(2)}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={isActive ? "default" : "secondary"}>
                             {isActive
                               ? "Active"
                               : b.paymentStatus === "CANCELLED"
-                              ? "Cancelled"
-                              : "Ended"}
+                                ? "Cancelled"
+                                : "Ended"}
                           </Badge>
                         </TableCell>
                       </TableRow>

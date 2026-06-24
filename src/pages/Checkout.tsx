@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, ShoppingBag, ArrowLeft, CheckCircle2, Tag, X, Loader2 } from "lucide-react";
+import {
+  Trash2,
+  ShoppingBag,
+  ArrowLeft,
+  CheckCircle2,
+  Tag,
+  X,
+  Loader2,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +24,7 @@ import { useActiveTax } from "@/hooks/useActiveTax";
 import { useCommissionTiers } from "@/hooks/useCommissionTiers";
 import { calcCommission } from "@/lib/commission";
 import { trackEvent } from "@/lib/analytics";
-// Mock switcher config import 
+// Mock switcher config  import
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface AppliedDiscount {
@@ -40,10 +48,16 @@ const Checkout = () => {
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [appliedDiscount, setAppliedDiscount] =
+    useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [shipping, setShipping] = useState({
-    firstName: "", lastName: "", address: "", city: "", postal: "", phone: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    city: "",
+    postal: "",
+    phone: "",
   });
 
   useEffect(() => {
@@ -63,18 +77,30 @@ const Checkout = () => {
   }, []);
 
   const itemCommissions = items.map(({ listing, quantity }) => {
-    const c = calcCommission(commissionTiers, (listing as any).category, listing.price, quantity);
+    const c = calcCommission(
+      commissionTiers,
+      (listing as any).category,
+      listing.price,
+      quantity,
+    );
     return { listingId: listing.id, ...c };
   });
   const commissionTotal = itemCommissions.reduce((s, i) => s + i.amount, 0);
 
   // Compute the subtotal eligible for the applied discount.
-  const eligibleSubtotalFor = (cartItems: typeof items, d: AppliedDiscount | null) => {
+  const eligibleSubtotalFor = (
+    cartItems: typeof items,
+    d: AppliedDiscount | null,
+  ) => {
     if (!d) return 0;
     return cartItems.reduce((sum, { listing, quantity }) => {
       if (d.source === "seller") {
         if (d.seller_id && listing.seller_id !== d.seller_id) return sum;
-        if (d.applicable_listing_ids && !d.applicable_listing_ids.includes(listing.id)) return sum;
+        if (
+          d.applicable_listing_ids &&
+          !d.applicable_listing_ids.includes(listing.id)
+        )
+          return sum;
       }
       return sum + listing.price * quantity;
     }, 0);
@@ -83,7 +109,7 @@ const Checkout = () => {
   const eligibleSubtotal = eligibleSubtotalFor(items, appliedDiscount);
   const discountAmount = appliedDiscount
     ? appliedDiscount.discount_type === "percentage"
-      ? Math.round(eligibleSubtotal * appliedDiscount.discount_value / 100)
+      ? Math.round((eligibleSubtotal * appliedDiscount.discount_value) / 100)
       : Math.min(appliedDiscount.discount_value, eligibleSubtotal)
     : 0;
 
@@ -111,7 +137,10 @@ const Checkout = () => {
         });
         setDiscountCode("");
         setApplyingCode(false);
-        toast({ title: "Mock Discount applied!", description: `Promo code "${code}" (10% off) applied successfully.` });
+        toast({
+          title: "Mock Discount applied!",
+          description: `Promo code "${code}" (10% off) applied successfully.`,
+        });
       }, 600);
       return;
     }
@@ -130,7 +159,10 @@ const Checkout = () => {
           toast({ title: "Code expired", variant: "destructive" });
           return;
         }
-        if (platform.max_uses !== null && platform.current_uses >= platform.max_uses) {
+        if (
+          platform.max_uses !== null &&
+          platform.current_uses >= platform.max_uses
+        ) {
           toast({ title: "Code exhausted", variant: "destructive" });
           return;
         }
@@ -151,7 +183,10 @@ const Checkout = () => {
           source: "platform",
         });
         setDiscountCode("");
-        toast({ title: "Discount applied!", description: `Code "${platform.code}" has been applied.` });
+        toast({
+          title: "Discount applied!",
+          description: `Code "${platform.code}" has been applied.`,
+        });
         return;
       }
 
@@ -164,20 +199,31 @@ const Checkout = () => {
         .maybeSingle();
 
       if (!sc) {
-        toast({ title: "Invalid code", description: "This code is not valid.", variant: "destructive" });
+        toast({
+          title: "Invalid code",
+          description: "This code is not valid.",
+          variant: "destructive",
+        });
         return;
       }
       const sCoupon: any = sc;
       const now = new Date();
       if (sCoupon.starts_at && new Date(sCoupon.starts_at) > now) {
-        toast({ title: "Not yet active", description: "This coupon isn't active yet.", variant: "destructive" });
+        toast({
+          title: "Not yet active",
+          description: "This coupon isn't active yet.",
+          variant: "destructive",
+        });
         return;
       }
       if (sCoupon.expires_at && new Date(sCoupon.expires_at) < now) {
         toast({ title: "Code expired", variant: "destructive" });
         return;
       }
-      if (sCoupon.max_uses !== null && sCoupon.current_uses >= sCoupon.max_uses) {
+      if (
+        sCoupon.max_uses !== null &&
+        sCoupon.current_uses >= sCoupon.max_uses
+      ) {
         toast({ title: "Code exhausted", variant: "destructive" });
         return;
       }
@@ -190,7 +236,11 @@ const Checkout = () => {
           .eq("coupon_id", sCoupon.id)
           .eq("user_id", user.id);
         if ((count ?? 0) >= sCoupon.per_user_limit) {
-          toast({ title: "Limit reached", description: "You've already used this coupon.", variant: "destructive" });
+          toast({
+            title: "Limit reached",
+            description: "You've already used this coupon.",
+            variant: "destructive",
+          });
           return;
         }
       }
@@ -208,7 +258,8 @@ const Checkout = () => {
       // Confirm the cart contains qualifying items
       const cartHasMatch = items.some((i) => {
         if (i.listing.seller_id !== sCoupon.seller_id) return false;
-        if (applicableIds && !applicableIds.includes(i.listing.id)) return false;
+        if (applicableIds && !applicableIds.includes(i.listing.id))
+          return false;
         return true;
       });
       if (!cartHasMatch) {
@@ -243,9 +294,16 @@ const Checkout = () => {
 
       setAppliedDiscount(candidate);
       setDiscountCode("");
-      toast({ title: "Coupon applied!", description: `"${sCoupon.code}" applied to eligible items.` });
+      toast({
+        title: "Coupon applied!",
+        description: `"${sCoupon.code}" applied to eligible items.`,
+      });
     } catch {
-      toast({ title: "Error", description: "Could not validate code.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Could not validate code.",
+        variant: "destructive",
+      });
     } finally {
       setApplyingCode(false);
     }
@@ -263,10 +321,21 @@ const Checkout = () => {
     }
 
     // Basic shipping validation
-    const required = ["firstName", "lastName", "address", "city", "postal", "phone"] as const;
+    const required = [
+      "firstName",
+      "lastName",
+      "address",
+      "city",
+      "postal",
+      "phone",
+    ] as const;
     for (const k of required) {
       if (!shipping[k].trim()) {
-        toast({ title: "Missing details", description: "Please fill in all shipping information.", variant: "destructive" });
+        toast({
+          title: "Missing details",
+          description: "Please fill in all shipping information.",
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -279,7 +348,10 @@ const Checkout = () => {
         setPlaced(true);
         clearCart();
         setPlacing(false);
-        toast({ title: "Mock Order placed!", description: "Your demo order has been confirmed successfully." });
+        toast({
+          title: "Mock Order placed!",
+          description: "Your demo order has been confirmed successfully.",
+        });
       }, 1500);
       return;
     }
@@ -289,17 +361,24 @@ const Checkout = () => {
       const listingIds = items.map((i) => i.listing.id);
       const { data: freshListings, error: freshErr } = await supabase
         .from("listings")
-        .select("id, title, status, reserved_for, reserved_until, reserved_offer_id, price")
+        .select(
+          "id, title, status, reserved_for, reserved_until, reserved_offer_id, price",
+        )
         .in("id", listingIds);
       if (freshErr) {
-        toast({ title: "Validation failed", description: freshErr.message, variant: "destructive" });
+        toast({
+          title: "Validation failed",
+          description: freshErr.message,
+          variant: "destructive",
+        });
         setPlacing(false);
         return;
       }
       const blocked = (freshListings ?? []).find((l: any) => {
         if (l.status === "sold") return true;
         if (l.status === "reserved") {
-          const stillValid = l.reserved_until && new Date(l.reserved_until) > new Date();
+          const stillValid =
+            l.reserved_until && new Date(l.reserved_until) > new Date();
           return stillValid && l.reserved_for !== user?.id;
         }
         return false;
@@ -316,7 +395,12 @@ const Checkout = () => {
 
       // Authoritative price: when listing is reserved for this buyer, use the accepted offer amount.
       const reservedOfferIds = (freshListings ?? [])
-        .filter((l: any) => l.status === "reserved" && l.reserved_for === user?.id && l.reserved_offer_id)
+        .filter(
+          (l: any) =>
+            l.status === "reserved" &&
+            l.reserved_for === user?.id &&
+            l.reserved_offer_id,
+        )
         .map((l: any) => l.reserved_offer_id as string);
       const offerAmountByListing = new Map<string, number>();
       if (reservedOfferIds.length) {
@@ -334,8 +418,14 @@ const Checkout = () => {
       // Snapshot items for the order record (apply authoritative reserved price)
       const itemsSnapshot = items.map(({ listing, quantity }) => {
         const overridePrice = offerAmountByListing.get(listing.id);
-        const price = typeof overridePrice === "number" ? overridePrice : listing.price;
-        const c = calcCommission(commissionTiers, (listing as any).category, price, quantity);
+        const price =
+          typeof overridePrice === "number" ? overridePrice : listing.price;
+        const c = calcCommission(
+          commissionTiers,
+          (listing as any).category,
+          price,
+          quantity,
+        );
         return {
           listing_id: listing.id,
           seller_id: listing.seller_id,
@@ -350,12 +440,17 @@ const Checkout = () => {
           commission_amount: c.amount,
           commission_tier_id: c.tier?.id ?? null,
           commission_tier_name: c.tier?.name ?? null,
-          ...(typeof overridePrice === "number" ? { reserved_offer_price: true } : {}),
+          ...(typeof overridePrice === "number"
+            ? { reserved_offer_price: true }
+            : {}),
         };
       });
 
       // Recompute monetary totals from the authoritative snapshot
-      const authoritativeSubtotal = itemsSnapshot.reduce((s, i) => s + i.price * i.quantity, 0);
+      const authoritativeSubtotal = itemsSnapshot.reduce(
+        (s, i) => s + i.price * i.quantity,
+        0,
+      );
       const authoritativeCommission = itemsSnapshot.reduce(
         (s, i) => s + Number(i.commission_amount || 0),
         0,
@@ -363,20 +458,32 @@ const Checkout = () => {
       const authoritativeEligible = appliedDiscount
         ? itemsSnapshot.reduce((sum, i) => {
             if (appliedDiscount.source === "seller") {
-              if (appliedDiscount.seller_id && i.seller_id !== appliedDiscount.seller_id) return sum;
-              if (appliedDiscount.applicable_listing_ids && !appliedDiscount.applicable_listing_ids.includes(i.listing_id)) return sum;
+              if (
+                appliedDiscount.seller_id &&
+                i.seller_id !== appliedDiscount.seller_id
+              )
+                return sum;
+              if (
+                appliedDiscount.applicable_listing_ids &&
+                !appliedDiscount.applicable_listing_ids.includes(i.listing_id)
+              )
+                return sum;
             }
             return sum + i.price * i.quantity;
           }, 0)
         : 0;
       const authoritativeDiscount = appliedDiscount
         ? appliedDiscount.discount_type === "percentage"
-          ? Math.round(authoritativeEligible * appliedDiscount.discount_value / 100)
+          ? Math.round(
+              (authoritativeEligible * appliedDiscount.discount_value) / 100,
+            )
           : Math.min(appliedDiscount.discount_value, authoritativeEligible)
         : 0;
-      const authoritativeTaxable = authoritativeSubtotal - authoritativeDiscount;
+      const authoritativeTaxable =
+        authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
-      const authoritativeTotal = authoritativeTaxable + authoritativeTax + authoritativeCommission;
+      const authoritativeTotal =
+        authoritativeTaxable + authoritativeTax + authoritativeCommission;
       const { data: orderRow, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -401,7 +508,11 @@ const Checkout = () => {
         .single();
 
       if (orderError || !orderRow) {
-        toast({ title: "Order failed", description: orderError?.message ?? "Unknown error", variant: "destructive" });
+        toast({
+          title: "Order failed",
+          description: orderError?.message ?? "Unknown error",
+          variant: "destructive",
+        });
         setPlacing(false);
         return;
       }
@@ -459,7 +570,9 @@ const Checkout = () => {
               },
             },
           })
-          .catch((err) => console.error("Failed to enqueue invoice email", err));
+          .catch((err) =>
+            console.error("Failed to enqueue invoice email", err),
+          );
       }
 
       // Mark purchased listings as sold so they disappear from browse
@@ -510,7 +623,10 @@ const Checkout = () => {
       queryClient.invalidateQueries({ queryKey: ["featured-listings"] });
       queryClient.invalidateQueries({ queryKey: ["trending-listings"] });
       queryClient.invalidateQueries({ queryKey: ["listing"] });
-      toast({ title: "Order placed!", description: "Your order has been confirmed." });
+      toast({
+        title: "Order placed!",
+        description: "Your order has been confirmed.",
+      });
     } finally {
       setPlacing(false);
     }
@@ -522,10 +638,17 @@ const Checkout = () => {
         <Navbar />
         <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
           <CheckCircle2 className="h-16 w-16 text-primary mb-4" />
-          <h1 className="font-heading text-3xl font-bold text-foreground">Order Confirmed</h1>
-          <p className="mt-2 text-muted-foreground">Thank you for your purchase. You'll receive a confirmation email shortly.</p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">
+            Order Confirmed
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Thank you for your purchase. You'll receive a confirmation email
+            shortly.
+          </p>
           <div className="mt-6 flex gap-3">
-            <Button variant="outline" onClick={() => navigate("/listings")}>Continue Shopping</Button>
+            <Button variant="outline" onClick={() => navigate("/listings")}>
+              Continue Shopping
+            </Button>
             <Button onClick={() => navigate("/profile")}>View My Orders</Button>
           </div>
         </main>
@@ -540,8 +663,12 @@ const Checkout = () => {
         <Navbar />
         <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
           <ShoppingBag className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <h1 className="font-heading text-2xl font-bold text-foreground">Your cart is empty</h1>
-          <Link to="/listings" className="mt-4 text-primary hover:underline">Browse listings</Link>
+          <h1 className="font-heading text-2xl font-bold text-foreground">
+            Your cart is empty
+          </h1>
+          <Link to="/listings" className="mt-4 text-primary hover:underline">
+            Browse listings
+          </Link>
         </main>
         <Footer />
       </div>
@@ -552,41 +679,90 @@ const Checkout = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container flex-1 px-4 py-6 sm:py-8">
-        <Link to="/listings" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground sm:mb-6">
+        <Link
+          to="/listings"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground sm:mb-6"
+        >
           <ArrowLeft className="h-4 w-4" /> Continue shopping
         </Link>
 
-        <h1 className="font-heading text-2xl font-bold text-foreground mb-6 sm:text-3xl sm:mb-8">Checkout</h1>
+        <h1 className="font-heading text-2xl font-bold text-foreground mb-6 sm:text-3xl sm:mb-8">
+          Checkout
+        </h1>
 
         <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
           {/* Shipping info */}
           <div className="lg:col-span-3 space-y-6">
             <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Shipping Information</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">
+                Shipping Information
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" placeholder="Jane" value={shipping.firstName} onChange={(e) => setShipping({ ...shipping, firstName: e.target.value })} />
+                  <Input
+                    id="firstName"
+                    placeholder="Jane"
+                    value={shipping.firstName}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, firstName: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" placeholder="Doe" value={shipping.lastName} onChange={(e) => setShipping({ ...shipping, lastName: e.target.value })} />
+                  <Input
+                    id="lastName"
+                    placeholder="Doe"
+                    value={shipping.lastName}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, lastName: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input id="address" placeholder="123 Main St" value={shipping.address} onChange={(e) => setShipping({ ...shipping, address: e.target.value })} />
+                  <Input
+                    id="address"
+                    placeholder="123 Main St"
+                    value={shipping.address}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, address: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="Cape Town" value={shipping.city} onChange={(e) => setShipping({ ...shipping, city: e.target.value })} />
+                  <Input
+                    id="city"
+                    placeholder="Cape Town"
+                    value={shipping.city}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, city: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal">Postal code</Label>
-                  <Input id="postal" placeholder="8001" value={shipping.postal} onChange={(e) => setShipping({ ...shipping, postal: e.target.value })} />
+                  <Input
+                    id="postal"
+                    placeholder="8001"
+                    value={shipping.postal}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, postal: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="+27 12 345 6789" value={shipping.phone} onChange={(e) => setShipping({ ...shipping, phone: e.target.value })} />
+                  <Input
+                    id="phone"
+                    placeholder="+27 12 345 6789"
+                    value={shipping.phone}
+                    onChange={(e) =>
+                      setShipping({ ...shipping, phone: e.target.value })
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -595,27 +771,50 @@ const Checkout = () => {
           {/* Order summary */}
           <div className="lg:col-span-2">
             <div className="rounded-lg border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-24">
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Order Summary ({totalItems})</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">
+                Order Summary ({totalItems})
+              </h2>
               <div className="space-y-3 mb-4">
                 {items.map(({ listing, quantity }) => {
-                  const c = itemCommissions.find((x) => x.listingId === listing.id);
+                  const c = itemCommissions.find(
+                    (x) => x.listingId === listing.id,
+                  );
                   return (
-                    <div key={listing.id} className="flex items-start gap-2 sm:gap-3">
+                    <div
+                      key={listing.id}
+                      className="flex items-start gap-2 sm:gap-3"
+                    >
                       <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
-                        <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                        <img
+                          src={listing.images[0]}
+                          alt={listing.title}
+                          className="h-full w-full object-cover"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{listing.title}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {listing.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Qty: {quantity}
+                        </p>
                         {c && c.amount > 0 && (
                           <p className="text-[11px] text-muted-foreground">
-                            Platform fee ({c.rate}%): Rs {c.amount.toLocaleString()}
+                            Platform fee ({c.rate}%): Rs{" "}
+                            {c.amount.toLocaleString()}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">Rs {(listing.price * quantity).toLocaleString()}</p>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeItem(listing.id)}>
+                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">
+                          Rs {(listing.price * quantity).toLocaleString()}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeItem(listing.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -631,14 +830,21 @@ const Checkout = () => {
                   <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium text-foreground">{appliedDiscount.code}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {appliedDiscount.code}
+                      </span>
                       <span className="text-xs text-primary">
                         {appliedDiscount.discount_type === "percentage"
                           ? `−${appliedDiscount.discount_value}%`
                           : `−Rs ${appliedDiscount.discount_value.toLocaleString()}`}
                       </span>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={handleRemoveDiscount}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={handleRemoveDiscount}
+                    >
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -647,12 +853,25 @@ const Checkout = () => {
                     <Input
                       placeholder="Discount code"
                       value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => e.key === "Enter" && handleApplyDiscount()}
+                      onChange={(e) =>
+                        setDiscountCode(e.target.value.toUpperCase())
+                      }
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleApplyDiscount()
+                      }
                       className="flex-1 uppercase"
                     />
-                    <Button variant="outline" size="default" onClick={handleApplyDiscount} disabled={applyingCode || !discountCode.trim()}>
-                      {applyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    <Button
+                      variant="outline"
+                      size="default"
+                      onClick={handleApplyDiscount}
+                      disabled={applyingCode || !discountCode.trim()}
+                    >
+                      {applyingCode ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
                     </Button>
                   </div>
                 )}
@@ -661,12 +880,16 @@ const Checkout = () => {
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
-                <span className="font-medium text-foreground">Rs {totalPrice.toLocaleString()}</span>
+                <span className="font-medium text-foreground">
+                  Rs {totalPrice.toLocaleString()}
+                </span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-primary">Discount</span>
-                  <span className="text-sm font-medium text-primary">−Rs {discountAmount.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-primary">
+                    −Rs {discountAmount.toLocaleString()}
+                  </span>
                 </div>
               )}
               <div className="flex items-center justify-between pb-3">
@@ -675,23 +898,44 @@ const Checkout = () => {
               </div>
               {taxAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-muted-foreground">{activeTax?.name} ({taxRate}%)</span>
-                  <span className="text-sm text-foreground">Rs {taxAmount.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {activeTax?.name} ({taxRate}%)
+                  </span>
+                  <span className="text-sm text-foreground">
+                    Rs {taxAmount.toLocaleString()}
+                  </span>
                 </div>
               )}
               {commissionTotal > 0 && (
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-muted-foreground">Platform fee</span>
-                  <span className="text-sm text-foreground">Rs {commissionTotal.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Platform fee
+                  </span>
+                  <span className="text-sm text-foreground">
+                    Rs {commissionTotal.toLocaleString()}
+                  </span>
                 </div>
               )}
               <Separator />
               <div className="flex items-center justify-between py-4">
-                <span className="font-heading text-base font-semibold text-foreground">Total</span>
-                <span className="font-heading text-xl font-bold text-foreground">Rs {finalPrice.toLocaleString()}</span>
+                <span className="font-heading text-base font-semibold text-foreground">
+                  Total
+                </span>
+                <span className="font-heading text-xl font-bold text-foreground">
+                  Rs {finalPrice.toLocaleString()}
+                </span>
               </div>
-              <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={placing}>
-                {placing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Place Order"}
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handlePlaceOrder}
+                disabled={placing}
+              >
+                {placing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Place Order"
+                )}
               </Button>
             </div>
           </div>

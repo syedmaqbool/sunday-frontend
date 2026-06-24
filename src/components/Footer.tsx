@@ -13,30 +13,82 @@ const Footer = () => (
           </p>
         </div>
         <div>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Shop</h4>
+          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
+            Shop
+          </h4>
           <ul className="space-y-2 text-sm opacity-80">
-            <li><Link to="/listings?category=women" className="hover:opacity-100">Women</Link></li>
-            <li><Link to="/listings?category=men" className="hover:opacity-100">Men</Link></li>
-            <li><Link to="/listings?category=shoes" className="hover:opacity-100">Shoes</Link></li>
-            <li><Link to="/listings?category=bags" className="hover:opacity-100">Bags</Link></li>
+            <li>
+              <Link to="/listings?category=women" className="hover:opacity-100">
+                Women
+              </Link>
+            </li>
+            <li>
+              <Link to="/listings?category=men" className="hover:opacity-100">
+                Men
+              </Link>
+            </li>
+            <li>
+              <Link to="/listings?category=shoes" className="hover:opacity-100">
+                Shoes
+              </Link>
+            </li>
+            <li>
+              <Link to="/listings?category=bags" className="hover:opacity-100">
+                Bags
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Sell</h4>
+          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
+            Sell
+          </h4>
           <ul className="space-y-2 text-sm opacity-80">
-            <li><Link to="/create-listing" className="hover:opacity-100">List an Item</Link></li>
-            <li><Link to="/auth" className="hover:opacity-100">Seller Dashboard</Link></li>
+            <li>
+              <Link to="/create-listing" className="hover:opacity-100">
+                List an Item
+              </Link>
+            </li>
+            <li>
+              <Link to="/auth" className="hover:opacity-100">
+                Seller Dashboard
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Help</h4>
+          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
+            Help
+          </h4>
           <ul className="space-y-2 text-sm opacity-80">
-            <li><Link to="/help" className="hover:opacity-100">Help Center</Link></li>
-            <li><Link to="/help" className="hover:opacity-100">FAQ</Link></li>
-            <li><a href="mailto:support@sunday.app" className="hover:opacity-100">Contact</a></li>
-            <li><Link to="/terms" className="hover:opacity-100">Terms</Link></li>
-            <li><Link to="/returns" className="hover:opacity-100">Returns</Link></li>
-            <li><span className="cursor-pointer hover:opacity-100">Privacy</span></li>
+            <li>
+              <Link to="/help" className="hover:opacity-100">
+                Help Center
+              </Link>
+            </li>
+            <li>
+              <Link to="/help" className="hover:opacity-100">
+                FAQ
+              </Link>
+            </li>
+            <li>
+              <a href="mailto:support@sunday.app" className="hover:opacity-100">
+                Contact
+              </a>
+            </li>
+            <li>
+              <Link to="/terms" className="hover:opacity-100">
+                Terms
+              </Link>
+            </li>
+            <li>
+              <Link to="/returns" className="hover:opacity-100">
+                Returns
+              </Link>
+            </li>
+            <li>
+              <span className="cursor-pointer hover:opacity-100">Privacy</span>
+            </li>
           </ul>
         </div>
       </div>

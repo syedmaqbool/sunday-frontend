@@ -1,47 +1,27 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  AdminReport,
+  ReportStatus,
+  ResolveReportPayload,
+} from "@/types/admin/report";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export type ReportStatus = "OPEN" | "DISMISSED" | "RESOLVED";
-
-export interface AdminReport {
-  id: string;
-  reporterId: string;
-  reportedUserId: string | null;
-  listingId: string | null;
-  conversationId: string | null;
-  messageId: string | null;
-  reason: string;
-  details: string | null;
-  status: ReportStatus;
-  adminNotes: string | null;
-  resolvedBy: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  reporterFullName: string;
-  reportedUserFullName: string | null;
-  listingTitle: string | null;
-  messageContent: string | null;
-  resolverFullName: string | null;
+export function listAdminReports(
+  params: { status?: ReportStatus; page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get("/api/v1/admin/reports", {
+      searchParams: {
+        status: params.status,
+        page: params.page ?? 1,
+        size: params.size ?? 100,
+      },
+    })
+    .json<PaginatedResponse<AdminReport>>();
 }
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
+export function resolveReport(reportId: string, payload: ResolveReportPayload) {
+  return authInstance
+    .patch(`/api/v1/admin/reports/${reportId}/resolve`, { json: payload })
+    .json<Response<AdminReport>>();
 }
-
-interface ItemResponse<T> {
-  data: T;
-}
-
-export const reportService = {
-  list: (params: { status?: ReportStatus; page?: number; size?: number } = {}) => {
-    const query = new URLSearchParams();
-    if (params.status) query.set("status", params.status);
-    query.set("page", String(params.page ?? 1));
-    query.set("size", String(params.size ?? 100));
-    return apiClient.get<ListResponse<AdminReport>>(`/api/v1/admin/reports?${query.toString()}`);
-  },
-
-  resolve: (reportId: string, payload: { status: "DISMISSED" | "RESOLVED"; adminNotes?: string }) =>
-    apiClient.patch<ItemResponse<AdminReport>>(`/api/v1/admin/reports/${reportId}/resolve`, payload),
-};

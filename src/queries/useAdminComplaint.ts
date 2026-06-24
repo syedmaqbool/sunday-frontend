@@ -1,22 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  adminComplaintService,
-  type AdminComplaintStatus,
-  type ComplaintStatus,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  listAdminComplaints,
+  updateComplaintStatus,
 } from "@/services/complain.service";
+import type { AdminComplaintStatus, ComplaintStatus } from "@/types/complaint";
 
-const COMPLAINTS_KEY = ["admin-complaints"];
+export const adminComplaintsQueryKey = {
+  all: () => ["admin-complaints"] as const,
+  list: (status?: ComplaintStatus | "all") =>
+    [...adminComplaintsQueryKey.all(), "list", status] as const,
+};
 
-export const useAdminComplaints = (status?: ComplaintStatus | "all") =>
-  useQuery({
-    queryKey: [...COMPLAINTS_KEY, status],
+export const getAdminComplaintsOptions = (status?: ComplaintStatus | "all") =>
+  queryOptions({
+    queryKey: adminComplaintsQueryKey.list(status),
     queryFn: () =>
-      adminComplaintService.list({
+      listAdminComplaints({
         status: status && status !== "all" ? status : undefined,
         size: 100,
       }),
-    // data is now the full ApiListResponse — access data.data in component
   });
+
+export const useAdminComplaints = (status?: ComplaintStatus | "all") =>
+  useQuery(getAdminComplaintsOptions(status));
 
 export const useUpdateComplaintStatus = () => {
   const queryClient = useQueryClient();
@@ -29,9 +40,11 @@ export const useUpdateComplaintStatus = () => {
       complaintId: string;
       status: AdminComplaintStatus;
       adminNotes?: string;
-    }) => adminComplaintService.updateStatus(complaintId, { status, adminNotes }),
+    }) => updateComplaintStatus(complaintId, { status, adminNotes }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: COMPLAINTS_KEY });
+      queryClient.invalidateQueries({
+        queryKey: adminComplaintsQueryKey.all(),
+      });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
     },
   });

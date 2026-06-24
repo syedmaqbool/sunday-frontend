@@ -7,7 +7,10 @@ interface FeedbackHistoryProps {
   compact?: boolean;
 }
 
-const FeedbackHistory = ({ feedbackList, compact = false }: FeedbackHistoryProps) => {
+const FeedbackHistory = ({
+  feedbackList,
+  compact = false,
+}: FeedbackHistoryProps) => {
   if (!feedbackList.length) return null;
 
   if (compact) {
@@ -21,12 +24,16 @@ const FeedbackHistory = ({ feedbackList, compact = false }: FeedbackHistoryProps
             <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-xs font-medium text-destructive">Admin Feedback</p>
+                <p className="text-xs font-medium text-destructive">
+                  Admin Feedback
+                </p>
                 <span className="text-[10px] text-muted-foreground">
                   {format(new Date(fb.created_at), "MMM d, yyyy")}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">{fb.feedback}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {fb.feedback}
+              </p>
             </div>
           </div>
         ))}
@@ -38,7 +45,9 @@ const FeedbackHistory = ({ feedbackList, compact = false }: FeedbackHistoryProps
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        <p className="text-sm font-semibold text-foreground">Feedback History</p>
+        <p className="text-sm font-semibold text-foreground">
+          Feedback History
+        </p>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {feedbackList.length}
         </span>

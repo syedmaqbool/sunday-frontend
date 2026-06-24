@@ -1,32 +1,47 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  discountCodeService,
-  type CreateDiscountCodePayload,
-  type UpdateDiscountCodePayload,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createDiscountCode,
+  deleteDiscountCode,
+  listDiscountCodes,
+  updateDiscountCode,
 } from "@/services/discountCode.service";
+import type {
+  CreateDiscountCodePayload,
+  UpdateDiscountCodePayload,
+} from "@/types/discount-code";
 
-const DISCOUNT_CODES_KEY = ["discount-codes"];
+export const discountCodesQueryKey = {
+  all: () => ["discount-codes"] as const,
+  list: () => [...discountCodesQueryKey.all(), "list"] as const,
+};
 
-export const useDiscountCodes = () =>
-  useQuery({
-    queryKey: DISCOUNT_CODES_KEY,
+export const getDiscountCodesOptions = () =>
+  queryOptions({
+    queryKey: discountCodesQueryKey.list(),
     queryFn: async () => {
-      const res = await discountCodeService.list();
+      const res = await listDiscountCodes();
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
   });
+
+export const useDiscountCodes = () => useQuery(getDiscountCodesOptions());
 
 export const useCreateDiscountCode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: CreateDiscountCodePayload) =>
-      discountCodeService.create(payload),
+      createDiscountCode(payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: DISCOUNT_CODES_KEY,
+        queryKey: discountCodesQueryKey.all(),
       });
     },
   });
@@ -42,15 +57,11 @@ export const useUpdateDiscountCode = () => {
     }: {
       discountCodeId: string;
       payload: UpdateDiscountCodePayload;
-    }) =>
-      discountCodeService.update(
-        discountCodeId,
-        payload
-      ),
+    }) => updateDiscountCode(discountCodeId, payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: DISCOUNT_CODES_KEY,
+        queryKey: discountCodesQueryKey.all(),
       });
     },
   });
@@ -60,12 +71,11 @@ export const useDeleteDiscountCode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (discountCodeId: string) =>
-      discountCodeService.delete(discountCodeId),
+    mutationFn: (discountCodeId: string) => deleteDiscountCode(discountCodeId),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: DISCOUNT_CODES_KEY,
+        queryKey: discountCodesQueryKey.all(),
       });
     },
   });

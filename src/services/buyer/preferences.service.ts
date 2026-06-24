@@ -1,106 +1,38 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  BackendCategory,
+  PreferenceBrand,
+  PutPreferencesPayload,
+  UserPreferences,
+} from "@/types/buyer-preferences";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-// ── TYPES & INTERFACES ───────────────────────────────────────────────────────
-export interface Brand {
-  id: string;
-  name: string;
-  active: boolean;
-  sortOrder: number;
+export function getPreferences() {
+  return authInstance
+    .get("/api/v1/preferences/me")
+    .json<Response<UserPreferences>>();
 }
 
-// Brand Response Type Updated as per your new JSON 👇
-export interface GetBrandsResponse {
-  statusCode: number;
-  message: string;
-  data: Brand[];
-  pagination: {
-    currentPage: number;
-    lastPage: number;
-    nextPage: number | null;
-    perPage: number;
-    prevPage: number | null;
-    total: number;
-  };
-  aggregates: Record<string, string>;
+export function putPreferences(payload: PutPreferencesPayload) {
+  return authInstance
+    .put("/api/v1/preferences/me", { json: payload })
+    .json<Response>();
 }
 
-export interface UserPreferences {
-  id: string;
-  userId: string;
-  brands: string[];
-  budgetMax: number;
-  budgetMin: number;
-  categories: string[];
-  onboardingCompleted: boolean;
-  preferredFit: string;
-  styles: string[];
-  createdAt: string;
-  updatedAt: string;
+export function getCategories() {
+  return authInstance
+    .get("/api/v1/categories")
+    .json<Response<BackendCategory[]>>();
 }
 
-export interface GetPreferencesResponse {
-  statusCode: number;
-  message: string;
-  data: UserPreferences;
+export function getSubcategories() {
+  return authInstance
+    .get("/api/v1/subcategories")
+    .json<PaginatedResponse<BackendCategory>>();
 }
 
-export interface PutPreferencesPayload {
-  brands: string[];
-  budgetMax: number;
-  budgetMin: number;
-  categories: string[];
-  onboardingCompleted: boolean;
-  preferredFit: string;
-  styles: string[];
+export function getBrands() {
+  return authInstance
+    .get("/api/v1/brands")
+    .json<PaginatedResponse<PreferenceBrand>>();
 }
-
-export interface BackendCategory {
-  id: string;
-  label: string;
-  value: string;
-  icon: string;
-  sortOrder: number;
-}
-
-export interface GetSubcategoriesResponse {
-  statusCode: number;
-  message: string;
-  data: BackendCategory[];
-  pagination: {
-    currentPage: number;
-    lastPage: number;
-    nextPage: number | null;
-    perPage: number;
-    prevPage: number | null;
-    total: number;
-  };
-  aggregates: Record<string, string>;
-}
-
-// ── SERVICE LAYER ────────────────────────────────────────────────────────────
-export const preferencesService = {
-  // Get current saved preferences
-  getPreferences: () => {
-    return apiClient.get<GetPreferencesResponse>("/api/v1/preferences/me");
-  },
-
-  // Save / Update preferences
-  putPreferences: (payload: PutPreferencesPayload) => {
-    return apiClient.put("/api/v1/preferences/me", payload);
-  },
-
-  // Get Categories from new backend
-  getCategories: () => {
-    return apiClient.get<{ data: BackendCategory[] }>("/api/v1/categories");
-  },
-
-  // Get Subcategories from new backend
-  getSubcategories: () => {
-    return apiClient.get<GetSubcategoriesResponse>("/api/v1/subcategories");
-  },
-
-  // Get Brands (Mapped to use strict response wrapper) 👇
-  getBrands: () => {
-    return apiClient.get<GetBrandsResponse>("/api/v1/brands");
-  }
-};

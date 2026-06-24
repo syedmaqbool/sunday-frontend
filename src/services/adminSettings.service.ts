@@ -1,104 +1,46 @@
+import { authInstance } from "@/services/ky.instance";
+import type {
+  AdminSettings,
+  EmailTemplateAPI,
+  HelpCategoryAPI,
+  HelpFaqAPI,
+  HelpTutorialAPI,
+} from "@/types/admin/settings";
+import type { BoostPackageAPI } from "@/types/boost";
+import type { Response } from "@/types/response.type";
 
-import { apiClient } from "@/lib/apiClient";
-
-export interface BoostPackageAPI {
-  id: string;
-  name: string;
-  placement: "TRENDING" | "FOR_YOU" | "SEARCH";
-  durationDays: number;
-  price: number;
-  credits: number;
-  description: string;
-  active: boolean;
+export function getAdminSettings() {
+  return authInstance
+    .get("/api/v1/admin/settings")
+    .json<Response<AdminSettings>>();
 }
 
-export interface AdminSettings {
-  boostPackages: BoostPackageAPI[];
-  emailTemplates: EmailTemplateAPI[];
-  flagKeywords: string[];
-  helpCategories: unknown[];
-  helpContent: unknown[];
-  helpFaqs: unknown[];
-  helpTutorials: unknown[];
+export function updateAdminBoostPackages(boostPackages: BoostPackageAPI[]) {
+  return authInstance
+    .patch("/api/v1/admin/settings", { json: { boostPackages } })
+    .json<Response<AdminSettings>>();
 }
 
-interface ItemResponse<T> {
-  data: T;
+export function updateHelpCategories(helpCategories: HelpCategoryAPI[]) {
+  return authInstance
+    .patch("/api/v1/admin/settings", { json: { helpCategories } })
+    .json<Response<AdminSettings>>();
 }
 
-export interface HelpCategoryAPI {
-  active: boolean;
-  key: string;
-  label: string;
-  sortOrder: number;
+export function updateHelpFaqs(helpFaqs: HelpFaqAPI[]) {
+  return authInstance
+    .patch("/api/v1/admin/settings", { json: { helpFaqs } })
+    .json<Response<AdminSettings>>();
 }
 
-export interface HelpFaqAPI {
-  id: string;
-  answer: string;
-  categoryKey: string;
-  published: boolean;
-  question: string;
-  sortOrder: number;
+export function updateHelpTutorials(helpTutorials: HelpTutorialAPI[]) {
+  return authInstance
+    .patch("/api/v1/admin/settings", { json: { helpTutorials } })
+    .json<Response<AdminSettings>>();
 }
 
-export interface HelpTutorialAPI {
-  id: string;
-  body: string;
-  published: boolean;
-  slug: string;
-  sortOrder: number;
-  title: string;
+export function updateEmailTemplates(emailTemplates: EmailTemplateAPI[]) {
+  return authInstance
+    .patch("/api/v1/admin/settings", { json: { emailTemplates } })
+    .json<Response<AdminSettings>>();
 }
-
-export interface EmailTemplateAPI {
-  id:      string;
-  body:    string;
-  key:     string;
-  subject: string;
-}
-
-export const adminSettingsService = {
-  // ... existing get(), updateBoostPackages() yahan rahenge ...
-get: () =>
-    apiClient.get<ItemResponse<AdminSettings>>("/api/v1/admin/settings"),
-
-  // Sirf boostPackages key update karta hai — baqi settings untouched rehte hain
-  // (repository partial-update support karta hai per top-level key)
-  updateBoostPackages: (boostPackages: BoostPackageAPI[]) =>
-    apiClient.patch<ItemResponse<AdminSettings>>(
-      "/api/v1/admin/settings",
-      { boostPackages },
-    ),
-
-
-
-  updateHelpCategories: (helpCategories: HelpCategoryAPI[]) =>
-    apiClient.patch<ItemResponse<AdminSettings>>(
-      "/api/v1/admin/settings",
-      { helpCategories },
-    ),
-
-  updateHelpFaqs: (helpFaqs: HelpFaqAPI[]) =>
-    apiClient.patch<ItemResponse<AdminSettings>>(
-      "/api/v1/admin/settings",
-      { helpFaqs },
-    ),
-
-  updateHelpTutorials: (helpTutorials: HelpTutorialAPI[]) =>
-    apiClient.patch<ItemResponse<AdminSettings>>(
-      "/api/v1/admin/settings",
-      { helpTutorials },
-    ),
-
-    updateEmailTemplates: (emailTemplates: EmailTemplateAPI[]) =>
-  apiClient.patch<ItemResponse<AdminSettings>>(
-    "/api/v1/admin/settings",
-    { emailTemplates },
-  ),
-
-};
-
-
-
-

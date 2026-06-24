@@ -1,31 +1,42 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  brandService,
-  type CreateBrandPayload,
-  type UpdateBrandPayload,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  createBrand,
+  deleteBrand,
+  listBrands,
+  updateBrand,
 } from "@/services/brand.service";
+import type { CreateBrandPayload, UpdateBrandPayload } from "@/types/brand";
 
-const BRANDS_KEY = ["brands"];
+export const brandsQueryKey = {
+  all: () => ["brands"] as const,
+  list: () => [...brandsQueryKey.all(), "list"] as const,
+};
 
-export const useBrands = () =>
-  useQuery({
-    queryKey: BRANDS_KEY,
+export const getBrandsQueryOptions = () =>
+  queryOptions({
+    queryKey: brandsQueryKey.list(),
     queryFn: async () => {
-      const res = await brandService.list();
+      const res = await listBrands();
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
   });
 
+export const useBrands = () => useQuery(getBrandsQueryOptions());
+
 export const useCreateBrand = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateBrandPayload) =>
-      brandService.create(payload),
+    mutationFn: (payload: CreateBrandPayload) => createBrand(payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BRANDS_KEY });
+      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 };
@@ -40,10 +51,10 @@ export const useUpdateBrand = () => {
     }: {
       brandId: string;
       payload: UpdateBrandPayload;
-    }) => brandService.update(brandId, payload),
+    }) => updateBrand(brandId, payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BRANDS_KEY });
+      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 };
@@ -52,13 +63,10 @@ export const useDeleteBrand = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (brandId: string) =>
-      brandService.delete(brandId),
+    mutationFn: (brandId: string) => deleteBrand(brandId),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BRANDS_KEY });
+      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 };
-
-

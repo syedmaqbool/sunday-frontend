@@ -6,18 +6,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CONDITIONS, SIZES, SHOE_SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
 import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import { Camera, Upload, Loader2, X, Video as VideoIcon, Info, Star, Volume2, VolumeX } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Camera,
+  Upload,
+  Loader2,
+  X,
+  Video as VideoIcon,
+  Info,
+  Star,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import BankDetailsModal from "@/components/BankDetailsModal";
 import { trackEvent } from "@/lib/analytics";
-// Mock configuration configuration switcher import 
+// Mock configuration configuration switcher  import
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const MAX_PHOTOS = 20;
@@ -59,8 +80,15 @@ const CreateListing = () => {
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
   const [form, setForm] = useState({
-    title: "", description: "", price: "", brand: "",
-    parentCategory: "", subCategory: "", condition: "", size: "", weight: "",
+    title: "",
+    description: "",
+    price: "",
+    brand: "",
+    parentCategory: "",
+    subCategory: "",
+    condition: "",
+    size: "",
+    weight: "",
   });
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
@@ -81,7 +109,9 @@ const CreateListing = () => {
           size: "M",
           weight: 0.5,
           seller_id: user?.id || "mock-seller",
-          images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600"],
+          images: [
+            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600",
+          ],
         };
       }
 
@@ -97,19 +127,26 @@ const CreateListing = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA) navigate("/auth", { replace: true });
+    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA)
+      navigate("/auth", { replace: true });
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (existingListing) {
-      if (existingListing.seller_id !== user?.id && !NEXT_PUBLIC_USE_MOCK_DATA) {
+      if (
+        existingListing.seller_id !== user?.id &&
+        !NEXT_PUBLIC_USE_MOCK_DATA
+      ) {
         navigate("/listings", { replace: true });
         return;
       }
       const parts = (existingListing.category || "").split("-");
       const closestWeight = (() => {
         if (!existingListing.weight) return "";
-        const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: parseFloat(o.value) }));
+        const options = WEIGHT_OPTIONS.map((o) => ({
+          ...o,
+          num: parseFloat(o.value),
+        }));
         let closest = options[0];
         let minDist = Math.abs(options[0].num - existingListing.weight);
         for (let i = 1; i < options.length; i++) {
@@ -139,7 +176,10 @@ const CreateListing = () => {
     }
   }, [existingListing, user, navigate]);
 
-  const uploadFiles = async (listingId: string, files: File[]): Promise<string[]> => {
+  const uploadFiles = async (
+    listingId: string,
+    files: File[],
+  ): Promise<string[]> => {
     const urls: string[] = [];
     for (const file of files) {
       const ext = file.name.split(".").pop();
@@ -160,7 +200,10 @@ const CreateListing = () => {
     const files = Array.from(e.target.files || []);
     const total = imageFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
-      toast({ title: `Max ${MAX_PHOTOS} photos allowed`, variant: "destructive" });
+      toast({
+        title: `Max ${MAX_PHOTOS} photos allowed`,
+        variant: "destructive",
+      });
       return;
     }
     setImageFiles((prev) => [...prev, ...files]);
@@ -229,7 +272,11 @@ const CreateListing = () => {
       return;
     }
     if (!hasVideo) {
-      toast({ title: "A video is required", description: "Please upload 1 video of the item.", variant: "destructive" });
+      toast({
+        title: "A video is required",
+        description: "Please upload 1 video of the item.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -241,7 +288,11 @@ const CreateListing = () => {
         .maybeSingle();
 
       if (profileError) {
-        toast({ title: "Error", description: profileError.message, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: profileError.message,
+          variant: "destructive",
+        });
         return;
       }
 
@@ -267,7 +318,9 @@ const CreateListing = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500)); // Real field experience loader duration
       toast({
         title: isEditing ? "Listing updated!" : "Listing created!",
-        description: isEditing ? "Your changes have been saved successfully (Mock Mode)." : "Your item has been submitted and is pending preview verification.",
+        description: isEditing
+          ? "Your changes have been saved successfully (Mock Mode)."
+          : "Your item has been submitted and is pending preview verification.",
       });
       setSubmitting(false);
       navigate("/listings");
@@ -278,10 +331,17 @@ const CreateListing = () => {
 
     try {
       if (isEditing) {
-        const newImageUrls = imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
-        const newVideoUrls = videoFile ? await uploadFiles(id!, [videoFile]) : [];
+        const newImageUrls =
+          imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
+        const newVideoUrls = videoFile
+          ? await uploadFiles(id!, [videoFile])
+          : [];
         const videoUrl = newVideoUrls[0] || existingVideo;
-        const allMedia = [...existingImages, ...newImageUrls, ...(videoUrl ? [videoUrl] : [])];
+        const allMedia = [
+          ...existingImages,
+          ...newImageUrls,
+          ...(videoUrl ? [videoUrl] : []),
+        ];
 
         const { error } = await supabase
           .from("listings")
@@ -300,7 +360,10 @@ const CreateListing = () => {
           .eq("seller_id", user.id);
 
         if (error) throw error;
-        toast({ title: "Listing updated!", description: "Your changes have been saved." });
+        toast({
+          title: "Listing updated!",
+          description: "Your changes have been saved.",
+        });
         navigate(`/listing/${id}`);
       } else {
         const { data: newListing, error: insertError } = await supabase
@@ -323,8 +386,13 @@ const CreateListing = () => {
 
         if (insertError) throw insertError;
 
-        const imageUrls = imageFiles.length > 0 ? await uploadFiles(newListing.id, imageFiles) : [];
-        const videoUrls = videoFile ? await uploadFiles(newListing.id, [videoFile]) : [];
+        const imageUrls =
+          imageFiles.length > 0
+            ? await uploadFiles(newListing.id, imageFiles)
+            : [];
+        const videoUrls = videoFile
+          ? await uploadFiles(newListing.id, [videoFile])
+          : [];
         const allMedia = [...imageUrls, ...videoUrls];
 
         await supabase
@@ -338,23 +406,37 @@ const CreateListing = () => {
           price: parseFloat(form.price),
           brand: form.brand,
         });
-        toast({ title: "Listing created!", description: "Your item is pending review." });
+        toast({
+          title: "Listing created!",
+          description: "Your item is pending review.",
+        });
         navigate("/listings");
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
     setSubmitting(false);
   };
 
-  if ((authLoading || loadingListing) && !NEXT_PUBLIC_USE_MOCK_DATA) return null;
+  if ((authLoading || loadingListing) && !NEXT_PUBLIC_USE_MOCK_DATA)
+    return null;
 
   const allPreviews = [
     ...existingImages.map((url) => ({ type: "existing" as const, url })),
-    ...imageFiles.map((file, i) => ({ type: "new" as const, url: URL.createObjectURL(file), index: i })),
+    ...imageFiles.map((file, i) => ({
+      type: "new" as const,
+      url: URL.createObjectURL(file),
+      index: i,
+    })),
   ];
 
-  const videoPreviewUrl = videoFile ? URL.createObjectURL(videoFile) : existingVideo;
+  const videoPreviewUrl = videoFile
+    ? URL.createObjectURL(videoFile)
+    : existingVideo;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -364,13 +446,21 @@ const CreateListing = () => {
           {isEditing ? "Edit Listing" : "Sell an Item"}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          {isEditing ? "Update your listing details" : "List your pre-loved fashion for sale"}
+          {isEditing
+            ? "Update your listing details"
+            : "List your pre-loved fashion for sale"}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
-            <Label>Photos (up to {MAX_PHOTOS}) <span className="text-muted-foreground font-normal">— {totalPhotos}/{MAX_PHOTOS}</span><FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." /></Label>
+            <Label>
+              Photos (up to {MAX_PHOTOS}){" "}
+              <span className="text-muted-foreground font-normal">
+                — {totalPhotos}/{MAX_PHOTOS}
+              </span>
+              <FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." />
+            </Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, i) => (
                 <div
@@ -379,13 +469,19 @@ const CreateListing = () => {
                     i === 0 ? "ring-2 ring-gold border-gold" : "border-border"
                   }`}
                 >
-                  <img src={preview.url} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={preview.url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     type="button"
                     className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"
                     onClick={() =>
                       preview.type === "existing"
-                        ? removeExistingImage(existingImages.indexOf(preview.url))
+                        ? removeExistingImage(
+                            existingImages.indexOf(preview.url),
+                          )
                         : removeNewImage(preview.index!)
                     }
                   >
@@ -394,7 +490,9 @@ const CreateListing = () => {
                   {i === 0 ? (
                     <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
                       <Star className="h-2.5 w-2.5 fill-white text-white" />
-                      <span className="text-[9px] font-semibold text-white">Cover</span>
+                      <span className="text-[9px] font-semibold text-white">
+                        Cover
+                      </span>
                     </div>
                   ) : (
                     <button
@@ -417,7 +515,11 @@ const CreateListing = () => {
                     className="hidden"
                     onChange={handleAddImages}
                   />
-                  {allPreviews.length === 0 ? <Camera className="h-5 w-5" /> : <Upload className="h-4 w-4" />}
+                  {allPreviews.length === 0 ? (
+                    <Camera className="h-5 w-5" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                   <span className="mt-1 text-[10px]">Add photo</span>
                 </label>
               )}
@@ -428,7 +530,9 @@ const CreateListing = () => {
           <div>
             <Label>
               Video <span className="text-destructive">*</span>{" "}
-              <span className="text-muted-foreground font-normal">— 1 short video required (max 50MB)</span>
+              <span className="text-muted-foreground font-normal">
+                — 1 short video required (max 50MB)
+              </span>
               <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
@@ -477,36 +581,105 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="title">Title<FieldTip tip="A concise, descriptive title shoppers can search for. Include brand, item type, and a key detail (e.g. 'Vintage Levi's 501 high-waist jeans')." /></Label>
-              <Input id="title" placeholder="e.g. Vintage Levi's 501 Jeans" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+              <Label htmlFor="title">
+                Title
+                <FieldTip tip="A concise, descriptive title shoppers can search for. Include brand, item type, and a key detail (e.g. 'Vintage Levi's 501 high-waist jeans')." />
+              </Label>
+              <Input
+                id="title"
+                placeholder="e.g. Vintage Levi's 501 Jeans"
+                value={form.title}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, title: e.target.value }))
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand<FieldTip tip="The original maker of the item. Use the official brand name as it appears on the label (e.g. Nike, Zara, Gucci)." /></Label>
-              <Input id="brand" placeholder="e.g. Levi's" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} required />
+              <Label htmlFor="brand">
+                Brand
+                <FieldTip tip="The original maker of the item. Use the official brand name as it appears on the label (e.g. Nike, Zara, Gucci)." />
+              </Label>
+              <Input
+                id="brand"
+                placeholder="e.g. Levi's"
+                value={form.brand}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, brand: e.target.value }))
+                }
+                required
+              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description<FieldTip tip="Describe size fit, materials, measurements, condition, and any flaws or signs of wear. Honest detailed descriptions reduce returns and complaints." /></Label>
-            <Textarea id="description" placeholder="Describe the item, its condition, and any flaws..." rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
+            <Label htmlFor="description">
+              Description
+              <FieldTip tip="Describe size fit, materials, measurements, condition, and any flaws or signs of wear. Honest detailed descriptions reduce returns and complaints." />
+            </Label>
+            <Textarea
+              id="description"
+              placeholder="Describe the item, its condition, and any flaws..."
+              rows={4}
+              value={form.description}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+              required
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Category<FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." /></Label>
-              <Select value={form.parentCategory} onValueChange={v => setForm(f => ({ ...f, parentCategory: v, subCategory: "" }))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+              <Label>
+                Category
+                <FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." />
+              </Label>
+              <Select
+                value={form.parentCategory}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, parentCategory: v, subCategory: "" }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
                 <SelectContent>
-                  {parentCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {parentCategories.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Subcategory<FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." /></Label>
-              <Select value={form.subCategory} onValueChange={v => setForm(f => ({ ...f, subCategory: v, size: "" }))} disabled={!form.parentCategory}>
-                <SelectTrigger><SelectValue placeholder={form.parentCategory ? "Select type" : "Choose category first"} /></SelectTrigger>
+              <Label>
+                Subcategory
+                <FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." />
+              </Label>
+              <Select
+                value={form.subCategory}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, subCategory: v, size: "" }))
+                }
+                disabled={!form.parentCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      form.parentCategory
+                        ? "Select type"
+                        : "Choose category first"
+                    }
+                  />
+                </SelectTrigger>
                 <SelectContent>
-                  {subCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {subCategories.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -514,40 +687,110 @@ const CreateListing = () => {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="price">Price (PKR)<FieldTip tip="Set a fair selling price in Pakistani Rupees. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." /></Label>
-              <Input id="price" type="number" min="1" step="0.01" placeholder="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
+              <Label htmlFor="price">
+                Price (PKR)
+                <FieldTip tip="Set a fair selling price in Pakistani Rupees. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." />
+              </Label>
+              <Input
+                id="price"
+                type="number"
+                min="1"
+                step="0.01"
+                placeholder="0"
+                value={form.price}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, price: e.target.value }))
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label>Weight<FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." /></Label>
-              <Select value={form.weight} onValueChange={v => setForm(f => ({ ...f, weight: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select weight" /></SelectTrigger>
+              <Label>
+                Weight
+                <FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." />
+              </Label>
+              <Select
+                value={form.weight}
+                onValueChange={(v) => setForm((f) => ({ ...f, weight: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select weight" />
+                </SelectTrigger>
                 <SelectContent>
-                  {WEIGHT_OPTIONS.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+                  {WEIGHT_OPTIONS.map((w) => (
+                    <SelectItem key={w.value} value={w.value}>
+                      {w.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Condition<FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." /></Label>
-              <Select value={form.condition} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+              <Label>
+                Condition
+                <FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." />
+              </Label>
+              <Select
+                value={form.condition}
+                onValueChange={(v) => setForm((f) => ({ ...f, condition: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
                 <SelectContent>
-                  {CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Size<FieldTip tip={form.subCategory === "shoes" ? "Select the European shoe size (EU)." : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."} /></Label>
-            <Select value={form.size} onValueChange={v => setForm(f => ({ ...f, size: v }))} disabled={!form.subCategory}>
-              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder={form.subCategory ? "Select size" : "Choose subcategory first"} /></SelectTrigger>
+            <Label>
+              Size
+              <FieldTip
+                tip={
+                  form.subCategory === "shoes"
+                    ? "Select the European shoe size (EU)."
+                    : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."
+                }
+              />
+            </Label>
+            <Select
+              value={form.size}
+              onValueChange={(v) => setForm((f) => ({ ...f, size: v }))}
+              disabled={!form.subCategory}
+            >
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue
+                  placeholder={
+                    form.subCategory
+                      ? "Select size"
+                      : "Choose subcategory first"
+                  }
+                />
+              </SelectTrigger>
               <SelectContent>
-                {(form.subCategory === "shoes" ? SHOE_SIZES : SIZES).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {(form.subCategory === "shoes" ? SHOE_SIZES : SIZES).map(
+                  (s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={submitting}
+          >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditing ? "Save Changes" : "Submit Listing"}
           </Button>

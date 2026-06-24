@@ -18,7 +18,8 @@ const MOCK_FEEDBACK: Record<string, FeedbackEntry[]> = {
       id: "fb-1",
       listing_id: "mock-listing-4",
       admin_id: "admin-mock-id",
-      feedback: "Photos are blurry and don't clearly show any wear or tear. Please re-upload clearer images before resubmitting.",
+      feedback:
+        "Photos are blurry and don't clearly show any wear or tear. Please re-upload clearer images before resubmitting.",
       created_at: "2026-06-06T10:00:00.000Z",
     },
   ],

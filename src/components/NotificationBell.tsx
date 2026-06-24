@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
 
@@ -13,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 import {
-  useNotifications,
+  getNotificationsOptions,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/queries/useNotification";
@@ -40,7 +41,7 @@ interface NotificationRow {
 const NotificationBell = ({ className }: NotificationBellProps) => {
   const [open, setOpen] = useState(false);
 
-  const { data, isLoading } = useNotifications();
+  const { data, isLoading } = useQuery(getNotificationsOptions());
 
   const markReadMutation = useMarkNotificationRead();
   const markAllMutation = useMarkAllNotificationsRead();
@@ -84,7 +85,7 @@ const NotificationBell = ({ className }: NotificationBellProps) => {
           size="icon"
           className={cn(
             "relative text-muted-foreground hover:text-foreground",
-            className
+            className,
           )}
           aria-label="Notifications"
         >
@@ -143,7 +144,7 @@ const NotificationBell = ({ className }: NotificationBellProps) => {
                     onClick={() => onClickItem(n)}
                     className={cn(
                       "flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
-                      !n.readAt && "bg-primary/5"
+                      !n.readAt && "bg-primary/5",
                     )}
                   >
                     <div className="flex w-full items-start gap-2">

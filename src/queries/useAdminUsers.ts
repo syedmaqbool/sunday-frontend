@@ -1,24 +1,43 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { userService } from "@/services/user.service";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { listAdminUsers, updateUserRole } from "@/services/user.service";
 
-const USERS_KEY = ["admin-users"];
+export const adminUsersQueryKey = {
+  all: () => ["admin-users"] as const,
+  list: (params: AdminUsersParams = {}) =>
+    [...adminUsersQueryKey.all(), "list", params] as const,
+};
 
-export const useAdminUsers = (params: { page?: number; size?: number; search?: string; status?: "ACTIVE" | "INACTIVE" } = {}) =>
-  useQuery({
-    queryKey: [...USERS_KEY, params],
+export type AdminUsersParams = {
+  page?: number;
+  size?: number;
+  search?: string;
+  status?: "ACTIVE" | "INACTIVE";
+};
+
+export const getAdminUsersQueryOptions = (params: AdminUsersParams = {}) =>
+  queryOptions({
+    queryKey: adminUsersQueryKey.list(params),
     queryFn: async () => {
-      const res = await userService.list(params);
+      const res = await listAdminUsers(params);
       return res.data;
     },
   });
+
+export const useAdminUsers = (params: AdminUsersParams = {}) =>
+  useQuery(getAdminUsersQueryOptions(params));
 
 export const useUpdateUserRole = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
-      userService.updateRole(userId, roleId),
+      updateUserRole(userId, roleId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
     },
   });
 };

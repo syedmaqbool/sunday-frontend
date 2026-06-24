@@ -1,48 +1,23 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type { FlaggedMessage } from "@/types/admin/message-moderation";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export interface FlaggedMessage {
-  id:                   string;
-  conversationId:       string;
-  senderId:             string;
-  content:              string;
-  flagReasons:          string[];
-  isFlagged:            boolean;
-  readAt:               string | null;
-  createdAt:            string;
-  updatedAt:            string;
-  buyerId:              string;
-  listingId:            string;
-  sellerId:             string;
-  buyerFullName:        string;
-  conversationCreatedAt: string;
-  listingTitle:         string;
-  sellerFullName:       string;
+export function listFlaggedMessages(
+  params: { page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get("/api/v1/admin/messages/flagged", { searchParams: params })
+    .json<PaginatedResponse<FlaggedMessage>>();
 }
 
-interface ListResponse<T> {
-  data:       T[];
-  pagination: { currentPage: number; lastPage: number; total: number };
+export function dismissFlaggedMessage(messageId: string) {
+  return authInstance
+    .patch(`/api/v1/admin/messages/${messageId}/dismiss`, { json: {} })
+    .json<Response>();
 }
 
-export const messageModerationService = {
-  listFlagged: (params: { page?: number; size?: number } = {}) => {
-    const qs = new URLSearchParams();
-    if (params.page) qs.set("page", String(params.page));
-    if (params.size) qs.set("size", String(params.size));
-    const query = qs.toString();
-    return apiClient.get<ListResponse<FlaggedMessage>>(
-      `/api/v1/admin/messages/flagged${query ? `?${query}` : ""}`,
-    );
-  },
-
-  dismiss: (messageId: string) =>
-    apiClient.patch<void>(
-      `/api/v1/admin/messages/${messageId}/dismiss`,
-      {},
-    ),
-
-  delete: (messageId: string) =>
-    apiClient.delete<void>(
-      `/api/v1/admin/messages/${messageId}`,
-    ),
-};
+export function deleteMessage(messageId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/messages/${messageId}`)
+    .json<Response>();
+}

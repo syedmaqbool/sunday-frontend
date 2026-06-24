@@ -1,34 +1,55 @@
-import { useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Loader2, Wallet, Download, ArrowDownRight, ArrowUpRight, CircleDollarSign, CalendarRange,
-} from "lucide-react";
-import { format } from "date-fns";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  useAdminRefundReport,
-  useAdminSellerPayouts,
+  getAdminRefundReportOptions,
+  getAdminSellerPayoutsOptions,
+  getPayoutRunItemsOptions,
+  getPayoutRunsOptions,
   useCreateSellerPayout,
-  usePayoutRuns,
-  usePayoutRunItems,
 } from "@/queries/usePayout";
-import type { PayoutRun, PayoutRunItem, SellerPayout } from "@/services/payout.service";
+import type { PayoutRun, PayoutRunItem, SellerPayout } from "@/types/payout";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  CalendarRange,
+  CircleDollarSign,
+  Download,
+  Loader2,
+  Wallet,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -45,7 +66,11 @@ const fmt = (n: number) =>
 const Payouts = () => {
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeSeller, setActiveSeller] = useState<{ sellerId: string; name: string; balance: number } | null>(null);
+  const [activeSeller, setActiveSeller] = useState<{
+    sellerId: string;
+    name: string;
+    balance: number;
+  } | null>(null);
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
   const [form, setForm] = useState({
     amount: "",
@@ -61,20 +86,28 @@ const Payouts = () => {
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 
-  const { data: runsData, isLoading: lruns } = usePayoutRuns();
-  const { data: refundsData, isLoading: lrefunds } = useAdminRefundReport();
-  const { data: sellerPayoutsData, isLoading: lpayouts } = useAdminSellerPayouts(
-    sellerFilter !== "all" ? { sellerId: sellerFilter } : {}
+  const { data: runsData, isLoading: lruns } = useQuery(getPayoutRunsOptions());
+  const { data: refundsData, isLoading: lrefunds } = useQuery(
+    getAdminRefundReportOptions(),
   );
-  const { data: periodPayoutsData } = useAdminSellerPayouts(
-    rangeStart && rangeEnd
-      ? { periodStart: rangeStart, periodEnd: rangeEnd }
-      : {}
+  const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
+    getAdminSellerPayoutsOptions(
+      sellerFilter !== "all" ? { sellerId: sellerFilter } : {},
+    ),
+  );
+  const { data: periodPayoutsData } = useQuery(
+    getAdminSellerPayoutsOptions(
+      rangeStart && rangeEnd
+        ? { periodStart: rangeStart, periodEnd: rangeEnd }
+        : {},
+    ),
   );
   // Refund report doesn't support period filtering directly — we derive period
   // refunds from all refund items and filter by sourceDate on the client side.
-  const { data: allRefundsData } = useAdminRefundReport();
-  const { data: runItemsData } = usePayoutRunItems(detailRun?.id ?? "", {});
+  const { data: allRefundsData } = useQuery(getAdminRefundReportOptions());
+  const { data: runItemsData } = useQuery(
+    getPayoutRunItemsOptions(detailRun?.id ?? "", {}),
+  );
 
   const createSellerPayoutMutation = useCreateSellerPayout();
 
@@ -88,13 +121,16 @@ const Payouts = () => {
 
   /** Aggregate per-seller summary from payout runs */
   const sellerSummaries = useMemo(() => {
-    const map = new Map<string, {
-      sellerId: string;
-      name: string;
-      sales: number;
-      paid: number;
-      balance: number;
-    }>();
+    const map = new Map<
+      string,
+      {
+        sellerId: string;
+        name: string;
+        sales: number;
+        paid: number;
+        balance: number;
+      }
+    >();
 
     runs.forEach((r) => {
       // Each run already has seller-level totals; we collect by aggregating run items
@@ -134,7 +170,12 @@ const Payouts = () => {
     // "balance due" = total eligible not yet paid — from seller payouts aggregates
     // We'll use the simple: sales - paid from sellerPayouts
     const totalPaid = sellerPayouts.reduce((s, p) => s + Number(p.amount), 0);
-    return { sales, paid: totalPaid, refunds, due: Math.max(0, sales - totalPaid) };
+    return {
+      sales,
+      paid: totalPaid,
+      refunds,
+      due: Math.max(0, sales - totalPaid),
+    };
   }, [runs, sellerPayouts]);
 
   // ─── Period report items ───────────────────────────────────────────────────
@@ -152,15 +193,21 @@ const Payouts = () => {
   const periodItems = useMemo<PeriodItem[]>(() => {
     if (!rangeStart || !rangeEnd) return [];
 
-    const payoutPeriodItems: PeriodItem[] = (periodPayoutsData?.data ?? []).map((p) => ({
-      id: `payout-${p.id}`,
-      kind: "payout",
-      at: p.paidAt,
-      party: p.sellerFullName || `User ${p.sellerId.slice(0, 6)}`,
-      description: `Payout · ${p.method.replace("_", " ")}`,
-      reference: p.reference || (p.periodStart && p.periodEnd ? `${p.periodStart} → ${p.periodEnd}` : ""),
-      amount: Number(p.amount),
-    }));
+    const payoutPeriodItems: PeriodItem[] = (periodPayoutsData?.data ?? []).map(
+      (p) => ({
+        id: `payout-${p.id}`,
+        kind: "payout",
+        at: p.paidAt,
+        party: p.sellerFullName || `User ${p.sellerId.slice(0, 6)}`,
+        description: `Payout · ${p.method.replace("_", " ")}`,
+        reference:
+          p.reference ||
+          (p.periodStart && p.periodEnd
+            ? `${p.periodStart} → ${p.periodEnd}`
+            : ""),
+        amount: Number(p.amount),
+      }),
+    );
 
     // Filter all refunds client-side by sourceDate within the selected range
     const start = new Date(rangeStart);
@@ -178,13 +225,14 @@ const Payouts = () => {
         kind: "refund" as const,
         at: r.sourceDate ?? r.createdAt,
         party: r.userFullName || `User ${r.buyerId?.slice(0, 6) ?? "?"}`,
-        description: (r.sourceMetadata?.listingTitle as string) || "Refunded item",
+        description:
+          (r.sourceMetadata?.listingTitle as string) || "Refunded item",
         reference: r.orderId ? `Order ${r.orderId.slice(0, 8)}` : "",
         amount: Number(r.amount),
       }));
 
     return [...payoutPeriodItems, ...refundPeriodItems].sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
+      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
     );
   }, [rangeStart, rangeEnd, periodPayoutsData, allRefundsData]);
 
@@ -220,7 +268,11 @@ const Payouts = () => {
 
   // ─── Actions ───────────────────────────────────────────────────────────────
 
-  const openRecord = (s: { sellerId: string; name: string; balance: number }) => {
+  const openRecord = (s: {
+    sellerId: string;
+    name: string;
+    balance: number;
+  }) => {
     setActiveSeller(s);
     setForm({
       amount: s.balance > 0 ? s.balance.toFixed(2) : "",
@@ -241,7 +293,10 @@ const Payouts = () => {
       return;
     }
     if (!form.period_start || !form.period_end) {
-      toast({ title: "Period start and end are required", variant: "destructive" });
+      toast({
+        title: "Period start and end are required",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -255,11 +310,18 @@ const Payouts = () => {
         periodStart: form.period_start,
         periodEnd: form.period_end,
       });
-      toast({ title: "Payout recorded", description: `${fmt(amount)} to ${activeSeller.name}` });
+      toast({
+        title: "Payout recorded",
+        description: `${fmt(amount)} to ${activeSeller.name}`,
+      });
       setDialogOpen(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
-      toast({ title: "Could not save payout", description: msg, variant: "destructive" });
+      toast({
+        title: "Could not save payout",
+        description: msg,
+        variant: "destructive",
+      });
     }
   };
 
@@ -269,13 +331,17 @@ const Payouts = () => {
       ...sellerPayouts.map((p) => [
         format(new Date(p.paidAt), "yyyy-MM-dd HH:mm"),
         p.sellerFullName,
-        p.periodStart && p.periodEnd ? `${p.periodStart} → ${p.periodEnd}` : "—",
+        p.periodStart && p.periodEnd
+          ? `${p.periodStart} → ${p.periodEnd}`
+          : "—",
         p.method.replace("_", " "),
         p.reference || "",
         Number(p.amount).toFixed(2),
       ]),
     ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = rows
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -312,8 +378,12 @@ const Payouts = () => {
   // ─── Run detail items ──────────────────────────────────────────────────────
 
   const detailRunItems = runItemsData?.data ?? [];
-  const detailSellerItems = detailRunItems.filter((i) => i.itemType === "SELLER_PAYOUT");
-  const detailRefundItems = detailRunItems.filter((i) => i.itemType === "BUYER_REFUND");
+  const detailSellerItems = detailRunItems.filter(
+    (i) => i.itemType === "SELLER_PAYOUT",
+  );
+  const detailRefundItems = detailRunItems.filter(
+    (i) => i.itemType === "BUYER_REFUND",
+  );
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -323,9 +393,10 @@ const Payouts = () => {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Sales become payout-eligible only after the buyer confirms receipt with no issues.
-            Sellers also earn a flat {SELLER_COMMISSION_SHARE_RATE}% commission on the listing
-            price, separate from the platform fee charged to the buyer.
+            Sales become payout-eligible only after the buyer confirms receipt
+            with no issues. Sellers also earn a flat{" "}
+            {SELLER_COMMISSION_SHARE_RATE}% commission on the listing price,
+            separate from the platform fee charged to the buyer.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCsv}>
@@ -334,10 +405,30 @@ const Payouts = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Gross sales" value={fmt(totals.sales)} icon={ArrowUpRight} tone="positive" />
-        <StatCard label="Buyer refunds" value={fmt(totals.refunds)} icon={ArrowDownRight} tone="negative" />
-        <StatCard label="Paid to sellers" value={fmt(totals.paid)} icon={Wallet} tone="muted" />
-        <StatCard label="Balance due" value={fmt(totals.due)} icon={CircleDollarSign} tone="accent" />
+        <StatCard
+          label="Gross sales"
+          value={fmt(totals.sales)}
+          icon={ArrowUpRight}
+          tone="positive"
+        />
+        <StatCard
+          label="Buyer refunds"
+          value={fmt(totals.refunds)}
+          icon={ArrowDownRight}
+          tone="negative"
+        />
+        <StatCard
+          label="Paid to sellers"
+          value={fmt(totals.paid)}
+          icon={Wallet}
+          tone="muted"
+        />
+        <StatCard
+          label="Balance due"
+          value={fmt(totals.due)}
+          icon={CircleDollarSign}
+          tone="accent"
+        />
       </div>
 
       {loading ? (
@@ -364,15 +455,22 @@ const Payouts = () => {
                       <TableHead>Period</TableHead>
                       <TableHead>Generated by</TableHead>
                       <TableHead className="text-right">Items</TableHead>
-                      <TableHead className="text-right">Seller payouts</TableHead>
-                      <TableHead className="text-right">Buyer refunds</TableHead>
+                      <TableHead className="text-right">
+                        Seller payouts
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Buyer refunds
+                      </TableHead>
                       <TableHead className="text-right">Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {runs.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="py-10 text-center text-muted-foreground"
+                        >
                           No payout runs yet.
                         </TableCell>
                       </TableRow>
@@ -388,8 +486,12 @@ const Payouts = () => {
                             ? `${format(new Date(r.periodStart), "MMM d")} → ${format(new Date(r.periodEnd), "MMM d, yyyy")}`
                             : "—"}
                         </TableCell>
-                        <TableCell className="text-sm">{r.generatedByFullName}</TableCell>
-                        <TableCell className="text-right text-sm">{Number(r.itemCount)}</TableCell>
+                        <TableCell className="text-sm">
+                          {r.generatedByFullName}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {Number(r.itemCount)}
+                        </TableCell>
                         <TableCell className="text-right font-medium text-emerald-600">
                           {fmt(Number(r.sellerPayoutAmount))}
                           <span className="ml-1.5 text-xs font-normal text-muted-foreground">
@@ -428,7 +530,10 @@ const Payouts = () => {
                   <TableBody>
                     {sellerSummaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={3}
+                          className="py-10 text-center text-muted-foreground"
+                        >
                           No seller activity yet.
                         </TableCell>
                       </TableRow>
@@ -436,9 +541,15 @@ const Payouts = () => {
                     {sellerSummaries.map((s) => (
                       <TableRow key={s.sellerId}>
                         <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell className="text-right">{fmt(s.paid)}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="outline" onClick={() => openRecord(s)}>
+                          {fmt(s.paid)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openRecord(s)}
+                          >
                             Record payout
                           </Button>
                         </TableCell>
@@ -467,7 +578,10 @@ const Payouts = () => {
                   <TableBody>
                     {refundItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={5}
+                          className="py-10 text-center text-muted-foreground"
+                        >
                           No buyer refunds.
                         </TableCell>
                       </TableRow>
@@ -475,13 +589,18 @@ const Payouts = () => {
                     {refundItems.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {format(new Date(r.sourceDate ?? r.createdAt), "MMM d, yyyy")}
+                          {format(
+                            new Date(r.sourceDate ?? r.createdAt),
+                            "MMM d, yyyy",
+                          )}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {r.userFullName || `User ${r.buyerId?.slice(0, 6) ?? "?"}`}
+                          {r.userFullName ||
+                            `User ${r.buyerId?.slice(0, 6) ?? "?"}`}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {(r.sourceMetadata?.listingTitle as string) || "Refunded item"}
+                          {(r.sourceMetadata?.listingTitle as string) ||
+                            "Refunded item"}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {r.orderId ? `Order ${r.orderId.slice(0, 8)}` : "—"}
@@ -502,7 +621,9 @@ const Payouts = () => {
             <Card>
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Filter by seller</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Filter by seller
+                  </Label>
                   <Select value={sellerFilter} onValueChange={setSellerFilter}>
                     <SelectTrigger className="h-9 w-64">
                       <SelectValue />
@@ -531,7 +652,10 @@ const Payouts = () => {
                   <TableBody>
                     {sellerPayouts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="py-10 text-center text-muted-foreground"
+                        >
                           No payouts recorded yet.
                         </TableCell>
                       </TableRow>
@@ -541,13 +665,17 @@ const Payouts = () => {
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(p.paidAt), "MMM d, yyyy")}
                         </TableCell>
-                        <TableCell className="font-medium">{p.sellerFullName}</TableCell>
+                        <TableCell className="font-medium">
+                          {p.sellerFullName}
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {p.periodStart && p.periodEnd
                             ? `${p.periodStart} → ${p.periodEnd}`
                             : "—"}
                         </TableCell>
-                        <TableCell className="capitalize">{p.method.replace("_", " ")}</TableCell>
+                        <TableCell className="capitalize">
+                          {p.method.replace("_", " ")}
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {p.reference || "—"}
                         </TableCell>
@@ -568,7 +696,12 @@ const Payouts = () => {
               <CardContent className="space-y-4 p-4">
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="rs" className="text-xs text-muted-foreground">From</Label>
+                    <Label
+                      htmlFor="rs"
+                      className="text-xs text-muted-foreground"
+                    >
+                      From
+                    </Label>
                     <Input
                       id="rs"
                       type="date"
@@ -578,7 +711,12 @@ const Payouts = () => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="re" className="text-xs text-muted-foreground">To</Label>
+                    <Label
+                      htmlFor="re"
+                      className="text-xs text-muted-foreground"
+                    >
+                      To
+                    </Label>
                     <Input
                       id="re"
                       type="date"
@@ -593,7 +731,9 @@ const Payouts = () => {
                         <Badge variant="secondary">
                           {periodTotals.count} of {periodItems.length} selected
                         </Badge>
-                        <Badge variant="outline">Payouts {fmt(periodTotals.payoutTotal)}</Badge>
+                        <Badge variant="outline">
+                          Payouts {fmt(periodTotals.payoutTotal)}
+                        </Badge>
                         <Badge variant="outline" className="text-destructive">
                           Refunds {fmt(periodTotals.refundTotal)}
                         </Badge>
@@ -613,7 +753,10 @@ const Payouts = () => {
                 {!rangeStart || !rangeEnd ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
                     <CalendarRange className="h-8 w-8" />
-                    <p className="text-sm">Select a date range to view payouts and refunds for that period.</p>
+                    <p className="text-sm">
+                      Select a date range to view payouts and refunds for that
+                      period.
+                    </p>
                   </div>
                 ) : periodItems.length === 0 ? (
                   <div className="py-10 text-center text-sm text-muted-foreground">
@@ -625,7 +768,10 @@ const Payouts = () => {
                       <TableRow>
                         <TableHead className="w-10">
                           <Checkbox
-                            checked={selectedIds.size === periodItems.length && periodItems.length > 0}
+                            checked={
+                              selectedIds.size === periodItems.length &&
+                              periodItems.length > 0
+                            }
                             onCheckedChange={toggleAllSelected}
                             aria-label="Select all"
                           />
@@ -664,9 +810,15 @@ const Payouts = () => {
                                 <Badge variant="destructive">Refund</Badge>
                               )}
                             </TableCell>
-                            <TableCell className="font-medium">{i.party}</TableCell>
-                            <TableCell className="max-w-xs truncate">{i.description}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{i.reference}</TableCell>
+                            <TableCell className="font-medium">
+                              {i.party}
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {i.description}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {i.reference}
+                            </TableCell>
                             <TableCell
                               className={`text-right font-medium ${i.kind === "refund" ? "text-destructive" : ""}`}
                             >
@@ -707,7 +859,10 @@ const Payouts = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>Method</Label>
-                <Select value={form.method} onValueChange={(v) => setForm({ ...form, method: v })}>
+                <Select
+                  value={form.method}
+                  onValueChange={(v) => setForm({ ...form, method: v })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -730,7 +885,9 @@ const Payouts = () => {
                   id="ps"
                   type="date"
                   value={form.period_start}
-                  onChange={(e) => setForm({ ...form, period_start: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, period_start: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -741,7 +898,9 @@ const Payouts = () => {
                   id="pe"
                   type="date"
                   value={form.period_end}
-                  onChange={(e) => setForm({ ...form, period_end: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, period_end: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -751,7 +910,9 @@ const Payouts = () => {
                 id="ref"
                 placeholder="e.g. TX-2026-05-18-001"
                 value={form.reference}
-                onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, reference: e.target.value })
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -768,7 +929,10 @@ const Payouts = () => {
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={savePayout} disabled={createSellerPayoutMutation.isPending}>
+            <Button
+              onClick={savePayout}
+              disabled={createSellerPayoutMutation.isPending}
+            >
               {createSellerPayoutMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
@@ -793,10 +957,22 @@ const Payouts = () => {
           {detailRun && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                <Info label="Seller payouts" value={fmt(Number(detailRun.sellerPayoutAmount))} />
-                <Info label="Buyer refunds" value={fmt(Number(detailRun.buyerRefundAmount))} />
-                <Info label="Total items" value={String(Number(detailRun.itemCount))} />
-                <Info label="Total" value={fmt(Number(detailRun.totalAmount))} />
+                <Info
+                  label="Seller payouts"
+                  value={fmt(Number(detailRun.sellerPayoutAmount))}
+                />
+                <Info
+                  label="Buyer refunds"
+                  value={fmt(Number(detailRun.buyerRefundAmount))}
+                />
+                <Info
+                  label="Total items"
+                  value={String(Number(detailRun.itemCount))}
+                />
+                <Info
+                  label="Total"
+                  value={fmt(Number(detailRun.totalAmount))}
+                />
               </div>
 
               {detailSellerItems.length > 0 && (
@@ -819,16 +995,26 @@ const Payouts = () => {
                         {detailSellerItems.map((item) => (
                           <TableRow key={item.id}>
                             <TableCell className="font-medium">
-                              {item.userFullName || `User ${item.sellerId?.slice(0, 6) ?? "?"}`}
+                              {item.userFullName ||
+                                `User ${item.sellerId?.slice(0, 6) ?? "?"}`}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
-                              {(item.sourceMetadata?.listingTitle as string) || "—"}
+                              {(item.sourceMetadata?.listingTitle as string) ||
+                                "—"}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
-                              {item.orderId ? `Order ${item.orderId.slice(0, 8)}` : "—"}
+                              {item.orderId
+                                ? `Order ${item.orderId.slice(0, 8)}`
+                                : "—"}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={item.status === "PAID" ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  item.status === "PAID"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {item.status}
                               </Badge>
                             </TableCell>
@@ -863,16 +1049,26 @@ const Payouts = () => {
                         {detailRefundItems.map((item) => (
                           <TableRow key={item.id}>
                             <TableCell className="font-medium">
-                              {item.userFullName || `User ${item.buyerId?.slice(0, 6) ?? "?"}`}
+                              {item.userFullName ||
+                                `User ${item.buyerId?.slice(0, 6) ?? "?"}`}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
-                              {(item.sourceMetadata?.listingTitle as string) || "—"}
+                              {(item.sourceMetadata?.listingTitle as string) ||
+                                "—"}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
-                              {item.orderId ? `Order ${item.orderId.slice(0, 8)}` : "—"}
+                              {item.orderId
+                                ? `Order ${item.orderId.slice(0, 8)}`
+                                : "—"}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={item.status === "PAID" ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  item.status === "PAID"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {item.status}
                               </Badge>
                             </TableCell>
@@ -890,7 +1086,9 @@ const Payouts = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailRun(null)}>Close</Button>
+            <Button variant="outline" onClick={() => setDetailRun(null)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -915,14 +1113,16 @@ const StatCard = ({
     tone === "positive"
       ? "text-emerald-600 bg-emerald-500/10"
       : tone === "negative"
-      ? "text-destructive bg-destructive/10"
-      : tone === "accent"
-      ? "text-primary bg-primary/10"
-      : "text-muted-foreground bg-muted";
+        ? "text-destructive bg-destructive/10"
+        : tone === "accent"
+          ? "text-primary bg-primary/10"
+          : "text-muted-foreground bg-muted";
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-md ${toneClass}`}>
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-md ${toneClass}`}
+        >
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">

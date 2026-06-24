@@ -1,40 +1,36 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type {
+  CreateTaxSettingPayload,
+  TaxSetting,
+  UpdateTaxSettingPayload,
+} from "@/types/tax-setting";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-export interface TaxSetting {
-  id:        string;
-  name:      string;
-  rate:      number;
-  active:    boolean;
-  createdAt: string;
-  updatedAt: string;
+export function listTaxSettings() {
+  return authInstance
+    .get("/api/v1/admin/settings/tax-settings")
+    .json<PaginatedResponse<TaxSetting>>();
 }
 
-export interface CreateTaxSettingPayload {
-  name:   string;
-  rate:   number;
-  active?: boolean;
+export function createTaxSetting(payload: CreateTaxSettingPayload) {
+  return authInstance
+    .post("/api/v1/admin/settings/tax-settings", { json: payload })
+    .json<Response<TaxSetting>>();
 }
 
-export interface UpdateTaxSettingPayload {
-  name?:   string;
-  rate?:   number;
-  active?: boolean;
+export function updateTaxSetting(
+  resourceId: string,
+  payload: UpdateTaxSettingPayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/settings/tax-settings/${resourceId}`, {
+      json: payload,
+    })
+    .json<Response<TaxSetting>>();
 }
 
-interface ListResponse<T> { data: T[]; pagination: unknown; }
-interface ItemResponse<T> { data: T; }
-
-export const taxSettingService = {
-  list: () =>
-    apiClient.get<ListResponse<TaxSetting>>("/api/v1/admin/settings/tax-settings"),
-
-  create: (payload: CreateTaxSettingPayload) =>
-    apiClient.post<ItemResponse<TaxSetting>>("/api/v1/admin/settings/tax-settings", payload),
-
-  update: (resourceId: string, payload: UpdateTaxSettingPayload) =>
-    apiClient.patch<ItemResponse<TaxSetting>>(`/api/v1/admin/settings/tax-settings/${resourceId}`, payload),
-
-  delete: (resourceId: string) =>
-    apiClient.delete<void>(`/api/v1/admin/settings/tax-settings/${resourceId}`),
-};
-
+export function deleteTaxSetting(resourceId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/settings/tax-settings/${resourceId}`)
+    .json<Response>();
+}

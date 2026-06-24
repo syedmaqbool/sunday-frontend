@@ -10,7 +10,11 @@ interface ListingCardProps {
   sellerRating?: { avgRating: number; totalReviews: number } | null;
 }
 
-const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => (
+const ListingCard = ({
+  listing,
+  index = 0,
+  sellerRating,
+}: ListingCardProps) => (
   <motion.div
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
@@ -22,7 +26,9 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
           src={listing.images[0]}
           alt={listing.title}
           className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-            listing.status === "sold" || listing.status === "reserved" ? "opacity-60 grayscale" : ""
+            listing.status === "sold" || listing.status === "reserved"
+              ? "opacity-60 grayscale"
+              : ""
           }`}
           loading="lazy"
         />
@@ -47,15 +53,23 @@ const ListingCard = ({ listing, index = 0, sellerRating }: ListingCardProps) => 
         </div>
       </div>
       <div className="mt-3 space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{listing.brand}</p>
-        <h3 className="text-sm font-medium leading-tight text-foreground line-clamp-1">{listing.title}</h3>
-        <p className="text-sm font-semibold text-foreground">Rs {listing.price.toLocaleString()}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {listing.brand}
+        </p>
+        <h3 className="text-sm font-medium leading-tight text-foreground line-clamp-1">
+          {listing.title}
+        </h3>
+        <p className="text-sm font-semibold text-foreground">
+          Rs {listing.price.toLocaleString()}
+        </p>
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">Size {listing.size}</p>
           {sellerRating && sellerRating.totalReviews > 0 && (
             <div className="flex items-center gap-0.5">
               <Star className="h-3 w-3 fill-primary text-primary" />
-              <span className="text-xs font-medium text-foreground">{sellerRating.avgRating.toFixed(1)}</span>
+              <span className="text-xs font-medium text-foreground">
+                {sellerRating.avgRating.toFixed(1)}
+              </span>
             </div>
           )}
         </div>

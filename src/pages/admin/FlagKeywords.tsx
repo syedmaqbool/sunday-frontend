@@ -1,11 +1,24 @@
-import { useState } from "react";
-import { useFlagKeywords, useUpdateFlagKeywords } from "@/queries/useFlagKeyword";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Loader2, Tag, AlertTriangle, ShieldAlert, Eye, Lock } from "lucide-react";
+import {
+  getFlagKeywordsOptions,
+  useUpdateFlagKeywords,
+} from "@/queries/useFlagKeyword";
+import { useQuery } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  Eye,
+  Loader2,
+  Lock,
+  Plus,
+  ShieldAlert,
+  Tag,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -18,10 +31,26 @@ const keywordSchema = z
   .max(60, "Max 60 characters");
 
 // System-level rules are hardcoded — not stored in backend
-const SYSTEM_RULES: Array<{ keyword: string; reason: string; action: "review" | "auto_delete" }> = [
-  { keyword: "Phone numbers", reason: "Possible phone number detected", action: "auto_delete" },
-  { keyword: "Email addresses", reason: "Possible email address detected", action: "auto_delete" },
-  { keyword: "Social handles (@username)", reason: "Possible social media handle detected", action: "review" },
+const SYSTEM_RULES: Array<{
+  keyword: string;
+  reason: string;
+  action: "review" | "auto_delete";
+}> = [
+  {
+    keyword: "Phone numbers",
+    reason: "Possible phone number detected",
+    action: "auto_delete",
+  },
+  {
+    keyword: "Email addresses",
+    reason: "Possible email address detected",
+    action: "auto_delete",
+  },
+  {
+    keyword: "Social handles (@username)",
+    reason: "Possible social media handle detected",
+    action: "review",
+  },
   {
     keyword: "Platform mentions (instagram, whatsapp, telegram…)",
     reason: "Social media platform mention detected",
@@ -34,7 +63,7 @@ const SYSTEM_RULES: Array<{ keyword: string; reason: string; action: "review" | 
 const FlagKeywords = () => {
   const [draft, setDraft] = useState("");
 
-  const { data: keywords = [], isLoading } = useFlagKeywords();
+  const { data: keywords = [], isLoading } = useQuery(getFlagKeywordsOptions());
   const updateKeywords = useUpdateFlagKeywords();
 
   const handleAdd = () => {
@@ -65,7 +94,8 @@ const FlagKeywords = () => {
       keywords.filter((k) => k !== keyword),
       {
         onSuccess: () => toast.success("Keyword removed"),
-        onError: (e: any) => toast.error(e.message ?? "Failed to remove keyword"),
+        onError: (e: any) =>
+          toast.error(e.message ?? "Failed to remove keyword"),
       },
     );
   };
@@ -73,10 +103,12 @@ const FlagKeywords = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-bold text-foreground">Flag Keywords</h1>
+        <h1 className="font-heading text-3xl font-bold text-foreground">
+          Flag Keywords
+        </h1>
         <p className="mt-1 text-muted-foreground">
-          Add custom words or phrases. Any message containing them will be automatically flagged for
-          review.
+          Add custom words or phrases. Any message containing them will be
+          automatically flagged for review.
         </p>
       </div>
 
@@ -110,8 +142,9 @@ const FlagKeywords = () => {
           </div>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Matching is case-insensitive and applies to any message containing the keyword as a
-            substring. Flagged messages appear in Message Moderation for admin review.
+            Matching is case-insensitive and applies to any message containing
+            the keyword as a substring. Flagged messages appear in Message
+            Moderation for admin review.
           </p>
         </CardContent>
       </Card>
@@ -144,9 +177,13 @@ const FlagKeywords = () => {
                     </Badge>
                   )}
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground truncate">{r.reason}</p>
+                <p className="mt-1 text-sm text-muted-foreground truncate">
+                  {r.reason}
+                </p>
               </div>
-              <span className="text-xs text-muted-foreground shrink-0">Always on</span>
+              <span className="text-xs text-muted-foreground shrink-0">
+                Always on
+              </span>
             </CardContent>
           </Card>
         ))}

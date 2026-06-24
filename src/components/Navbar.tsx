@@ -1,7 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
 import sundayLogoAsset from "@/assets/sndy-logo.png.asset.json";
 const sundayLogo = sundayLogoAsset.url;
-import { Search, User, Menu, X, Plus, LogOut, Package, MessageSquare, Mail, BarChart3, UserCircle, LifeBuoy, Shield } from "lucide-react";
+import {
+  Search,
+  User,
+  Menu,
+  X,
+  Plus,
+  LogOut,
+  Package,
+  MessageSquare,
+  Mail,
+  BarChart3,
+  UserCircle,
+  LifeBuoy,
+  Shield,
+} from "lucide-react";
 import CartDrawer from "@/components/CartDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -16,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-//  Mock config switcher import 
+//  Mock config switcher  import
 import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 const Navbar = () => {
@@ -43,35 +57,61 @@ const Navbar = () => {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          <Link to="/listings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Browse</Link>
-          {categories.map(cat => (
-            <Link key={cat.id} to={`/listings?parent=${cat.value}`} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+          <Link
+            to="/listings"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Browse
+          </Link>
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/listings?parent=${cat.value}`}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
               {cat.label}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/listings")} className="text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/listings")}
+            className="text-muted-foreground hover:text-foreground"
+          >
             <Search className="h-5 w-5" />
           </Button>
           <CartDrawer />
           {(user || NEXT_PUBLIC_USE_MOCK_DATA) && <NotificationBell />}
-          
+
           {/* Desktop Sell Button  */}
-          <Button variant="default" size="sm" className="hidden gap-1 md:flex" onClick={handleSellClick}>
+          <Button
+            variant="default"
+            size="sm"
+            className="hidden gap-1 md:flex"
+            onClick={handleSellClick}
+          >
             <Plus className="h-4 w-4" /> Sell
           </Button>
 
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
+                <DropdownMenuItem
+                  className="text-xs text-muted-foreground"
+                  disabled
+                >
                   {user.email}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
@@ -100,19 +140,38 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   </>
                 )}
-                <DropdownMenuItem onClick={() => { signOut(); navigate("/"); }}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    signOut();
+                    navigate("/");
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/auth")} className="text-muted-foreground hover:text-foreground">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/auth")}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <User className="h-5 w-5" />
             </Button>
           )}
 
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground md:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </div>
@@ -120,18 +179,43 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="border-t border-border bg-background p-4 md:hidden">
           <nav className="flex flex-col gap-3">
-            <Link to="/listings" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Browse All</Link>
-            {categories.map(cat => (
-              <Link key={cat.id} to={`/listings?parent=${cat.value}`} className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>
+            <Link
+              to="/listings"
+              className="text-sm font-medium text-muted-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              Browse All
+            </Link>
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/listings?parent=${cat.value}`}
+                className="text-sm font-medium text-muted-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
                 {cat.label}
               </Link>
             ))}
             {isAdmin && (
-              <Link to="/admin" className="text-sm font-medium text-muted-foreground" onClick={() => setMobileOpen(false)}>Admin Portal</Link>
+              <Link
+                to="/admin"
+                className="text-sm font-medium text-muted-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                Admin Portal
+              </Link>
             )}
-            
+
             {/* Mobile Sell Button  */}
-            <Button variant="default" size="sm" className="mt-2 gap-1" onClick={() => { handleSellClick(); setMobileOpen(false); }}>
+            <Button
+              variant="default"
+              size="sm"
+              className="mt-2 gap-1"
+              onClick={() => {
+                handleSellClick();
+                setMobileOpen(false);
+              }}
+            >
               <Plus className="h-4 w-4" /> Sell an Item
             </Button>
           </nav>

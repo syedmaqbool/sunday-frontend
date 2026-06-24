@@ -104,7 +104,9 @@ export function SellerComplaintBadge({
         .update({ status: "return_received" })
         .eq("id", (complaint as any).id);
       if (error) throw error;
-      toast.success("Marked return as received. Admin will finalize the refund.");
+      toast.success(
+        "Marked return as received. Admin will finalize the refund.",
+      );
       await refetch();
       queryClient.invalidateQueries({ queryKey: ["sold-orders"] });
     } catch (err: any) {
@@ -152,7 +154,11 @@ export function SellerComplaintBadge({
           disabled={busy}
           onClick={markReturnReceived}
         >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <PackageCheck className="h-3 w-3" />}
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <PackageCheck className="h-3 w-3" />
+          )}
           Mark return received
         </Button>
       )}
@@ -164,34 +170,62 @@ export function SellerComplaintBadge({
               <MapPin className="h-5 w-5" /> Return shipping address
             </DialogTitle>
             <DialogDescription>
-              Provide the address where the buyer should ship the return. The buyer will see this immediately.
+              Provide the address where the buyer should ship the return. The
+              buyer will see this immediately.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label htmlFor="ret-name">Recipient name *</Label>
-              <Input id="ret-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+              <Input
+                id="ret-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={100}
+              />
             </div>
             <div>
               <Label htmlFor="ret-address">Street address *</Label>
-              <Input id="ret-address" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} />
+              <Input
+                id="ret-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                maxLength={200}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="ret-city">City *</Label>
-                <Input id="ret-city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
+                <Input
+                  id="ret-city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  maxLength={80}
+                />
               </div>
               <div>
                 <Label htmlFor="ret-postal">Postal code</Label>
-                <Input id="ret-postal" value={postal} onChange={(e) => setPostal(e.target.value)} maxLength={20} />
+                <Input
+                  id="ret-postal"
+                  value={postal}
+                  onChange={(e) => setPostal(e.target.value)}
+                  maxLength={20}
+                />
               </div>
             </div>
             <div>
               <Label htmlFor="ret-phone">Phone</Label>
-              <Input id="ret-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} />
+              <Input
+                id="ret-phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                maxLength={30}
+              />
             </div>
             <div>
-              <Label htmlFor="ret-notes">Instructions for the buyer (optional)</Label>
+              <Label htmlFor="ret-notes">
+                Instructions for the buyer (optional)
+              </Label>
               <Textarea
                 id="ret-notes"
                 rows={2}
@@ -203,11 +237,19 @@ export function SellerComplaintBadge({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddressOpen(false)} disabled={busy}>
+            <Button
+              variant="ghost"
+              onClick={() => setAddressOpen(false)}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button onClick={saveAddress} disabled={busy}>
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MapPin className="mr-2 h-4 w-4" />
+              )}
               Share with buyer
             </Button>
           </DialogFooter>

@@ -1,30 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  supportService,
-  type CreateTicketPayload,
+  createSupportTicket,
+  listSupportMessages,
+  listSupportTickets,
+  sendSupportMessage,
 } from "@/services/support.service";
+import type { CreateTicketPayload } from "@/types/support";
 
 const SUPPORT_TICKETS_KEY = ["support-tickets"];
-
 
 // Get tickets
 export const useSupportTickets = () =>
   useQuery({
     queryKey: SUPPORT_TICKETS_KEY,
     queryFn: async () => {
-      const res = await supportService.getTickets();
+      const res = await listSupportTickets();
       return res.data;
     },
   });
-
 
 // Create ticket
 export const useCreateSupportTicket = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateTicketPayload) =>
-      supportService.createTicket(payload),
+    mutationFn: (payload: CreateTicketPayload) => createSupportTicket(payload),
 
     onSuccess: () => {
       qc.invalidateQueries({
@@ -34,18 +34,16 @@ export const useCreateSupportTicket = () => {
   });
 };
 
-
 // Get messages
 export const useSupportMessages = (ticketId?: string) =>
   useQuery({
     queryKey: ["support-messages", ticketId],
     queryFn: async () => {
-      const res = await supportService.getMessages(ticketId!);
+      const res = await listSupportMessages(ticketId!);
       return res.data;
     },
     enabled: !!ticketId,
   });
-
 
 // Send reply
 export const useSendSupportMessage = () => {
@@ -58,8 +56,7 @@ export const useSendSupportMessage = () => {
     }: {
       ticketId: string;
       content: string;
-    }) =>
-      supportService.sendMessage(ticketId, { content }),
+    }) => sendSupportMessage(ticketId, { content }),
 
     onSuccess: (_, variables) => {
       qc.invalidateQueries({

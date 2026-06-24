@@ -1,53 +1,37 @@
+import { authInstance } from "@/services/ky.instance";
+import type {
+  Brand,
+  CreateBrandPayload,
+  UpdateBrandPayload,
+} from "@/types/brand";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-import { apiClient } from "@/lib/apiClient";
-
-export interface Brand {
-  id: string;
-  name: string;
-  active: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+export function listBrands() {
+  return authInstance
+    .get("/api/v1/admin/brands")
+    .json<PaginatedResponse<Brand>>();
 }
 
-export interface CreateBrandPayload {
-  name: string;
-  active?: boolean;
-  sortOrder?: number;
+export function getBrandById(brandId: string) {
+  return authInstance
+    .get(`/api/v1/admin/brands/${brandId}`)
+    .json<Response<Brand>>();
 }
 
-export interface UpdateBrandPayload {
-  name?: string;
-  active?: boolean;
-  sortOrder?: number;
+export function createBrand(payload: CreateBrandPayload) {
+  return authInstance
+    .post("/api/v1/admin/brands", { json: payload })
+    .json<Response<Brand>>();
 }
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: unknown;
+export function updateBrand(brandId: string, payload: UpdateBrandPayload) {
+  return authInstance
+    .patch(`/api/v1/admin/brands/${brandId}`, { json: payload })
+    .json<Response<Brand>>();
 }
 
-interface ItemResponse<T> {
-  data: T;
+export function deleteBrand(brandId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/brands/${brandId}`)
+    .json<Response>();
 }
-
-export const brandService = {
-  list: () =>
-    apiClient.get<ListResponse<Brand>>("/api/v1/admin/brands"),
-
-  getById: (brandId: string) =>
-    apiClient.get<ItemResponse<Brand>>(`/api/v1/admin/brands/${brandId}`),
-
-  create: (payload: CreateBrandPayload) =>
-    apiClient.post<ItemResponse<Brand>>("/api/v1/admin/brands", payload),
-
-  update: (brandId: string, payload: UpdateBrandPayload) =>
-    apiClient.patch<ItemResponse<Brand>>(
-      `/api/v1/admin/brands/${brandId}`,
-      payload
-    ),
-
-  delete: (brandId: string) =>
-    apiClient.delete<void>(`/api/v1/admin/brands/${brandId}`),
-};
-

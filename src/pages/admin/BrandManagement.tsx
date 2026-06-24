@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  useBrands,
+  getBrandsQueryOptions,
   useCreateBrand,
   useUpdateBrand,
   useDeleteBrand,
 } from "@/queries/useAdminBrands";
-import type { Brand } from "@/services/brand.service";
+import type { Brand } from "@/types/brand";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
 
 type BrandForm = {
   name: string;
@@ -41,7 +36,7 @@ const emptyForm: BrandForm = {
 };
 
 const BrandManagement = () => {
-  const { data: brands = [], isLoading } = useBrands();
+  const { data: brands = [], isLoading } = useQuery(getBrandsQueryOptions());
 
   const createBrand = useCreateBrand();
   const updateBrand = useUpdateBrand();
@@ -58,9 +53,9 @@ const BrandManagement = () => {
   const filtered = useMemo(
     () =>
       brands.filter((b: Brand) =>
-        b.name.toLowerCase().includes(search.toLowerCase())
+        b.name.toLowerCase().includes(search.toLowerCase()),
       ),
-    [brands, search]
+    [brands, search],
   );
 
   const handleSave = async () => {
@@ -228,9 +223,7 @@ const BrandManagement = () => {
                 disabled={busy}
                 className="mt-4 w-full"
               >
-                {busy && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
                 {editingId ? "Save Changes" : "Create Brand"}
               </Button>
@@ -251,9 +244,7 @@ const BrandManagement = () => {
           </div>
 
           {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No brands found.
-            </p>
+            <p className="text-sm text-muted-foreground">No brands found.</p>
           ) : (
             <div className="divide-y divide-border">
               {filtered.map((b) => (
@@ -262,13 +253,10 @@ const BrandManagement = () => {
                   className="flex items-center justify-between py-3"
                 >
                   <div>
-                    <p className="font-medium text-foreground">
-                      {b.name}
-                    </p>
+                    <p className="font-medium text-foreground">{b.name}</p>
 
                     <p className="text-xs text-muted-foreground">
-                      order {b.sortOrder} ·{" "}
-                      {b.active ? "active" : "inactive"}
+                      order {b.sortOrder} · {b.active ? "active" : "inactive"}
                     </p>
                   </div>
 

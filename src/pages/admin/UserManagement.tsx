@@ -1,4 +1,5 @@
-import { useAdminUsers } from "@/queries/useAdminUsers";
+import { useQuery } from "@tanstack/react-query";
+import { getAdminUsersQueryOptions } from "@/queries/useAdminUsers";
 import {
   Table,
   TableBody,
@@ -8,16 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 const UserManagement = () => {
-  const { data: users = [], isLoading } = useAdminUsers({ size: 100 });
+  const { data: users = [], isLoading } = useQuery(
+    getAdminUsersQueryOptions({ size: 100 }),
+  );
 
   if (isLoading) {
     return (
@@ -75,16 +74,24 @@ const UserManagement = () => {
 
                 <TableCell>
                   {user.roleName ? (
-                    <Badge variant={user.roleName === "ADMIN" ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        user.roleName === "ADMIN" ? "default" : "secondary"
+                      }
+                    >
                       {user.roleName}
                     </Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">No role</span>
+                    <span className="text-xs text-muted-foreground">
+                      No role
+                    </span>
                   )}
                 </TableCell>
 
                 <TableCell>
-                  <Badge variant={user.status === "ACTIVE" ? "default" : "secondary"}>
+                  <Badge
+                    variant={user.status === "ACTIVE" ? "default" : "secondary"}
+                  >
                     {user.status}
                   </Badge>
                 </TableCell>

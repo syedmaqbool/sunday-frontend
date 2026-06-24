@@ -1,10 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Users, Clock, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  Package,
+  Users,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAdminAnalytics } from "@/queries/useAdminAnalytics";
+import { useQuery } from "@tanstack/react-query";
+import { getAdminAnalyticsQueryOptions } from "@/queries/useAdminAnalytics";
 
 const Overview = () => {
-  const { data, isLoading } = useAdminAnalytics();
+  const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
 
   if (isLoading) {
     return (
@@ -55,9 +63,7 @@ const Overview = () => {
         Dashboard
       </h1>
 
-      <p className="mt-1 text-muted-foreground">
-        Overview of your marketplace
-      </p>
+      <p className="mt-1 text-muted-foreground">Overview of your marketplace</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
@@ -71,9 +77,7 @@ const Overview = () => {
             </CardHeader>
 
             <CardContent>
-              <p className="text-3xl font-bold text-foreground">
-                {c.value}
-              </p>
+              <p className="text-3xl font-bold text-foreground">{c.value}</p>
             </CardContent>
           </Card>
         ))}

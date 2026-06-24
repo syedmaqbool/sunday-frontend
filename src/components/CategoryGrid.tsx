@@ -35,7 +35,9 @@ const CategoryGrid = () => {
               className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary hover:shadow-lg sm:gap-3 sm:p-8"
             >
               <span className="text-3xl sm:text-5xl">{cat.icon}</span>
-              <span className="font-heading text-sm font-semibold text-card-foreground sm:text-xl">{cat.label}</span>
+              <span className="font-heading text-sm font-semibold text-card-foreground sm:text-xl">
+                {cat.label}
+              </span>
             </Link>
           </motion.div>
         ))}

@@ -2,12 +2,15 @@ import { useMemo, useRef, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ListingCard from "./ListingCard";
-import { useUserPreferences, personalizeListings } from "@/hooks/useUserPreferences";
+import {
+  useUserPreferences,
+  personalizeListings,
+} from "@/hooks/useUserPreferences";
 import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
 import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Listing } from "@/lib/constants";
-// 👇 Mock data configuration import 
+// 👇 Mock data configuration  import
 import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
 
 interface FeaturedListingsProps {
@@ -33,7 +36,7 @@ const FeaturedListings = ({ variant = "fresh" }: FeaturedListingsProps) => {
           seller_name: "Mock Seller",
           created_at: new Date().toISOString(),
           status: "approved",
-        })) as unknown as Listing[]; 
+        })) as unknown as Listing[];
       }
 
       // 🚫 Real Supabase calls (Mock active hone par skip ho jayengi)
@@ -46,17 +49,25 @@ const FeaturedListings = ({ variant = "fresh" }: FeaturedListingsProps) => {
       if (error) throw error;
       return (data || []).map((row: any) => ({
         ...row,
-        images: row.images?.length ? row.images : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+        images: row.images?.length
+          ? row.images
+          : [
+              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600",
+            ],
         seller_name: "Seller",
       }));
     },
   });
 
-  const isPersonalized = variant === "personalized" && prefs?.onboarding_completed;
+  const isPersonalized =
+    variant === "personalized" && prefs?.onboarding_completed;
 
   const listings = useMemo(() => {
     if (variant === "personalized") {
-      return applyBoostRanking(personalizeListings([...dbListings], prefs), boostMap);
+      return applyBoostRanking(
+        personalizeListings([...dbListings], prefs),
+        boostMap,
+      );
     }
     return dbListings;
   }, [dbListings, prefs, boostMap, variant]);
@@ -68,15 +79,21 @@ const FeaturedListings = ({ variant = "fresh" }: FeaturedListingsProps) => {
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
   }, []);
 
-  const scrollBy = useCallback((direction: "left" | "right") => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const cardWidth = el.firstElementChild?.clientWidth || 280;
-    const gap = 16;
-    const scrollAmount = (cardWidth + gap) * 2;
-    el.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
-    setTimeout(checkScroll, 300);
-  }, [checkScroll]);
+  const scrollBy = useCallback(
+    (direction: "left" | "right") => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const cardWidth = el.firstElementChild?.clientWidth || 280;
+      const gap = 16;
+      const scrollAmount = (cardWidth + gap) * 2;
+      el.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+      setTimeout(checkScroll, 300);
+    },
+    [checkScroll],
+  );
 
   // Hide personalized section when user has no preferences (avoid duplicating Fresh Drops)
   if (variant === "personalized" && !isPersonalized) return null;
@@ -123,7 +140,10 @@ const FeaturedListings = ({ variant = "fresh" }: FeaturedListingsProps) => {
         className="mt-8 flex gap-4 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {listings.map((listing, i) => (
-          <div key={listing.id} className="w-[calc(50%-8px)] flex-shrink-0 snap-start sm:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] xl:w-[calc(16.666%-14px)]">
+          <div
+            key={listing.id}
+            className="w-[calc(50%-8px)] flex-shrink-0 snap-start sm:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] xl:w-[calc(16.666%-14px)]"
+          >
             <ListingCard listing={listing} index={i} />
           </div>
         ))}

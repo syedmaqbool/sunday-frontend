@@ -1,52 +1,21 @@
-import { apiClient } from "@/lib/apiClient";
+import { authInstance } from "@/services/ky.instance";
+import type { Notification } from "@/types/notification";
+import type { PaginatedResponse, Response } from "@/types/response.type";
 
-interface ListResponse<T> {
-  data: T[];
-  pagination: {
-    currentPage: number;
-    lastPage: number;
-    nextPage: number | null;
-    prevPage: number | null;
-    perPage: number;
-    total: number;
-  };
+export function listNotifications(page = 1, size = 20) {
+  return authInstance
+    .get("/api/v1/me/notifications", { searchParams: { page, size } })
+    .json<PaginatedResponse<Notification>>();
 }
 
-interface ItemResponse<T> {
-  data: T;
+export function markNotificationRead(notificationId: string) {
+  return authInstance
+    .post(`/api/v1/me/notifications/${notificationId}/read`, { json: {} })
+    .json<Response<Notification>>();
 }
 
-export interface Notification {
-  id: string;
-  entityId: string | null;
-  userId: string;
-  body: string;
-  audience: "USER" | "ADMIN";
-  entityType: string | null;
-  metadata: Record<string, unknown>;
-  readAt: string | null;
-  title: string;
-  type: string;
-  createdAt: string;
-  updatedAt: string;
+export function markAllNotificationsRead() {
+  return authInstance
+    .post("/api/v1/me/notifications/read", { json: {} })
+    .json<Response>();
 }
-
-export const notificationService = {
-  list: (page = 1, size = 20) =>
-    apiClient.get<ListResponse<Notification>>(
-      `/api/v1/me/notifications?page=${page}&size=${size}`
-    ),
-
-  markRead: (notificationId: string) =>
-    apiClient.post<ItemResponse<Notification>>(
-      `/api/v1/me/notifications/${notificationId}/read`,
-      {}
-    ),
-
-  markAllRead: () =>
-    apiClient.post(
-      `/api/v1/me/notifications/read`,
-      {}
-    ),
-};
-

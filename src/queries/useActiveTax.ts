@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { listTaxSettings } from '@/services/taxSetting.service';
 
 export interface ActiveTax {
   id: string;
@@ -14,16 +14,20 @@ export const activeTaxQueryKey = {
 export function getActiveTaxOptions() {
   return queryOptions({
     queryFn: async (): Promise<ActiveTax | null> => {
-      const { data, error } = await supabase
-        .from('tax_settings')
-        .select('id, name, rate')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data ? { ...data, rate: Number(data.rate) } : null;
+      const response = await listTaxSettings();
+      const activeTax = response.data
+        .filter(tax => tax.active)
+        .toSorted((a, b) => (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ))[0];
+
+      return activeTax
+        ? {
+            id: activeTax.id,
+            name: activeTax.name,
+            rate: Number(activeTax.rate),
+          }
+        : null;
     },
     queryKey: activeTaxQueryKey.current(),
   });

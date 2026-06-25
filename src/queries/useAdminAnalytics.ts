@@ -1,41 +1,42 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import type { AdminMarketingLeadsParams } from '@/types/admin/analytics';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import {
   getAdminAnalytics,
   listAdminMarketingLeads,
-} from "@/services/adminAnalytics.service";
-import type { AdminMarketingLeadsParams } from "@/types/admin/analytics";
+} from '@/services/adminAnalytics.service';
 
 export const adminAnalyticsQueryKey = {
-  all: () => ["admin-analytics"] as const,
-  overview: () => [...adminAnalyticsQueryKey.all(), "overview"] as const,
-  marketingLeads: (params: AdminMarketingLeadsParams = {}) =>
-    [...adminAnalyticsQueryKey.all(), "marketing-leads", params] as const,
+  all: () => ['admin-analytics'] as const,
+  marketingLeads: (parameters: AdminMarketingLeadsParams = {}) =>
+    [...adminAnalyticsQueryKey.all(), 'marketing-leads', parameters] as const,
+  overview: () => [...adminAnalyticsQueryKey.all(), 'overview'] as const,
 };
 
-export const getAdminAnalyticsQueryOptions = () =>
-  queryOptions({
-    queryKey: adminAnalyticsQueryKey.overview(),
+export function getAdminAnalyticsQueryOptions() {
+  return queryOptions({
     queryFn: async () => {
       const response = await getAdminAnalytics();
       return response.data;
     },
+    queryKey: adminAnalyticsQueryKey.overview(),
     retry: false,
   });
+}
 
-export const useAdminAnalytics = () =>
-  useQuery(getAdminAnalyticsQueryOptions());
+export function useAdminAnalytics() {
+  return useQuery(getAdminAnalyticsQueryOptions());
+}
 
-export const getAdminMarketingLeadsQueryOptions = (
-  params: AdminMarketingLeadsParams = {},
-) =>
-  queryOptions({
-    queryKey: adminAnalyticsQueryKey.marketingLeads(params),
+export function getAdminMarketingLeadsQueryOptions(parameters: AdminMarketingLeadsParams = {}) {
+  return queryOptions({
     queryFn: async () => {
-      return listAdminMarketingLeads(params);
+      return listAdminMarketingLeads(parameters);
     },
+    queryKey: adminAnalyticsQueryKey.marketingLeads(parameters),
     retry: false,
   });
+}
 
-export const useAdminMarketingLeads = (
-  params: AdminMarketingLeadsParams = {},
-) => useQuery(getAdminMarketingLeadsQueryOptions(params));
+export function useAdminMarketingLeads(parameters: AdminMarketingLeadsParams = {}) {
+  return useQuery(getAdminMarketingLeadsQueryOptions(parameters));
+}

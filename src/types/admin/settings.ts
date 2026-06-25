@@ -1,4 +1,4 @@
-import type { BoostPackageAPI } from "@/types/boost";
+import type { BoostPackageAPI } from '@/types/boost';
 
 export interface AdminSettings {
   boostPackages: BoostPackageAPI[];
@@ -11,8 +11,8 @@ export interface AdminSettings {
 }
 
 export interface HelpCategoryAPI {
-  active: boolean;
   key: string;
+  active: boolean;
   label: string;
   sortOrder: number;
 }
@@ -36,8 +36,8 @@ export interface HelpTutorialAPI {
 }
 
 export interface EmailTemplateAPI {
+  key: string;
   id: string;
   body: string;
-  key: string;
   subject: string;
 }

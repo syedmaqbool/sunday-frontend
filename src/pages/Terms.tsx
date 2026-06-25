@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
-const Terms = () => {
+export default function Terms() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -15,9 +15,14 @@ const Terms = () => {
       <main className="container flex-1 py-12">
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="
+            mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground
+            hover:text-foreground
+          "
         >
-          <ChevronLeft className="h-4 w-4" /> Back to home
+          <ChevronLeft className="h-4 w-4" />
+          {' '}
+          Back to home
         </Link>
         <article className="mx-auto max-w-3xl">
           <h1 className="mb-2 font-heading text-3xl font-bold">
@@ -33,13 +38,17 @@ const Terms = () => {
               1. Introduction
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              <strong>1.1</strong> These Terms & Conditions (“Terms”) govern
+              <strong>1.1</strong>
+              {' '}
+              These Terms & Conditions (“Terms”) govern
               your access to and use of Sunday (“Platform”, “we”, “us”, “our”),
               a marketplace that enables users to buy and sell pre-owned fashion
               items.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              <strong>1.2</strong> By accessing or using the Platform, you agree
+              <strong>1.2</strong>
+              {' '}
+              By accessing or using the Platform, you agree
               to be bound by these Terms. If you do not agree, you must not use
               the Platform.
             </p>
@@ -51,15 +60,21 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>2.1</strong> You must be at least 13 years of age to use
+                <strong>2.1</strong>
+                {' '}
+                You must be at least 13 years of age to use
                 the Platform.
               </p>
               <p>
-                <strong>2.2</strong> You agree to provide accurate, complete,
+                <strong>2.2</strong>
+                {' '}
+                You agree to provide accurate, complete,
                 and up-to-date information.
               </p>
               <p>
-                <strong>2.3</strong> We reserve the right to suspend or
+                <strong>2.3</strong>
+                {' '}
+                We reserve the right to suspend or
                 terminate accounts that provide false or misleading information.
               </p>
             </div>
@@ -70,7 +85,9 @@ const Terms = () => {
               3. User Accounts
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              <strong>3.1</strong> You are responsible for:
+              <strong>3.1</strong>
+              {' '}
+              You are responsible for:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground">
               <li>
@@ -80,7 +97,9 @@ const Terms = () => {
               <li>Ensuring your information remains accurate</li>
             </ul>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              <strong>3.2</strong> Sunday shall not be liable for unauthorized
+              <strong>3.2</strong>
+              {' '}
+              Sunday shall not be liable for unauthorized
               access due to user negligence.
             </p>
           </section>
@@ -91,11 +110,15 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>4.1</strong> Sunday operates solely as a technology
+                <strong>4.1</strong>
+                {' '}
+                Sunday operates solely as a technology
                 platform connecting buyers and sellers.
               </p>
               <p>
-                <strong>4.2</strong> Sunday does not:
+                <strong>4.2</strong>
+                {' '}
+                Sunday does not:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Own, store, or control listed items</li>
@@ -103,12 +126,16 @@ const Terms = () => {
                 <li>Act as a party to transactions between users</li>
               </ul>
               <p>
-                <strong>4.3</strong> Sunday is not responsible for the
+                <strong>4.3</strong>
+                {' '}
+                Sunday is not responsible for the
                 performance of buyers, sellers, or third-party service
                 providers, including shipping partners.
               </p>
               <p>
-                <strong>4.4</strong> Any processes, timelines, or controls
+                <strong>4.4</strong>
+                {' '}
+                Any processes, timelines, or controls
                 implemented by Sunday are for user protection and platform
                 integrity only and do not constitute an assumption of liability.
               </p>
@@ -121,11 +148,15 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>5.1</strong> All listings are subject to review and
+                <strong>5.1</strong>
+                {' '}
+                All listings are subject to review and
                 approval.
               </p>
               <p>
-                <strong>5.2</strong> Sellers must ensure that:
+                <strong>5.2</strong>
+                {' '}
+                Sellers must ensure that:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Listings are accurate and not misleading</li>
@@ -135,17 +166,23 @@ const Terms = () => {
                 </li>
               </ul>
               <p>
-                <strong>5.3</strong> Sunday reserves the right to remove or
+                <strong>5.3</strong>
+                {' '}
+                Sunday reserves the right to remove or
                 suspend listings at its discretion.
               </p>
               <p>
-                <strong>5.4</strong> Sunday reserves the right to remove or
+                <strong>5.4</strong>
+                {' '}
+                Sunday reserves the right to remove or
                 suspend accounts at its discretion. Low user ratings may lead to
                 an admin review of the account and may result in suspension or
                 deletion.
               </p>
               <p>
-                <strong>5.5</strong> For suspected fraudulent activity, users
+                <strong>5.5</strong>
+                {' '}
+                For suspected fraudulent activity, users
                 can report accounts and listings through our complaint form — a
                 representative of Sunday will be in touch to investigate.
               </p>
@@ -269,12 +306,16 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>8.1</strong> Upon marking an order as received, the
+                <strong>8.1</strong>
+                {' '}
+                Upon marking an order as received, the
                 buyer has twelve (12) hours to verify that the item matches the
                 listing description.
               </p>
               <p>
-                <strong>8.2</strong> If no action is taken within this period:
+                <strong>8.2</strong>
+                {' '}
+                If no action is taken within this period:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>The order will be deemed accepted</li>
@@ -282,7 +323,9 @@ const Terms = () => {
                 <li>Seller payout will be initiated</li>
               </ul>
               <p>
-                <strong>8.3</strong> Order will only be considered complete once
+                <strong>8.3</strong>
+                {' '}
+                Order will only be considered complete once
                 quality is verified. In case the buyer claims insufficient
                 quality, a refund case will be opened up. A refund may be
                 initiated as per the Platform’s Returns and Refund Policy.
@@ -296,21 +339,29 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>9.1</strong> Returns and refunds on the Platform are
+                <strong>9.1</strong>
+                {' '}
+                Returns and refunds on the Platform are
                 governed by Sunday’s separate Returns & Refunds Policy, as
                 updated from time to time.
               </p>
               <p>
-                <strong>9.2</strong> By using the Platform, you agree to be
+                <strong>9.2</strong>
+                {' '}
+                By using the Platform, you agree to be
                 bound by the terms set out in the Returns & Refunds Policy.
               </p>
               <p>
-                <strong>9.3</strong> Users are required to review the Returns &
+                <strong>9.3</strong>
+                {' '}
+                Users are required to review the Returns &
                 Refunds Policy prior to engaging in any transaction on the
                 Platform.
               </p>
               <p>
-                <strong>9.4</strong> In the event of any conflict between these
+                <strong>9.4</strong>
+                {' '}
+                In the event of any conflict between these
                 Terms and the Returns & Refunds Policy, the Returns & Refunds
                 Policy shall prevail with respect to return and refund matters.
               </p>
@@ -323,11 +374,15 @@ const Terms = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>10.1</strong> Payments are processed via third-party
+                <strong>10.1</strong>
+                {' '}
+                Payments are processed via third-party
                 providers.
               </p>
               <p>
-                <strong>10.2</strong> If Sunday charges service fees,
+                <strong>10.2</strong>
+                {' '}
+                If Sunday charges service fees,
                 transaction fees, or commissions:
               </p>
               <ul className="list-disc space-y-1 pl-5">
@@ -335,18 +390,24 @@ const Terms = () => {
                 <li>Users agree to pay all applicable fees and taxes</li>
               </ul>
               <p>
-                <strong>10.3</strong> All seller payouts will be administered
+                <strong>10.3</strong>
+                {' '}
+                All seller payouts will be administered
                 through bank transfers only.
               </p>
               <p>
-                <strong>10.4</strong> Seller payouts:
+                <strong>10.4</strong>
+                {' '}
+                Seller payouts:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Initiated after quality verification</li>
                 <li>Processed within five (5) working days</li>
               </ul>
               <p>
-                <strong>10.5</strong> In case of using a family member’s or a
+                <strong>10.5</strong>
+                {' '}
+                In case of using a family member’s or a
                 friend’s bank account details for seller payout, it will be
                 assumed by us that you have obtained consent from the owner of
                 bank account details.
@@ -479,8 +540,15 @@ const Terms = () => {
               </p>
               <p>Email: xxxx@sndymarket.com</p>
               <p>
-                Website:{" "}
-                <Link to="/" className="text-primary hover:underline">
+                Website:
+                {' '}
+                <Link
+                  to="/"
+                  className="
+                    text-primary
+                    hover:underline
+                  "
+                >
                   www.sndymarket.com
                 </Link>
               </p>
@@ -491,6 +559,4 @@ const Terms = () => {
       <Footer />
     </div>
   );
-};
-
-export default Terms;
+}

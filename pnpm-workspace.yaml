@@ -1,3 +1,9 @@
+# eslint-disable pnpm/yaml-enforce-settings
+
+shellEmulator: true
+
+trustPolicy: permissive
+
 allowBuilds:
   '@swc/core': true
   esbuild: true

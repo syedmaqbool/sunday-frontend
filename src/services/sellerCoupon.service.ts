@@ -1,20 +1,20 @@
-import { authInstance } from "@/services/ky.instance";
+import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
   CreateSellerCouponPayload,
   SellerCoupon,
   UpdateSellerCouponPayload,
-} from "@/types/seller-coupon";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/seller-coupon';
+import { authInstance } from '@/services/ky.instance';
 
 export function listSellerCoupons() {
   return authInstance
-    .get("/api/v1/admin/seller-coupons")
+    .get('/api/v1/admin/seller-coupons')
     .json<PaginatedResponse<SellerCoupon>>();
 }
 
 export function createSellerCoupon(payload: CreateSellerCouponPayload) {
   return authInstance
-    .post("/api/v1/admin/seller-coupons", { json: payload })
+    .post('/api/v1/admin/seller-coupons', { json: payload })
     .json<Response<SellerCoupon>>();
 }
 

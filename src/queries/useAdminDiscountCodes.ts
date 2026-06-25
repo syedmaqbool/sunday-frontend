@@ -1,38 +1,39 @@
+import type {
+  CreateDiscountCodePayload,
+  UpdateDiscountCodePayload,
+} from '@/types/discount-code';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   createDiscountCode,
   deleteDiscountCode,
   listDiscountCodes,
   updateDiscountCode,
-} from "@/services/discountCode.service";
-import type {
-  CreateDiscountCodePayload,
-  UpdateDiscountCodePayload,
-} from "@/types/discount-code";
+} from '@/services/discountCode.service';
 
 export const discountCodesQueryKey = {
-  all: () => ["discount-codes"] as const,
-  list: () => [...discountCodesQueryKey.all(), "list"] as const,
+  all: () => ['discount-codes'] as const,
+  list: () => [...discountCodesQueryKey.all(), 'list'] as const,
 };
 
-export const getDiscountCodesOptions = () =>
-  queryOptions({
-    queryKey: discountCodesQueryKey.list(),
+export function getDiscountCodesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listDiscountCodes();
-      return res.data;
+      const response = await listDiscountCodes();
+      return response.data;
     },
+    queryKey: discountCodesQueryKey.list(),
     staleTime: 5 * 60 * 1000,
   });
+}
 
 export const useDiscountCodes = () => useQuery(getDiscountCodesOptions());
 
-export const useCreateDiscountCode = () => {
+export function useCreateDiscountCode() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -45,9 +46,9 @@ export const useCreateDiscountCode = () => {
       });
     },
   });
-};
+}
 
-export const useUpdateDiscountCode = () => {
+export function useUpdateDiscountCode() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -65,9 +66,9 @@ export const useUpdateDiscountCode = () => {
       });
     },
   });
-};
+}
 
-export const useDeleteDiscountCode = () => {
+export function useDeleteDiscountCode() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -79,4 +80,4 @@ export const useDeleteDiscountCode = () => {
       });
     },
   });
-};
+}

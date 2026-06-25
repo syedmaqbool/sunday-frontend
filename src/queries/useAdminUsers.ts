@@ -3,41 +3,43 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
-import { listAdminUsers, updateUserRole } from "@/services/user.service";
+} from '@tanstack/react-query';
+import { listAdminUsers, updateUserRole } from '@/services/user.service';
 
 export const adminUsersQueryKey = {
-  all: () => ["admin-users"] as const,
-  list: (params: AdminUsersParams = {}) =>
-    [...adminUsersQueryKey.all(), "list", params] as const,
+  all: () => ['admin-users'] as const,
+  list: (parameters: AdminUsersParams = {}) =>
+    [...adminUsersQueryKey.all(), 'list', parameters] as const,
 };
 
-export type AdminUsersParams = {
+export interface AdminUsersParams {
   page?: number;
-  size?: number;
   search?: string;
-  status?: "ACTIVE" | "INACTIVE";
-};
+  size?: number;
+  status?: 'ACTIVE' | 'INACTIVE';
+}
 
-export const getAdminUsersQueryOptions = (params: AdminUsersParams = {}) =>
-  queryOptions({
-    queryKey: adminUsersQueryKey.list(params),
+export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listAdminUsers(params);
-      return res.data;
+      const response = await listAdminUsers(parameters);
+      return response.data;
     },
+    queryKey: adminUsersQueryKey.list(parameters),
   });
+}
 
-export const useAdminUsers = (params: AdminUsersParams = {}) =>
-  useQuery(getAdminUsersQueryOptions(params));
+export function useAdminUsers(parameters: AdminUsersParams = {}) {
+  return useQuery(getAdminUsersQueryOptions(parameters));
+}
 
-export const useUpdateUserRole = () => {
+export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
+    mutationFn: ({ roleId, userId }: { roleId: string; userId: string }) =>
       updateUserRole(userId, roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
     },
   });
-};
+}

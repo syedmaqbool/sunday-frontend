@@ -12,8 +12,8 @@ export interface DiscountCode {
 }
 
 export interface CreateDiscountCodePayload {
-  code: string;
   active?: boolean;
+  code: string;
   discountType: string;
   discountValue: number;
   expiresAt?: string | null;
@@ -22,8 +22,8 @@ export interface CreateDiscountCodePayload {
 }
 
 export interface UpdateDiscountCodePayload {
-  code?: string;
   active?: boolean;
+  code?: string;
   discountType?: string;
   discountValue?: number;
   expiresAt?: string | null;

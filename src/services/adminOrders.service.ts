@@ -1,9 +1,9 @@
-import { authInstance } from "@/services/ky.instance";
-import type { AdminOrder, ReservedListing } from "@/types/admin/order";
-import type { PaginatedResponse } from "@/types/response.type";
+import type { AdminOrder, ReservedListing } from '@/types/admin/order';
+import type { PaginatedResponse } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listAdminOrders(
-  params: {
+  parameters: {
     page?: number;
     size?: number;
     sortBy?: string;
@@ -11,14 +11,14 @@ export function listAdminOrders(
   } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/orders", { searchParams: params })
+    .get('/api/v1/admin/orders', { searchParams: parameters })
     .json<PaginatedResponse<AdminOrder>>();
 }
 
 export function listReservedListings(
-  params: { page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/orders/reserved-listings", { searchParams: params })
+    .get('/api/v1/admin/orders/reserved-listings', { searchParams: parameters })
     .json<PaginatedResponse<ReservedListing>>();
 }

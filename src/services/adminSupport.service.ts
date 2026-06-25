@@ -1,26 +1,26 @@
-import { authInstance } from "@/services/ky.instance";
+import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
   SupportTicket,
   SupportTicketMessage,
   SupportTicketStatus,
-} from "@/types/support";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/support';
+import { authInstance } from '@/services/ky.instance';
 
 export function listAdminSupportTickets(
-  params: { page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/support-tickets", { searchParams: params })
+    .get('/api/v1/admin/support-tickets', { searchParams: parameters })
     .json<PaginatedResponse<SupportTicket>>();
 }
 
 export function listAdminSupportMessages(
   ticketId: string,
-  params: { page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number } = {},
 ) {
   return authInstance
     .get(`/api/v1/admin/support-tickets/${ticketId}/messages`, {
-      searchParams: params,
+      searchParams: parameters,
     })
     .json<PaginatedResponse<SupportTicketMessage>>();
 }

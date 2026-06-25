@@ -1,30 +1,30 @@
-import { authInstance } from "@/services/ky.instance";
 import type {
-  BoostPackage,
   BoostableListingItem,
+  BoostPackage,
   BoostWithCampaignPayload,
   BoostWithPackagePayload,
   ListingBoost,
-} from "@/types/boost";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/boost';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listBoostPackages() {
   return authInstance
-    .get("/api/v1/boost-packages")
+    .get('/api/v1/boost-packages')
     .json<Response<BoostPackage[]>>();
 }
 
-export function listMyBoosts(params: { page?: number; size?: number } = {}) {
+export function listMyBoosts(parameters: { page?: number; size?: number } = {}) {
   return authInstance
-    .get("/api/v1/me/boosts", { searchParams: params })
+    .get('/api/v1/me/boosts', { searchParams: parameters })
     .json<PaginatedResponse<ListingBoost>>();
 }
 
 export function listBoostableListings(
-  params: { page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number } = {},
 ) {
   return authInstance
-    .get("/api/v1/me/listings/boostable", { searchParams: params })
+    .get('/api/v1/me/listings/boostable', { searchParams: parameters })
     .json<PaginatedResponse<BoostableListingItem>>();
 }
 

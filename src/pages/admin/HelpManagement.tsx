@@ -1,48 +1,48 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getAdminSettingsOptions,
-  useUpdateHelpCategories,
-  useUpdateHelpFaqs,
-  useUpdateHelpTutorials,
-} from "@/queries/useAdminSettings";
 import type {
   HelpCategoryAPI,
   HelpFaqAPI,
   HelpTutorialAPI,
-} from "@/types/admin/settings";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from '@/types/admin/settings';
+import { useQuery } from '@tanstack/react-query';
+import {
+  BookOpen,
+  FileText,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  BookOpen,
-  FileText,
-} from "lucide-react";
-import { toast } from "sonner";
-import { z } from "zod";
+  getAdminSettingsOptions,
+  useUpdateHelpCategories,
+  useUpdateHelpFaqs,
+  useUpdateHelpTutorials,
+} from '@/queries/useAdminSettings';
 
 // ── Display types ────────────────────────────────────────────────────────────
 // Note: backend HelpCategorySchema has no `id`/`blurb`/`icon` — `key` is the
@@ -50,74 +50,98 @@ import { z } from "zod";
 // title+slug+body article, not a step-by-step card. UI redesigned to match.
 interface Category {
   key: string;
+  active: boolean;
   label: string;
   sort_order: number;
-  active: boolean;
 }
 interface Faq {
   id: string;
-  category_key: string;
-  question: string;
   answer: string;
-  sort_order: number;
+  category_key: string;
   published: boolean;
+  question: string;
+  sort_order: number;
 }
 interface Tutorial {
   id: string;
-  title: string;
-  slug: string;
   body: string;
-  sort_order: number;
   published: boolean;
+  slug: string;
+  sort_order: number;
+  title: string;
 }
 
 // ── API ↔ Display adapters ───────────────────────────────────────────────────
-const adaptCategory = (c: HelpCategoryAPI): Category => ({
-  key: c.key,
-  label: c.label,
-  sort_order: c.sortOrder,
-  active: c.active,
-});
-const categoryToApi = (c: Category): HelpCategoryAPI => ({
-  key: c.key,
-  label: c.label,
-  sortOrder: c.sort_order,
-  active: c.active,
-});
+function adaptCategory(c: HelpCategoryAPI): Category {
+  return {
+    key: c.key,
+    active: c.active,
+    label: c.label,
+    sort_order: c.sortOrder,
+  };
+}
+function categoryToApi(c: Category): HelpCategoryAPI {
+  return {
+    key: c.key,
+    active: c.active,
+    label: c.label,
+    sortOrder: c.sort_order,
+  };
+}
 
-const adaptFaq = (f: HelpFaqAPI): Faq => ({
-  id: f.id,
-  category_key: f.categoryKey,
-  question: f.question,
-  answer: f.answer,
-  sort_order: f.sortOrder,
-  published: f.published,
-});
-const faqToApi = (f: Faq): HelpFaqAPI => ({
-  id: f.id,
-  categoryKey: f.category_key,
-  question: f.question,
-  answer: f.answer,
-  sortOrder: f.sort_order,
-  published: f.published,
-});
+function adaptFaq(f: HelpFaqAPI): Faq {
+  return {
+    id: f.id,
+    answer: f.answer,
+    category_key: f.categoryKey,
+    published: f.published,
+    question: f.question,
+    sort_order: f.sortOrder,
+  };
+}
+function faqToApi(f: Faq): HelpFaqAPI {
+  return {
+    id: f.id,
+    answer: f.answer,
+    categoryKey: f.category_key,
+    published: f.published,
+    question: f.question,
+    sortOrder: f.sort_order,
+  };
+}
 
-const adaptTutorial = (t: HelpTutorialAPI): Tutorial => ({
-  id: t.id,
-  title: t.title,
-  slug: t.slug,
-  body: t.body,
-  sort_order: t.sortOrder,
-  published: t.published,
-});
-const tutorialToApi = (t: Tutorial): HelpTutorialAPI => ({
-  id: t.id,
-  title: t.title,
-  slug: t.slug,
-  body: t.body,
-  sortOrder: t.sort_order,
-  published: t.published,
-});
+function adaptTutorial(t: HelpTutorialAPI): Tutorial {
+  return {
+    id: t.id,
+    body: t.body,
+    published: t.published,
+    slug: t.slug,
+    sort_order: t.sortOrder,
+    title: t.title,
+  };
+}
+function tutorialToApi(t: Tutorial): HelpTutorialAPI {
+  return {
+    id: t.id,
+    body: t.body,
+    published: t.published,
+    slug: t.slug,
+    sortOrder: t.sort_order,
+    title: t.title,
+  };
+}
+
+function toCategoryApiList(categories: Category[]) {
+  return categories.map(category => categoryToApi(category));
+}
+
+function toFaqApiList(faqs: Faq[]) {
+  return faqs.map(faq => faqToApi(faq));
+}
+
+function toTutorialApiList(tutorials: Tutorial[]) {
+  return tutorials.map(tutorial => tutorialToApi(tutorial));
+}
 
 // ── Validation ────────────────────────────────────────────────────────────────
 const categorySchema = z.object({
@@ -126,97 +150,99 @@ const categorySchema = z.object({
     .trim()
     .min(2)
     .max(40)
-    .regex(/^[a-z0-9_-]+$/, "Lowercase letters, numbers, _ or -"),
+    .regex(/^[a-z0-9_-]+$/, 'Lowercase letters, numbers, _ or -'),
   label: z.string().trim().min(1).max(60),
   sort_order: z.number().int().min(0),
 });
 const faqSchema = z.object({
-  category_key: z.string().min(1, "Choose a category"),
-  question: z.string().trim().min(3).max(200),
   answer: z.string().trim().min(3).max(2000),
+  category_key: z.string().min(1, 'Choose a category'),
+  question: z.string().trim().min(3).max(200),
   sort_order: z.number().int().min(0),
 });
 const tutorialSchema = z.object({
-  title: z.string().trim().min(2).max(80),
+  body: z.string().trim().min(3).max(5000),
   slug: z
     .string()
     .trim()
     .min(2)
     .max(80)
-    .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, - only"),
-  body: z.string().trim().min(3).max(5000),
+    .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, - only'),
   sort_order: z.number().int().min(0),
+  title: z.string().trim().min(2).max(80),
 });
 
-const HelpManagement = () => {
+function HelpManagement() {
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
   const updateCategories = useUpdateHelpCategories();
   const updateFaqs = useUpdateHelpFaqs();
   const updateTutorials = useUpdateHelpTutorials();
 
   const categories: Category[] = (settings?.helpCategories ?? []).map(
-    adaptCategory,
+    category => adaptCategory(category),
   );
-  const faqs: Faq[] = (settings?.helpFaqs ?? []).map(adaptFaq);
+  const faqs: Faq[] = (settings?.helpFaqs ?? []).map(faq => adaptFaq(faq));
   const tutorials: Tutorial[] = (settings?.helpTutorials ?? []).map(
-    adaptTutorial,
+    tutorial => adaptTutorial(tutorial),
   );
 
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
   const [catEdit, setCatEdit] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState({ key: "", label: "", sort_order: 0 });
+  const [catForm, setCatForm] = useState({ key: '', label: '', sort_order: 0 });
 
   const openCategoryDialog = (c: Category | null) => {
     setCatEdit(c);
     setCatForm(
       c
         ? { key: c.key, label: c.label, sort_order: c.sort_order }
-        : { key: "", label: "", sort_order: categories.length },
+        : { key: '', label: '', sort_order: categories.length },
     );
     setCatOpen(true);
   };
 
   const saveCategory = () => {
     const parsed = categorySchema.safeParse(catForm);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success)
+      return toast.error(parsed.error.issues[0].message);
 
     let next: Category[];
     if (catEdit) {
-      next = categories.map((c) =>
+      next = categories.map(c =>
         c.key === catEdit.key ? { ...c, ...parsed.data } : c,
       );
-    } else {
-      if (categories.some((c) => c.key === parsed.data.key))
-        return toast.error("That key already exists");
+    }
+    else {
+      if (categories.some(c => c.key === parsed.data.key))
+        return toast.error('That key already exists');
       const newCategory: Category = {
         key: parsed.data.key,
+        active: true,
         label: parsed.data.label,
         sort_order: parsed.data.sort_order,
-        active: true,
       };
       next = [...categories, newCategory];
     }
 
-    updateCategories.mutate(next.map(categoryToApi), {
+    updateCategories.mutate(toCategoryApiList(next), {
+      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
       onSuccess: () => {
-        toast.success(catEdit ? "Category updated" : "Category added");
+        toast.success(catEdit ? 'Category updated' : 'Category added');
         setCatOpen(false);
       },
-      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
     });
   };
 
-  const toggleCategoryActive = (key: string, active: boolean) => {
-    const next = categories.map((c) => (c.key === key ? { ...c, active } : c));
-    updateCategories.mutate(next.map(categoryToApi));
+  const toggleCategoryActive = (key: string, isActive: boolean) => {
+    const next = categories.map(c => (c.key === key ? { ...c, active: isActive } : c));
+    updateCategories.mutate(toCategoryApiList(next));
   };
 
   const deleteCategory = (key: string) => {
-    const next = categories.filter((c) => c.key !== key);
-    updateCategories.mutate(next.map(categoryToApi), {
-      onSuccess: () => toast.success("Category removed"),
-      onError: () => toast.error("Failed to remove category"),
+    const next = categories.filter(c => c.key !== key);
+    updateCategories.mutate(toCategoryApiList(next), {
+      onError: () => toast.error('Failed to remove category'),
+      onSuccess: () => toast.success('Category removed'),
     });
   };
 
@@ -224,9 +250,9 @@ const HelpManagement = () => {
   const [faqOpen, setFaqOpen] = useState(false);
   const [faqEdit, setFaqEdit] = useState<Faq | null>(null);
   const [faqForm, setFaqForm] = useState({
-    category_key: "",
-    question: "",
-    answer: "",
+    answer: '',
+    category_key: '',
+    question: '',
     sort_order: 0,
   });
 
@@ -235,15 +261,15 @@ const HelpManagement = () => {
     setFaqForm(
       f
         ? {
+            answer: f.answer,
             category_key: f.category_key,
             question: f.question,
-            answer: f.answer,
             sort_order: f.sort_order,
           }
         : {
-            category_key: categories[0]?.key ?? "",
-            question: "",
-            answer: "",
+            answer: '',
+            category_key: categories[0]?.key ?? '',
+            question: '',
             sort_order: faqs.length,
           },
     );
@@ -252,44 +278,46 @@ const HelpManagement = () => {
 
   const saveFaq = () => {
     const parsed = faqSchema.safeParse(faqForm);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success)
+      return toast.error(parsed.error.issues[0].message);
 
     let next: Faq[];
     if (faqEdit) {
-      next = faqs.map((f) =>
+      next = faqs.map(f =>
         f.id === faqEdit.id ? { ...f, ...parsed.data } : f,
       );
-    } else {
+    }
+    else {
       const newFaq: Faq = {
         id: `faq-${Date.now()}`,
-        category_key: parsed.data.category_key,
-        question: parsed.data.question,
         answer: parsed.data.answer,
-        sort_order: parsed.data.sort_order,
+        category_key: parsed.data.category_key,
         published: true,
+        question: parsed.data.question,
+        sort_order: parsed.data.sort_order,
       };
       next = [...faqs, newFaq];
     }
 
-    updateFaqs.mutate(next.map(faqToApi), {
+    updateFaqs.mutate(toFaqApiList(next), {
+      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
       onSuccess: () => {
-        toast.success(faqEdit ? "FAQ updated" : "FAQ added");
+        toast.success(faqEdit ? 'FAQ updated' : 'FAQ added');
         setFaqOpen(false);
       },
-      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
     });
   };
 
-  const toggleFaqPublished = (id: string, published: boolean) => {
-    const next = faqs.map((f) => (f.id === id ? { ...f, published } : f));
-    updateFaqs.mutate(next.map(faqToApi));
+  const toggleFaqPublished = (id: string, isPublished: boolean) => {
+    const next = faqs.map(f => (f.id === id ? { ...f, published: isPublished } : f));
+    updateFaqs.mutate(toFaqApiList(next));
   };
 
   const deleteFaq = (id: string) => {
-    const next = faqs.filter((f) => f.id !== id);
-    updateFaqs.mutate(next.map(faqToApi), {
-      onSuccess: () => toast.success("FAQ removed"),
-      onError: () => toast.error("Failed to remove FAQ"),
+    const next = faqs.filter(f => f.id !== id);
+    updateFaqs.mutate(toFaqApiList(next), {
+      onError: () => toast.error('Failed to remove FAQ'),
+      onSuccess: () => toast.success('FAQ removed'),
     });
   };
 
@@ -297,68 +325,11 @@ const HelpManagement = () => {
   const [tutOpen, setTutOpen] = useState(false);
   const [tutEdit, setTutEdit] = useState<Tutorial | null>(null);
   const [tutForm, setTutForm] = useState({
-    title: "",
-    slug: "",
-    body: "",
+    body: '',
+    slug: '',
     sort_order: 0,
+    title: '',
   });
-
-  const openTutorialDialog = (t: Tutorial | null) => {
-    setTutEdit(t);
-    setTutForm(
-      t
-        ? {
-            title: t.title,
-            slug: t.slug,
-            body: t.body,
-            sort_order: t.sort_order,
-          }
-        : { title: "", slug: "", body: "", sort_order: tutorials.length },
-    );
-    setTutOpen(true);
-  };
-
-  const saveTutorial = () => {
-    const parsed = tutorialSchema.safeParse(tutForm);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-
-    let next: Tutorial[];
-    if (tutEdit) {
-      next = tutorials.map((t) =>
-        t.id === tutEdit.id ? { ...t, ...parsed.data } : t,
-      );
-    } else {
-      const newTutorial: Tutorial = {
-        id: `tutorial-${Date.now()}`,
-        title: parsed.data.title,
-        slug: parsed.data.slug,
-        body: parsed.data.body,
-        sort_order: parsed.data.sort_order,
-        published: true,
-      };
-      next = [...tutorials, newTutorial];
-    }
-    updateTutorials.mutate(next.map(tutorialToApi), {
-      onSuccess: () => {
-        toast.success(tutEdit ? "Tutorial updated" : "Tutorial added");
-        setTutOpen(false);
-      },
-      onError: (e: any) => toast.error(e.message ?? "Failed to save"),
-    });
-  };
-
-  const toggleTutorialPublished = (id: string, published: boolean) => {
-    const next = tutorials.map((t) => (t.id === id ? { ...t, published } : t));
-    updateTutorials.mutate(next.map(tutorialToApi));
-  };
-
-  const deleteTutorial = (id: string) => {
-    const next = tutorials.filter((t) => t.id !== id);
-    updateTutorials.mutate(next.map(tutorialToApi), {
-      onSuccess: () => toast.success("Tutorial removed"),
-      onError: () => toast.error("Failed to remove tutorial"),
-    });
-  };
 
   if (isLoading) {
     return (
@@ -367,6 +338,65 @@ const HelpManagement = () => {
       </div>
     );
   }
+
+  const openTutorialDialog = (t: Tutorial | null) => {
+    setTutEdit(t);
+    setTutForm(
+      t
+        ? {
+            body: t.body,
+            slug: t.slug,
+            sort_order: t.sort_order,
+            title: t.title,
+          }
+        : { body: '', slug: '', sort_order: tutorials.length, title: '' },
+    );
+    setTutOpen(true);
+  };
+
+  const saveTutorial = () => {
+    const parsed = tutorialSchema.safeParse(tutForm);
+    if (!parsed.success)
+      return toast.error(parsed.error.issues[0].message);
+
+    let next: Tutorial[];
+    if (tutEdit) {
+      next = tutorials.map(t =>
+        t.id === tutEdit.id ? { ...t, ...parsed.data } : t,
+      );
+    }
+    else {
+      const newTutorial: Tutorial = {
+        id: `tutorial-${Date.now()}`,
+        body: parsed.data.body,
+        published: true,
+        slug: parsed.data.slug,
+        sort_order: parsed.data.sort_order,
+        title: parsed.data.title,
+      };
+      next = [...tutorials, newTutorial];
+    }
+    updateTutorials.mutate(toTutorialApiList(next), {
+      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
+      onSuccess: () => {
+        toast.success(tutEdit ? 'Tutorial updated' : 'Tutorial added');
+        setTutOpen(false);
+      },
+    });
+  };
+
+  const toggleTutorialPublished = (id: string, isPublished: boolean) => {
+    const next = tutorials.map(t => (t.id === id ? { ...t, published: isPublished } : t));
+    updateTutorials.mutate(toTutorialApiList(next));
+  };
+
+  const deleteTutorial = (id: string) => {
+    const next = tutorials.filter(t => t.id !== id);
+    updateTutorials.mutate(toTutorialApiList(next), {
+      onError: () => toast.error('Failed to remove tutorial'),
+      onSuccess: () => toast.success('Tutorial removed'),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -391,204 +421,232 @@ const HelpManagement = () => {
           <div className="flex justify-end">
             <Button
               onClick={() => openFaqDialog(null)}
-              className="gap-2"
               disabled={categories.length === 0}
+              className="gap-2"
             >
-              <Plus className="h-4 w-4" /> Add FAQ
+              <Plus className="h-4 w-4" />
+              {' '}
+              Add FAQ
             </Button>
           </div>
-          {faqs.length === 0 ? (
-            <EmptyState label="No FAQs yet" />
-          ) : (
-            faqs.map((f) => {
-              const cat = categories.find((c) => c.key === f.category_key);
-              return (
-                <Card key={f.id}>
-                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className="text-[10px]">
-                          {cat?.label ?? f.category_key}
-                        </Badge>
-                        {!f.published && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Draft
-                          </Badge>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">
-                          #{f.sort_order}
-                        </span>
-                      </div>
-                      <p className="mt-1 font-medium text-foreground">
-                        {f.question}
-                      </p>
-                      <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
-                        {f.answer}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Switch
-                        checked={f.published}
-                        onCheckedChange={(v) => toggleFaqPublished(f.id, v)}
-                      />
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => openFaqDialog(f)}
+          {faqs.length === 0
+            ? (
+                <EmptyState label="No FAQs yet" />
+              )
+            : (
+                faqs.map((f) => {
+                  const cat = categories.find(c => c.key === f.category_key);
+                  return (
+                    <Card key={f.id}>
+                      <CardContent className="
+                        flex flex-col gap-3 p-4
+                        sm:flex-row sm:items-start
+                      "
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => deleteFaq(f.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {cat?.label ?? f.category_key}
+                            </Badge>
+                            {!f.published && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Draft
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              #
+                              {f.sort_order}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-medium text-foreground">
+                            {f.question}
+                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                            {f.answer}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Switch
+                            onCheckedChange={v => toggleFaqPublished(f.id, v)}
+                            checked={f.published}
+                          />
+                          <Button
+                            onClick={() => openFaqDialog(f)}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => deleteFaq(f.id)}
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
         </TabsContent>
 
         {/* ── Tutorials (simple articles: title + slug + body) ── */}
         <TabsContent value="tutorials" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openTutorialDialog(null)} className="gap-2">
-              <Plus className="h-4 w-4" /> Add tutorial
+              <Plus className="h-4 w-4" />
+              {' '}
+              Add tutorial
             </Button>
           </div>
-          {tutorials.length === 0 ? (
-            <EmptyState label="No tutorials yet" />
-          ) : (
-            tutorials.map((t) => (
-              <Card key={t.id}>
-                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {!t.published && (
-                        <Badge variant="outline" className="text-[10px]">
-                          Draft
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground">
-                        #{t.sort_order}
-                      </span>
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        /{t.slug}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-medium text-foreground">
-                      {t.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                      {t.body}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Switch
-                      checked={t.published}
-                      onCheckedChange={(v) => toggleTutorialPublished(t.id, v)}
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openTutorialDialog(t)}
+          {tutorials.length === 0
+            ? (
+                <EmptyState label="No tutorials yet" />
+              )
+            : (
+                tutorials.map(t => (
+                  <Card key={t.id}>
+                    <CardContent className="
+                      flex flex-col gap-3 p-4
+                      sm:flex-row sm:items-start
+                    "
                     >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => deleteTutorial(t.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {!t.published && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Draft
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            #
+                            {t.sort_order}
+                          </span>
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            /
+                            {t.slug}
+                          </span>
+                        </div>
+                        <p className="mt-1 font-medium text-foreground">
+                          {t.title}
+                        </p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                          {t.body}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Switch
+                          onCheckedChange={v => toggleTutorialPublished(t.id, v)}
+                          checked={t.published}
+                        />
+                        <Button
+                          onClick={() => openTutorialDialog(t)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => deleteTutorial(t.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
         </TabsContent>
 
         {/* ── Categories ── */}
         <TabsContent value="categories" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openCategoryDialog(null)} className="gap-2">
-              <Plus className="h-4 w-4" /> Add category
+              <Plus className="h-4 w-4" />
+              {' '}
+              Add category
             </Button>
           </div>
-          {categories.length === 0 ? (
-            <EmptyState label="No categories yet" />
-          ) : (
-            categories.map((c) => (
-              <Card key={c.key}>
-                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                    <BookOpen className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="font-mono text-[10px]"
-                      >
-                        {c.key}
-                      </Badge>
-                      {!c.active && (
-                        <Badge variant="outline" className="text-[10px]">
-                          Hidden
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground">
-                        #{c.sort_order}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-medium text-foreground">
-                      {c.label}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Switch
-                      checked={c.active}
-                      onCheckedChange={(v) => toggleCategoryActive(c.key, v)}
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openCategoryDialog(c)}
+          {categories.length === 0
+            ? (
+                <EmptyState label="No categories yet" />
+              )
+            : (
+                categories.map(c => (
+                  <Card key={c.key}>
+                    <CardContent className="
+                      flex flex-col gap-3 p-4
+                      sm:flex-row sm:items-center
+                    "
                     >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => deleteCategory(c.key)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="font-mono text-[10px]"
+                          >
+                            {c.key}
+                          </Badge>
+                          {!c.active && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Hidden
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            #
+                            {c.sort_order}
+                          </span>
+                        </div>
+                        <p className="mt-1 font-medium text-foreground">
+                          {c.label}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Switch
+                          onCheckedChange={v => toggleCategoryActive(c.key, v)}
+                          checked={c.active}
+                        />
+                        <Button
+                          onClick={() => openCategoryDialog(c)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => deleteCategory(c.key)}
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
         </TabsContent>
       </Tabs>
 
       {/* ── Category dialog ── */}
-      <Dialog open={catOpen} onOpenChange={setCatOpen}>
+      <Dialog onOpenChange={setCatOpen} open={catOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {catEdit ? "Edit category" : "Add category"}
+              {catEdit ? 'Edit category' : 'Add category'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -596,13 +654,12 @@ const HelpManagement = () => {
               <div className="space-y-1.5">
                 <Label>Key</Label>
                 <Input
-                  value={catForm.key}
-                  onChange={(e) =>
+                  onChange={event =>
                     setCatForm({
                       ...catForm,
-                      key: e.target.value.toLowerCase(),
-                    })
-                  }
+                      key: event.target.value.toLowerCase(),
+                    })}
+                  value={catForm.key}
                   disabled={!!catEdit}
                   placeholder="e.g. shipping"
                 />
@@ -610,29 +667,27 @@ const HelpManagement = () => {
               <div className="space-y-1.5">
                 <Label>Label</Label>
                 <Input
+                  onChange={event =>
+                    setCatForm({ ...catForm, label: event.target.value })}
                   value={catForm.label}
-                  onChange={(e) =>
-                    setCatForm({ ...catForm, label: e.target.value })
-                  }
                 />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Sort order</Label>
               <Input
-                type="number"
-                value={catForm.sort_order}
-                onChange={(e) =>
+                onChange={event =>
                   setCatForm({
                     ...catForm,
-                    sort_order: Number(e.target.value) || 0,
-                  })
-                }
+                    sort_order: Number(event.target.value) || 0,
+                  })}
+                value={catForm.sort_order}
+                type="number"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCatOpen(false)}>
+            <Button onClick={() => setCatOpen(false)} variant="outline">
               Cancel
             </Button>
             <Button
@@ -649,25 +704,24 @@ const HelpManagement = () => {
       </Dialog>
 
       {/* ── FAQ dialog ── */}
-      <Dialog open={faqOpen} onOpenChange={setFaqOpen}>
+      <Dialog onOpenChange={setFaqOpen} open={faqOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{faqEdit ? "Edit FAQ" : "Add FAQ"}</DialogTitle>
+            <DialogTitle>{faqEdit ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
               <Select
+                onValueChange={v =>
+                  setFaqForm({ ...faqForm, category_key: v })}
                 value={faqForm.category_key}
-                onValueChange={(v) =>
-                  setFaqForm({ ...faqForm, category_key: v })
-                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
+                  {categories.map(c => (
                     <SelectItem key={c.key} value={c.key}>
                       {c.label}
                     </SelectItem>
@@ -678,40 +732,37 @@ const HelpManagement = () => {
             <div className="space-y-1.5">
               <Label>Question</Label>
               <Input
+                onChange={event =>
+                  setFaqForm({ ...faqForm, question: event.target.value })}
                 value={faqForm.question}
-                onChange={(e) =>
-                  setFaqForm({ ...faqForm, question: e.target.value })
-                }
                 maxLength={200}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Answer</Label>
               <Textarea
+                onChange={event =>
+                  setFaqForm({ ...faqForm, answer: event.target.value })}
                 value={faqForm.answer}
-                onChange={(e) =>
-                  setFaqForm({ ...faqForm, answer: e.target.value })
-                }
-                rows={6}
                 maxLength={2000}
+                rows={6}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Sort order</Label>
               <Input
-                type="number"
-                value={faqForm.sort_order}
-                onChange={(e) =>
+                onChange={event =>
                   setFaqForm({
                     ...faqForm,
-                    sort_order: Number(e.target.value) || 0,
-                  })
-                }
+                    sort_order: Number(event.target.value) || 0,
+                  })}
+                value={faqForm.sort_order}
+                type="number"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFaqOpen(false)}>
+            <Button onClick={() => setFaqOpen(false)} variant="outline">
               Cancel
             </Button>
             <Button onClick={saveFaq} disabled={updateFaqs.isPending}>
@@ -725,11 +776,11 @@ const HelpManagement = () => {
       </Dialog>
 
       {/* ── Tutorial dialog (simple article — no icon/steps/CTA) ── */}
-      <Dialog open={tutOpen} onOpenChange={setTutOpen}>
+      <Dialog onOpenChange={setTutOpen} open={tutOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {tutEdit ? "Edit tutorial" : "Add tutorial"}
+              {tutEdit ? 'Edit tutorial' : 'Add tutorial'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -737,51 +788,47 @@ const HelpManagement = () => {
               <div className="space-y-1.5">
                 <Label>Title</Label>
                 <Input
+                  onChange={event =>
+                    setTutForm({ ...tutForm, title: event.target.value })}
                   value={tutForm.title}
-                  onChange={(e) =>
-                    setTutForm({ ...tutForm, title: e.target.value })
-                  }
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Sort</Label>
                 <Input
-                  type="number"
-                  className="w-20"
-                  value={tutForm.sort_order}
-                  onChange={(e) =>
+                  onChange={event =>
                     setTutForm({
                       ...tutForm,
-                      sort_order: Number(e.target.value) || 0,
-                    })
-                  }
+                      sort_order: Number(event.target.value) || 0,
+                    })}
+                  value={tutForm.sort_order}
+                  type="number"
+                  className="w-20"
                 />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Slug</Label>
               <Input
+                onChange={event =>
+                  setTutForm({ ...tutForm, slug: event.target.value.toLowerCase() })}
                 value={tutForm.slug}
-                onChange={(e) =>
-                  setTutForm({ ...tutForm, slug: e.target.value.toLowerCase() })
-                }
                 placeholder="creating-your-first-listing"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Body</Label>
               <Textarea
-                rows={10}
+                onChange={event =>
+                  setTutForm({ ...tutForm, body: event.target.value })}
                 value={tutForm.body}
-                onChange={(e) =>
-                  setTutForm({ ...tutForm, body: e.target.value })
-                }
                 placeholder="Write the tutorial content..."
+                rows={10}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTutOpen(false)}>
+            <Button onClick={() => setTutOpen(false)} variant="outline">
               Cancel
             </Button>
             <Button onClick={saveTutorial} disabled={updateTutorials.isPending}>
@@ -795,13 +842,15 @@ const HelpManagement = () => {
       </Dialog>
     </div>
   );
-};
+}
 
-const EmptyState = ({ label }: { label: string }) => (
-  <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
-    <BookOpen className="h-10 w-10" />
-    <p className="text-sm">{label}</p>
-  </div>
-);
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
+      <BookOpen className="h-10 w-10" />
+      <p className="text-sm">{label}</p>
+    </div>
+  );
+}
 
 export default HelpManagement;

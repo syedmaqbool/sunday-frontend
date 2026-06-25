@@ -1,15 +1,15 @@
-import { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Star, Loader2, CheckCircle2, ImagePlus, Video, X } from "lucide-react";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderItemReviewProps {
-  orderId: string;
   listingId: string;
+  orderId: string;
   sellerId: string;
   sellerName?: string;
 }
@@ -17,48 +17,50 @@ interface OrderItemReviewProps {
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 30 * 1024 * 1024;
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
-export const OrderItemReview = ({
-  orderId,
+export function OrderItemReview({
   listingId,
+  orderId,
   sellerId,
   sellerName,
-}: OrderItemReviewProps) => {
+}: OrderItemReviewProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  const imageInputReference = useRef<HTMLInputElement>(null);
+  const videoInputReference = useRef<HTMLInputElement>(null);
 
   const { data: existing, isLoading } = useQuery({
-    queryKey: ["order-review", orderId, listingId, user?.id],
+    enabled: !!user && !!sellerId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("reviews")
-        .select("id, rating")
-        .eq("reviewer_id", user!.id)
-        .eq("order_id", orderId)
-        .eq("listing_id", listingId)
+        .from('reviews')
+        .select('id, rating')
+        .eq('reviewer_id', user!.id)
+        .eq('order_id', orderId)
+        .eq('listing_id', listingId)
         .maybeSingle();
-      if (error) throw error;
+      if (error)
+        throw error;
       return data;
     },
-    enabled: !!user && !!sellerId,
+    queryKey: ['order-review', orderId, listingId, user?.id],
   });
 
   const handleAddImages = (files: FileList | null) => {
-    if (!files) return;
-    const incoming = Array.from(files);
+    if (!files)
+      return;
+    const incoming = [...files];
     const valid: File[] = [];
     for (const f of incoming) {
-      if (!IMAGE_TYPES.includes(f.type)) {
+      if (!IMAGE_TYPES.has(f.type)) {
         toast.error(`${f.name}: unsupported image type`);
         continue;
       }
@@ -68,112 +70,120 @@ export const OrderItemReview = ({
       }
       valid.push(f);
     }
-    setImages((prev) => {
-      const next = [...prev, ...valid].slice(0, MAX_IMAGES);
-      if (prev.length + valid.length > MAX_IMAGES) {
+    setImages((previous) => {
+      const next = [...previous, ...valid].slice(0, MAX_IMAGES);
+      if (previous.length + valid.length > MAX_IMAGES) {
         toast.error(`Max ${MAX_IMAGES} images`);
       }
       return next;
     });
-    if (imageInputRef.current) imageInputRef.current.value = "";
+    if (imageInputReference.current)
+      imageInputReference.current.value = '';
   };
 
   const handleAddVideo = (files: FileList | null) => {
-    if (!files || !files[0]) return;
+    if (!files || !files[0])
+      return;
     const f = files[0];
-    if (!VIDEO_TYPES.includes(f.type)) {
-      toast.error("Unsupported video type (use MP4, WebM, MOV)");
+    if (!VIDEO_TYPES.has(f.type)) {
+      toast.error('Unsupported video type (use MP4, WebM, MOV)');
       return;
     }
     if (f.size > MAX_VIDEO_SIZE) {
-      toast.error("Video exceeds 30MB");
+      toast.error('Video exceeds 30MB');
       return;
     }
     setVideo(f);
-    if (videoInputRef.current) videoInputRef.current.value = "";
+    if (videoInputReference.current)
+      videoInputReference.current.value = '';
   };
 
   const submit = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not signed in");
+      if (!user)
+        throw new Error('Not signed in');
       const folder = `${user.id}/${orderId}-${listingId}-${Date.now()}`;
       const uploadedPaths: string[] = [];
       const imageUrls: string[] = [];
       let videoUrl: string | null = null;
 
       try {
-        for (let i = 0; i < images.length; i++) {
-          const file = images[i];
-          const ext = file.name.split(".").pop() || "jpg";
-          const path = `${folder}/img-${i}-${crypto.randomUUID()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("review-media")
+        for (const [index, file] of images.entries()) {
+          const extension = file.name.split('.').pop() || 'jpg';
+          const path = `${folder}/img-${index}-${crypto.randomUUID()}.${extension}`;
+          const { error: upError } = await supabase.storage
+            .from('review-media')
             .upload(path, file, { contentType: file.type, upsert: false });
-          if (upErr) throw upErr;
+          if (upError)
+            throw upError;
           uploadedPaths.push(path);
           const { data: pub } = supabase.storage
-            .from("review-media")
+            .from('review-media')
             .getPublicUrl(path);
           imageUrls.push(pub.publicUrl);
         }
 
         if (video) {
-          const ext = video.name.split(".").pop() || "mp4";
-          const path = `${folder}/video-${crypto.randomUUID()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("review-media")
+          const extension = video.name.split('.').pop() || 'mp4';
+          const path = `${folder}/video-${crypto.randomUUID()}.${extension}`;
+          const { error: upError } = await supabase.storage
+            .from('review-media')
             .upload(path, video, { contentType: video.type, upsert: false });
-          if (upErr) throw upErr;
+          if (upError)
+            throw upError;
           uploadedPaths.push(path);
           const { data: pub } = supabase.storage
-            .from("review-media")
+            .from('review-media')
             .getPublicUrl(path);
           videoUrl = pub.publicUrl;
         }
 
-        const { error } = await supabase.from("reviews").insert({
-          reviewer_id: user.id,
-          reviewed_id: sellerId,
+        const { error } = await supabase.from('reviews').insert({
+          comment,
+          image_urls: imageUrls,
           listing_id: listingId,
           order_id: orderId,
           rating,
-          comment,
-          role: "buyer",
-          image_urls: imageUrls,
+          reviewed_id: sellerId,
+          reviewer_id: user.id,
+          role: 'buyer',
           video_url: videoUrl,
         });
-        if (error) throw error;
-      } catch (err) {
+        if (error)
+          throw error;
+      }
+      catch (error) {
         // Rollback uploads
-        if (uploadedPaths.length) {
-          await supabase.storage.from("review-media").remove(uploadedPaths);
+        if (uploadedPaths.length > 0) {
+          await supabase.storage.from('review-media').remove(uploadedPaths);
         }
-        throw err;
+        throw error;
       }
     },
+    onError: (error: any) => {
+      toast.error(
+        error.message?.includes('duplicate')
+          ? 'Already reviewed'
+          : error.message || 'Failed to submit review',
+      );
+    },
     onSuccess: () => {
-      toast.success("Review submitted");
+      toast.success('Review submitted');
       queryClient.invalidateQueries({
-        queryKey: ["order-review", orderId, listingId],
+        queryKey: ['order-review', orderId, listingId],
       });
-      queryClient.invalidateQueries({ queryKey: ["reviews", sellerId] });
-      queryClient.invalidateQueries({ queryKey: ["seller-rating", sellerId] });
+      queryClient.invalidateQueries({ queryKey: ['reviews', sellerId] });
+      queryClient.invalidateQueries({ queryKey: ['seller-rating', sellerId] });
       setOpen(false);
       setImages([]);
       setVideo(null);
-      setComment("");
+      setComment('');
       setRating(0);
-    },
-    onError: (e: any) => {
-      toast.error(
-        e.message?.includes("duplicate")
-          ? "Already reviewed"
-          : e.message || "Failed to submit review",
-      );
     },
   });
 
-  if (!sellerId || isLoading) return null;
+  if (!sellerId || isLoading)
+    return null;
 
   if (existing) {
     return (
@@ -181,14 +191,17 @@ export const OrderItemReview = ({
         <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
         Reviewed
         <div className="ml-1 flex gap-0.5">
-          {[1, 2, 3, 4, 5].map((s) => (
+          {[1, 2, 3, 4, 5].map(s => (
             <Star
               key={s}
-              className={`h-3 w-3 ${
-                s <= existing.rating
-                  ? "fill-primary text-primary"
-                  : "text-muted-foreground/30"
-              }`}
+              className={`
+                h-3 w-3
+                ${
+            s <= existing.rating
+              ? 'fill-primary text-primary'
+              : 'text-muted-foreground/30'
+            }
+              `}
             />
           ))}
         </div>
@@ -199,12 +212,16 @@ export const OrderItemReview = ({
   if (!open) {
     return (
       <button
-        type="button"
         onClick={() => setOpen(true)}
-        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        type="button"
+        className="
+          mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary
+          hover:underline
+        "
       >
         <Star className="h-3.5 w-3.5" />
-        Leave review{sellerName ? ` for ${sellerName}` : ""}
+        Leave review
+        {sellerName ? ` for ${sellerName}` : ''}
       </button>
     );
   }
@@ -215,55 +232,63 @@ export const OrderItemReview = ({
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-secondary/50 p-2">
       <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map(star => (
           <button
             key={star}
-            type="button"
             onClick={() => setRating(star)}
             onMouseEnter={() => setHovered(star)}
             onMouseLeave={() => setHovered(0)}
-            className="transition-transform hover:scale-110"
+            type="button"
+            className="
+              transition-transform
+              hover:scale-110
+            "
           >
             <Star
-              className={`h-5 w-5 transition-colors ${
-                star <= display
-                  ? "fill-primary text-primary"
-                  : "text-muted-foreground/30"
-              }`}
+              className={`
+                h-5 w-5 transition-colors
+                ${
+          star <= display
+            ? 'fill-primary text-primary'
+            : 'text-muted-foreground/30'
+          }
+              `}
             />
           </button>
         ))}
         {rating > 0 && (
-          <span className="ml-1 text-xs text-muted-foreground">{rating}/5</span>
+          <span className="ml-1 text-xs text-muted-foreground">
+            {rating}
+            /5
+          </span>
         )}
       </div>
       <Textarea
-        placeholder="Share your experience (optional)"
+        onChange={event => setComment(event.target.value)}
         value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        rows={2}
         maxLength={500}
+        placeholder="Share your experience (optional)"
+        rows={2}
         className="text-sm"
       />
 
       {/* Image previews */}
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {images.map((file, i) => {
+          {images.map((file, index) => {
             const url = URL.createObjectURL(file);
             return (
               <div
-                key={i}
+                key={file.name}
                 className="relative h-16 w-16 overflow-hidden rounded-md border border-border"
               >
                 <img src={url} alt="" className="h-full w-full object-cover" />
                 <button
-                  type="button"
                   onClick={() =>
-                    setImages((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 text-foreground shadow"
+                    setImages(previous => previous.filter((_, index_) => index_ !== index))}
                   aria-label="Remove image"
+                  type="button"
+                  className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 text-foreground shadow"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -278,14 +303,14 @@ export const OrderItemReview = ({
         <div className="relative inline-block">
           <video
             src={URL.createObjectURL(video)}
-            className="h-24 rounded-md border border-border"
             muted
+            className="h-24 rounded-md border border-border"
           />
           <button
-            type="button"
             onClick={() => setVideo(null)}
-            className="absolute right-1 top-1 rounded-full bg-background/90 p-0.5 text-foreground shadow"
             aria-label="Remove video"
+            type="button"
+            className="absolute right-1 top-1 rounded-full bg-background/90 p-0.5 text-foreground shadow"
           >
             <X className="h-3 w-3" />
           </button>
@@ -295,38 +320,40 @@ export const OrderItemReview = ({
       {/* Upload triggers */}
       <div className="flex flex-wrap gap-2">
         <input
-          ref={imageInputRef}
-          type="file"
+          onChange={event => handleAddImages(event.target.files)}
+          ref={imageInputReference}
           accept="image/jpeg,image/png,image/webp"
           multiple
+          type="file"
           className="hidden"
-          onChange={(e) => handleAddImages(e.target.files)}
         />
         <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => imageInputRef.current?.click()}
+          onClick={() => imageInputReference.current?.click()}
           disabled={images.length >= MAX_IMAGES || uploading}
+          size="sm"
+          type="button"
+          variant="outline"
           className="gap-1.5"
         >
           <ImagePlus className="h-3.5 w-3.5" />
-          Photos {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
+          Photos
+          {' '}
+          {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
         </Button>
 
         <input
-          ref={videoInputRef}
-          type="file"
+          onChange={event => handleAddVideo(event.target.files)}
+          ref={videoInputReference}
           accept="video/mp4,video/webm,video/quicktime"
+          type="file"
           className="hidden"
-          onChange={(e) => handleAddVideo(e.target.files)}
         />
         <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => videoInputRef.current?.click()}
+          onClick={() => videoInputReference.current?.click()}
           disabled={!!video || uploading}
+          size="sm"
+          type="button"
+          variant="outline"
           className="gap-1.5"
         >
           <Video className="h-3.5 w-3.5" />
@@ -340,23 +367,23 @@ export const OrderItemReview = ({
 
       <div className="flex gap-2">
         <Button
-          size="sm"
-          disabled={rating === 0 || uploading}
           onClick={() => submit.mutate()}
+          disabled={rating === 0 || uploading}
+          size="sm"
           className="gap-1.5"
         >
           {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {uploading ? "Uploading..." : "Submit"}
+          {uploading ? 'Uploading...' : 'Submit'}
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
           onClick={() => setOpen(false)}
           disabled={uploading}
+          size="sm"
+          variant="ghost"
         >
           Cancel
         </Button>
       </div>
     </div>
   );
-};
+}

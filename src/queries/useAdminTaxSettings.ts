@@ -1,38 +1,39 @@
+import type {
+  CreateTaxSettingPayload,
+  UpdateTaxSettingPayload,
+} from '@/types/tax-setting';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   createTaxSetting,
   deleteTaxSetting,
   listTaxSettings,
   updateTaxSetting,
-} from "@/services/taxSetting.service";
-import type {
-  CreateTaxSettingPayload,
-  UpdateTaxSettingPayload,
-} from "@/types/tax-setting";
+} from '@/services/taxSetting.service';
 
 export const taxSettingsQueryKey = {
-  all: () => ["tax-settings"] as const,
-  list: () => [...taxSettingsQueryKey.all(), "list"] as const,
+  all: () => ['tax-settings'] as const,
+  list: () => [...taxSettingsQueryKey.all(), 'list'] as const,
 };
 
-export const getTaxSettingsOptions = () =>
-  queryOptions({
-    queryKey: taxSettingsQueryKey.list(),
+export function getTaxSettingsOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listTaxSettings();
-      return res.data;
+      const response = await listTaxSettings();
+      return response.data;
     },
+    queryKey: taxSettingsQueryKey.list(),
     staleTime: 5 * 60 * 1000,
   });
+}
 
 export const useTaxSettings = () => useQuery(getTaxSettingsOptions());
 
-export const useCreateTaxSetting = () => {
+export function useCreateTaxSetting() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateTaxSettingPayload) => createTaxSetting(payload),
@@ -40,9 +41,9 @@ export const useCreateTaxSetting = () => {
       queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
-};
+}
 
-export const useUpdateTaxSetting = () => {
+export function useUpdateTaxSetting() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -56,9 +57,9 @@ export const useUpdateTaxSetting = () => {
       queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
-};
+}
 
-export const useDeleteTaxSetting = () => {
+export function useDeleteTaxSetting() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (resourceId: string) => deleteTaxSetting(resourceId),
@@ -66,4 +67,4 @@ export const useDeleteTaxSetting = () => {
       queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
-};
+}

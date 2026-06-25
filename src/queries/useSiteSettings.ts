@@ -1,44 +1,46 @@
+import type { HeroImageValue } from '@/types/admin/site-settings';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   getHeroImage,
   updateHeroImage,
   uploadSiteAsset,
-} from "@/services/adminSiteSettings.service";
-import type { HeroImageValue } from "@/types/admin/site-settings";
+} from '@/services/adminSiteSettings.service';
 
 export const siteSettingsQueryKey = {
-  all: () => ["site-settings"] as const,
-  heroImage: () => [...siteSettingsQueryKey.all(), "hero_image"] as const,
+  all: () => ['site-settings'] as const,
+  heroImage: () => [...siteSettingsQueryKey.all(), 'hero_image'] as const,
 };
 
-export const getHeroImageQueryOptions = () =>
-  queryOptions({
-    queryKey: siteSettingsQueryKey.heroImage(),
+export function getHeroImageQueryOptions() {
+  return queryOptions({
     queryFn: async () => {
       try {
-        const res = await getHeroImage();
-        return res.data.value;
-      } catch (e: any) {
+        const response = await getHeroImage();
+        return response.data.value;
+      }
+      catch (error: any) {
         // 404 = setting not created yet, treat as empty
         if (
-          e.message?.includes("404") ||
-          e.message?.toLowerCase().includes("not found")
+          error.message?.includes('404')
+          || error.message?.toLowerCase().includes('not found')
         ) {
           return null;
         }
-        throw e;
+        throw error;
       }
     },
+    queryKey: siteSettingsQueryKey.heroImage(),
   });
+}
 
 export const useHeroImage = () => useQuery(getHeroImageQueryOptions());
 
-export const useUpdateHeroImage = () => {
+export function useUpdateHeroImage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (value: Partial<HeroImageValue>) => updateHeroImage(value),
@@ -48,9 +50,13 @@ export const useUpdateHeroImage = () => {
       });
     },
   });
-};
+}
 
-export const useUploadSiteAsset = () =>
-  useMutation({
-    mutationFn: (file: File) => uploadSiteAsset(file),
+export function useUploadSiteAsset() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const response = await uploadSiteAsset(file);
+      return response.data;
+    },
   });
+}

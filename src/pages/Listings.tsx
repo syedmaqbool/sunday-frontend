@@ -1,146 +1,153 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ListingCard from "@/components/ListingCard";
-import { Input } from "@/components/ui/input";
+import type { Listing } from '@/lib/constants';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Grid3X3,
+  List,
+  Loader2,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import ListingCard from '@/components/ListingCard';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { CONDITIONS, SORT_OPTIONS, SIZES } from "@/lib/constants";
-import { useCategories, useSubcategories } from "@/hooks/useCategories";
+} from '@/components/ui/select';
+import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
+import { useCategories, useSubcategories } from '@/hooks/useCategories';
+import { useSellerRatings } from '@/hooks/useSellerRating';
 import {
-  Search,
-  Grid3X3,
-  List,
-  SlidersHorizontal,
-  Loader2,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import type { Listing } from "@/lib/constants";
-import {
-  useUserPreferences,
   personalizeListings,
-} from "@/hooks/useUserPreferences";
-import { useSellerRatings } from "@/hooks/useSellerRating";
-import { useBoostScoreMap, applyBoostRanking } from "@/hooks/useBoosts";
+  useUserPreferences,
+} from '@/hooks/useUserPreferences';
+import { supabase } from '@/integrations/supabase/client';
+import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
 // Mock config  data  import
-import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { DUMMY_LISTINGS, isMockDataEnabled } from '@/lib/mockConfig';
 
-const fetchListings = async (): Promise<Listing[]> => {
+async function fetchListings(): Promise<Listing[]> {
   // Agar mock active hai toh database bypass karein
-  if (NEXT_PUBLIC_USE_MOCK_DATA) {
+  if (isMockDataEnabled) {
     return DUMMY_LISTINGS.map((row: any) => ({
       id: row.id,
-      title: row.title,
-      description: row.description,
-      price: row.price,
-      images: [row.image_url], // image_url string ko array me map kiya
+      brand: row.brand,
       category: row.category,
       condition: row.condition,
-      size: row.size,
-      brand: row.brand,
-      seller_id: row.seller_id || "mock-seller-id",
-      seller_name: "Mock Seller",
       created_at: new Date().toISOString(),
-      status: row.status || "approved",
+      description: row.description,
+      images: [row.image_url], // image_url string ko array me map kiya
+      price: row.price,
       reserved_for: null,
       reserved_until: null,
+      seller_id: row.seller_id || 'mock-seller-id',
+      seller_name: 'Mock Seller',
+      size: row.size,
+      status: row.status || 'approved',
+      title: row.title,
     })) as unknown as Listing[];
   }
 
   //  Real Supabase Call (Mock true hone par skip ho jayegi)
   const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .in("status", ["approved", "reserved"])
-    .order("created_at", { ascending: false });
+    .from('listings')
+    .select('*')
+    .in('status', ['approved', 'reserved'])
+    .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error)
+    throw error;
 
-  const dbListings: Listing[] = (data || []).map((row: any) => ({
+  const databaseListings: Listing[] = (data || []).map((row: any) => ({
     id: row.id,
-    title: row.title,
-    description: row.description,
-    price: row.price,
-    images: row.images?.length
-      ? row.images
-      : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+    brand: row.brand,
     category: row.category,
     condition: row.condition,
-    size: row.size,
-    brand: row.brand,
-    seller_id: row.seller_id,
-    seller_name: "Seller",
     created_at: row.created_at,
-    status: row.status,
+    description: row.description,
+    images: row.images?.length
+      ? row.images
+      : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600'],
+    price: row.price,
     reserved_for: row.reserved_for,
     reserved_until: row.reserved_until,
+    seller_id: row.seller_id,
+    seller_name: 'Seller',
+    size: row.size,
+    status: row.status,
+    title: row.title,
   }));
 
-  return dbListings;
-};
+  return databaseListings;
+}
 
-const Listings = () => {
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const initialCategory = searchParams.get("category") || "all";
-  const initialParent =
-    searchParams.get("parent") ||
-    (initialCategory !== "all" ? initialCategory.split("-")[0] : "all");
-  const initialSub =
-    initialCategory !== "all" && initialCategory.includes("-")
-      ? initialCategory.split("-")[1]
-      : "all";
+function Listings() {
+  const [searchParameters] = useSearchParams();
+  const [search, setSearch] = useState(searchParameters.get('search') || '');
+  const initialCategory = searchParameters.get('category') || 'all';
+  const initialParent
+    = searchParameters.get('parent')
+      || (initialCategory === 'all' ? 'all' : initialCategory.split('-', 1)[0]);
+  const initialSub
+    = initialCategory !== 'all' && initialCategory.includes('-')
+      ? initialCategory.split('-', 2)[1]
+      : 'all';
 
   const [parentCat, setParentCat] = useState(initialParent);
   const [subCat, setSubCat] = useState(initialSub);
-  const [condition, setCondition] = useState("all");
-  const [size, setSize] = useState("all");
-  const [sort, setSort] = useState("newest");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [condition, setCondition] = useState('all');
+  const [size, setSize] = useState('all');
+  const [sort, setSort] = useState('newest');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const { data: prefs } = useUserPreferences();
   const { data: parentCategories = [] } = useCategories();
   const { data: subCategoriesList = [] } = useSubcategories();
 
   const { data: listings = [], isLoading } = useQuery({
-    queryKey: ["listings"],
     queryFn: fetchListings,
+    queryKey: ['listings'],
   });
 
-  const sellerIds = useMemo(() => listings.map((l) => l.seller_id), [listings]);
+  const sellerIds = useMemo(() => listings.map(l => l.seller_id), [listings]);
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
-  const searchBoostMap = useBoostScoreMap("search");
+  const searchBoostMap = useBoostScoreMap('search');
 
   const filtered = useMemo(() => {
     let items = [...listings];
-    if (search)
+    if (search) {
       items = items.filter(
-        (i) =>
-          i.title.toLowerCase().includes(search.toLowerCase()) ||
-          i.brand.toLowerCase().includes(search.toLowerCase()),
+        index =>
+          index.title.toLowerCase().includes(search.toLowerCase())
+          || index.brand.toLowerCase().includes(search.toLowerCase()),
       );
-    if (parentCat !== "all") {
+    }
+    if (parentCat !== 'all') {
       items = items.filter(
-        (i) => i.category.toLowerCase() === parentCat.toLowerCase(),
+        index => index.category.toLowerCase() === parentCat.toLowerCase(),
       );
     }
 
-    if (subCat !== "all") {
-      items = items.filter((i) => i.category.endsWith("-" + subCat));
+    if (subCat !== 'all') {
+      items = items.filter(index => index.category.endsWith(`-${subCat}`));
     }
-    if (condition !== "all")
-      items = items.filter((i) => i.condition === condition);
-    if (size !== "all") items = items.filter((i) => i.size === size);
-    if (sort === "price_asc") items.sort((a, b) => a.price - b.price);
-    else if (sort === "price_desc") items.sort((a, b) => b.price - a.price);
+    if (condition !== 'all')
+      items = items.filter(index => index.condition === condition);
+    if (size !== 'all')
+      items = items.filter(index => index.size === size);
+    if (sort === 'price_asc') {
+      items.sort((a, b) => a.price - b.price);
+    }
+    else if (sort === 'price_desc') {
+      items.sort((a, b) => b.price - a.price);
+    }
     else {
       items.sort(
         (a, b) =>
@@ -166,69 +173,70 @@ const Listings = () => {
   const filterSelects = (
     <>
       <Select
-        value={parentCat}
         onValueChange={(v) => {
           setParentCat(v);
-          if (v === "all") setSubCat("all");
+          if (v === 'all')
+            setSubCat('all');
         }}
+        value={parentCat}
       >
         <SelectTrigger className="w-[130px]">
           <SelectValue placeholder="Gender" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
-          {parentCategories.map((c) => (
+          {parentCategories.map(c => (
             <SelectItem key={c.value} value={c.value}>
               {c.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={subCat} onValueChange={setSubCat}>
+      <Select onValueChange={setSubCat} value={subCat}>
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {subCategoriesList.map((c) => (
+          {subCategoriesList.map(c => (
             <SelectItem key={c.value} value={c.value}>
               {c.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={condition} onValueChange={setCondition}>
+      <Select onValueChange={setCondition} value={condition}>
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Condition" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Conditions</SelectItem>
-          {CONDITIONS.map((c) => (
+          {CONDITIONS.map(c => (
             <SelectItem key={c.value} value={c.value}>
               {c.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={size} onValueChange={setSize}>
+      <Select onValueChange={setSize} value={size}>
         <SelectTrigger className="w-[120px]">
           <SelectValue placeholder="Size" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Sizes</SelectItem>
-          {SIZES.map((s) => (
+          {SIZES.map(s => (
             <SelectItem key={s} value={s}>
               {s}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={sort} onValueChange={setSort}>
+      <Select onValueChange={setSort} value={sort}>
         <SelectTrigger className="w-[160px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {SORT_OPTIONS.map((s) => (
+          {SORT_OPTIONS.map(s => (
             <SelectItem key={s.value} value={s.value}>
               {s.label}
             </SelectItem>
@@ -242,40 +250,55 @@ const Listings = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container flex-1 py-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1 max-w-md">
+        <div className="
+          flex flex-col gap-4
+          md:flex-row md:items-center md:justify-between
+        "
+        >
+          <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              onChange={event => setSearch(event.target.value)}
+              value={search}
               placeholder="Search by name or brand..."
               className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              className="gap-1 md:hidden"
               onClick={() => setShowFilters(!showFilters)}
+              size="sm"
+              variant="outline"
+              className="
+                gap-1
+                md:hidden
+              "
             >
-              <SlidersHorizontal className="h-4 w-4" /> Filters
+              <SlidersHorizontal className="h-4 w-4" />
+              {' '}
+              Filters
             </Button>
-            <div className="hidden gap-2 md:flex">{filterSelects}</div>
+            <div className="
+              hidden gap-2
+              md:flex
+            "
+            >
+              {filterSelects}
+            </div>
             <div className="flex rounded-md border border-border">
               <Button
-                variant={view === "grid" ? "secondary" : "ghost"}
+                onClick={() => setView('grid')}
                 size="icon"
+                variant={view === 'grid' ? 'secondary' : 'ghost'}
                 className="h-8 w-8 rounded-none rounded-l-md"
-                onClick={() => setView("grid")}
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
               <Button
-                variant={view === "list" ? "secondary" : "ghost"}
+                onClick={() => setView('list')}
                 size="icon"
+                variant={view === 'list' ? 'secondary' : 'ghost'}
                 className="h-8 w-8 rounded-none rounded-r-md"
-                onClick={() => setView("list")}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -284,76 +307,101 @@ const Listings = () => {
         </div>
 
         {showFilters && (
-          <div className="mt-4 flex flex-wrap gap-2 md:hidden">
+          <div className="
+            mt-4 flex flex-wrap gap-2
+            md:hidden
+          "
+          >
             {filterSelects}
           </div>
         )}
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <>
-            <p className="mt-6 text-sm text-muted-foreground">
-              {filtered.length} items
-            </p>
-            {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <p className="font-heading text-2xl font-semibold text-foreground">
-                  No items found
+        {isLoading
+          ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )
+          : (
+              <>
+                <p className="mt-6 text-sm text-muted-foreground">
+                  {filtered.length}
+                  {' '}
+                  items
                 </p>
-                <p className="mt-2 text-muted-foreground">
-                  Try adjusting your filters
-                </p>
-              </div>
-            ) : view === "grid" ? (
-              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {filtered.map((l, i) => (
-                  <ListingCard
-                    key={l.id}
-                    listing={l}
-                    index={i}
-                    sellerRating={sellerRatingsMap?.get(l.seller_id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4 space-y-4">
-                {filtered.map((l) => (
-                  <div
-                    key={l.id}
-                    className="flex gap-4 rounded-lg border border-border bg-card p-4"
-                  >
-                    <img
-                      src={l.images[0]}
-                      alt={l.title}
-                      className="h-28 w-28 rounded-md object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {l.brand}
-                      </p>
-                      <h3 className="text-sm font-semibold text-card-foreground">
-                        {l.title}
-                      </h3>
-                      <p className="mt-1 text-sm font-bold text-card-foreground">
-                        Rs {l.price.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Size {l.size} · {l.condition.replace("_", " ")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                {filtered.length === 0
+                  ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <p className="font-heading text-2xl font-semibold text-foreground">
+                          No items found
+                        </p>
+                        <p className="mt-2 text-muted-foreground">
+                          Try adjusting your filters
+                        </p>
+                      </div>
+                    )
+                  : (view === 'grid'
+                      ? (
+                          <div className="
+                            mt-4 grid grid-cols-2 gap-4
+                            sm:grid-cols-3
+                            lg:grid-cols-4
+                          "
+                          >
+                            {filtered.map((l, index) => (
+                              <ListingCard
+                                key={l.id}
+                                index={index}
+                                listing={l}
+                                sellerRating={sellerRatingsMap?.get(l.seller_id)}
+                              />
+                            ))}
+                          </div>
+                        )
+                      : (
+                          <div className="mt-4 space-y-4">
+                            {filtered.map(l => (
+                              <div
+                                key={l.id}
+                                className="flex gap-4 rounded-lg border border-border bg-card p-4"
+                              >
+                                <img
+                                  src={l.images[0]}
+                                  alt={l.title}
+                                  className="h-28 w-28 rounded-md object-cover"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                    {l.brand}
+                                  </p>
+                                  <h3 className="text-sm font-semibold text-card-foreground">
+                                    {l.title}
+                                  </h3>
+                                  <p className="mt-1 text-sm font-bold text-card-foreground">
+                                    Rs
+                                    {' '}
+                                    {l.price.toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Size
+                                    {' '}
+                                    {l.size}
+                                    {' '}
+                                    ·
+                                    {' '}
+                                    {l.condition.replace('_', ' ')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+              </>
             )}
-          </>
-        )}
       </main>
       <Footer />
     </div>
   );
-};
+}
 
 export default Listings;

@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { getAdminUsersQueryOptions } from "@/queries/useAdminUsers";
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -7,13 +10,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
+} from '@/components/ui/table';
+import { getAdminUsersQueryOptions } from '@/queries/useAdminUsers';
 
-const UserManagement = () => {
+export default function UserManagement() {
   const { data: users = [], isLoading } = useQuery(
     getAdminUsersQueryOptions({ size: 100 }),
   );
@@ -33,7 +33,9 @@ const UserManagement = () => {
       </h1>
 
       <p className="mt-1 text-muted-foreground">
-        {users.length} registered users
+        {users.length}
+        {' '}
+        registered users
       </p>
 
       <div className="mt-6 rounded-lg border border-border">
@@ -48,7 +50,7 @@ const UserManagement = () => {
           </TableHeader>
 
           <TableBody>
-            {users.map((user) => (
+            {users.map(user => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -56,13 +58,13 @@ const UserManagement = () => {
                       <AvatarImage src={user.image?.url ?? undefined} />
 
                       <AvatarFallback className="text-xs">
-                        {(user.username ?? "U").charAt(0).toUpperCase()}
+                        {(user.username ?? 'U').charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div>
                       <p className="font-medium text-foreground">
-                        {user.username || "Unnamed"}
+                        {user.username || 'Unnamed'}
                       </p>
 
                       <p className="text-xs text-muted-foreground">
@@ -73,31 +75,33 @@ const UserManagement = () => {
                 </TableCell>
 
                 <TableCell>
-                  {user.roleName ? (
-                    <Badge
-                      variant={
-                        user.roleName === "ADMIN" ? "default" : "secondary"
-                      }
-                    >
-                      {user.roleName}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      No role
-                    </span>
-                  )}
+                  {user.roleName
+                    ? (
+                        <Badge
+                          variant={
+                            user.roleName === 'ADMIN' ? 'default' : 'secondary'
+                          }
+                        >
+                          {user.roleName}
+                        </Badge>
+                      )
+                    : (
+                        <span className="text-xs text-muted-foreground">
+                          No role
+                        </span>
+                      )}
                 </TableCell>
 
                 <TableCell>
                   <Badge
-                    variant={user.status === "ACTIVE" ? "default" : "secondary"}
+                    variant={user.status === 'ACTIVE' ? 'default' : 'secondary'}
                   >
                     {user.status}
                   </Badge>
                 </TableCell>
 
                 <TableCell className="text-sm text-muted-foreground">
-                  {format(new Date(user.createdAt), "MMM d, yyyy")}
+                  {format(new Date(user.createdAt), 'MMM d, yyyy')}
                 </TableCell>
               </TableRow>
             ))}
@@ -106,6 +110,4 @@ const UserManagement = () => {
       </div>
     </div>
   );
-};
-
-export default UserManagement;
+}

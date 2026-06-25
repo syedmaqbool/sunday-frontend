@@ -1,38 +1,39 @@
+import type {
+  CreateSellerCouponPayload,
+  UpdateSellerCouponPayload,
+} from '@/types/seller-coupon';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   createSellerCoupon,
   deleteSellerCoupon,
   listSellerCoupons,
   updateSellerCoupon,
-} from "@/services/sellerCoupon.service";
-import type {
-  CreateSellerCouponPayload,
-  UpdateSellerCouponPayload,
-} from "@/types/seller-coupon";
+} from '@/services/sellerCoupon.service';
 
 export const sellerCouponsQueryKey = {
-  all: () => ["seller-coupons"] as const,
-  list: () => [...sellerCouponsQueryKey.all(), "list"] as const,
+  all: () => ['seller-coupons'] as const,
+  list: () => [...sellerCouponsQueryKey.all(), 'list'] as const,
 };
 
-export const getSellerCouponsOptions = () =>
-  queryOptions({
-    queryKey: sellerCouponsQueryKey.list(),
+export function getSellerCouponsOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listSellerCoupons();
-      return res.data;
+      const response = await listSellerCoupons();
+      return response.data;
     },
+    queryKey: sellerCouponsQueryKey.list(),
     staleTime: 5 * 60 * 1000,
   });
+}
 
 export const useSellerCoupons = () => useQuery(getSellerCouponsOptions());
 
-export const useCreateSellerCoupon = () => {
+export function useCreateSellerCoupon() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -45,9 +46,9 @@ export const useCreateSellerCoupon = () => {
       });
     },
   });
-};
+}
 
-export const useUpdateSellerCoupon = () => {
+export function useUpdateSellerCoupon() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -65,9 +66,9 @@ export const useUpdateSellerCoupon = () => {
       });
     },
   });
-};
+}
 
-export const useDeleteSellerCoupon = () => {
+export function useDeleteSellerCoupon() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -79,4 +80,4 @@ export const useDeleteSellerCoupon = () => {
       });
     },
   });
-};
+}

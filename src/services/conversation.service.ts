@@ -1,10 +1,10 @@
-import { authInstance } from "@/services/ky.instance";
-import type { Conversation, Message } from "@/types/conversation";
-import type { Response } from "@/types/response.type";
+import type { Conversation, Message } from '@/types/conversation';
+import type { Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listConversations() {
   return authInstance
-    .get("/api/v1/me/conversations")
+    .get('/api/v1/me/conversations')
     .json<Response<Conversation[]>>();
 }
 

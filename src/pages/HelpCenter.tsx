@@ -1,300 +1,316 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowRight,
+  BookOpen,
+  LifeBuoy,
+  Loader2,
+  Mail,
+  Search,
+} from 'lucide-react';
+import { createElement, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Search,
-  Mail,
-  BookOpen,
-  ArrowRight,
-  LifeBuoy,
-  Loader2,
-} from "lucide-react";
-import { getHelpIcon } from "@/lib/helpIcons";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { getHelpIcon } from '@/lib/helpIcons';
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
 interface Category {
-  id: string;
   key: string;
-  label: string;
+  id: string;
   blurb: string;
   icon: string;
+  label: string;
   sort_order: number;
 }
 interface Faq {
   id: string;
+  answer: string;
   category_key: string;
   question: string;
-  answer: string;
   sort_order: number;
 }
 interface Tutorial {
   id: string;
-  title: string;
-  icon: string;
-  steps: string[];
   cta_label: string;
   cta_to: string;
+  icon: string;
   sort_order: number;
+  steps: string[];
+  title: string;
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_CATEGORIES: Category[] = [
   {
-    id: "cat-1",
-    key: "buying",
-    label: "Buying",
-    blurb: "How to find and purchase items",
-    icon: "shopping-bag",
+    key: 'buying',
+    id: 'cat-1',
+    blurb: 'How to find and purchase items',
+    icon: 'shopping-bag',
+    label: 'Buying',
     sort_order: 1,
   },
   {
-    id: "cat-2",
-    key: "selling",
-    label: "Selling",
-    blurb: "List items and manage your sales",
-    icon: "package",
+    key: 'selling',
+    id: 'cat-2',
+    blurb: 'List items and manage your sales',
+    icon: 'package',
+    label: 'Selling',
     sort_order: 2,
   },
   {
-    id: "cat-3",
-    key: "shipping",
-    label: "Shipping",
-    blurb: "Couriers, tracking and delivery",
-    icon: "truck",
+    key: 'shipping',
+    id: 'cat-3',
+    blurb: 'Couriers, tracking and delivery',
+    icon: 'truck',
+    label: 'Shipping',
     sort_order: 3,
   },
   {
-    id: "cat-4",
-    key: "payments",
-    label: "Payments",
-    blurb: "Payouts, refunds and billing",
-    icon: "credit-card",
+    key: 'payments',
+    id: 'cat-4',
+    blurb: 'Payouts, refunds and billing',
+    icon: 'credit-card',
+    label: 'Payments',
     sort_order: 4,
   },
   {
-    id: "cat-5",
-    key: "account",
-    label: "Account",
-    blurb: "Profile, settings and security",
-    icon: "user",
+    key: 'account',
+    id: 'cat-5',
+    blurb: 'Profile, settings and security',
+    icon: 'user',
+    label: 'Account',
     sort_order: 5,
   },
   {
-    id: "cat-6",
-    key: "returns",
-    label: "Returns",
-    blurb: "Disputes, returns and complaints",
-    icon: "undo-2",
+    key: 'returns',
+    id: 'cat-6',
+    blurb: 'Disputes, returns and complaints',
+    icon: 'undo-2',
+    label: 'Returns',
     sort_order: 6,
   },
 ];
 
 const MOCK_FAQS: Faq[] = [
   {
-    id: "faq-1",
-    category_key: "buying",
-    question: "How do I make an offer on a listing?",
+    id: 'faq-1',
     answer:
-      "Open any listing and tap 'Make Offer'. Enter your price and the seller will accept, decline, or counter within 24 hours.",
+      'Open any listing and tap \'Make Offer\'. Enter your price and the seller will accept, decline, or counter within 24 hours.',
+    category_key: 'buying',
+    question: 'How do I make an offer on a listing?',
     sort_order: 1,
   },
   {
-    id: "faq-2",
-    category_key: "buying",
-    question: "Can I buy multiple items in one checkout?",
+    id: 'faq-2',
     answer:
-      "Yes — add items from different sellers to your cart and check out in one go. Each seller ships their items separately.",
+      'Yes — add items from different sellers to your cart and check out in one go. Each seller ships their items separately.',
+    category_key: 'buying',
+    question: 'Can I buy multiple items in one checkout?',
     sort_order: 2,
   },
   {
-    id: "faq-3",
-    category_key: "selling",
-    question: "How do I create a listing?",
+    id: 'faq-3',
     answer:
-      "Click 'Create Listing' in the navbar, fill in the item details, upload photos, set a price, and publish. Your item goes live instantly.",
+      'Click \'Create Listing\' in the navbar, fill in the item details, upload photos, set a price, and publish. Your item goes live instantly.',
+    category_key: 'selling',
+    question: 'How do I create a listing?',
     sort_order: 1,
   },
   {
-    id: "faq-4",
-    category_key: "selling",
-    question: "How do I mark an item as shipped?",
+    id: 'faq-4',
     answer:
-      "Go to your profile, open the 'Sold' tab, expand the order, and tap 'Mark as Shipped'. Enter the courier and tracking number.",
+      'Go to your profile, open the \'Sold\' tab, expand the order, and tap \'Mark as Shipped\'. Enter the courier and tracking number.',
+    category_key: 'selling',
+    question: 'How do I mark an item as shipped?',
     sort_order: 2,
   },
   {
-    id: "faq-5",
-    category_key: "shipping",
-    question: "Which couriers are supported?",
+    id: 'faq-5',
     answer:
-      "We support PostNet, The Courier Guy, Aramex, PUDO, Pargo, Fastway, DHL, SA Post Office, and Hand Delivery.",
+      'We support PostNet, The Courier Guy, Aramex, PUDO, Pargo, Fastway, DHL, SA Post Office, and Hand Delivery.',
+    category_key: 'shipping',
+    question: 'Which couriers are supported?',
     sort_order: 1,
   },
   {
-    id: "faq-6",
-    category_key: "shipping",
-    question: "What if my item hasn't arrived?",
+    id: 'faq-6',
     answer:
-      "You have 12 hours after the expected delivery date to raise a concern. Go to the order in your profile and tap 'Item Not Received'.",
+      'You have 12 hours after the expected delivery date to raise a concern. Go to the order in your profile and tap \'Item Not Received\'.',
+    category_key: 'shipping',
+    question: 'What if my item hasn\'t arrived?',
     sort_order: 2,
   },
   {
-    id: "faq-7",
-    category_key: "payments",
-    question: "When do I get paid as a seller?",
+    id: 'faq-7',
     answer:
-      "Your payout is released once the buyer confirms delivery (or after the auto-complete window). Funds arrive in your linked bank account within 2–3 business days.",
+      'Your payout is released once the buyer confirms delivery (or after the auto-complete window). Funds arrive in your linked bank account within 2–3 business days.',
+    category_key: 'payments',
+    question: 'When do I get paid as a seller?',
     sort_order: 1,
   },
   {
-    id: "faq-8",
-    category_key: "payments",
-    question: "How do I add my bank account for payouts?",
+    id: 'faq-8',
     answer:
-      "Go to your Profile page and click 'Add details' under Payout Details. Enter your account holder name, bank, account number, IBAN, and SWIFT/BIC.",
+      'Go to your Profile page and click \'Add details\' under Payout Details. Enter your account holder name, bank, account number, IBAN, and SWIFT/BIC.',
+    category_key: 'payments',
+    question: 'How do I add my bank account for payouts?',
     sort_order: 2,
   },
   {
-    id: "faq-9",
-    category_key: "returns",
-    question: "How do I raise a quality complaint?",
+    id: 'faq-9',
     answer:
-      "Within 12 hours of delivery, open the order in your profile and tap 'Raise Concern'. Attach photos and describe the issue — our team will review it.",
+      'Within 12 hours of delivery, open the order in your profile and tap \'Raise Concern\'. Attach photos and describe the issue — our team will review it.',
+    category_key: 'returns',
+    question: 'How do I raise a quality complaint?',
     sort_order: 1,
   },
   {
-    id: "faq-10",
-    category_key: "account",
-    question: "How do I edit my profile?",
+    id: 'faq-10',
     answer:
-      "Click 'Edit Profile' on your profile page to update your name, bio, location, phone number, and avatar.",
+      'Click \'Edit Profile\' on your profile page to update your name, bio, location, phone number, and avatar.',
+    category_key: 'account',
+    question: 'How do I edit my profile?',
     sort_order: 1,
   },
 ];
 
 const MOCK_TUTORIALS: Tutorial[] = [
   {
-    id: "tut-1",
-    title: "List your first item",
-    icon: "package",
-    steps: [
-      "Click 'Create Listing' in the top navbar.",
-      "Upload clear photos of your item.",
-      "Fill in title, brand, condition, size, and price.",
-      "Hit 'Publish' — your listing is live!",
-    ],
-    cta_label: "Create a listing",
-    cta_to: "/create-listing",
+    id: 'tut-1',
+    cta_label: 'Create a listing',
+    cta_to: '/create-listing',
+    icon: 'package',
     sort_order: 1,
+    steps: [
+      'Click \'Create Listing\' in the top navbar.',
+      'Upload clear photos of your item.',
+      'Fill in title, brand, condition, size, and price.',
+      'Hit \'Publish\' — your listing is live!',
+    ],
+    title: 'List your first item',
   },
   {
-    id: "tut-2",
-    title: "Buy an item safely",
-    icon: "shopping-bag",
-    steps: [
-      "Browse listings or search for what you need.",
-      "Tap 'Buy Now' or make an offer.",
-      "Enter your shipping address and pay securely.",
-      "Track your order from your profile.",
-    ],
-    cta_label: "Browse listings",
-    cta_to: "/listings",
+    id: 'tut-2',
+    cta_label: 'Browse listings',
+    cta_to: '/listings',
+    icon: 'shopping-bag',
     sort_order: 2,
+    steps: [
+      'Browse listings or search for what you need.',
+      'Tap \'Buy Now\' or make an offer.',
+      'Enter your shipping address and pay securely.',
+      'Track your order from your profile.',
+    ],
+    title: 'Buy an item safely',
   },
   {
-    id: "tut-3",
-    title: "Ship a sold item",
-    icon: "truck",
-    steps: [
-      "Go to your Profile and open the 'Sold' tab.",
-      "Expand the order and tap 'Mark as Shipped'.",
-      "Choose a courier and enter the tracking number.",
-      "The buyer is notified automatically.",
-    ],
-    cta_label: "View sold items",
-    cta_to: "/profile",
+    id: 'tut-3',
+    cta_label: 'View sold items',
+    cta_to: '/profile',
+    icon: 'truck',
     sort_order: 3,
+    steps: [
+      'Go to your Profile and open the \'Sold\' tab.',
+      'Expand the order and tap \'Mark as Shipped\'.',
+      'Choose a courier and enter the tracking number.',
+      'The buyer is notified automatically.',
+    ],
+    title: 'Ship a sold item',
   },
 ];
 
+function HelpIcon({
+  className,
+  icon,
+}: {
+  className?: string;
+  icon: string;
+}) {
+  return createElement(getHelpIcon(icon), { className });
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const HelpCenter = () => {
-  const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+function HelpCenter() {
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["help-categories"],
     queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_CATEGORIES;
+      if (isMockDataEnabled)
+        return MOCK_CATEGORIES;
       const { data, error } = await supabase
-        .from("help_categories")
-        .select("*")
-        .eq("active", true)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
+        .from('help_categories')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
+      if (error)
+        throw error;
       return data as Category[];
     },
+    queryKey: ['help-categories'],
   });
 
   const { data: faqs = [], isLoading: loadingFaqs } = useQuery({
-    queryKey: ["help-faqs"],
     queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_FAQS;
+      if (isMockDataEnabled)
+        return MOCK_FAQS;
       const { data, error } = await supabase
-        .from("help_faqs")
-        .select("*")
-        .eq("published", true)
-        .order("category_key", { ascending: true })
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
+        .from('help_faqs')
+        .select('*')
+        .eq('published', true)
+        .order('category_key', { ascending: true })
+        .order('sort_order', { ascending: true });
+      if (error)
+        throw error;
       return data as Faq[];
     },
+    queryKey: ['help-faqs'],
   });
 
   const { data: tutorials = [] } = useQuery({
-    queryKey: ["help-tutorials"],
     queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_TUTORIALS;
+      if (isMockDataEnabled)
+        return MOCK_TUTORIALS;
       const { data, error } = await supabase
-        .from("help_tutorials")
-        .select("*")
-        .eq("published", true)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
+        .from('help_tutorials')
+        .select('*')
+        .eq('published', true)
+        .order('sort_order', { ascending: true });
+      if (error)
+        throw error;
       return data as Tutorial[];
     },
+    queryKey: ['help-tutorials'],
   });
 
   const categoryMap = useMemo(
-    () => new Map(categories.map((c) => [c.key, c])),
+    () => new Map(categories.map(c => [c.key, c])),
     [categories],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return faqs.filter((f) => {
-      const matchCat =
-        activeCategory === "all" || f.category_key === activeCategory;
-      const matchQ =
-        !q ||
-        f.question.toLowerCase().includes(q) ||
-        f.answer.toLowerCase().includes(q);
-      return matchCat && matchQ;
+      const isMatchCat
+        = activeCategory === 'all' || f.category_key === activeCategory;
+      const matchQ
+        = !q
+          || f.question.toLowerCase().includes(q)
+          || f.answer.toLowerCase().includes(q);
+      return isMatchCat && matchQ;
     });
   }, [query, activeCategory, faqs]);
 
@@ -303,12 +319,22 @@ const HelpCenter = () => {
       <Navbar />
 
       <section className="border-b border-border bg-gradient-to-b from-muted/40 to-background">
-        <div className="container py-14 md:py-20">
+        <div className="
+          container py-14
+          md:py-20
+        "
+        >
           <div className="mx-auto max-w-2xl text-center">
             <Badge variant="outline" className="mb-4 gap-1.5">
-              <LifeBuoy className="h-3.5 w-3.5" /> Support & Help
+              <LifeBuoy className="h-3.5 w-3.5" />
+              {' '}
+              Support & Help
             </Badge>
-            <h1 className="font-heading text-4xl font-bold tracking-tight text-foreground md:text-5xl">
+            <h1 className="
+              font-heading text-4xl font-bold tracking-tight text-foreground
+              md:text-5xl
+            "
+            >
               How can we help you?
             </h1>
             <p className="mt-3 text-muted-foreground">
@@ -319,8 +345,8 @@ const HelpCenter = () => {
             <div className="relative mt-7">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                onChange={event => setQuery(event.target.value)}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search articles, e.g. 'how to ship'"
                 className="h-12 rounded-full pl-11 text-base shadow-sm"
               />
@@ -331,28 +357,41 @@ const HelpCenter = () => {
 
       {categories.length > 0 && (
         <section className="container py-10">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="
+            grid gap-3
+            sm:grid-cols-2
+            lg:grid-cols-3
+          "
+          >
             {categories.map((c) => {
-              const Icon = getHelpIcon(c.icon);
               const isActive = activeCategory === c.key;
               return (
                 <button
                   key={c.id}
-                  onClick={() => setActiveCategory(isActive ? "all" : c.key)}
-                  className={`group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors ${
-                    isActive
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
-                  }`}
+                  onClick={() => setActiveCategory(isActive ? 'all' : c.key)}
+                  className={`
+                    group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors
+                    ${
+                isActive
+                  ? 'border-primary bg-primary/5'
+                  : `
+                    border-border bg-card
+                    hover:border-primary/40 hover:bg-muted/40
+                  `
+                }
+                  `}
                 >
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
+                    className={`
+                      flex h-11 w-11 shrink-0 items-center justify-center rounded-lg
+                      ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-foreground'
+                }
+                    `}
                   >
-                    <Icon className="h-5 w-5" />
+                    <HelpIcon icon={c.icon} className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground">{c.label}</p>
@@ -362,12 +401,12 @@ const HelpCenter = () => {
               );
             })}
           </div>
-          {activeCategory !== "all" && (
+          {activeCategory !== 'all' && (
             <div className="mt-3">
               <Button
-                variant="ghost"
+                onClick={() => setActiveCategory('all')}
                 size="sm"
-                onClick={() => setActiveCategory("all")}
+                variant="ghost"
               >
                 Clear filter
               </Button>
@@ -382,57 +421,67 @@ const HelpCenter = () => {
             Frequently asked questions
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "article" : "articles"}
+            {filtered.length}
+            {' '}
+            {filtered.length === 1 ? 'article' : 'articles'}
           </p>
         </div>
 
-        {loadingFaqs ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
-              <Search className="h-10 w-10" />
-              <p className="font-medium text-foreground">No results found</p>
-              <p className="text-sm">
-                Try a different search or clear your filters.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Accordion type="single" collapsible className="space-y-2">
-            {filtered.map((f) => {
-              const cat = categoryMap.get(f.category_key);
-              return (
-                <AccordionItem
-                  key={f.id}
-                  value={f.id}
-                  className="rounded-lg border border-border bg-card px-4"
-                >
-                  <AccordionTrigger className="py-4 text-left hover:no-underline">
-                    <div className="flex items-center gap-3 text-left">
-                      {cat && (
-                        <Badge
-                          variant="secondary"
-                          className="shrink-0 text-[10px]"
+        {loadingFaqs
+          ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )
+          : (filtered.length === 0
+              ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
+                      <Search className="h-10 w-10" />
+                      <p className="font-medium text-foreground">No results found</p>
+                      <p className="text-sm">
+                        Try a different search or clear your filters.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )
+              : (
+                  <Accordion collapsible type="single" className="space-y-2">
+                    {filtered.map((f) => {
+                      const cat = categoryMap.get(f.category_key);
+                      return (
+                        <AccordionItem
+                          key={f.id}
+                          value={f.id}
+                          className="rounded-lg border border-border bg-card px-4"
                         >
-                          {cat.label}
-                        </Badge>
-                      )}
-                      <span className="font-medium text-foreground">
-                        {f.question}
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-4 pl-[5.25rem] pr-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                    {f.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              );
-            })}
-          </Accordion>
-        )}
+                          <AccordionTrigger className="
+                            py-4 text-left
+                            hover:no-underline
+                          "
+                          >
+                            <div className="flex items-center gap-3 text-left">
+                              {cat && (
+                                <Badge
+                                  variant="secondary"
+                                  className="shrink-0 text-[10px]"
+                                >
+                                  {cat.label}
+                                </Badge>
+                              )}
+                              <span className="font-medium text-foreground">
+                                {f.question}
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="whitespace-pre-line pb-4 pl-[5.25rem] pr-4 text-sm leading-relaxed text-muted-foreground">
+                            {f.answer}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                ))}
       </section>
 
       {tutorials.length > 0 && (
@@ -444,25 +493,28 @@ const HelpCenter = () => {
                 Quick tutorials
               </h2>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="
+              grid gap-4
+              md:grid-cols-3
+            "
+            >
               {tutorials.map((t) => {
-                const Icon = getHelpIcon(t.icon);
                 return (
                   <Card key={t.id} className="flex flex-col">
                     <CardContent className="flex flex-1 flex-col gap-4 p-5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" />
+                        <HelpIcon icon={t.icon} className="h-5 w-5" />
                       </div>
                       <h3 className="font-heading text-lg font-semibold text-foreground">
                         {t.title}
                       </h3>
                       <ol className="flex-1 space-y-2 text-sm text-muted-foreground">
-                        {t.steps.map((s, i) => (
-                          <li key={i} className="flex gap-2.5">
+                        {t.steps.map((step, index) => (
+                          <li key={step} className="flex gap-2.5">
                             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
-                              {i + 1}
+                              {index + 1}
                             </span>
-                            <span>{s}</span>
+                            <span>{step}</span>
                           </li>
                         ))}
                       </ol>
@@ -473,7 +525,9 @@ const HelpCenter = () => {
                           className="mt-2 w-full gap-2"
                         >
                           <Link to={t.cta_to}>
-                            {t.cta_label} <ArrowRight className="h-4 w-4" />
+                            {t.cta_label}
+                            {' '}
+                            <ArrowRight className="h-4 w-4" />
                           </Link>
                         </Button>
                       )}
@@ -488,7 +542,11 @@ const HelpCenter = () => {
 
       <section className="container py-14">
         <Card className="overflow-hidden">
-          <CardContent className="flex flex-col items-center gap-4 p-10 text-center md:flex-row md:text-left">
+          <CardContent className="
+            flex flex-col items-center gap-4 p-10 text-center
+            md:flex-row md:text-left
+          "
+          >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Mail className="h-6 w-6" />
             </div>
@@ -502,7 +560,9 @@ const HelpCenter = () => {
             </div>
             <Button asChild className="gap-2">
               <a href="mailto:support@sunday.app">
-                Contact support <ArrowRight className="h-4 w-4" />
+                Contact support
+                {' '}
+                <ArrowRight className="h-4 w-4" />
               </a>
             </Button>
           </CardContent>
@@ -512,6 +572,6 @@ const HelpCenter = () => {
       <Footer />
     </div>
   );
-};
+}
 
 export default HelpCenter;

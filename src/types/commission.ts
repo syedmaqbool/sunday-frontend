@@ -1,21 +1,21 @@
 export interface CommissionTier {
   id: string;
-  name: string;
-  categories: string[];
-  minPrice: number;
-  maxPrice: number | null;
-  rate: number;
   active: boolean;
+  categories: string[];
+  maxPrice: number | null;
+  minPrice: number;
+  name: string;
+  rate: number;
   sortOrder: number;
   createdAt: string;
 }
 
 export interface CommissionTierPayload {
-  name: string;
-  categories: string[];
-  minPrice?: number;
-  maxPrice?: number | null;
-  rate: number;
   active?: boolean;
+  categories: string[];
+  maxPrice?: number | null;
+  minPrice?: number;
+  name: string;
+  rate: number;
   sortOrder?: number;
 }

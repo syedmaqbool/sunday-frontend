@@ -1,7 +1,7 @@
 export interface PreferenceBrand {
   id: string;
-  name: string;
   active: boolean;
+  name: string;
   sortOrder: number;
 }
 
@@ -31,8 +31,8 @@ export interface PutPreferencesPayload {
 
 export interface BackendCategory {
   id: string;
-  label: string;
-  value: string;
   icon: string;
+  label: string;
   sortOrder: number;
+  value: string;
 }

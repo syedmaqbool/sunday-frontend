@@ -1,19 +1,33 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getAdminComplaintsOptions,
-  useUpdateComplaintStatus,
-} from "@/queries/useAdminComplaint";
 import type {
   AdminComplaintStatus,
   Complaint,
   ComplaintStatus,
-} from "@/types/complaint";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from '@/types/complaint';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Loader2,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -21,47 +35,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  AlertTriangle,
-  Loader2,
-  ExternalLink,
-  CheckCircle2,
-  XCircle,
-  Clock,
-} from "lucide-react";
-import { format } from "date-fns";
-import { toast } from "sonner";
+  getAdminComplaintsOptions,
+  useUpdateComplaintStatus,
+} from '@/queries/useAdminComplaint';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_LABEL: Record<ComplaintStatus, string> = {
-  RAISED: "Complaint Raised",
-  UNDER_REVIEW: "Under Review",
-  RETURN_APPROVED: "Return Approved",
-  RETURN_ADDRESS_PROVIDED: "Return Address Provided",
-  RETURN_IN_TRANSIT: "Return In Transit",
-  RETURN_RECEIVED: "Return Received",
-  REFUNDED: "Completed (Refunded)",
-  REJECTED: "Completed (Rejected)",
+  RAISED: 'Complaint Raised',
+  REFUNDED: 'Completed (Refunded)',
+  REJECTED: 'Completed (Rejected)',
+  RETURN_ADDRESS_PROVIDED: 'Return Address Provided',
+  RETURN_APPROVED: 'Return Approved',
+  RETURN_IN_TRANSIT: 'Return In Transit',
+  RETURN_RECEIVED: 'Return Received',
+  UNDER_REVIEW: 'Under Review',
 };
 
-type StatusFilter = ComplaintStatus | "all";
+type StatusFilter = 'all' | ComplaintStatus;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const AdminComplaints = () => {
-  const [filter, setFilter] = useState<StatusFilter>("all");
+function AdminComplaints() {
+  const [filter, setFilter] = useState<StatusFilter>('all');
   const [selected, setSelected] = useState<Complaint | null>(null);
 
   const { data, isLoading } = useQuery(getAdminComplaintsOptions(filter));
@@ -69,16 +69,16 @@ const AdminComplaints = () => {
 
   const complaints: Complaint[] = data?.data ?? [];
 
-  const filtered =
-    filter === "all"
+  const filtered
+    = filter === 'all'
       ? complaints
-      : complaints.filter((c) => c.status === filter);
+      : complaints.filter(c => c.status === filter);
 
   const counts = complaints.reduce(
-    (acc, c) => {
-      acc.total++;
-      acc[c.status] = (acc[c.status] ?? 0) + 1;
-      return acc;
+    (accumulator, c) => {
+      accumulator.total++;
+      accumulator[c.status] = (accumulator[c.status] ?? 0) + 1;
+      return accumulator;
     },
     { total: 0 } as Record<string, number>,
   );
@@ -89,14 +89,14 @@ const AdminComplaints = () => {
     adminNotes?: string,
   ) => {
     updateStatus.mutate(
-      { complaintId, status, adminNotes: adminNotes || undefined },
+      { complaintId, adminNotes: adminNotes || undefined, status },
       {
+        onError: (error: any) =>
+          toast.error(error.message ?? 'Failed to update complaint'),
         onSuccess: () => {
-          toast.success("Complaint updated");
+          toast.success('Complaint updated');
           setSelected(null);
         },
-        onError: (e: any) =>
-          toast.error(e.message ?? "Failed to update complaint"),
       },
     );
   };
@@ -113,7 +113,11 @@ const AdminComplaints = () => {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="
+        grid gap-3
+        sm:grid-cols-4
+      "
+      >
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -147,16 +151,16 @@ const AdminComplaints = () => {
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Resolved</p>
             <p className="font-heading text-2xl font-semibold">
-              {(counts.REFUNDED ?? 0) +
-                (counts.REJECTED ?? 0) +
-                (counts.RETURN_RECEIVED ?? 0)}
+              {(counts.REFUNDED ?? 0)
+                + (counts.REJECTED ?? 0)
+                + (counts.RETURN_RECEIVED ?? 0)}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-        <TabsList className="flex flex-wrap h-auto">
+      <Tabs onValueChange={v => setFilter(v as StatusFilter)} value={filter}>
+        <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="RAISED">Raised</TabsTrigger>
           <TabsTrigger value="UNDER_REVIEW">Under Review</TabsTrigger>
@@ -173,119 +177,136 @@ const AdminComplaints = () => {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <p className="p-12 text-center text-sm text-muted-foreground">
-              No complaints in this view.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Listing</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelected(c)}
-                  >
-                    <TableCell className="max-w-[280px] truncate font-medium">
-                      {c.reason || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20">
-                        {STATUS_LABEL[c.status] ?? c.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <Link
-                        to={`/listing/${c.listingId}`}
-                        className="text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        View
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <Link
-                        to={`/seller/${c.buyerId}`}
-                        className="text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Profile
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(c.createdAt), "dd MMM yyyy")}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          {isLoading
+            ? (
+                <div className="flex items-center justify-center p-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )
+            : (filtered.length === 0
+                ? (
+                    <p className="p-12 text-center text-sm text-muted-foreground">
+                      No complaints in this view.
+                    </p>
+                  )
+                : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Reason</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Listing</TableHead>
+                          <TableHead>Buyer</TableHead>
+                          <TableHead>Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filtered.map(c => (
+                          <TableRow
+                            key={c.id}
+                            onClick={() => setSelected(c)}
+                            className="cursor-pointer"
+                          >
+                            <TableCell className="max-w-[280px] truncate font-medium">
+                              {c.reason || '—'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="
+                                gap-1 bg-amber-500/15 text-amber-700
+                                hover:bg-amber-500/20
+                              "
+                              >
+                                {STATUS_LABEL[c.status] ?? c.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <Link
+                                onClick={event => event.stopPropagation()}
+                                to={`/listing/${c.listingId}`}
+                                className="
+                                  text-primary
+                                  hover:underline
+                                "
+                              >
+                                View
+                              </Link>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <Link
+                                onClick={event => event.stopPropagation()}
+                                to={`/seller/${c.buyerId}`}
+                                className="
+                                  text-primary
+                                  hover:underline
+                                "
+                              >
+                                Profile
+                              </Link>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(c.createdAt), 'dd MMM yyyy')}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ))}
         </CardContent>
       </Card>
 
       <ComplaintDetailDialog
-        complaint={selected}
         onClose={() => setSelected(null)}
         onUpdate={handleUpdate}
+        complaint={selected}
         isPending={updateStatus.isPending}
       />
     </div>
   );
-};
+}
 
 // ─── Detail Dialog ────────────────────────────────────────────────────────────
 
-const ComplaintDetailDialog = ({
+function ComplaintDetailDialog({
   complaint,
+  isPending,
   onClose,
   onUpdate,
-  isPending,
 }: {
   complaint: Complaint | null;
+  isPending: boolean;
   onClose: () => void;
   onUpdate: (id: string, status: AdminComplaintStatus, notes?: string) => void;
-  isPending: boolean;
-}) => {
-  const [notes, setNotes] = useState(complaint?.adminNotes ?? "");
+}) {
+  const [notes, setNotes] = useState(complaint?.adminNotes ?? '');
 
   useEffect(() => {
-    setNotes(complaint?.adminNotes ?? "");
+    setNotes(complaint?.adminNotes ?? '');
   }, [complaint?.id, complaint?.adminNotes]);
 
-  if (!complaint) return null;
+  if (!complaint)
+    return null;
 
-  const isReturnInTransit =
-    complaint.status === "RETURN_IN_TRANSIT" ||
-    complaint.status === "RETURN_RECEIVED" ||
-    complaint.status === "REFUNDED";
+  const isReturnInTransit = ['RETURN_IN_TRANSIT', 'RETURN_RECEIVED', 'REFUNDED'].includes(complaint.status);
 
-  const isReturnReceived =
-    complaint.status === "RETURN_RECEIVED" || complaint.status === "REFUNDED";
+  const isReturnReceived = ['RETURN_RECEIVED', 'REFUNDED'].includes(complaint.status);
 
   return (
-    <Dialog open={!!complaint} onOpenChange={(o) => !o && onClose()}>
+    <Dialog onOpenChange={o => !o && onClose()} open={!!complaint}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-heading">
-            <AlertTriangle className="h-5 w-5 text-amber-600" /> Complaint
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            {' '}
+            Complaint
             details
           </DialogTitle>
           <DialogDescription>
-            Order #{complaint.orderId.slice(0, 8)} ·{" "}
-            {format(new Date(complaint.createdAt), "PPp")}
+            Order #
+            {complaint.orderId.slice(0, 8)}
+            {' '}
+            ·
+            {' '}
+            {format(new Date(complaint.createdAt), 'PPp')}
           </DialogDescription>
         </DialogHeader>
 
@@ -308,8 +329,8 @@ const ComplaintDetailDialog = ({
                   Evidence photos
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {complaint.evidenceUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer">
+                  {complaint.evidenceUrls.map(url => (
+                    <a key={url} href={url} rel="noreferrer" target="_blank">
                       <img
                         src={url}
                         alt=""
@@ -330,16 +351,21 @@ const ComplaintDetailDialog = ({
                   Return proof
                 </p>
                 {complaint.returnCarrier && (
-                  <p>Carrier: {complaint.returnCarrier}</p>
+                  <p>
+                    Carrier:
+                    {complaint.returnCarrier}
+                  </p>
                 )}
                 {complaint.returnTracking && (
                   <p className="font-mono text-xs">
-                    Tracking: {complaint.returnTracking}
+                    Tracking:
+                    {' '}
+                    {complaint.returnTracking}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {complaint.returnProofUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer">
+                  {complaint.returnProofUrls.map(url => (
+                    <a key={url} href={url} rel="noreferrer" target="_blank">
                       <img
                         src={url}
                         alt=""
@@ -361,16 +387,18 @@ const ComplaintDetailDialog = ({
 
               {/* 1. Return address */}
               <div className="flex items-start gap-3">
-                {complaint.returnAddress ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
-                )}
+                {complaint.returnAddress
+                  ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    )
+                  : (
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
+                    )}
                 <div>
                   <p className="font-medium text-foreground">
                     {complaint.returnAddress
-                      ? "Return address provided"
-                      : "Return address not provided"}
+                      ? 'Return address provided'
+                      : 'Return address not provided'}
                   </p>
                   {complaint.returnAddress && (
                     <div className="mt-1 space-y-0.5 text-muted-foreground">
@@ -395,25 +423,31 @@ const ComplaintDetailDialog = ({
 
               {/* 2. Buyer returned product */}
               <div className="flex items-start gap-3">
-                {isReturnInTransit ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                ) : (
-                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
-                )}
+                {isReturnInTransit
+                  ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    )
+                  : (
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
+                    )}
                 <div>
                   <p className="font-medium text-foreground">
                     {isReturnInTransit
-                      ? "Buyer has returned the product"
-                      : "Buyer has not returned the product yet"}
+                      ? 'Buyer has returned the product'
+                      : 'Buyer has not returned the product yet'}
                   </p>
                   {complaint.returnCarrier && (
                     <p className="text-xs text-muted-foreground">
-                      Carrier: {complaint.returnCarrier}
+                      Carrier:
+                      {' '}
+                      {complaint.returnCarrier}
                     </p>
                   )}
                   {complaint.returnTracking && (
                     <p className="font-mono text-xs text-muted-foreground">
-                      Tracking: {complaint.returnTracking}
+                      Tracking:
+                      {' '}
+                      {complaint.returnTracking}
                     </p>
                   )}
                 </div>
@@ -421,16 +455,18 @@ const ComplaintDetailDialog = ({
 
               {/* 3. Seller received item */}
               <div className="flex items-start gap-3">
-                {isReturnReceived ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                ) : (
-                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
-                )}
+                {isReturnReceived
+                  ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    )
+                  : (
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
+                    )}
                 <div>
                   <p className="font-medium text-foreground">
                     {isReturnReceived
-                      ? "Seller has received the returned item"
-                      : "Seller has not received the returned item yet"}
+                      ? 'Seller has received the returned item'
+                      : 'Seller has not received the returned item yet'}
                   </p>
                 </div>
               </div>
@@ -441,29 +477,49 @@ const ComplaintDetailDialog = ({
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to={`/listing/${complaint.listingId}`}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              className="
+                inline-flex items-center gap-1 text-xs text-primary
+                hover:underline
+              "
             >
-              View listing <ExternalLink className="h-3 w-3" />
+              View listing
+              {' '}
+              <ExternalLink className="h-3 w-3" />
             </Link>
             <Link
               to={`/seller/${complaint.buyerId}`}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              className="
+                inline-flex items-center gap-1 text-xs text-primary
+                hover:underline
+              "
             >
-              Buyer profile <ExternalLink className="h-3 w-3" />
+              Buyer profile
+              {' '}
+              <ExternalLink className="h-3 w-3" />
             </Link>
             <Link
               to={`/seller/${complaint.sellerId}`}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              className="
+                inline-flex items-center gap-1 text-xs text-primary
+                hover:underline
+              "
             >
-              Seller profile <ExternalLink className="h-3 w-3" />
+              Seller profile
+              {' '}
+              <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
 
           {/* Resolved by */}
           {complaint.resolvedAt && (
             <p className="text-xs text-muted-foreground">
-              Resolved by {complaint.resolverFullName ?? "—"} ·{" "}
-              {format(new Date(complaint.resolvedAt), "PPp")}
+              Resolved by
+              {' '}
+              {complaint.resolverFullName ?? '—'}
+              {' '}
+              ·
+              {' '}
+              {format(new Date(complaint.resolvedAt), 'PPp')}
             </p>
           )}
 
@@ -474,40 +530,40 @@ const ComplaintDetailDialog = ({
             </Label>
             <Textarea
               id="admin-notes"
-              rows={3}
+              onChange={event => setNotes(event.target.value)}
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
               placeholder="Explain your decision. This message will be shown to both buyer and seller."
+              rows={3}
             />
           </div>
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
           <Button
-            variant="outline"
+            onClick={() => onUpdate(complaint.id, 'RETURN_APPROVED', notes)}
             disabled={isPending}
-            onClick={() => onUpdate(complaint.id, "RETURN_APPROVED", notes)}
+            variant="outline"
           >
             Approve return
           </Button>
           <Button
-            variant="outline"
+            onClick={() => onUpdate(complaint.id, 'RETURN_RECEIVED', notes)}
             disabled={isPending}
-            onClick={() => onUpdate(complaint.id, "RETURN_RECEIVED", notes)}
+            variant="outline"
           >
             Mark return received
           </Button>
           <Button
-            variant="outline"
+            onClick={() => onUpdate(complaint.id, 'REFUNDED', notes)}
             disabled={isPending}
-            onClick={() => onUpdate(complaint.id, "REFUNDED", notes)}
+            variant="outline"
           >
             Complete · Refund buyer
           </Button>
           <Button
-            variant="ghost"
+            onClick={() => onUpdate(complaint.id, 'REJECTED', notes)}
             disabled={isPending}
-            onClick={() => onUpdate(complaint.id, "REJECTED", notes)}
+            variant="ghost"
           >
             Reject return request
           </Button>
@@ -515,6 +571,6 @@ const ComplaintDetailDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default AdminComplaints;

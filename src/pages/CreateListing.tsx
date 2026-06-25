@@ -1,76 +1,83 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { useQuery } from '@tanstack/react-query';
+import {
+  Camera,
+  Info,
+  Loader2,
+  Star,
+  Upload,
+  Video as VideoIcon,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import BankDetailsModal from '@/components/BankDetailsModal';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { CONDITIONS, SIZES, SHOE_SIZES, WEIGHT_OPTIONS } from "@/lib/constants";
-import { useCategories, useSubcategories } from "@/hooks/useCategories";
-import {
-  Camera,
-  Upload,
-  Loader2,
-  X,
-  Video as VideoIcon,
-  Info,
-  Star,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import BankDetailsModal from "@/components/BankDetailsModal";
-import { trackEvent } from "@/lib/analytics";
+} from '@/components/ui/tooltip';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useCategories, useSubcategories } from '@/hooks/useCategories';
+import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
+import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 // Mock configuration configuration switcher  import
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
 const MAX_PHOTOS = 20;
 
-const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+function isVideoUrl(url: string) {
+  return /\.(?:mp4|webm|mov|m4v|ogg)(?:\?|$)/i.test(url);
+}
 
-const FieldTip = ({ tip }: { tip: string }) => (
-  <TooltipProvider delayDuration={150}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label="Field help"
-          className="ml-1.5 inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
-          onClick={(e) => e.preventDefault()}
-        >
-          <Info className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-        {tip}
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+function FieldTip({ tip }: { tip: string }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={event => event.preventDefault()}
+            aria-label="Field help"
+            type="button"
+            className="
+              ml-1.5 inline-flex items-center text-muted-foreground transition-colors
+              hover:text-primary
+            "
+          >
+            <Info className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
-const CreateListing = () => {
+function CreateListing() {
   const navigate = useNavigate();
   const { id } = useParams(); // if editing
   const isEditing = !!id;
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading, user } = useAuth();
   const { data: parentCategories = [] } = useCategories();
   const { data: subCategories = [] } = useSubcategories();
   const [submitting, setSubmitting] = useState(false);
@@ -80,100 +87,104 @@ const CreateListing = () => {
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    price: "",
-    brand: "",
-    parentCategory: "",
-    subCategory: "",
-    condition: "",
-    size: "",
-    weight: "",
+    brand: '',
+    condition: '',
+    description: '',
+    parentCategory: '',
+    price: '',
+    size: '',
+    subCategory: '',
+    title: '',
+    weight: '',
   });
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   // Load existing listing if editing
   const { data: existingListing, isLoading: loadingListing } = useQuery({
-    queryKey: ["edit-listing", id],
+    enabled: isEditing,
     queryFn: async () => {
       // 👇 Mocking existing items layer configuration safety override
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      if (isMockDataEnabled) {
         return {
-          id: id,
-          title: "Premium Designer Jacket",
-          description: "Stunning limited variant tailored jacket.",
-          price: 18500,
-          brand: "Zara",
-          category: "women-clothing",
-          condition: "like_new",
-          size: "M",
-          weight: 0.5,
-          seller_id: user?.id || "mock-seller",
+          id,
+          brand: 'Zara',
+          category: 'women-clothing',
+          condition: 'like_new',
+          description: 'Stunning limited variant tailored jacket.',
           images: [
-            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600",
+            'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600',
           ],
+          price: 18_500,
+          seller_id: user?.id || 'mock-seller',
+          size: 'M',
+          title: 'Premium Designer Jacket',
+          weight: 0.5,
         };
       }
 
       const { data, error } = await supabase
-        .from("listings")
-        .select("*")
-        .eq("id", id!)
+        .from('listings')
+        .select('*')
+        .eq('id', id!)
         .single();
-      if (error) throw error;
+      if (error)
+        throw error;
       return data;
     },
-    enabled: isEditing,
+    queryKey: ['edit-listing', id],
   });
 
   useEffect(() => {
-    if (!authLoading && !user && !NEXT_PUBLIC_USE_MOCK_DATA)
-      navigate("/auth", { replace: true });
+    if (!authLoading && !user && !isMockDataEnabled)
+      navigate('/auth', { replace: true });
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (existingListing) {
-      if (
-        existingListing.seller_id !== user?.id &&
-        !NEXT_PUBLIC_USE_MOCK_DATA
-      ) {
-        navigate("/listings", { replace: true });
-        return;
-      }
-      const parts = (existingListing.category || "").split("-");
-      const closestWeight = (() => {
-        if (!existingListing.weight) return "";
-        const options = WEIGHT_OPTIONS.map((o) => ({
-          ...o,
-          num: parseFloat(o.value),
-        }));
-        let closest = options[0];
-        let minDist = Math.abs(options[0].num - existingListing.weight);
-        for (let i = 1; i < options.length; i++) {
-          const dist = Math.abs(options[i].num - existingListing.weight);
-          if (dist < minDist) {
-            minDist = dist;
-            closest = options[i];
-          }
-        }
-        return closest.value;
-      })();
-      setForm({
-        title: existingListing.title,
-        description: existingListing.description || "",
-        price: String(existingListing.price),
-        brand: existingListing.brand || "",
-        parentCategory: parts[0] || "",
-        subCategory: parts[1] || "",
-        condition: existingListing.condition,
-        size: existingListing.size,
-        weight: closestWeight,
-      });
-      const media = existingListing.images || [];
-      setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
-      const vid = media.find((u: string) => isVideoUrl(u));
-      setExistingVideo(vid || null);
+    if (!existingListing) {
+      return;
     }
+
+    if (
+      existingListing.seller_id !== user?.id
+      && !isMockDataEnabled
+    ) {
+      navigate('/listings', { replace: true });
+      return;
+    }
+    const parts = (existingListing.category || '').split('-');
+    const closestWeight = (() => {
+      if (!existingListing.weight)
+        return '';
+      const options = WEIGHT_OPTIONS.map(o => ({
+        ...o,
+        num: Number(o.value),
+      }));
+      let closest = options[0];
+      let minDistribution = Math.abs(options[0].num - existingListing.weight);
+      for (let index = 1; index < options.length; index++) {
+        const distribution = Math.abs(options[index].num - existingListing.weight);
+        if (distribution < minDistribution) {
+          minDistribution = distribution;
+          closest = options[index];
+        }
+      }
+      return closest.value;
+    })();
+    setForm({
+      brand: existingListing.brand || '',
+      condition: existingListing.condition,
+      description: existingListing.description || '',
+      parentCategory: parts[0] || '',
+      price: String(existingListing.price),
+      size: existingListing.size,
+      subCategory: parts[1] || '',
+      title: existingListing.title,
+      weight: closestWeight,
+    });
+    const media = existingListing.images || [];
+    setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
+    const vid = media.find((u: string) => isVideoUrl(u));
+    setExistingVideo(vid || null);
   }, [existingListing, user, navigate]);
 
   const uploadFiles = async (
@@ -182,38 +193,40 @@ const CreateListing = () => {
   ): Promise<string[]> => {
     const urls: string[] = [];
     for (const file of files) {
-      const ext = file.name.split(".").pop();
-      const path = `${user?.id || "mock"}/${listingId}/${crypto.randomUUID()}.${ext}`;
+      const extension = file.name.split('.').pop();
+      const path = `${user?.id || 'mock'}/${listingId}/${crypto.randomUUID()}.${extension}`;
       const { error } = await supabase.storage
-        .from("listing-images")
+        .from('listing-images')
         .upload(path, file, { upsert: true });
-      if (error) throw error;
+      if (error)
+        throw error;
       const { data: urlData } = supabase.storage
-        .from("listing-images")
+        .from('listing-images')
         .getPublicUrl(path);
       urls.push(urlData.publicUrl);
     }
     return urls;
   };
 
-  const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>) => {
+    const files = [...event_.target.files || []];
     const total = imageFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
       toast({
         title: `Max ${MAX_PHOTOS} photos allowed`,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
-    setImageFiles((prev) => [...prev, ...files]);
+    setImageFiles(previous => [...previous, ...files]);
   };
 
-  const handleAddVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleAddVideo = (event_: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event_.target.files?.[0];
+    if (!file)
+      return;
     if (file.size > 50 * 1024 * 1024) {
-      toast({ title: "Video must be under 50MB", variant: "destructive" });
+      toast({ title: 'Video must be under 50MB', variant: 'destructive' });
       return;
     }
     setVideoFile(file);
@@ -221,11 +234,11 @@ const CreateListing = () => {
   };
 
   const removeNewImage = (index: number) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImageFiles(previous => previous.filter((_, index_) => index_ !== index));
   };
 
   const removeExistingImage = (index: number) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+    setExistingImages(previous => previous.filter((_, index_) => index_ !== index));
   };
 
   const removeVideo = () => {
@@ -234,19 +247,21 @@ const CreateListing = () => {
   };
 
   const setCoverPhoto = (previewIndex: number) => {
-    if (previewIndex === 0) return;
+    if (previewIndex === 0)
+      return;
     if (previewIndex < existingImages.length) {
-      setExistingImages((prev) => {
-        const next = [...prev];
+      setExistingImages((previous) => {
+        const next = [...previous];
         const [cover] = next.splice(previewIndex, 1);
         next.unshift(cover);
         return next;
       });
-    } else {
-      const newIdx = previewIndex - existingImages.length;
-      setImageFiles((prev) => {
-        const next = [...prev];
-        const [cover] = next.splice(newIdx, 1);
+    }
+    else {
+      const newIndex = previewIndex - existingImages.length;
+      setImageFiles((previous) => {
+        const next = [...previous];
+        const [cover] = next.splice(newIndex, 1);
         next.unshift(cover);
         return next;
       });
@@ -256,83 +271,29 @@ const CreateListing = () => {
   const totalPhotos = imageFiles.length + existingImages.length;
   const hasVideo = !!videoFile || !!existingVideo;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // 👇 Live Mock Environment Submissions Validation Controls
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      await performSubmit();
-      return;
-    }
-
-    if (!user) return;
-
-    if (totalPhotos === 0) {
-      toast({ title: "At least 1 photo is required", variant: "destructive" });
-      return;
-    }
-    if (!hasVideo) {
-      toast({
-        title: "A video is required",
-        description: "Please upload 1 video of the item.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isEditing) {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("bank_account_holder, bank_name, bank_account_number")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        toast({
-          title: "Error",
-          description: profileError.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const hasBankDetails =
-        !!profile?.bank_account_holder &&
-        !!profile?.bank_name &&
-        !!profile?.bank_account_number;
-
-      if (!hasBankDetails) {
-        setBankModalOpen(true);
-        return;
-      }
-    }
-
-    await performSubmit();
-  };
-
-  const performSubmit = async () => {
+  async function performSubmit() {
     setSubmitting(true);
 
-    // 👇 Mock Submission Interception Flow
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Real field experience loader duration
+    if (isMockDataEnabled) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
       toast({
-        title: isEditing ? "Listing updated!" : "Listing created!",
         description: isEditing
-          ? "Your changes have been saved successfully (Mock Mode)."
-          : "Your item has been submitted and is pending preview verification.",
+          ? 'Your changes have been saved successfully (Mock Mode).'
+          : 'Your item has been submitted and is pending preview verification.',
+        title: isEditing ? 'Listing updated!' : 'Listing created!',
       });
       setSubmitting(false);
-      navigate("/listings");
+      navigate('/listings');
       return;
     }
 
-    if (!user) return;
+    if (!user)
+      return;
 
     try {
       if (isEditing) {
-        const newImageUrls =
-          imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
+        const newImageUrls
+          = imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
         const newVideoUrls = videoFile
           ? await uploadFiles(id!, [videoFile])
           : [];
@@ -344,50 +305,53 @@ const CreateListing = () => {
         ];
 
         const { error } = await supabase
-          .from("listings")
+          .from('listings')
           .update({
-            title: form.title,
-            description: form.description,
-            price: parseFloat(form.price),
             brand: form.brand,
             category: `${form.parentCategory}-${form.subCategory}`,
             condition: form.condition,
-            size: form.size,
-            weight: form.weight ? parseFloat(form.weight) : null,
+            description: form.description,
             images: allMedia,
+            price: Number(form.price),
+            size: form.size,
+            title: form.title,
+            weight: form.weight ? Number(form.weight) : null,
           })
-          .eq("id", id!)
-          .eq("seller_id", user.id);
+          .eq('id', id!)
+          .eq('seller_id', user.id);
 
-        if (error) throw error;
+        if (error)
+          throw error;
         toast({
-          title: "Listing updated!",
-          description: "Your changes have been saved.",
+          description: 'Your changes have been saved.',
+          title: 'Listing updated!',
         });
         navigate(`/listing/${id}`);
-      } else {
+      }
+      else {
         const { data: newListing, error: insertError } = await supabase
-          .from("listings")
+          .from('listings')
           .insert({
-            title: form.title,
-            description: form.description,
-            price: parseFloat(form.price),
             brand: form.brand,
             category: `${form.parentCategory}-${form.subCategory}`,
             condition: form.condition,
-            size: form.size,
-            weight: form.weight ? parseFloat(form.weight) : null,
-            seller_id: user.id,
+            description: form.description,
             images: [],
-            status: "pending",
+            price: Number(form.price),
+            seller_id: user.id,
+            size: form.size,
+            status: 'pending',
+            title: form.title,
+            weight: form.weight ? Number(form.weight) : null,
           })
-          .select("id")
+          .select('id')
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError)
+          throw insertError;
 
-        const imageUrls =
-          imageFiles.length > 0
+        const imageUrls
+          = imageFiles.length > 0
             ? await uploadFiles(newListing.id, imageFiles)
             : [];
         const videoUrls = videoFile
@@ -396,78 +360,145 @@ const CreateListing = () => {
         const allMedia = [...imageUrls, ...videoUrls];
 
         await supabase
-          .from("listings")
+          .from('listings')
           .update({ images: allMedia })
-          .eq("id", newListing.id);
+          .eq('id', newListing.id);
 
-        trackEvent("listing_created", {
-          listing_id: newListing.id,
-          category: `${form.parentCategory}-${form.subCategory}`,
-          price: parseFloat(form.price),
+        trackEvent('listing_created', {
           brand: form.brand,
+          category: `${form.parentCategory}-${form.subCategory}`,
+          listing_id: newListing.id,
+          price: Number(form.price),
         });
         toast({
-          title: "Listing created!",
-          description: "Your item is pending review.",
+          description: 'Your item is pending review.',
+          title: 'Listing created!',
         });
-        navigate("/listings");
+        navigate('/listings');
       }
-    } catch (err: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
+        description: error.message,
+        title: 'Error',
+        variant: 'destructive',
       });
     }
     setSubmitting(false);
+  }
+
+  const handleSubmit = async (event_: React.FormEvent) => {
+    event_.preventDefault();
+
+    if (isMockDataEnabled) {
+      await performSubmit();
+      return;
+    }
+
+    if (!user)
+      return;
+
+    if (totalPhotos === 0) {
+      toast({ title: 'At least 1 photo is required', variant: 'destructive' });
+      return;
+    }
+    if (!hasVideo) {
+      toast({
+        description: 'Please upload 1 video of the item.',
+        title: 'A video is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isEditing) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('bank_account_holder, bank_name, bank_account_number')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        toast({
+          description: profileError.message,
+          title: 'Error',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const hasBankDetails
+        = !!profile?.bank_account_holder
+          && !!profile?.bank_name
+          && !!profile?.bank_account_number;
+
+      if (!hasBankDetails) {
+        setBankModalOpen(true);
+        return;
+      }
+    }
+
+    await performSubmit();
   };
 
-  if ((authLoading || loadingListing) && !NEXT_PUBLIC_USE_MOCK_DATA)
-    return null;
-
   const allPreviews = [
-    ...existingImages.map((url) => ({ type: "existing" as const, url })),
-    ...imageFiles.map((file, i) => ({
-      type: "new" as const,
+    ...existingImages.map(url => ({ type: 'existing' as const, url })),
+    ...imageFiles.map((file, index) => ({
+      index,
+      type: 'new' as const,
       url: URL.createObjectURL(file),
-      index: i,
     })),
   ];
 
-  const videoPreviewUrl = videoFile
+  const videoPreviewUrl = useMemo(() => videoFile
     ? URL.createObjectURL(videoFile)
-    : existingVideo;
+    : existingVideo, [existingVideo, videoFile]);
+
+  if ((authLoading || loadingListing) && !isMockDataEnabled) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container max-w-2xl flex-1 py-8">
         <h1 className="font-heading text-3xl font-bold text-foreground">
-          {isEditing ? "Edit Listing" : "Sell an Item"}
+          {isEditing ? 'Edit Listing' : 'Sell an Item'}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {isEditing
-            ? "Update your listing details"
-            : "List your pre-loved fashion for sale"}
+            ? 'Update your listing details'
+            : 'List your pre-loved fashion for sale'}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
             <Label>
-              Photos (up to {MAX_PHOTOS}){" "}
-              <span className="text-muted-foreground font-normal">
-                — {totalPhotos}/{MAX_PHOTOS}
+              Photos (up to
+              {' '}
+              {MAX_PHOTOS}
+              )
+              {' '}
+              <span className="font-normal text-muted-foreground">
+                —
+                {' '}
+                {totalPhotos}
+                /
+                {MAX_PHOTOS}
               </span>
               <FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
-              {allPreviews.map((preview, i) => (
+              {allPreviews.map((preview, index) => (
                 <div
-                  key={i}
-                  className={`relative h-24 w-24 rounded-lg overflow-hidden border ${
-                    i === 0 ? "ring-2 ring-gold border-gold" : "border-border"
-                  }`}
+                  key={preview.url}
+                  className={`
+                    relative h-24 w-24 overflow-hidden rounded-lg border
+                    ${
+                index === 0 ? 'border-gold ring-2 ring-gold' : 'border-border'
+                }
+                  `}
                 >
                   <img
                     src={preview.url}
@@ -475,51 +506,64 @@ const CreateListing = () => {
                     className="h-full w-full object-cover"
                   />
                   <button
-                    type="button"
-                    className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"
                     onClick={() =>
-                      preview.type === "existing"
+                      preview.type === 'existing'
                         ? removeExistingImage(
                             existingImages.indexOf(preview.url),
                           )
-                        : removeNewImage(preview.index!)
-                    }
+                        : removeNewImage(preview.index!)}
+                    type="button"
+                    className="
+                      absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive
+                      hover:bg-background
+                    "
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
-                  {i === 0 ? (
-                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
-                      <Star className="h-2.5 w-2.5 fill-white text-white" />
-                      <span className="text-[9px] font-semibold text-white">
-                        Cover
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setCoverPhoto(i)}
-                      className="absolute bottom-1 left-1 rounded-full bg-background/80 p-1 text-muted-foreground hover:text-gold hover:bg-background transition-colors"
-                      title="Set as cover photo"
-                    >
-                      <Star className="h-3 w-3" />
-                    </button>
-                  )}
+                  {index === 0
+                    ? (
+                        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
+                          <Star className="h-2.5 w-2.5 fill-white text-white" />
+                          <span className="text-[9px] font-semibold text-white">
+                            Cover
+                          </span>
+                        </div>
+                      )
+                    : (
+                        <button
+                          onClick={() => setCoverPhoto(index)}
+                          title="Set as cover photo"
+                          type="button"
+                          className="
+                            absolute bottom-1 left-1 rounded-full bg-background/80 p-1 text-muted-foreground transition-colors
+                            hover:bg-background hover:text-gold
+                          "
+                        >
+                          <Star className="h-3 w-3" />
+                        </button>
+                      )}
                 </div>
               ))}
               {allPreviews.length < MAX_PHOTOS && (
-                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition hover:border-primary hover:text-primary">
+                <label className="
+                  flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
+                  hover:border-primary hover:text-primary
+                "
+                >
                   <input
-                    type="file"
+                    onChange={handleAddImages}
                     accept="image/*"
                     multiple
+                    type="file"
                     className="hidden"
-                    onChange={handleAddImages}
                   />
-                  {allPreviews.length === 0 ? (
-                    <Camera className="h-5 w-5" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
+                  {allPreviews.length === 0
+                    ? (
+                        <Camera className="h-5 w-5" />
+                      )
+                    : (
+                        <Upload className="h-4 w-4" />
+                      )}
                   <span className="mt-1 text-[10px]">Add photo</span>
                 </label>
               )}
@@ -529,57 +573,78 @@ const CreateListing = () => {
           {/* Video upload (mandatory) */}
           <div>
             <Label>
-              Video <span className="text-destructive">*</span>{" "}
-              <span className="text-muted-foreground font-normal">
+              Video
+              {' '}
+              <span className="text-destructive">*</span>
+              {' '}
+              <span className="font-normal text-muted-foreground">
                 — 1 short video required (max 50MB)
               </span>
               <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
-              {videoPreviewUrl ? (
-                <div className="relative h-32 w-44 rounded-lg overflow-hidden border border-border bg-muted">
-                  <video
-                    src={videoPreviewUrl}
-                    className="h-full w-full object-cover"
-                    controls
-                    muted={videoMuted}
-                  />
-                  <button
-                    type="button"
-                    className="absolute left-1 top-1 rounded-full bg-background/80 p-1 text-foreground hover:bg-background"
-                    onClick={() => setVideoMuted((m) => !m)}
-                    title={videoMuted ? "Unmute" : "Mute"}
-                  >
-                    {videoMuted ? (
-                      <VolumeX className="h-3.5 w-3.5" />
-                    ) : (
-                      <Volume2 className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive hover:bg-background"
-                    onClick={removeVideo}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex h-32 w-44 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition hover:border-primary hover:text-primary">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={handleAddVideo}
-                  />
-                  <VideoIcon className="h-5 w-5" />
-                  <span className="mt-1 text-[10px]">Add video</span>
-                </label>
-              )}
+              {videoPreviewUrl
+                ? (
+                    <div className="relative h-32 w-44 overflow-hidden rounded-lg border border-border bg-muted">
+                      <video
+                        src={videoPreviewUrl}
+                        controls
+                        muted={videoMuted}
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        onClick={() => setVideoMuted(m => !m)}
+                        title={videoMuted ? 'Unmute' : 'Mute'}
+                        type="button"
+                        className="
+                          absolute left-1 top-1 rounded-full bg-background/80 p-1 text-foreground
+                          hover:bg-background
+                        "
+                      >
+                        {videoMuted
+                          ? (
+                              <VolumeX className="h-3.5 w-3.5" />
+                            )
+                          : (
+                              <Volume2 className="h-3.5 w-3.5" />
+                            )}
+                      </button>
+                      <button
+                        onClick={removeVideo}
+                        type="button"
+                        className="
+                          absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive
+                          hover:bg-background
+                        "
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )
+                : (
+                    <label className="
+                      flex h-32 w-44 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
+                      hover:border-primary hover:text-primary
+                    "
+                    >
+                      <input
+                        onChange={handleAddVideo}
+                        accept="video/*"
+                        type="file"
+                        className="hidden"
+                      />
+                      <VideoIcon className="h-5 w-5" />
+                      <span className="mt-1 text-[10px]">Add video</span>
+                    </label>
+                  )}
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="
+            grid gap-4
+            sm:grid-cols-2
+          "
+          >
             <div className="space-y-2">
               <Label htmlFor="title">
                 Title
@@ -587,11 +652,10 @@ const CreateListing = () => {
               </Label>
               <Input
                 id="title"
-                placeholder="e.g. Vintage Levi's 501 Jeans"
+                onChange={event =>
+                  setForm(f => ({ ...f, title: event.target.value }))}
                 value={form.title}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
+                placeholder="e.g. Vintage Levi's 501 Jeans"
                 required
               />
             </div>
@@ -602,11 +666,10 @@ const CreateListing = () => {
               </Label>
               <Input
                 id="brand"
-                placeholder="e.g. Levi's"
+                onChange={event =>
+                  setForm(f => ({ ...f, brand: event.target.value }))}
                 value={form.brand}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, brand: e.target.value }))
-                }
+                placeholder="e.g. Levi's"
                 required
               />
             </div>
@@ -619,33 +682,35 @@ const CreateListing = () => {
             </Label>
             <Textarea
               id="description"
-              placeholder="Describe the item, its condition, and any flaws..."
-              rows={4}
+              onChange={event =>
+                setForm(f => ({ ...f, description: event.target.value }))}
               value={form.description}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
-              }
+              placeholder="Describe the item, its condition, and any flaws..."
               required
+              rows={4}
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="
+            grid gap-4
+            sm:grid-cols-2
+          "
+          >
             <div className="space-y-2">
               <Label>
                 Category
                 <FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." />
               </Label>
               <Select
+                onValueChange={v =>
+                  setForm(f => ({ ...f, parentCategory: v, subCategory: '' }))}
                 value={form.parentCategory}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, parentCategory: v, subCategory: "" }))
-                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {parentCategories.map((c) => (
+                  {parentCategories.map(c => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}
                     </SelectItem>
@@ -659,23 +724,22 @@ const CreateListing = () => {
                 <FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." />
               </Label>
               <Select
+                onValueChange={v =>
+                  setForm(f => ({ ...f, size: '', subCategory: v }))}
                 value={form.subCategory}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, subCategory: v, size: "" }))
-                }
                 disabled={!form.parentCategory}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
                       form.parentCategory
-                        ? "Select type"
-                        : "Choose category first"
+                        ? 'Select type'
+                        : 'Choose category first'
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {subCategories.map((c) => (
+                  {subCategories.map(c => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}
                     </SelectItem>
@@ -685,7 +749,12 @@ const CreateListing = () => {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="
+            grid gap-4
+            sm:grid-cols-2
+            lg:grid-cols-3
+          "
+          >
             <div className="space-y-2">
               <Label htmlFor="price">
                 Price (PKR)
@@ -693,15 +762,14 @@ const CreateListing = () => {
               </Label>
               <Input
                 id="price"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="0"
+                onChange={event =>
+                  setForm(f => ({ ...f, price: event.target.value }))}
                 value={form.price}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, price: e.target.value }))
-                }
+                min="1"
+                placeholder="0"
                 required
+                step="0.01"
+                type="number"
               />
             </div>
             <div className="space-y-2">
@@ -710,14 +778,14 @@ const CreateListing = () => {
                 <FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." />
               </Label>
               <Select
+                onValueChange={v => setForm(f => ({ ...f, weight: v }))}
                 value={form.weight}
-                onValueChange={(v) => setForm((f) => ({ ...f, weight: v }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select weight" />
                 </SelectTrigger>
                 <SelectContent>
-                  {WEIGHT_OPTIONS.map((w) => (
+                  {WEIGHT_OPTIONS.map(w => (
                     <SelectItem key={w.value} value={w.value}>
                       {w.label}
                     </SelectItem>
@@ -731,14 +799,14 @@ const CreateListing = () => {
                 <FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." />
               </Label>
               <Select
+                onValueChange={v => setForm(f => ({ ...f, condition: v }))}
                 value={form.condition}
-                onValueChange={(v) => setForm((f) => ({ ...f, condition: v }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CONDITIONS.map((c) => (
+                  {CONDITIONS.map(c => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}
                     </SelectItem>
@@ -753,29 +821,33 @@ const CreateListing = () => {
               Size
               <FieldTip
                 tip={
-                  form.subCategory === "shoes"
-                    ? "Select the European shoe size (EU)."
-                    : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."
+                  form.subCategory === 'shoes'
+                    ? 'Select the European shoe size (EU).'
+                    : 'Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. \'M but fits like S\').'
                 }
               />
             </Label>
             <Select
+              onValueChange={v => setForm(f => ({ ...f, size: v }))}
               value={form.size}
-              onValueChange={(v) => setForm((f) => ({ ...f, size: v }))}
               disabled={!form.subCategory}
             >
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="
+                w-full
+                sm:w-[200px]
+              "
+              >
                 <SelectValue
                   placeholder={
                     form.subCategory
-                      ? "Select size"
-                      : "Choose subcategory first"
+                      ? 'Select size'
+                      : 'Choose subcategory first'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {(form.subCategory === "shoes" ? SHOE_SIZES : SIZES).map(
-                  (s) => (
+                {(form.subCategory === 'shoes' ? SHOE_SIZES : SIZES).map(
+                  s => (
                     <SelectItem key={s} value={s}>
                       {s}
                     </SelectItem>
@@ -786,28 +858,28 @@ const CreateListing = () => {
           </div>
 
           <Button
-            type="submit"
-            size="lg"
-            className="w-full"
             disabled={submitting}
+            size="lg"
+            type="submit"
+            className="w-full"
           >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditing ? "Save Changes" : "Submit Listing"}
+            {isEditing ? 'Save Changes' : 'Submit Listing'}
           </Button>
         </form>
       </main>
       <Footer />
 
       <BankDetailsModal
-        open={bankModalOpen}
         onCancel={() => setBankModalOpen(false)}
         onSaved={async () => {
           setBankModalOpen(false);
           await performSubmit();
         }}
+        open={bankModalOpen}
       />
     </div>
   );
-};
+}
 
 export default CreateListing;

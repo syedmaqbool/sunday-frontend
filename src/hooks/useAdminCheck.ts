@@ -1,9 +1,9 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from '@/contexts/AuthContext';
 
-export const useAdminCheck = () => {
+export function useAdminCheck() {
   const { user } = useAuth();
 
-  const isAdmin = user?.roleName === "ADMIN";
+  const isAdmin = user?.roleName === 'ADMIN';
 
   return { data: isAdmin };
-};
+}

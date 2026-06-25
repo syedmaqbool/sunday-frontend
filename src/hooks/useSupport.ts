@@ -1,26 +1,27 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { CreateTicketPayload } from '@/types/support';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createSupportTicket,
   listSupportMessages,
   listSupportTickets,
   sendSupportMessage,
-} from "@/services/support.service";
-import type { CreateTicketPayload } from "@/types/support";
+} from '@/services/support.service';
 
-const SUPPORT_TICKETS_KEY = ["support-tickets"];
+const SUPPORT_TICKETS_KEY = ['support-tickets'];
 
 // Get tickets
-export const useSupportTickets = () =>
-  useQuery({
-    queryKey: SUPPORT_TICKETS_KEY,
+export function useSupportTickets() {
+  return useQuery({
     queryFn: async () => {
-      const res = await listSupportTickets();
-      return res.data;
+      const response = await listSupportTickets();
+      return response.data;
     },
+    queryKey: SUPPORT_TICKETS_KEY,
   });
+}
 
 // Create ticket
-export const useCreateSupportTicket = () => {
+export function useCreateSupportTicket() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -32,21 +33,22 @@ export const useCreateSupportTicket = () => {
       });
     },
   });
-};
+}
 
 // Get messages
-export const useSupportMessages = (ticketId?: string) =>
-  useQuery({
-    queryKey: ["support-messages", ticketId],
-    queryFn: async () => {
-      const res = await listSupportMessages(ticketId!);
-      return res.data;
-    },
+export function useSupportMessages(ticketId?: string) {
+  return useQuery({
     enabled: !!ticketId,
+    queryFn: async () => {
+      const response = await listSupportMessages(ticketId!);
+      return response.data;
+    },
+    queryKey: ['support-messages', ticketId],
   });
+}
 
 // Send reply
-export const useSendSupportMessage = () => {
+export function useSendSupportMessage() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -60,7 +62,7 @@ export const useSendSupportMessage = () => {
 
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
-        queryKey: ["support-messages", variables.ticketId],
+        queryKey: ['support-messages', variables.ticketId],
       });
 
       qc.invalidateQueries({
@@ -68,4 +70,4 @@ export const useSendSupportMessage = () => {
       });
     },
   });
-};
+}

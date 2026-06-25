@@ -1,7 +1,17 @@
-import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertTriangle,
+  Clock,
+  Loader2,
+  PackageCheck,
+  Truck,
+  Upload,
+  X,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,139 +19,136 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  AlertTriangle,
-  Truck,
-  Loader2,
-  Upload,
-  X,
-  PackageCheck,
-  Clock,
-} from "lucide-react";
-import { toast } from "sonner";
-import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ComplaintActionsProps {
-  orderId: string;
-  listingId: string;
-  sellerId: string;
   buyerId: string;
+  listingId: string;
+  orderId: string;
+  sellerId: string;
 }
 
-type Complaint = {
+interface Complaint {
   id: string;
-  status: string;
-  reason: string;
-  evidence_urls: string[];
-  return_proof_urls: string[];
-  return_carrier: string | null;
-  return_tracking: string | null;
-  return_expected_date: string | null;
   admin_notes: string;
   created_at: string;
-  updated_at: string;
-  return_to_name: string | null;
+  evidence_urls: string[];
+  reason: string;
+  return_carrier: string | null;
+  return_expected_date: string | null;
+  return_proof_urls: string[];
   return_to_address: string | null;
   return_to_city: string | null;
-  return_to_postal: string | null;
-  return_to_phone: string | null;
+  return_to_name: string | null;
   return_to_notes: string | null;
-};
+  return_to_phone: string | null;
+  return_to_postal: string | null;
+  return_tracking: string | null;
+  status: string;
+  updated_at: string;
+}
 
-const uploadFiles = async (files: File[], folder: string) => {
+async function uploadFiles(files: File[], folder: string) {
   const urls: string[] = [];
   for (const file of files) {
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const extension = file.name.split('.').pop() || 'jpg';
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
     const { error } = await supabase.storage
-      .from("return-proofs")
-      .upload(path, file, { upsert: false, contentType: file.type });
-    if (error) throw error;
-    const { data } = supabase.storage.from("return-proofs").getPublicUrl(path);
+      .from('return-proofs')
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error)
+      throw error;
+    const { data } = supabase.storage.from('return-proofs').getPublicUrl(path);
     urls.push(data.publicUrl);
   }
   return urls;
-};
+}
 
 export function ComplaintActions({
-  orderId,
-  listingId,
-  sellerId,
   buyerId,
+  listingId,
+  orderId,
+  sellerId,
 }: ComplaintActionsProps) {
   const queryClient = useQueryClient();
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState('');
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
 
   const [proofFiles, setProofFiles] = useState<File[]>([]);
-  const [carrier, setCarrier] = useState("");
-  const [tracking, setTracking] = useState("");
-  const [expectedDate, setExpectedDate] = useState("");
+  const [carrier, setCarrier] = useState('');
+  const [tracking, setTracking] = useState('');
+  const [expectedDate, setExpectedDate] = useState('');
 
   const { data: complaint, refetch } = useQuery({
-    queryKey: ["complaint", orderId, listingId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("complaints")
+        .from('complaints')
         .select(
-          "id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes",
+          'id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes',
         )
-        .eq("order_id", orderId)
-        .eq("listing_id", listingId)
+        .eq('order_id', orderId)
+        .eq('listing_id', listingId)
         .maybeSingle();
-      if (error) throw error;
+      if (error)
+        throw error;
       return (data as Complaint | null) ?? null;
     },
+    queryKey: ['complaint', orderId, listingId],
   });
 
   const { data: originalShipment } = useQuery({
-    queryKey: ["order-shipment", orderId, listingId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders")
-        .select("item_status")
-        .eq("id", orderId)
+        .from('orders')
+        .select('item_status')
+        .eq('id', orderId)
         .maybeSingle();
-      if (error) throw error;
+      if (error)
+        throw error;
       const entry = (data?.item_status as any)?.[listingId] ?? null;
       return entry as {
         expected_delivery?: string;
         shipped_at?: string;
       } | null;
     },
+    queryKey: ['order-shipment', orderId, listingId],
   });
 
   useEffect(() => {
-    if (!raiseOpen) {
-      setReason("");
-      setEvidenceFiles([]);
+    if (raiseOpen) {
+      return;
     }
+
+    setReason('');
+    setEvidenceFiles([]);
   }, [raiseOpen]);
 
   useEffect(() => {
-    if (!returnOpen) {
-      setProofFiles([]);
-      setCarrier("");
-      setTracking("");
-      setExpectedDate("");
+    if (returnOpen) {
+      return;
     }
+
+    setProofFiles([]);
+    setCarrier('');
+    setTracking('');
+    setExpectedDate('');
   }, [returnOpen]);
 
   const handleRaise = async () => {
     if (!reason.trim()) {
-      toast.error("Please describe the issue");
+      toast.error('Please describe the issue');
       return;
     }
     if (evidenceFiles.length === 0) {
-      toast.error("Please attach at least one photo");
+      toast.error('Please attach at least one photo');
       return;
     }
     setBusy(true);
@@ -150,43 +157,47 @@ export function ComplaintActions({
         evidenceFiles,
         `${buyerId}/complaints/${orderId}-${listingId}/evidence`,
       );
-      const { error } = await supabase.from("complaints").insert({
-        order_id: orderId,
-        listing_id: listingId,
+      const { error } = await supabase.from('complaints').insert({
         buyer_id: buyerId,
-        seller_id: sellerId,
-        reason: reason.trim(),
         evidence_urls: urls,
-        status: "raised",
+        listing_id: listingId,
+        order_id: orderId,
+        reason: reason.trim(),
+        seller_id: sellerId,
+        status: 'raised',
       });
-      if (error) throw error;
-      toast.success("Return request submitted for admin review.");
+      if (error)
+        throw error;
+      toast.success('Return request submitted for admin review.');
       setRaiseOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to raise complaint");
-    } finally {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    }
+    catch (error: any) {
+      toast.error(error.message ?? 'Failed to raise complaint');
+    }
+    finally {
       setBusy(false);
     }
   };
 
   const handleReturnProof = async () => {
-    if (!complaint) return;
+    if (!complaint)
+      return;
     if (!carrier.trim()) {
-      toast.error("Please enter the carrier");
+      toast.error('Please enter the carrier');
       return;
     }
     if (!tracking.trim()) {
-      toast.error("Please enter the tracking number");
+      toast.error('Please enter the tracking number');
       return;
     }
     if (!expectedDate) {
-      toast.error("Please select the expected delivery date");
+      toast.error('Please select the expected delivery date');
       return;
     }
     if (proofFiles.length === 0) {
-      toast.error("Please upload return proof photo(s)");
+      toast.error('Please upload return proof photo(s)');
       return;
     }
     setBusy(true);
@@ -196,82 +207,82 @@ export function ComplaintActions({
         `${buyerId}/complaints/${orderId}-${listingId}/return`,
       );
       const { error } = await supabase
-        .from("complaints")
+        .from('complaints')
         .update({
-          return_proof_urls: [...(complaint.return_proof_urls ?? []), ...urls],
           return_carrier: carrier.trim(),
-          return_tracking: tracking.trim(),
           return_expected_date: new Date(expectedDate).toISOString(),
-          status: "return_in_transit",
+          return_proof_urls: [...(complaint.return_proof_urls ?? []), ...urls],
+          return_tracking: tracking.trim(),
+          status: 'return_in_transit',
         })
-        .eq("id", complaint.id);
-      if (error) throw error;
-      toast.success("Return proof uploaded. Seller has been notified.");
+        .eq('id', complaint.id);
+      if (error)
+        throw error;
+      toast.success('Return proof uploaded. Seller has been notified.');
       setReturnOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to upload return proof");
-    } finally {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    }
+    catch (error: any) {
+      toast.error(error.message ?? 'Failed to upload return proof');
+    }
+    finally {
       setBusy(false);
     }
   };
 
-  // Already-resolved states
   if (
-    complaint &&
-    (complaint.status === "refunded" ||
-      complaint.status === "rejected" ||
-      complaint.status === "return_received")
+    complaint
+    && ['refunded', 'rejected', 'return_received'].includes(complaint.status)
   ) {
     return <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />;
   }
 
-  // Active complaint
   if (complaint) {
     return (
       <>
         <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {(complaint.status === "raised" ||
-            complaint.status === "under_review") && (
+          {['raised', 'under_review'].includes(complaint.status) && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Awaiting admin review
             </span>
           )}
-          {complaint.status === "return_approved" && (
+          {complaint.status === 'return_approved' && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Approved — waiting for seller's return address
             </span>
           )}
-          {complaint.status === "return_address_provided" && (
+          {complaint.status === 'return_address_provided' && (
             <Button
+              onClick={() => setReturnOpen(true)}
               size="sm"
               variant="outline"
               className="h-7 gap-1 text-xs"
-              onClick={() => setReturnOpen(true)}
             >
               <Truck className="h-3 w-3" />
               Mark return as shipped
             </Button>
           )}
-          {complaint.status === "return_in_transit" && (
+          {complaint.status === 'return_in_transit' && (
             <span className="text-xs text-muted-foreground">
               Awaiting seller / admin confirmation
               {complaint.return_tracking
                 ? ` · Tracking ${complaint.return_tracking}`
-                : ""}
+                : ''}
             </span>
           )}
         </div>
 
-        <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
+        <Dialog onOpenChange={setReturnOpen} open={returnOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-heading">
-                <PackageCheck className="h-5 w-5" /> Mark return as shipped
+                <PackageCheck className="h-5 w-5" />
+                {' '}
+                Mark return as shipped
               </DialogTitle>
               <DialogDescription>
                 Provide the carrier, tracking number, expected delivery date and
@@ -281,7 +292,8 @@ export function ComplaintActions({
             <div className="space-y-3">
               {originalShipment?.expected_delivery && (
                 <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
-                  Original shipment ETA was{" "}
+                  Original shipment ETA was
+                  {' '}
                   <span className="font-medium text-foreground">
                     {new Date(
                       originalShipment.expected_delivery,
@@ -293,24 +305,28 @@ export function ComplaintActions({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="return-carrier">
-                    Carrier <span className="text-destructive">*</span>
+                    Carrier
+                    {' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="return-carrier"
+                    onChange={event => setCarrier(event.target.value)}
                     value={carrier}
-                    onChange={(e) => setCarrier(e.target.value)}
                     placeholder="e.g. PostNet"
                     required
                   />
                 </div>
                 <div>
                   <Label htmlFor="return-tracking">
-                    Tracking # <span className="text-destructive">*</span>
+                    Tracking #
+                    {' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="return-tracking"
+                    onChange={event => setTracking(event.target.value)}
                     value={tracking}
-                    onChange={(e) => setTracking(e.target.value)}
                     placeholder="Tracking number"
                     required
                   />
@@ -318,45 +334,49 @@ export function ComplaintActions({
               </div>
               <div>
                 <Label htmlFor="return-expected-date">
-                  Expected delivery date{" "}
+                  Expected delivery date
+                  {' '}
                   <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="return-expected-date"
-                  type="date"
+                  onChange={event => setExpectedDate(event.target.value)}
                   value={expectedDate}
                   min={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => setExpectedDate(e.target.value)}
                   required
+                  type="date"
                 />
               </div>
               <div>
                 <Label>
-                  Return shipment photo(s){" "}
+                  Return shipment photo(s)
+                  {' '}
                   <span className="text-destructive">*</span>
                 </Label>
                 <FilePicker
                   id="return-proof"
-                  label=""
-                  files={proofFiles}
                   onChange={setProofFiles}
+                  files={proofFiles}
+                  label=""
                 />
               </div>
             </div>
             <DialogFooter>
               <Button
-                variant="ghost"
                 onClick={() => setReturnOpen(false)}
                 disabled={busy}
+                variant="ghost"
               >
                 Cancel
               </Button>
               <Button onClick={handleReturnProof} disabled={busy}>
-                {busy ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Truck className="mr-2 h-4 w-4" />
-                )}
+                {busy
+                  ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <Truck className="mr-2 h-4 w-4" />
+                    )}
                 Mark as Return In Transit
               </Button>
             </DialogFooter>
@@ -370,20 +390,25 @@ export function ComplaintActions({
   return (
     <>
       <Button
+        onClick={() => setRaiseOpen(true)}
         size="sm"
         variant="ghost"
-        className="mt-2 h-7 gap-1 text-xs text-amber-700 hover:bg-amber-500/10 hover:text-amber-800"
-        onClick={() => setRaiseOpen(true)}
+        className="
+          mt-2 h-7 gap-1 text-xs text-amber-700
+          hover:bg-amber-500/10 hover:text-amber-800
+        "
       >
         <AlertTriangle className="h-3 w-3" />
         Inadequate Quality
       </Button>
 
-      <Dialog open={raiseOpen} onOpenChange={setRaiseOpen}>
+      <Dialog onOpenChange={setRaiseOpen} open={raiseOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
-              <AlertTriangle className="h-5 w-5 text-amber-600" /> Raise a
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              {' '}
+              Raise a
               quality complaint
             </DialogTitle>
             <DialogDescription>
@@ -397,33 +422,35 @@ export function ComplaintActions({
               <Label htmlFor="complaint-reason">What's wrong?</Label>
               <Textarea
                 id="complaint-reason"
-                rows={4}
+                onChange={event => setReason(event.target.value)}
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
                 placeholder="Describe the quality issue (damage, fake, not as described, etc.)"
+                rows={4}
               />
             </div>
             <FilePicker
               id="complaint-evidence"
-              label="Evidence photos"
-              files={evidenceFiles}
               onChange={setEvidenceFiles}
+              files={evidenceFiles}
+              label="Evidence photos"
             />
           </div>
           <DialogFooter>
             <Button
-              variant="ghost"
               onClick={() => setRaiseOpen(false)}
               disabled={busy}
+              variant="ghost"
             >
               Cancel
             </Button>
             <Button onClick={handleRaise} disabled={busy}>
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <AlertTriangle className="mr-2 h-4 w-4" />
-              )}
+              {busy
+                ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )
+                : (
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                  )}
               Submit for review
             </Button>
           </DialogFooter>
@@ -435,22 +462,22 @@ export function ComplaintActions({
 
 function FilePicker({
   id,
-  label,
   files,
+  label,
   onChange,
 }: {
   id: string;
-  label: string;
   files: File[];
+  label: string;
   onChange: (files: File[]) => void;
 }) {
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
       <div className="mt-1 flex flex-wrap items-center gap-2">
-        {files.map((f, i) => (
+        {files.map((f, index) => (
           <div
-            key={i}
+            key={index}
             className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted"
           >
             <img
@@ -459,9 +486,9 @@ function FilePicker({
               className="h-full w-full object-cover"
             />
             <button
+              onClick={() => onChange(files.filter((_, index_) => index_ !== index))}
               type="button"
               className="absolute right-0 top-0 rounded-bl-md bg-background/80 p-0.5 text-foreground"
-              onClick={() => onChange(files.filter((_, idx) => idx !== i))}
             >
               <X className="h-3 w-3" />
             </button>
@@ -469,21 +496,24 @@ function FilePicker({
         ))}
         <label
           htmlFor={id}
-          className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-md border border-dashed border-border text-muted-foreground hover:bg-muted"
+          className="
+            flex h-16 w-16 cursor-pointer items-center justify-center rounded-md border border-dashed border-border text-muted-foreground
+            hover:bg-muted
+          "
         >
           <Upload className="h-4 w-4" />
         </label>
         <input
           id={id}
-          type="file"
+          onChange={(event) => {
+            const list = [...event.target.files ?? []];
+            onChange([...files, ...list]);
+            event.target.value = '';
+          }}
           accept="image/*"
           multiple
+          type="file"
           className="hidden"
-          onChange={(e) => {
-            const list = Array.from(e.target.files ?? []);
-            onChange([...files, ...list]);
-            e.target.value = "";
-          }}
         />
       </div>
     </div>

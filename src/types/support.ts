@@ -1,4 +1,4 @@
-export type SupportTicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+export type SupportTicketStatus = 'CLOSED' | 'IN_PROGRESS' | 'OPEN' | 'RESOLVED';
 
 export interface SupportTicket {
   id: string;
@@ -28,8 +28,8 @@ export interface SupportMessage {
 export type SupportTicketMessage = SupportMessage;
 
 export interface CreateTicketPayload {
-  subject: string;
   content: string;
+  subject: string;
 }
 
 export interface SendMessagePayload {

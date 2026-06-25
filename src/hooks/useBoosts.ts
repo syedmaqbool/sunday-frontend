@@ -1,184 +1,187 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
-export type BoostPlacement = "trending" | "for_you" | "search";
+export type BoostPlacement = 'for_you' | 'search' | 'trending';
 
 export interface BoostPackage {
   id: string;
+  active: boolean;
+  description: string;
+  duration_days: number;
   name: string;
   placement: BoostPlacement;
-  duration_days: number;
   price: number;
-  description: string;
-  active: boolean;
 }
 
 export interface ListingBoost {
   id: string;
-  listing_id: string;
-  seller_id: string;
-  placement: BoostPlacement;
-  starts_at: string;
   ends_at: string;
-  price_paid: number;
+  listing_id: string;
   payment_status: string;
+  placement: BoostPlacement;
+  price_paid: number;
+  seller_id: string;
+  starts_at: string;
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_BOOST_PACKAGES: BoostPackage[] = [
   {
-    id: "pkg-1",
-    name: "Trending Boost · 3 Days",
-    placement: "trending",
+    id: 'pkg-1',
+    active: true,
+    description: 'Show up in Trending Now for 3 days.',
     duration_days: 3,
+    name: 'Trending Boost · 3 Days',
+    placement: 'trending',
     price: 500,
-    description: "Show up in Trending Now for 3 days.",
-    active: true,
   },
   {
-    id: "pkg-2",
-    name: "Trending Boost · 7 Days",
-    placement: "trending",
+    id: 'pkg-2',
+    active: true,
+    description: 'Show up in Trending Now for a week.',
     duration_days: 7,
+    name: 'Trending Boost · 7 Days',
+    placement: 'trending',
     price: 1000,
-    description: "Show up in Trending Now for a week.",
-    active: true,
   },
   {
-    id: "pkg-3",
-    name: "For You Boost · 3 Days",
-    placement: "for_you",
+    id: 'pkg-3',
+    active: true,
+    description: 'Get featured in personalized feeds.',
     duration_days: 3,
+    name: 'For You Boost · 3 Days',
+    placement: 'for_you',
     price: 450,
-    description: "Get featured in personalized feeds.",
-    active: true,
   },
   {
-    id: "pkg-4",
-    name: "Search Boost · 3 Days",
-    placement: "search",
+    id: 'pkg-4',
+    active: true,
+    description: 'Rank higher in search & browse results.',
     duration_days: 3,
+    name: 'Search Boost · 3 Days',
+    placement: 'search',
     price: 400,
-    description: "Rank higher in search & browse results.",
-    active: true,
   },
   {
-    id: "pkg-5",
-    name: "Search Boost · 7 Days",
-    placement: "search",
-    duration_days: 7,
-    price: 850,
-    description: "Rank higher in search for a full week.",
+    id: 'pkg-5',
     active: true,
+    description: 'Rank higher in search for a full week.',
+    duration_days: 7,
+    name: 'Search Boost · 7 Days',
+    placement: 'search',
+    price: 850,
   },
 ];
 
 const now = Date.now();
 const MOCK_MY_BOOSTS: ListingBoost[] = [
   {
-    id: "boost-1",
-    listing_id: "mock-listing-1",
-    seller_id: "mock-user-id",
-    placement: "trending",
-    starts_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    id: 'boost-1',
     ends_at: new Date(now + 1 * 24 * 60 * 60 * 1000).toISOString(),
+    listing_id: 'mock-listing-1',
+    payment_status: 'mock',
+    placement: 'trending',
     price_paid: 500,
-    payment_status: "mock",
+    seller_id: 'mock-user-id',
+    starts_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
-    id: "boost-2",
-    listing_id: "mock-listing-5",
-    seller_id: "mock-user-id",
-    placement: "search",
-    starts_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    id: 'boost-2',
     ends_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    listing_id: 'mock-listing-5',
+    payment_status: 'mock',
+    placement: 'search',
     price_paid: 400,
-    payment_status: "mock",
+    seller_id: 'mock-user-id',
+    starts_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 /** All active boosts across the marketplace, used to rank listings. */
-export const useActiveBoosts = (placement?: BoostPlacement) => {
+export function useActiveBoosts(placement?: BoostPlacement) {
   return useQuery({
-    queryKey: ["active-boosts", placement ?? "all"],
     queryFn: async (): Promise<ListingBoost[]> => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      if (isMockDataEnabled) {
         const activeOnly = MOCK_MY_BOOSTS.filter(
-          (b) => new Date(b.ends_at).getTime() > Date.now(),
+          b => new Date(b.ends_at).getTime() > Date.now(),
         );
         return placement
-          ? activeOnly.filter((b) => b.placement === placement)
+          ? activeOnly.filter(b => b.placement === placement)
           : activeOnly;
       }
       let q = supabase
-        .from("listing_boosts" as any)
-        .select("*")
-        .gt("ends_at", new Date().toISOString())
-        .in("payment_status", ["paid", "mock"]);
-      if (placement) q = q.eq("placement", placement);
+        .from('listing_boosts' as any)
+        .select('*')
+        .gt('ends_at', new Date().toISOString())
+        .in('payment_status', ['paid', 'mock']);
+      if (placement)
+        q = q.eq('placement', placement);
       const { data, error } = await q;
-      if (error) throw error;
+      if (error)
+        throw error;
       return (data as any[]) ?? [];
     },
+    queryKey: ['active-boosts', placement ?? 'all'],
     staleTime: 60_000,
   });
-};
+}
 
 /** Map of listing_id -> boost score for a given placement. */
-export const useBoostScoreMap = (placement: BoostPlacement) => {
+export function useBoostScoreMap(placement: BoostPlacement) {
   const { data: boosts = [] } = useActiveBoosts(placement);
   const map = new Map<string, number>();
   for (const b of boosts)
     map.set(b.listing_id, (map.get(b.listing_id) ?? 0) + 1);
   return map;
-};
+}
 
 /** Sort: boosted listings first, preserve existing order otherwise. */
-export const applyBoostRanking = <T extends { id: string }>(
-  listings: T[],
-  boostMap: Map<string, number>,
-): T[] => {
-  return [...listings].sort(
+export function applyBoostRanking<T extends { id: string }>(listings: T[], boostMap: Map<string, number>): T[] {
+  return listings.toSorted(
     (a, b) => (boostMap.get(b.id) ?? 0) - (boostMap.get(a.id) ?? 0),
   );
-};
+}
 
-export const useBoostPackages = () => {
+export function useBoostPackages() {
   return useQuery({
-    queryKey: ["boost-packages"],
     queryFn: async (): Promise<BoostPackage[]> => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_BOOST_PACKAGES;
+      if (isMockDataEnabled)
+        return MOCK_BOOST_PACKAGES;
       const { data, error } = await supabase
-        .from("boost_packages" as any)
-        .select("*")
-        .eq("active", true)
-        .order("placement")
-        .order("duration_days");
-      if (error) throw error;
+        .from('boost_packages' as any)
+        .select('*')
+        .eq('active', true)
+        .order('placement')
+        .order('duration_days');
+      if (error)
+        throw error;
       return (data as any[]) ?? [];
     },
+    queryKey: ['boost-packages'],
   });
-};
+}
 
-export const useMyBoosts = () => {
+export function useMyBoosts() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["my-boosts", user?.id],
+    enabled: !!user || isMockDataEnabled,
     queryFn: async (): Promise<ListingBoost[]> => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_MY_BOOSTS;
+      if (isMockDataEnabled)
+        return MOCK_MY_BOOSTS;
       const { data, error } = await supabase
-        .from("listing_boosts" as any)
-        .select("*")
-        .eq("seller_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+        .from('listing_boosts' as any)
+        .select('*')
+        .eq('seller_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (error)
+        throw error;
       return (data as any[]) ?? [];
     },
-    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
+    queryKey: ['my-boosts', user?.id],
   });
-};
+}

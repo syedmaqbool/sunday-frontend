@@ -1,23 +1,33 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import {
+  ArrowLeft,
+  LifeBuoy,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Plus,
+  Send,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 
+import Footer from '@/components/Footer';
+
+import Navbar from '@/components/Navbar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import {
   Select,
@@ -25,112 +35,102 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import {
-  Send,
-  ArrowLeft,
-  MessageSquare,
-  Loader2,
-  Plus,
-  LifeBuoy,
-  Mail,
-} from "lucide-react";
-
-import { format } from "date-fns";
-import { toast } from "@/hooks/use-toast";
-import { z } from "zod";
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 import {
-  useSupportTickets,
   useCreateSupportTicket,
-  useSupportMessages,
   useSendSupportMessage,
-} from "@/hooks/useSupport";
+  useSupportMessages,
+  useSupportTickets,
+} from '@/hooks/useSupport';
 
 const ticketSchema = z.object({
-  subject: z.string().trim().min(3).max(150),
   category: z.string().min(1),
   message: z.string().trim().min(10).max(2000),
+  subject: z.string().trim().min(3).max(150),
 });
 
 const CATEGORIES = [
-  { value: "general", label: "General question" },
-  { value: "order", label: "Order issue" },
-  { value: "payment", label: "Payment & refunds" },
-  { value: "account", label: "Account & login" },
-  { value: "listing", label: "Listing problem" },
-  { value: "other", label: "Other" },
+  { label: 'General question', value: 'general' },
+  { label: 'Order issue', value: 'order' },
+  { label: 'Payment & refunds', value: 'payment' },
+  { label: 'Account & login', value: 'account' },
+  { label: 'Listing problem', value: 'listing' },
+  { label: 'Other', value: 'other' },
 ];
 
-const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
-  OPEN: {
-    label: "Open",
-    className:
-      "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+const STATUS_VARIANTS: Record<string, { className: string; label: string }> = {
+  CLOSED: {
+    className: 'bg-muted text-muted-foreground border-border',
+    label: 'Closed',
   },
   IN_PROGRESS: {
-    label: "In Progress",
     className:
-      "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+      'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+    label: 'In Progress',
+  },
+  OPEN: {
+    className:
+      'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    label: 'Open',
   },
   RESOLVED: {
-    label: "Resolved",
     className:
-      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  },
-  CLOSED: {
-    label: "Closed",
-    className: "bg-muted text-muted-foreground border-border",
+      'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+    label: 'Resolved',
   },
 };
 
-const Support = () => {
-  const { user, loading: authLoading } = useAuth();
+function Support() {
+  const { loading: authLoading, user } = useAuth();
 
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParameters, setSearchParameters] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [activeTicket, setActiveTicket] = useState<string | null>(
-    searchParams.get("ticket"),
+    searchParameters.get('ticket'),
   );
 
   const [tab, setTab] = useState<string>(
-    searchParams.get("ticket") ? "chat" : "tickets",
+    searchParameters.get('ticket') ? 'chat' : 'tickets',
   );
 
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState('');
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndReference = useRef<HTMLDivElement>(null);
 
-  const [subject, setSubject] = useState("");
-  const [category, setCategory] = useState("general");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState('general');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth", { replace: true });
+      navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
   // GET tickets
-  const { data: ticketsResponse, isLoading: ticketsLoading } =
-    useSupportTickets();
+  const { data: ticketsResponse, isLoading: ticketsLoading }
+    = useSupportTickets();
 
   const tickets = ticketsResponse ?? [];
 
   // GET messages
-  const { data: messagesResponse, isLoading: messagesLoading } =
-    useSupportMessages(activeTicket || "");
+  const { data: messagesResponse, isLoading: messagesLoading }
+    = useSupportMessages(activeTicket || '');
 
-  const messages = messagesResponse ?? [];
+  const messages = useMemo(() => messagesResponse ?? [], [messagesResponse]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
+    messagesEndReference.current?.scrollIntoView({
+      behavior: 'smooth',
     });
   }, [messages]);
 
@@ -139,18 +139,18 @@ const Support = () => {
 
   const handleCreateTicket = () => {
     const parsed = ticketSchema.safeParse({
-      subject,
       category,
       message,
+      subject,
     });
 
     if (!parsed.success) {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
 
       toast({
-        title: "Validation error",
-        description: first || "Check input",
-        variant: "destructive",
+        description: first || 'Check input',
+        title: 'Validation error',
+        variant: 'destructive',
       });
 
       return;
@@ -158,37 +158,37 @@ const Support = () => {
 
     createTicket.mutate(
       {
-        subject: parsed.data.subject,
         content: parsed.data.message, // backend wants content only
+        subject: parsed.data.subject,
       },
       {
-        onSuccess: (res) => {
+        onError: (error: Error) => {
           toast({
-            title: "Ticket created",
-            description: "Support ticket created successfully.",
-          });
-
-          setSubject("");
-          setCategory("general");
-          setMessage("");
-
-          setActiveTicket(res.data.id);
-          setTab("chat");
-
-          setSearchParams({
-            ticket: res.data.id,
-          });
-
-          queryClient.invalidateQueries({
-            queryKey: ["support-tickets"],
+            description: error.message,
+            title: 'Error',
+            variant: 'destructive',
           });
         },
 
-        onError: (err: Error) => {
+        onSuccess: (response) => {
           toast({
-            title: "Error",
-            description: err.message,
-            variant: "destructive",
+            description: 'Support ticket created successfully.',
+            title: 'Ticket created',
+          });
+
+          setSubject('');
+          setCategory('general');
+          setMessage('');
+
+          setActiveTicket(response.data.id);
+          setTab('chat');
+
+          setSearchParameters({
+            ticket: response.data.id,
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: ['support-tickets'],
           });
         },
       },
@@ -199,7 +199,8 @@ const Support = () => {
   const sendReply = useSendSupportMessage();
 
   const handleSendReply = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim())
+      return;
 
     sendReply.mutate(
       {
@@ -208,335 +209,363 @@ const Support = () => {
       },
       {
         onSuccess: () => {
-          setNewMessage("");
+          setNewMessage('');
 
           queryClient.invalidateQueries({
-            queryKey: ["support-messages", activeTicket],
+            queryKey: ['support-messages', activeTicket],
           });
         },
       },
     );
   };
 
-  const activeTicketData = tickets.find((t) => t.id === activeTicket);
-
-  if (authLoading) return null;
+  const activeTicketData = tickets.find(t => t.id === activeTicket);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+    authLoading
+      ? null
+      : (
+          <div className="flex min-h-screen flex-col bg-background">
+            <Navbar />
 
-      <main className="flex-1 container py-6 max-w-5xl">
-        <div className="flex items-center gap-3 mb-6">
-          <LifeBuoy className="h-7 w-7 text-primary" />
+            <main className="container max-w-5xl flex-1 py-6">
+              <div className="mb-6 flex items-center gap-3">
+                <LifeBuoy className="h-7 w-7 text-primary" />
 
-          <div>
-            <h1 className="text-2xl font-heading font-bold text-foreground">
-              Customer Support
-            </h1>
+                <div>
+                  <h1 className="font-heading text-2xl font-bold text-foreground">
+                    Customer Support
+                  </h1>
 
-            <p className="text-sm text-muted-foreground">We're here to help.</p>
-          </div>
-        </div>
+                  <p className="text-sm text-muted-foreground">We're here to help.</p>
+                </div>
+              </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="tickets">
-              My tickets
-              {tickets.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {tickets.length}
-                </Badge>
-              )}
-            </TabsTrigger>
+              <Tabs onValueChange={setTab} value={tab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="tickets">
+                    My tickets
+                    {tickets.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {tickets.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
 
-            <TabsTrigger value="new">
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              New ticket
-            </TabsTrigger>
+                  <TabsTrigger value="new">
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    New ticket
+                  </TabsTrigger>
 
-            {activeTicket && (
-              <TabsTrigger value="chat">Conversation</TabsTrigger>
-            )}
-          </TabsList>
+                  {activeTicket && (
+                    <TabsTrigger value="chat">Conversation</TabsTrigger>
+                  )}
+                </TabsList>
 
-          {/* TICKETS */}
+                {/* TICKETS */}
 
-          <TabsContent value="tickets">
-            <Card>
-              <CardContent className="p-0">
-                {ticketsLoading ? (
-                  <div className="flex items-center justify-center p-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : tickets.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <MessageSquare className="h-10 w-10 text-muted-foreground mb-3" />
+                <TabsContent value="tickets">
+                  <Card>
+                    <CardContent className="p-0">
+                      {ticketsLoading
+                        ? (
+                            <div className="flex items-center justify-center p-12">
+                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            </div>
+                          )
+                        : (tickets.length === 0
+                            ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-center">
+                                  <MessageSquare className="mb-3 h-10 w-10 text-muted-foreground" />
 
-                    <p className="text-sm text-muted-foreground mb-4">
-                      No tickets found
-                    </p>
+                                  <p className="mb-4 text-sm text-muted-foreground">
+                                    No tickets found
+                                  </p>
 
-                    <Button onClick={() => setTab("new")} size="sm">
-                      <Plus className="h-4 w-4 mr-1" />
-                      New ticket
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {tickets.map((t) => {
-                      const variant = STATUS_VARIANTS[t.status];
+                                  <Button onClick={() => setTab('new')} size="sm">
+                                    <Plus className="mr-1 h-4 w-4" />
+                                    New ticket
+                                  </Button>
+                                </div>
+                              )
+                            : (
+                                <div className="divide-y divide-border">
+                                  {tickets.map((t) => {
+                                    const variant = STATUS_VARIANTS[t.status];
 
-                      return (
-                        <button
-                          key={t.id}
+                                    return (
+                                      <button
+                                        key={t.id}
+                                        onClick={() => {
+                                          setActiveTicket(t.id);
+                                          setTab('chat');
+
+                                          setSearchParameters({
+                                            ticket: t.id,
+                                          });
+                                        }}
+                                        className="
+                                          flex w-full items-start gap-3 p-4 text-left transition-colors
+                                          hover:bg-accent/50
+                                        "
+                                      >
+                                        <div className="min-w-0 flex-1">
+                                          <div className="mb-1 flex items-center gap-2">
+                                            <p className="truncate text-sm font-medium">
+                                              {t.subject}
+                                            </p>
+
+                                            <Badge
+                                              variant="outline"
+                                              className={`
+                                                text-xs
+                                                ${variant?.className}
+                                              `}
+                                            >
+                                              {variant?.label}
+                                            </Badge>
+                                          </div>
+
+                                          <p className="text-xs text-muted-foreground">
+                                            {format(
+                                              new Date(t.lastMessageAt),
+                                              'MMM d, h:mm a',
+                                            )}
+                                          </p>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* NEW TICKET */}
+
+                <TabsContent value="new">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Contact support
+                      </CardTitle>
+
+                      <CardDescription>Send support request</CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          handleCreateTicket();
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="space-y-2">
+                          <label>Subject</label>
+
+                          <Input
+                            onChange={event => setSubject(event.target.value)}
+                            value={subject}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label>Category</label>
+
+                          <Select onValueChange={setCategory} value={category}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              {CATEGORIES.map(c => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  {c.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label>Message</label>
+
+                          <Textarea
+                            onChange={event => setMessage(event.target.value)}
+                            value={message}
+                            rows={6}
+                          />
+                        </div>
+
+                        <Button disabled={createTicket.isPending} type="submit">
+                          {createTicket.isPending && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Submit ticket
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                {/* CHAT */}
+
+                {activeTicket && (
+                  <TabsContent value="chat">
+                    <Card className="flex h-[calc(100vh-280px)] min-h-[500px] flex-col">
+                      {/* Header */}
+
+                      <div className="flex items-center gap-3 border-b border-border p-4">
+                        <Button
                           onClick={() => {
-                            setActiveTicket(t.id);
-                            setTab("chat");
-
-                            setSearchParams({
-                              ticket: t.id,
-                            });
+                            setTab('tickets');
+                            setActiveTicket(null);
+                            setSearchParameters({});
                           }}
-                          className="w-full flex items-start gap-3 p-4 text-left hover:bg-accent/50 transition-colors"
+                          size="icon"
+                          variant="ghost"
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-medium truncate">
-                                {t.subject}
-                              </p>
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
 
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {activeTicketData?.subject || 'Ticket'}
+                          </p>
+
+                          {activeTicketData && (
+                            <div className="mt-1 flex items-center gap-2">
                               <Badge
                                 variant="outline"
-                                className={`text-xs ${variant?.className}`}
+                                className={`
+                                  text-xs
+                                  ${
+                            STATUS_VARIANTS[activeTicketData.status]?.className
+                            }
+                                `}
                               >
-                                {variant?.label}
+                                {STATUS_VARIANTS[activeTicketData.status]?.label}
                               </Badge>
                             </div>
-
-                            <p className="text-xs text-muted-foreground">
-                              {format(
-                                new Date(t.lastMessageAt),
-                                "MMM d, h:mm a",
-                              )}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* NEW TICKET */}
-
-          <TabsContent value="new">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Contact support
-                </CardTitle>
-
-                <CardDescription>Send support request</CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <form
-                  className="space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleCreateTicket();
-                  }}
-                >
-                  <div className="space-y-2">
-                    <label>Subject</label>
-
-                    <Input
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label>Category</label>
-
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {CATEGORIES.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label>Message</label>
-
-                    <Textarea
-                      rows={6}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                    />
-                  </div>
-
-                  <Button type="submit" disabled={createTicket.isPending}>
-                    {createTicket.isPending && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Submit ticket
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          {/* CHAT */}
-
-          {activeTicket && (
-            <TabsContent value="chat">
-              <Card className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
-                {/* Header */}
-
-                <div className="flex items-center gap-3 p-4 border-b border-border">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setTab("tickets");
-                      setActiveTicket(null);
-                      setSearchParams({});
-                    }}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {activeTicketData?.subject || "Ticket"}
-                    </p>
-
-                    {activeTicketData && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            STATUS_VARIANTS[activeTicketData.status]?.className
-                          }`}
-                        >
-                          {STATUS_VARIANTS[activeTicketData.status]?.label}
-                        </Badge>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Messages */}
+                      {/* Messages */}
 
-                <ScrollArea className="flex-1 p-4">
-                  {messagesLoading ? (
-                    <div className="flex justify-center p-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {messages.map((m) => {
-                        const isMine = m.senderId === user?.id;
-
-                        return (
-                          <div
-                            key={m.id}
-                            className={`flex ${
-                              isMine ? "justify-end" : "justify-start"
-                            }`}
-                          >
-                            <div className="flex flex-col gap-1 max-w-[80%]">
-                              {!isMine && (
-                                <span className="text-[11px] font-medium text-primary px-1">
-                                  Support team
-                                </span>
-                              )}
-
-                              <div
-                                className={`rounded-2xl px-4 py-2.5 ${
-                                  isMine
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted text-foreground"
-                                }`}
-                              >
-                                <p className="text-sm whitespace-pre-wrap">
-                                  {m.content}
-                                </p>
-
-                                <p
-                                  className={`text-[10px] mt-1 ${
-                                    isMine
-                                      ? "text-primary-foreground/60"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {format(
-                                    new Date(m.createdAt),
-                                    "MMM d, h:mm a",
-                                  )}
-                                </p>
+                      <ScrollArea className="flex-1 p-4">
+                        {messagesLoading
+                          ? (
+                              <div className="flex justify-center p-8">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            )
+                          : (
+                              <div className="space-y-3">
+                                {messages.map((m) => {
+                                  const isMine = m.senderId === user?.id;
 
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </ScrollArea>
+                                  return (
+                                    <div
+                                      key={m.id}
+                                      className={`
+                                        flex
+                                        ${
+                                    isMine ? 'justify-end' : 'justify-start'
+                                    }
+                                      `}
+                                    >
+                                      <div className="flex max-w-[80%] flex-col gap-1">
+                                        {!isMine && (
+                                          <span className="px-1 text-[11px] font-medium text-primary">
+                                            Support team
+                                          </span>
+                                        )}
 
-                {/* Send Message */}
+                                        <div
+                                          className={`
+                                            rounded-2xl px-4 py-2.5
+                                            ${
+                                    isMine
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted text-foreground'
+                                    }
+                                          `}
+                                        >
+                                          <p className="whitespace-pre-wrap text-sm">
+                                            {m.content}
+                                          </p>
 
-                <div className="p-3 border-t border-border">
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendReply();
-                    }}
-                  >
-                    <Input
-                      placeholder="Type your reply..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1"
-                    />
+                                          <p
+                                            className={`
+                                              mt-1 text-[10px]
+                                              ${
+                                    isMine
+                                      ? 'text-primary-foreground/60'
+                                      : 'text-muted-foreground'
+                                    }
+                                            `}
+                                          >
+                                            {format(
+                                              new Date(m.createdAt),
+                                              'MMM d, h:mm a',
+                                            )}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
 
-                    <Button
-                      type="submit"
-                      size="icon"
-                      disabled={!newMessage.trim() || sendReply.isPending}
-                    >
-                      {sendReply.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </form>
-                </div>
-              </Card>
-            </TabsContent>
-          )}
-        </Tabs>
-      </main>
+                                <div ref={messagesEndReference} />
+                              </div>
+                            )}
+                      </ScrollArea>
 
-      <Footer />
-    </div>
+                      {/* Send Message */}
+
+                      <div className="border-t border-border p-3">
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            handleSendReply();
+                          }}
+                          className="flex gap-2"
+                        >
+                          <Input
+                            onChange={event => setNewMessage(event.target.value)}
+                            value={newMessage}
+                            placeholder="Type your reply..."
+                            className="flex-1"
+                          />
+
+                          <Button
+                            disabled={!newMessage.trim() || sendReply.isPending}
+                            size="icon"
+                            type="submit"
+                          >
+                            {sendReply.isPending
+                              ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                )
+                              : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                          </Button>
+                        </form>
+                      </div>
+                    </Card>
+                  </TabsContent>
+                )}
+              </Tabs>
+            </main>
+
+            <Footer />
+          </div>
+        )
   );
-};
+}
 
 export default Support;

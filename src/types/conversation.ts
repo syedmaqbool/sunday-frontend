@@ -1,13 +1,13 @@
 export interface Conversation {
   id: string;
   buyerId: string;
-  sellerId: string;
   listingId: string;
   offerId: string;
+  sellerId: string;
   buyerFullName: string;
-  sellerFullName: string;
-  listingTitle: string;
   lastMessageContent: string | null;
+  listingTitle: string;
+  sellerFullName: string;
   unreadCount: number;
   createdAt: string;
   updatedAt: string;

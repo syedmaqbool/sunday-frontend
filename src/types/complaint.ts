@@ -1,22 +1,22 @@
-export type ComplaintStatus =
-  | "RAISED"
-  | "UNDER_REVIEW"
-  | "RETURN_APPROVED"
-  | "RETURN_ADDRESS_PROVIDED"
-  | "RETURN_IN_TRANSIT"
-  | "RETURN_RECEIVED"
-  | "REFUNDED"
-  | "REJECTED";
+export type ComplaintStatus
+  = | 'RAISED'
+    | 'REFUNDED'
+    | 'REJECTED'
+    | 'RETURN_ADDRESS_PROVIDED'
+    | 'RETURN_APPROVED'
+    | 'RETURN_IN_TRANSIT'
+    | 'RETURN_RECEIVED'
+    | 'UNDER_REVIEW';
 
-export type AdminComplaintStatus =
-  | "RETURN_APPROVED"
-  | "REJECTED"
-  | "RETURN_RECEIVED"
-  | "REFUNDED";
+export type AdminComplaintStatus
+  = | 'REFUNDED'
+    | 'REJECTED'
+    | 'RETURN_APPROVED'
+    | 'RETURN_RECEIVED';
 
 export interface Complaint {
-  buyerId: string;
   id: string;
+  buyerId: string;
   listingId: string;
   orderId: string;
   orderItemId: string;
@@ -44,6 +44,6 @@ export interface Complaint {
 }
 
 export interface UpdateComplaintStatusPayload {
-  status: AdminComplaintStatus;
   adminNotes?: string;
+  status: AdminComplaintStatus;
 }

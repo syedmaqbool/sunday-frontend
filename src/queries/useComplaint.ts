@@ -1,34 +1,38 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import {
   listComplaintsAgainstMe,
   listMyRefundComplaints,
-} from "@/services/complaints.service";
+} from '@/services/complaints.service';
 
 export const complaintsQueryKey = {
-  myRefunds: () => ["my-refund-complaints"] as const,
-  againstMe: () => ["complaints-against-me"] as const,
+  againstMe: () => ['complaints-against-me'] as const,
+  myRefunds: () => ['my-refund-complaints'] as const,
 };
 
-export const getMyRefundComplaintsOptions = () =>
-  queryOptions({
+export function getMyRefundComplaintsOptions() {
+  return queryOptions({
+    queryFn: async () => {
+      const response = await listMyRefundComplaints();
+      return response.data;
+    },
     queryKey: complaintsQueryKey.myRefunds(),
-    queryFn: async () => {
-      const res = await listMyRefundComplaints();
-      return res.data;
-    },
   });
+}
 
-export const getComplaintsAgainstMeOptions = () =>
-  queryOptions({
+export function getComplaintsAgainstMeOptions() {
+  return queryOptions({
+    queryFn: async () => {
+      const response = await listComplaintsAgainstMe();
+      return response.data;
+    },
     queryKey: complaintsQueryKey.againstMe(),
-    queryFn: async () => {
-      const res = await listComplaintsAgainstMe();
-      return res.data;
-    },
   });
+}
 
-export const useMyRefundComplaints = () =>
-  useQuery(getMyRefundComplaintsOptions());
+export function useMyRefundComplaints() {
+  return useQuery(getMyRefundComplaintsOptions());
+}
 
-export const useComplaintsAgainstMe = () =>
-  useQuery(getComplaintsAgainstMeOptions());
+export function useComplaintsAgainstMe() {
+  return useQuery(getComplaintsAgainstMeOptions());
+}

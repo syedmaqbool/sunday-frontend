@@ -1,10 +1,10 @@
-import { authInstance } from "@/services/ky.instance";
-import type { Notification } from "@/types/notification";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+import type { Notification } from '@/types/notification';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listNotifications(page = 1, size = 20) {
   return authInstance
-    .get("/api/v1/me/notifications", { searchParams: { page, size } })
+    .get('/api/v1/me/notifications', { searchParams: { page, size } })
     .json<PaginatedResponse<Notification>>();
 }
 
@@ -16,6 +16,6 @@ export function markNotificationRead(notificationId: string) {
 
 export function markAllNotificationsRead() {
   return authInstance
-    .post("/api/v1/me/notifications/read", { json: {} })
+    .post('/api/v1/me/notifications/read', { json: {} })
     .json<Response>();
 }

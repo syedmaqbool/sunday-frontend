@@ -1,20 +1,20 @@
-import { authInstance } from "@/services/ky.instance";
+import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
   CreateTaxSettingPayload,
   TaxSetting,
   UpdateTaxSettingPayload,
-} from "@/types/tax-setting";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/tax-setting';
+import { authInstance } from '@/services/ky.instance';
 
 export function listTaxSettings() {
   return authInstance
-    .get("/api/v1/admin/settings/tax-settings")
+    .get('/api/v1/admin/settings/tax-settings')
     .json<PaginatedResponse<TaxSetting>>();
 }
 
 export function createTaxSetting(payload: CreateTaxSettingPayload) {
   return authInstance
-    .post("/api/v1/admin/settings/tax-settings", { json: payload })
+    .post('/api/v1/admin/settings/tax-settings', { json: payload })
     .json<Response<TaxSetting>>();
 }
 

@@ -1,33 +1,28 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Plus, Tag, Trash2 } from 'lucide-react';
 
-import {
-  getDiscountCodesOptions,
-  useCreateDiscountCode,
-  useUpdateDiscountCode,
-  useDeleteDiscountCode,
-} from "@/queries/useAdminDiscountCodes";
+import { useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+import { Switch } from '@/components/ui/switch';
 
 import {
   Table,
@@ -36,12 +31,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
-import { Plus, Loader2, Trash2, Tag } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from '@/hooks/use-toast';
+import {
+  getDiscountCodesOptions,
+  useCreateDiscountCode,
+  useDeleteDiscountCode,
+  useUpdateDiscountCode,
+} from '@/queries/useAdminDiscountCodes';
 
-const DiscountCodes = () => {
+function DiscountCodes() {
   const { data: codes = [], isLoading } = useQuery(getDiscountCodesOptions());
 
   const createMutation = useCreateDiscountCode();
@@ -51,46 +51,48 @@ const DiscountCodes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // form state
-  const [code, setCode] = useState("");
-  const [discountType, setDiscountType] = useState("PERCENTAGE");
-  const [discountValue, setDiscountValue] = useState("");
-  const [minOrder, setMinOrder] = useState("");
-  const [maxUses, setMaxUses] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [code, setCode] = useState('');
+  const [discountType, setDiscountType] = useState('PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState('');
+  const [minOrder, setMinOrder] = useState('');
+  const [maxUses, setMaxUses] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
 
   const resetForm = () => {
-    setCode("");
-    setDiscountType("PERCENTAGE");
-    setDiscountValue("");
-    setMinOrder("");
-    setMaxUses("");
-    setExpiresAt("");
+    setCode('');
+    setDiscountType('PERCENTAGE');
+    setDiscountValue('');
+    setMinOrder('');
+    setMaxUses('');
+    setExpiresAt('');
   };
 
   const handleCreate = async () => {
-    if (!code.trim() || !discountValue) return;
+    if (!code.trim() || !discountValue)
+      return;
 
     try {
       await createMutation.mutateAsync({
         code: code.trim().toUpperCase(),
         discountType,
         discountValue: Number(discountValue),
-        minOrderAmount: minOrder ? Number(minOrder) : 0,
-        maxUses: maxUses ? Number(maxUses) : null,
         expiresAt: expiresAt || null,
+        maxUses: maxUses ? Number(maxUses) : null,
+        minOrderAmount: minOrder ? Number(minOrder) : 0,
       });
 
       toast({
-        title: "Code created",
+        title: 'Code created',
       });
 
       setDialogOpen(false);
       resetForm();
-    } catch (error: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
         description: error.message,
-        variant: "destructive",
+        title: 'Error',
+        variant: 'destructive',
       });
     }
   };
@@ -105,13 +107,14 @@ const DiscountCodes = () => {
       });
 
       toast({
-        title: "Status updated",
+        title: 'Status updated',
       });
-    } catch (error: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
         description: error.message,
-        variant: "destructive",
+        title: 'Error',
+        variant: 'destructive',
       });
     }
   };
@@ -121,13 +124,14 @@ const DiscountCodes = () => {
       await deleteMutation.mutateAsync(id);
 
       toast({
-        title: "Code deleted",
+        title: 'Code deleted',
       });
-    } catch (error: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
         description: error.message,
-        variant: "destructive",
+        title: 'Error',
+        variant: 'destructive',
       });
     }
   };
@@ -149,16 +153,19 @@ const DiscountCodes = () => {
           </h1>
 
           <p className="text-sm text-muted-foreground">
-            {codes.length} total codes
+            {codes.length}
+            {' '}
+            total codes
           </p>
         </div>
 
         <Dialog
-          open={dialogOpen}
           onOpenChange={(o) => {
             setDialogOpen(o);
-            if (!o) resetForm();
+            if (!o)
+              resetForm();
           }}
+          open={dialogOpen}
         >
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -177,9 +184,9 @@ const DiscountCodes = () => {
                 <Label>Code</Label>
 
                 <Input
-                  placeholder="SUMMER20"
+                  onChange={event => setCode(event.target.value.toUpperCase())}
                   value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  placeholder="SUMMER20"
                   className="uppercase"
                 />
               </div>
@@ -188,7 +195,7 @@ const DiscountCodes = () => {
                 <div className="space-y-2">
                   <Label>Type</Label>
 
-                  <Select value={discountType} onValueChange={setDiscountType}>
+                  <Select onValueChange={setDiscountType} value={discountType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -205,10 +212,10 @@ const DiscountCodes = () => {
                   <Label>Value</Label>
 
                   <Input
-                    type="number"
+                    onChange={event => setDiscountValue(event.target.value)}
                     value={discountValue}
                     placeholder="20"
-                    onChange={(e) => setDiscountValue(e.target.value)}
+                    type="number"
                   />
                 </div>
               </div>
@@ -218,10 +225,10 @@ const DiscountCodes = () => {
                   <Label>Min order (Rs)</Label>
 
                   <Input
-                    type="number"
-                    placeholder="0"
+                    onChange={event => setMinOrder(event.target.value)}
                     value={minOrder}
-                    onChange={(e) => setMinOrder(e.target.value)}
+                    placeholder="0"
+                    type="number"
                   />
                 </div>
 
@@ -229,10 +236,10 @@ const DiscountCodes = () => {
                   <Label>Max uses</Label>
 
                   <Input
-                    type="number"
-                    placeholder="Unlimited"
+                    onChange={event => setMaxUses(event.target.value)}
                     value={maxUses}
-                    onChange={(e) => setMaxUses(e.target.value)}
+                    placeholder="Unlimited"
+                    type="number"
                   />
                 </div>
               </div>
@@ -241,9 +248,9 @@ const DiscountCodes = () => {
                 <Label>Expires at</Label>
 
                 <Input
-                  type="datetime-local"
+                  onChange={event => setExpiresAt(event.target.value)}
                   value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
+                  type="datetime-local"
                 />
               </div>
 
@@ -253,95 +260,102 @@ const DiscountCodes = () => {
                   createMutation.isPending || !code.trim() || !discountValue
                 }
               >
-                {createMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Create Code"
-                )}
+                {createMutation.isPending
+                  ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      'Create Code'
+                    )}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {codes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-          <Tag className="h-10 w-10 text-muted-foreground/40 mb-3" />
+      {codes.length === 0
+        ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
+              <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
 
-          <p className="text-sm text-muted-foreground">No discount codes yet</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Min Order</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
+              <p className="text-sm text-muted-foreground">No discount codes yet</p>
+            </div>
+          )
+        : (
+            <div className="rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Discount</TableHead>
+                    <TableHead>Min Order</TableHead>
+                    <TableHead>Usage</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>Active</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
 
-            <TableBody>
-              {codes.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-mono font-semibold text-foreground">
-                    {c.code}
-                  </TableCell>
+                <TableBody>
+                  {codes.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-mono font-semibold text-foreground">
+                        {c.code}
+                      </TableCell>
 
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {c.discountType === "PERCENTAGE"
-                        ? `${c.discountValue}%`
-                        : `Rs ${c.discountValue.toLocaleString()}`}
-                    </Badge>
-                  </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {c.discountType === 'PERCENTAGE'
+                            ? `${c.discountValue}%`
+                            : `Rs ${c.discountValue.toLocaleString()}`}
+                        </Badge>
+                      </TableCell>
 
-                  <TableCell className="text-muted-foreground">
-                    {c.minOrderAmount > 0
-                      ? `Rs ${c.minOrderAmount.toLocaleString()}`
-                      : "—"}
-                  </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.minOrderAmount > 0
+                          ? `Rs ${c.minOrderAmount.toLocaleString()}`
+                          : '—'}
+                      </TableCell>
 
-                  <TableCell className="text-muted-foreground">
-                    {c.currentUses}
-                    {c.maxUses !== null ? ` / ${c.maxUses}` : ""}
-                  </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.currentUses}
+                        {c.maxUses === null ? '' : ` / ${c.maxUses}`}
+                      </TableCell>
 
-                  <TableCell className="text-muted-foreground text-xs">
-                    {c.expiresAt
-                      ? new Date(c.expiresAt).toLocaleDateString()
-                      : "Never"}
-                  </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {c.expiresAt
+                          ? new Date(c.expiresAt).toLocaleDateString()
+                          : 'Never'}
+                      </TableCell>
 
-                  <TableCell>
-                    <Switch
-                      checked={c.active}
-                      onCheckedChange={() => toggleActive(c.id, c.active)}
-                    />
-                  </TableCell>
+                      <TableCell>
+                        <Switch
+                          onCheckedChange={() => toggleActive(c.id, c.active)}
+                          checked={c.active}
+                        />
+                      </TableCell>
 
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => deleteCode(c.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                      <TableCell>
+                        <Button
+                          onClick={() => deleteCode(c.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            h-7 w-7 text-muted-foreground
+                            hover:text-destructive
+                          "
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
     </div>
   );
-};
+}
 
 export default DiscountCodes;

@@ -1,48 +1,50 @@
+import type { ListingStatus } from '@/types/admin/listing';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
-import { listAdminListings, moderateListing } from "@/services/listing.service";
-import type { ListingStatus } from "@/types/admin/listing";
+} from '@tanstack/react-query';
+import { listAdminListings, moderateListing } from '@/services/listing.service';
 
 export const adminListingsQueryKey = {
-  all: () => ["admin-listings"] as const,
-  list: (status?: ListingStatus | "all") =>
-    [...adminListingsQueryKey.all(), "list", status] as const,
+  all: () => ['admin-listings'] as const,
+  list: (status?: 'all' | ListingStatus) =>
+    [...adminListingsQueryKey.all(), 'list', status] as const,
 };
 
-export const getAdminListingsOptions = (status?: ListingStatus | "all") =>
-  queryOptions({
-    queryKey: adminListingsQueryKey.list(status),
+export function getAdminListingsOptions(status?: 'all' | ListingStatus) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listAdminListings({
-        status: status && status !== "all" ? status : undefined,
+      const response = await listAdminListings({
         size: 100,
+        status: status && status !== 'all' ? status : undefined,
       });
-      return res.data;
+      return response.data;
     },
+    queryKey: adminListingsQueryKey.list(status),
   });
+}
 
-export const useAdminListings = (status?: ListingStatus | "all") =>
-  useQuery(getAdminListingsOptions(status));
+export function useAdminListings(status?: 'all' | ListingStatus) {
+  return useQuery(getAdminListingsOptions(status));
+}
 
-export const useModerateListing = () => {
+export function useModerateListing() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       listingId,
-      status,
       feedback,
+      status,
     }: {
       listingId: string;
-      status: "APPROVED" | "REJECTED" | "NEEDS_REVISION";
       feedback?: string;
-    }) => moderateListing(listingId, { status, feedback }),
+      status: 'APPROVED' | 'NEEDS_REVISION' | 'REJECTED';
+    }) => moderateListing(listingId, { feedback, status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: ["listing-feedback"] });
+      queryClient.invalidateQueries({ queryKey: ['listing-feedback'] });
     },
   });
-};
+}

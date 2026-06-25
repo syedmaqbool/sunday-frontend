@@ -3,7 +3,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   createCategory,
   createSubcategory,
@@ -13,42 +13,43 @@ import {
   listSubcategories,
   updateCategory,
   updateSubcategory,
-} from "@/services/adminCategoryManagement.service";
+} from '@/services/adminCategoryManagement.service';
 
 export const categoryManagementQueryKey = {
-  categories: () => ["admin-categories"] as const,
-  subcategories: () => ["admin-subcategories"] as const,
+  categories: () => ['admin-categories'] as const,
+  subcategories: () => ['admin-subcategories'] as const,
 };
 
 // ── Categories ────────────────────────────────────────────────────────────────
-export const getAdminCategoriesOptions = () =>
-  queryOptions({
-    queryKey: categoryManagementQueryKey.categories(),
+export function getAdminCategoriesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listCategories();
-      return res.data;
+      const response = await listCategories();
+      return response.data;
     },
+    queryKey: categoryManagementQueryKey.categories(),
   });
+}
 
 export const useAdminCategories = () => useQuery(getAdminCategoriesOptions());
 
-export const useCreateCategory = () => {
+export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: {
-      label: string;
-      value: string;
       icon?: string;
+      label: string;
       sortOrder?: number;
+      value: string;
     }) => createCategory(payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.categories(),
       }),
   });
-};
+}
 
-export const useUpdateCategory = () => {
+export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -56,16 +57,16 @@ export const useUpdateCategory = () => {
       payload,
     }: {
       id: string;
-      payload: { label?: string; icon?: string; sortOrder?: number };
+      payload: { icon?: string; label?: string; sortOrder?: number };
     }) => updateCategory(id, payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.categories(),
       }),
   });
-};
+}
 
-export const useDeleteCategory = () => {
+export function useDeleteCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteCategory(id),
@@ -74,39 +75,41 @@ export const useDeleteCategory = () => {
         queryKey: categoryManagementQueryKey.categories(),
       }),
   });
-};
+}
 
 // ── Subcategories ─────────────────────────────────────────────────────────────
-export const getAdminSubcategoriesOptions = () =>
-  queryOptions({
-    queryKey: categoryManagementQueryKey.subcategories(),
+export function getAdminSubcategoriesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listSubcategories();
-      return res.data;
+      const response = await listSubcategories();
+      return response.data;
     },
+    queryKey: categoryManagementQueryKey.subcategories(),
   });
+}
 
-export const useAdminSubcategories = () =>
-  useQuery(getAdminSubcategoriesOptions());
+export function useAdminSubcategories() {
+  return useQuery(getAdminSubcategoriesOptions());
+}
 
-export const useCreateSubcategory = () => {
+export function useCreateSubcategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: {
       categoryId: string;
-      label: string;
-      value: string;
       icon?: string;
+      label: string;
       sortOrder?: number;
+      value: string;
     }) => createSubcategory(payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.subcategories(),
       }),
   });
-};
+}
 
-export const useUpdateSubcategory = () => {
+export function useUpdateSubcategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -115,10 +118,10 @@ export const useUpdateSubcategory = () => {
     }: {
       id: string;
       payload: {
-        label?: string;
-        icon?: string;
-        sortOrder?: number;
         categoryId?: string;
+        icon?: string;
+        label?: string;
+        sortOrder?: number;
       };
     }) => updateSubcategory(id, payload),
     onSuccess: () =>
@@ -126,9 +129,9 @@ export const useUpdateSubcategory = () => {
         queryKey: categoryManagementQueryKey.subcategories(),
       }),
   });
-};
+}
 
-export const useDeleteSubcategory = () => {
+export function useDeleteSubcategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteSubcategory(id),
@@ -137,4 +140,4 @@ export const useDeleteSubcategory = () => {
         queryKey: categoryManagementQueryKey.subcategories(),
       }),
   });
-};
+}

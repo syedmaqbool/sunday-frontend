@@ -1,17 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from '@tanstack/react-query';
 import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Loader2,
   Package,
   Users,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Loader2,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { getAdminAnalyticsQueryOptions } from "@/queries/useAdminAnalytics";
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utilities';
+import { getAdminAnalyticsQueryOptions } from '@/queries/useAdminAnalytics';
 
-const Overview = () => {
+export default function Overview() {
   const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
 
   if (isLoading) {
@@ -26,34 +26,34 @@ const Overview = () => {
 
   const cards = [
     {
-      label: "Total Listings",
-      value: stats?.totalListings ?? 0,
+      color: 'text-primary',
       icon: Package,
-      color: "text-primary",
+      label: 'Total Listings',
+      value: stats?.totalListings ?? 0,
     },
     {
-      label: "Total Users",
-      value: stats?.totalUsers ?? 0,
+      color: 'text-primary',
       icon: Users,
-      color: "text-primary",
+      label: 'Total Users',
+      value: stats?.totalUsers ?? 0,
     },
     {
-      label: "Pending Review",
-      value: stats?.pendingListings ?? 0,
+      color: 'text-destructive',
       icon: Clock,
-      color: "text-destructive",
+      label: 'Pending Review',
+      value: stats?.pendingListings ?? 0,
     },
     {
-      label: "Flagged Messages",
-      value: stats?.flaggedMessages ?? 0,
+      color: 'text-destructive',
       icon: AlertTriangle,
-      color: "text-destructive",
+      label: 'Flagged Messages',
+      value: stats?.flaggedMessages ?? 0,
     },
     {
-      label: "Approved Listings",
-      value: stats?.approvedListings ?? 0,
+      color: 'text-primary',
       icon: CheckCircle,
-      color: "text-primary",
+      label: 'Approved Listings',
+      value: stats?.approvedListings ?? 0,
     },
   ];
 
@@ -65,15 +65,20 @@ const Overview = () => {
 
       <p className="mt-1 text-muted-foreground">Overview of your marketplace</p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
+      <div className="
+        mt-8 grid gap-4
+        sm:grid-cols-2
+        lg:grid-cols-4
+      "
+      >
+        {cards.map(c => (
           <Card key={c.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {c.label}
               </CardTitle>
 
-              <c.icon className={cn("h-5 w-5", c.color)} />
+              <c.icon className={cn('h-5 w-5', c.color)} />
             </CardHeader>
 
             <CardContent>
@@ -84,6 +89,4 @@ const Overview = () => {
       </div>
     </div>
   );
-};
-
-export default Overview;
+}

@@ -1,69 +1,69 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getAdminCategoriesOptions,
-  getAdminSubcategoriesOptions,
-  useCreateCategory,
-  useUpdateCategory,
-  useDeleteCategory,
-  useCreateSubcategory,
-  useUpdateSubcategory,
-  useDeleteSubcategory,
-} from "@/queries/useCategoryManagement";
-import type { Category, Subcategory } from "@/types/admin/category";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Category, Subcategory } from '@/types/admin/category';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import {
+  getAdminCategoriesOptions,
+  getAdminSubcategoriesOptions,
+  useCreateCategory,
+  useCreateSubcategory,
+  useDeleteCategory,
+  useDeleteSubcategory,
+  useUpdateCategory,
+  useUpdateSubcategory,
+} from '@/queries/useCategoryManagement';
 
 // ── Form types ────────────────────────────────────────────────────────────────
 interface CatForm {
-  label: string;
-  value: string; // immutable after create — disabled in edit mode
   icon: string;
+  label: string;
   sortOrder: number;
+  value: string; // immutable after create — disabled in edit mode
 }
 interface SubForm {
   categoryId: string;
-  label: string;
-  value: string; // immutable after create — disabled in edit mode
   icon: string;
+  label: string;
   sortOrder: number;
+  value: string; // immutable after create — disabled in edit mode
 }
 
-const emptyCat: CatForm = { label: "", value: "", icon: "📦", sortOrder: 0 };
+const emptyCat: CatForm = { icon: '📦', label: '', sortOrder: 0, value: '' };
 const emptySub: SubForm = {
-  categoryId: "",
-  label: "",
-  value: "",
-  icon: "📦",
+  categoryId: '',
+  icon: '📦',
+  label: '',
   sortOrder: 0,
+  value: '',
 };
 
-const autoSlug = (label: string) =>
-  label
+function autoSlug(label: string) {
+  return label
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/(^-|-$)/g, '');
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
-const CategoryManagement = () => {
+function CategoryManagement() {
   const { toast } = useToast();
 
   const { data: categories = [], isLoading: loadingCats } = useQuery(
@@ -93,17 +93,17 @@ const CategoryManagement = () => {
   const openEditCat = (cat: Category) => {
     setEditingCat(cat);
     setCatForm({
-      label: cat.label,
-      value: cat.value,
       icon: cat.icon,
+      label: cat.label,
       sortOrder: cat.sortOrder,
+      value: cat.value,
     });
     setCatOpen(true);
   };
 
   const handleSaveCat = () => {
     if (!catForm.label.trim() || !catForm.value.trim()) {
-      toast({ title: "Label and value are required", variant: "destructive" });
+      toast({ title: 'Label and value are required', variant: 'destructive' });
       return;
     }
     if (editingCat) {
@@ -112,59 +112,58 @@ const CategoryManagement = () => {
         {
           id: editingCat.id,
           payload: {
-            label: catForm.label.trim(),
             icon: catForm.icon,
+            label: catForm.label.trim(),
             sortOrder: catForm.sortOrder,
           },
         },
         {
+          onError: (error: any) =>
+            toast({
+              description: error.message,
+              title: 'Error',
+              variant: 'destructive',
+            }),
           onSuccess: () => {
-            toast({ title: "Category updated" });
+            toast({ title: 'Category updated' });
             setCatOpen(false);
           },
-          onError: (e: any) =>
-            toast({
-              title: "Error",
-              description: e.message,
-              variant: "destructive",
-            }),
         },
       );
-    } else {
+    }
+    else {
       createCat.mutate(
         {
-          label: catForm.label.trim(),
-          value: catForm.value.trim(),
           icon: catForm.icon,
+          label: catForm.label.trim(),
           sortOrder: catForm.sortOrder,
+          value: catForm.value.trim(),
         },
         {
+          onError: (error: any) =>
+            toast({
+              description: error.message,
+              title: 'Error',
+              variant: 'destructive',
+            }),
           onSuccess: () => {
-            toast({ title: "Category created" });
+            toast({ title: 'Category created' });
             setCatOpen(false);
           },
-          onError: (e: any) =>
-            toast({
-              title: "Error",
-              description: e.message,
-              variant: "destructive",
-            }),
         },
       );
     }
   };
 
   const handleDeleteCat = (id: string) => {
-    if (!confirm("Delete this category? Existing listings won't be affected."))
-      return;
     deleteCat.mutate(id, {
-      onSuccess: () => toast({ title: "Category deleted" }),
-      onError: (e: any) =>
+      onError: (error: any) =>
         toast({
-          title: "Error",
-          description: e.message,
-          variant: "destructive",
+          description: error.message,
+          title: 'Error',
+          variant: 'destructive',
         }),
+      onSuccess: () => toast({ title: 'Category deleted' }),
     });
   };
 
@@ -175,17 +174,17 @@ const CategoryManagement = () => {
 
   const openNewSub = () => {
     setEditingSub(null);
-    setSubForm({ ...emptySub, categoryId: categories[0]?.id ?? "" });
+    setSubForm({ ...emptySub, categoryId: categories[0]?.id ?? '' });
     setSubOpen(true);
   };
   const openEditSub = (sub: Subcategory) => {
     setEditingSub(sub);
     setSubForm({
       categoryId: sub.categoryId,
-      label: sub.label,
-      value: sub.value,
       icon: sub.icon,
+      label: sub.label,
       sortOrder: sub.sortOrder,
+      value: sub.value,
     });
     setSubOpen(true);
   };
@@ -193,8 +192,8 @@ const CategoryManagement = () => {
   const handleSaveSub = () => {
     if (!subForm.label.trim() || !subForm.value.trim() || !subForm.categoryId) {
       toast({
-        title: "Category, label and value are required",
-        variant: "destructive",
+        title: 'Category, label and value are required',
+        variant: 'destructive',
       });
       return;
     }
@@ -204,71 +203,68 @@ const CategoryManagement = () => {
         {
           id: editingSub.id,
           payload: {
-            label: subForm.label.trim(),
-            icon: subForm.icon,
-            sortOrder: subForm.sortOrder,
             categoryId: subForm.categoryId,
+            icon: subForm.icon,
+            label: subForm.label.trim(),
+            sortOrder: subForm.sortOrder,
           },
         },
         {
+          onError: (error: any) =>
+            toast({
+              description: error.message,
+              title: 'Error',
+              variant: 'destructive',
+            }),
           onSuccess: () => {
-            toast({ title: "Subcategory updated" });
+            toast({ title: 'Subcategory updated' });
             setSubOpen(false);
           },
-          onError: (e: any) =>
-            toast({
-              title: "Error",
-              description: e.message,
-              variant: "destructive",
-            }),
         },
       );
-    } else {
+    }
+    else {
       createSub.mutate(
         {
           categoryId: subForm.categoryId,
-          label: subForm.label.trim(),
-          value: subForm.value.trim(),
           icon: subForm.icon,
+          label: subForm.label.trim(),
           sortOrder: subForm.sortOrder,
+          value: subForm.value.trim(),
         },
         {
+          onError: (error: any) =>
+            toast({
+              description: error.message,
+              title: 'Error',
+              variant: 'destructive',
+            }),
           onSuccess: () => {
-            toast({ title: "Subcategory created" });
+            toast({ title: 'Subcategory created' });
             setSubOpen(false);
           },
-          onError: (e: any) =>
-            toast({
-              title: "Error",
-              description: e.message,
-              variant: "destructive",
-            }),
         },
       );
     }
   };
 
   const handleDeleteSub = (id: string) => {
-    if (
-      !confirm("Delete this subcategory? Existing listings won't be affected.")
-    )
-      return;
     deleteSub.mutate(id, {
-      onSuccess: () => toast({ title: "Subcategory deleted" }),
-      onError: (e: any) =>
+      onError: (error: any) =>
         toast({
-          title: "Error",
-          description: e.message,
-          variant: "destructive",
+          description: error.message,
+          title: 'Error',
+          variant: 'destructive',
         }),
+      onSuccess: () => toast({ title: 'Subcategory deleted' }),
     });
   };
 
-  const busy =
-    createCat.isPending ||
-    updateCat.isPending ||
-    createSub.isPending ||
-    updateSub.isPending;
+  const busy
+    = createCat.isPending
+      || updateCat.isPending
+      || createSub.isPending
+      || updateSub.isPending;
 
   if (loadingCats || loadingSubs) {
     return (
@@ -288,50 +284,60 @@ const CategoryManagement = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Categories</CardTitle>
-          <Button size="sm" className="gap-1" onClick={openNewCat}>
-            <Plus className="h-4 w-4" /> Add Category
+          <Button onClick={openNewCat} size="sm" className="gap-1">
+            <Plus className="h-4 w-4" />
+            {' '}
+            Add Category
           </Button>
         </CardHeader>
         <CardContent>
-          {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories yet.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{cat.icon}</span>
-                    <div>
-                      <p className="font-medium text-foreground">{cat.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {cat.value} · order {cat.sortOrder}
-                      </p>
+          {categories.length === 0
+            ? (
+                <p className="text-sm text-muted-foreground">No categories yet.</p>
+              )
+            : (
+                <div className="divide-y divide-border">
+                  {categories.map(cat => (
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{cat.icon}</span>
+                        <div>
+                          <p className="font-medium text-foreground">{cat.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {cat.value}
+                            {' '}
+                            · order
+                            {cat.sortOrder}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          onClick={() => openEditCat(cat)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteCat(cat.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            text-destructive
+                            hover:text-destructive
+                          "
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditCat(cat)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteCat(cat.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
         </CardContent>
       </Card>
 
@@ -340,63 +346,75 @@ const CategoryManagement = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Subcategories</CardTitle>
           <Button
-            size="sm"
-            className="gap-1"
             onClick={openNewSub}
             disabled={categories.length === 0}
+            size="sm"
+            className="gap-1"
           >
-            <Plus className="h-4 w-4" /> Add Subcategory
+            <Plus className="h-4 w-4" />
+            {' '}
+            Add Subcategory
           </Button>
         </CardHeader>
         <CardContent>
-          {subcategories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No subcategories yet.
-            </p>
-          ) : (
-            <div className="divide-y divide-border">
-              {subcategories.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="flex items-center justify-between py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{sub.icon}</span>
-                    <div>
-                      <p className="font-medium text-foreground">{sub.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {sub.value} · {sub.categoryLabel} · order{" "}
-                        {sub.sortOrder}
-                      </p>
+          {subcategories.length === 0
+            ? (
+                <p className="text-sm text-muted-foreground">
+                  No subcategories yet.
+                </p>
+              )
+            : (
+                <div className="divide-y divide-border">
+                  {subcategories.map(sub => (
+                    <div
+                      key={sub.id}
+                      className="flex items-center justify-between py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{sub.icon}</span>
+                        <div>
+                          <p className="font-medium text-foreground">{sub.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {sub.value}
+                            {' '}
+                            ·
+                            {sub.categoryLabel}
+                            {' '}
+                            · order
+                            {' '}
+                            {sub.sortOrder}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          onClick={() => openEditSub(sub)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteSub(sub.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            text-destructive
+                            hover:text-destructive
+                          "
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditSub(sub)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteSub(sub.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
         </CardContent>
       </Card>
 
       {/* ── Category Dialog ── */}
       <Dialog
-        open={catOpen}
         onOpenChange={(o) => {
           setCatOpen(o);
           if (!o) {
@@ -404,27 +422,32 @@ const CategoryManagement = () => {
             setEditingCat(null);
           }
         }}
+        open={catOpen}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingCat ? "Edit Category" : "Add Category"}
+              {editingCat ? 'Edit Category' : 'Add Category'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="
+              grid gap-4
+              sm:grid-cols-2
+            "
+            >
               <div className="space-y-2">
                 <Label>Label</Label>
                 <Input
-                  value={catForm.label}
-                  onChange={(e) => {
-                    const label = e.target.value;
-                    setCatForm((f) => ({
+                  onChange={(event) => {
+                    const label = event.target.value;
+                    setCatForm(f => ({
                       ...f,
                       label,
                       value: f.value || autoSlug(label),
                     }));
                   }}
+                  value={catForm.label}
                   placeholder="e.g. Women"
                 />
               </div>
@@ -438,40 +461,41 @@ const CategoryManagement = () => {
                   )}
                 </Label>
                 <Input
-                  value={catForm.value}
-                  onChange={(e) =>
-                    setCatForm((f) => ({
+                  onChange={event =>
+                    setCatForm(f => ({
                       ...f,
-                      value: e.target.value.toLowerCase(),
-                    }))
-                  }
-                  placeholder="e.g. women"
+                      value: event.target.value.toLowerCase(),
+                    }))}
+                  value={catForm.value}
                   disabled={!!editingCat}
+                  placeholder="e.g. women"
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="
+              grid gap-4
+              sm:grid-cols-2
+            "
+            >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
                 <Input
+                  onChange={event =>
+                    setCatForm(f => ({ ...f, icon: event.target.value }))}
                   value={catForm.icon}
-                  onChange={(e) =>
-                    setCatForm((f) => ({ ...f, icon: e.target.value }))
-                  }
                   placeholder="📦"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
                 <Input
-                  type="number"
-                  value={catForm.sortOrder}
-                  onChange={(e) =>
-                    setCatForm((f) => ({
+                  onChange={event =>
+                    setCatForm(f => ({
                       ...f,
-                      sortOrder: parseInt(e.target.value) || 0,
-                    }))
-                  }
+                      sortOrder: parseInt(event.target.value) || 0,
+                    }))}
+                  value={catForm.sortOrder}
+                  type="number"
                 />
               </div>
             </div>
@@ -482,14 +506,13 @@ const CategoryManagement = () => {
             className="mt-4 w-full"
           >
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingCat ? "Save Changes" : "Create Category"}
+            {editingCat ? 'Save Changes' : 'Create Category'}
           </Button>
         </DialogContent>
       </Dialog>
 
       {/* ── Subcategory Dialog ── */}
       <Dialog
-        open={subOpen}
         onOpenChange={(o) => {
           setSubOpen(o);
           if (!o) {
@@ -497,27 +520,27 @@ const CategoryManagement = () => {
             setEditingSub(null);
           }
         }}
+        open={subOpen}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingSub ? "Edit Subcategory" : "Add Subcategory"}
+              {editingSub ? 'Edit Subcategory' : 'Add Subcategory'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Parent Category</Label>
               <Select
+                onValueChange={v =>
+                  setSubForm(f => ({ ...f, categoryId: v }))}
                 value={subForm.categoryId}
-                onValueChange={(v) =>
-                  setSubForm((f) => ({ ...f, categoryId: v }))
-                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.label}
                     </SelectItem>
@@ -525,19 +548,23 @@ const CategoryManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="
+              grid gap-4
+              sm:grid-cols-2
+            "
+            >
               <div className="space-y-2">
                 <Label>Label</Label>
                 <Input
-                  value={subForm.label}
-                  onChange={(e) => {
-                    const label = e.target.value;
-                    setSubForm((f) => ({
+                  onChange={(event) => {
+                    const label = event.target.value;
+                    setSubForm(f => ({
                       ...f,
                       label,
                       value: f.value || autoSlug(label),
                     }));
                   }}
+                  value={subForm.label}
                   placeholder="e.g. Shoes"
                 />
               </div>
@@ -551,40 +578,41 @@ const CategoryManagement = () => {
                   )}
                 </Label>
                 <Input
-                  value={subForm.value}
-                  onChange={(e) =>
-                    setSubForm((f) => ({
+                  onChange={event =>
+                    setSubForm(f => ({
                       ...f,
-                      value: e.target.value.toLowerCase(),
-                    }))
-                  }
-                  placeholder="e.g. shoes"
+                      value: event.target.value.toLowerCase(),
+                    }))}
+                  value={subForm.value}
                   disabled={!!editingSub}
+                  placeholder="e.g. shoes"
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="
+              grid gap-4
+              sm:grid-cols-2
+            "
+            >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
                 <Input
+                  onChange={event =>
+                    setSubForm(f => ({ ...f, icon: event.target.value }))}
                   value={subForm.icon}
-                  onChange={(e) =>
-                    setSubForm((f) => ({ ...f, icon: e.target.value }))
-                  }
                   placeholder="📦"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
                 <Input
-                  type="number"
-                  value={subForm.sortOrder}
-                  onChange={(e) =>
-                    setSubForm((f) => ({
+                  onChange={event =>
+                    setSubForm(f => ({
                       ...f,
-                      sortOrder: parseInt(e.target.value) || 0,
-                    }))
-                  }
+                      sortOrder: parseInt(event.target.value) || 0,
+                    }))}
+                  value={subForm.sortOrder}
+                  type="number"
                 />
               </div>
             </div>
@@ -595,12 +623,12 @@ const CategoryManagement = () => {
             className="mt-4 w-full"
           >
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingSub ? "Save Changes" : "Create Subcategory"}
+            {editingSub ? 'Save Changes' : 'Create Subcategory'}
           </Button>
         </DialogContent>
       </Dialog>
     </div>
   );
-};
+}
 
 export default CategoryManagement;

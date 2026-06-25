@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
-const ReturnsPolicy = () => {
+export default function ReturnsPolicy() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -15,9 +15,14 @@ const ReturnsPolicy = () => {
       <main className="container flex-1 py-12">
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="
+            mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground
+            hover:text-foreground
+          "
         >
-          <ChevronLeft className="h-4 w-4" /> Back to home
+          <ChevronLeft className="h-4 w-4" />
+          {' '}
+          Back to home
         </Link>
         <article className="mx-auto max-w-3xl">
           <h1 className="mb-2 font-heading text-3xl font-bold">
@@ -34,17 +39,23 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>1.1</strong> This Returns & Refunds Policy (“Policy”)
+                <strong>1.1</strong>
+                {' '}
+                This Returns & Refunds Policy (“Policy”)
                 governs all return, refund, and dispute processes on Sunday
                 (“Platform”, “we”, “us”, “our”).
               </p>
               <p>
-                <strong>1.2</strong> This Policy forms part of the Sunday Terms
+                <strong>1.2</strong>
+                {' '}
+                This Policy forms part of the Sunday Terms
                 & Conditions and applies to all users (“you”, “your”) engaging
                 in transactions on the Platform.
               </p>
               <p>
-                <strong>1.3</strong> By using the Platform, you agree to be
+                <strong>1.3</strong>
+                {' '}
+                By using the Platform, you agree to be
                 bound by this Policy.
               </p>
             </div>
@@ -56,16 +67,22 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>2.1</strong> Sunday operates as a marketplace connecting
+                <strong>2.1</strong>
+                {' '}
+                Sunday operates as a marketplace connecting
                 independent buyers and sellers.
               </p>
               <p>
-                <strong>2.2</strong> All transactions are conducted between
+                <strong>2.2</strong>
+                {' '}
+                All transactions are conducted between
                 users. Sunday facilitates dispute resolution and implements
                 protection measures but is not a party to the transaction.
               </p>
               <p>
-                <strong>2.3</strong> Returns and refunds are strictly governed
+                <strong>2.3</strong>
+                {' '}
+                Returns and refunds are strictly governed
                 by the timelines, processes, and conditions outlined in this
                 Policy.
               </p>
@@ -78,7 +95,9 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>3.1</strong> A refund request is only valid if:
+                <strong>3.1</strong>
+                {' '}
+                A refund request is only valid if:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>The buyer has received the item, and</li>
@@ -89,7 +108,9 @@ const ReturnsPolicy = () => {
                 </li>
               </ul>
               <p>
-                <strong>3.2</strong> Refunds may be considered only in cases
+                <strong>3.2</strong>
+                {' '}
+                Refunds may be considered only in cases
                 where:
               </p>
               <ul className="list-disc space-y-1 pl-5">
@@ -103,7 +124,9 @@ const ReturnsPolicy = () => {
                 <li>The wrong item was delivered</li>
               </ul>
               <p>
-                <strong>3.3</strong> Refunds will not be granted for:
+                <strong>3.3</strong>
+                {' '}
+                Refunds will not be granted for:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Change of mind</li>
@@ -121,12 +144,16 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>4.1</strong> To initiate a refund request, the buyer
+                <strong>4.1</strong>
+                {' '}
+                To initiate a refund request, the buyer
                 must submit a complaint through the Platform within the Quality
                 Verification Window.
               </p>
               <p>
-                <strong>4.2</strong> Upon submission:
+                <strong>4.2</strong>
+                {' '}
+                Upon submission:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>A case (ticket) will be created</li>
@@ -137,14 +164,18 @@ const ReturnsPolicy = () => {
                 </li>
               </ul>
               <p>
-                <strong>4.3</strong> Sunday will review the complaint and may:
+                <strong>4.3</strong>
+                {' '}
+                Sunday will review the complaint and may:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Request additional evidence from either party</li>
                 <li>Review listing details and transaction history</li>
               </ul>
               <p>
-                <strong>4.4</strong> Sunday reserves the right to make a final
+                <strong>4.4</strong>
+                {' '}
+                Sunday reserves the right to make a final
                 determination on the outcome of the dispute.
               </p>
             </div>
@@ -156,7 +187,9 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>5.1</strong> If a refund request is approved:
+                <strong>5.1</strong>
+                {' '}
+                If a refund request is approved:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
@@ -169,7 +202,9 @@ const ReturnsPolicy = () => {
                 </li>
               </ul>
               <p>
-                <strong>5.2</strong> Failure to comply with return requirements
+                <strong>5.2</strong>
+                {' '}
+                Failure to comply with return requirements
                 may result in:
               </p>
               <ul className="list-disc space-y-1 pl-5">
@@ -177,7 +212,9 @@ const ReturnsPolicy = () => {
                 <li>Release of payment to the seller</li>
               </ul>
               <p>
-                <strong>5.3</strong> Items must be returned:
+                <strong>5.3</strong>
+                {' '}
+                Items must be returned:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>In the same condition as received</li>
@@ -192,16 +229,22 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>6.1</strong> The buyer is responsible for arranging
+                <strong>6.1</strong>
+                {' '}
+                The buyer is responsible for arranging
                 return shipment using a trackable courier service.
               </p>
               <p>
-                <strong>6.2</strong> Sunday may require the use of designated or
+                <strong>6.2</strong>
+                {' '}
+                Sunday may require the use of designated or
                 integrated shipping partners for consistency and tracking
                 verification.
               </p>
               <p>
-                <strong>6.3</strong> The buyer bears the risk of return shipment
+                <strong>6.3</strong>
+                {' '}
+                The buyer bears the risk of return shipment
                 until the item is marked as delivered.
               </p>
             </div>
@@ -213,11 +256,15 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>7.1</strong> The seller is required to confirm receipt
+                <strong>7.1</strong>
+                {' '}
+                The seller is required to confirm receipt
                 of the returned item promptly upon delivery.
               </p>
               <p>
-                <strong>7.2</strong> If the seller does not confirm receipt:
+                <strong>7.2</strong>
+                {' '}
+                If the seller does not confirm receipt:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>The case may be flagged for review</li>
@@ -235,13 +282,17 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>8.1</strong> If a return shipment is confirmed lost:
+                <strong>8.1</strong>
+                {' '}
+                If a return shipment is confirmed lost:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>The refund may be cancelled</li>
               </ul>
               <p>
-                <strong>8.2</strong> Sunday is not responsible for lost or
+                <strong>8.2</strong>
+                {' '}
+                Sunday is not responsible for lost or
                 delayed return shipments, as shipping is conducted through
                 third-party providers.
               </p>
@@ -254,7 +305,9 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>9.1</strong> Refunds will only be processed after:
+                <strong>9.1</strong>
+                {' '}
+                Refunds will only be processed after:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
@@ -263,11 +316,15 @@ const ReturnsPolicy = () => {
                 <li>The return meets the required conditions</li>
               </ul>
               <p>
-                <strong>9.2</strong> Refunds will be issued to the original
+                <strong>9.2</strong>
+                {' '}
+                Refunds will be issued to the original
                 payment method, where applicable.
               </p>
               <p>
-                <strong>9.3</strong> Processing timelines may vary depending on
+                <strong>9.3</strong>
+                {' '}
+                Processing timelines may vary depending on
                 the payment provider.
               </p>
             </div>
@@ -279,7 +336,9 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>10.1</strong> In certain cases, Sunday may, at its sole
+                <strong>10.1</strong>
+                {' '}
+                In certain cases, Sunday may, at its sole
                 discretion:
               </p>
               <ul className="list-disc space-y-1 pl-5">
@@ -296,7 +355,9 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>11.1</strong> Any misuse of the refund process,
+                <strong>11.1</strong>
+                {' '}
+                Any misuse of the refund process,
                 including:
               </p>
               <ul className="list-disc space-y-1 pl-5">
@@ -319,11 +380,15 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>12.1</strong> Sunday provides dispute resolution support
+                <strong>12.1</strong>
+                {' '}
+                Sunday provides dispute resolution support
                 but does not guarantee refund outcomes.
               </p>
               <p>
-                <strong>12.2</strong> Sunday shall not be liable for:
+                <strong>12.2</strong>
+                {' '}
+                Sunday shall not be liable for:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Losses arising from user disputes</li>
@@ -339,11 +404,15 @@ const ReturnsPolicy = () => {
             </h2>
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
               <p>
-                <strong>13.1</strong> Sunday reserves the right to modify this
+                <strong>13.1</strong>
+                {' '}
+                Sunday reserves the right to modify this
                 Policy at any time.
               </p>
               <p>
-                <strong>13.2</strong> Continued use of the Platform constitutes
+                <strong>13.2</strong>
+                {' '}
+                Continued use of the Platform constitutes
                 acceptance of the updated Policy.
               </p>
             </div>
@@ -359,17 +428,28 @@ const ReturnsPolicy = () => {
                 <strong>Sunday</strong>
               </p>
               <p>
-                Email:{" "}
+                Email:
+                {' '}
                 <a
                   href="mailto:xxxx@sndymarket.com"
-                  className="text-primary hover:underline"
+                  className="
+                    text-primary
+                    hover:underline
+                  "
                 >
                   xxxx@sndymarket.com
                 </a>
               </p>
               <p>
-                Website:{" "}
-                <Link to="/" className="text-primary hover:underline">
+                Website:
+                {' '}
+                <Link
+                  to="/"
+                  className="
+                    text-primary
+                    hover:underline
+                  "
+                >
                   www.sndymarket.com
                 </Link>
               </p>
@@ -380,6 +460,4 @@ const ReturnsPolicy = () => {
       <Footer />
     </div>
   );
-};
-
-export default ReturnsPolicy;
+}

@@ -1,22 +1,23 @@
-import { MessageSquare, Clock } from "lucide-react";
-import { format } from "date-fns";
-import type { FeedbackEntry } from "@/hooks/useListingFeedback";
+import type { FeedbackEntry } from '@/hooks/useListingFeedback';
+import { format } from 'date-fns';
+import { Clock, MessageSquare } from 'lucide-react';
 
 interface FeedbackHistoryProps {
-  feedbackList: FeedbackEntry[];
   compact?: boolean;
+  feedbackList: FeedbackEntry[];
 }
 
-const FeedbackHistory = ({
-  feedbackList,
+function FeedbackHistory({
   compact = false,
-}: FeedbackHistoryProps) => {
-  if (!feedbackList.length) return null;
+  feedbackList,
+}: FeedbackHistoryProps) {
+  if (feedbackList.length === 0)
+    return null;
 
   if (compact) {
     return (
       <div className="mt-2 space-y-1.5">
-        {feedbackList.map((fb) => (
+        {feedbackList.map(fb => (
           <div
             key={fb.id}
             className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5"
@@ -28,7 +29,7 @@ const FeedbackHistory = ({
                   Admin Feedback
                 </p>
                 <span className="text-[10px] text-muted-foreground">
-                  {format(new Date(fb.created_at), "MMM d, yyyy")}
+                  {format(new Date(fb.created_at), 'MMM d, yyyy')}
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -53,14 +54,14 @@ const FeedbackHistory = ({
         </span>
       </div>
       <div className="space-y-2">
-        {feedbackList.map((fb) => (
+        {feedbackList.map(fb => (
           <div
             key={fb.id}
             className="rounded-lg border border-destructive/20 bg-destructive/5 p-3"
           >
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {format(new Date(fb.created_at), "MMM d, yyyy 'at' h:mm a")}
+              {format(new Date(fb.created_at), 'MMM d, yyyy \'at\' h:mm a')}
             </div>
             <p className="mt-1.5 text-sm text-foreground">{fb.feedback}</p>
           </div>
@@ -68,6 +69,6 @@ const FeedbackHistory = ({
       </div>
     </div>
   );
-};
+}
 
 export default FeedbackHistory;

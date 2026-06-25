@@ -1,55 +1,55 @@
 export interface PayoutRun {
   id: string;
-  periodStart: string;
-  periodEnd: string;
-  generatedBy: string;
-  generatedByFullName: string;
-  createdAt: string;
-  updatedAt: string;
-  itemCount: number;
-  totalAmount: number;
-  sellerPayoutAmount: number;
-  sellerPayoutItemCount: number;
   buyerRefundAmount: number;
   buyerRefundItemCount: number;
+  generatedBy: string;
+  generatedByFullName: string;
+  itemCount: number;
+  periodEnd: string;
+  periodStart: string;
+  sellerPayoutAmount: number;
+  sellerPayoutItemCount: number;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PayoutRunItem {
   id: string;
-  payoutRunId: string;
-  periodStart: string;
-  periodEnd: string;
-  itemType: "SELLER_PAYOUT" | "BUYER_REFUND";
-  status: "PAID" | "UNPAID";
-  amount: number;
-  userId: string;
-  sellerId: string | null;
   buyerId: string | null;
+  complaintId: string | null;
   orderId: string | null;
   orderItemId: string | null;
-  complaintId: string | null;
-  userFullName: string | null;
+  payoutRunId: string;
+  sellerId: string | null;
+  userId: string;
+  amount: number;
   bankAccountHolder: string | null;
   bankAccountNumber: string | null;
   bankIban: string | null;
   bankName: string | null;
   bankSwift: string | null;
-  sourceType: string;
-  sourceStatus: string;
+  itemType: 'BUYER_REFUND' | 'SELLER_PAYOUT';
+  paidAt: string | null;
+  periodEnd: string;
+  periodStart: string;
   sourceDate: string | null;
   sourceMetadata: {
     orderId?: string;
-    listingTitle?: string;
-    grossListingPrice?: number;
-    sellerCommissionShare?: number;
-    sellerCommissionShareRate?: number;
-    buyerPlatformFeeAmount?: number;
-    finalPayoutAmount?: number;
-    complaintReason?: string;
     orderItemId?: string;
     [key: string]: unknown;
+    buyerPlatformFeeAmount?: number;
+    complaintReason?: string;
+    finalPayoutAmount?: number;
+    grossListingPrice?: number;
+    listingTitle?: string;
+    sellerCommissionShare?: number;
+    sellerCommissionShareRate?: number;
   };
-  paidAt: string | null;
+  sourceStatus: string;
+  sourceType: string;
+  status: 'PAID' | 'UNPAID';
+  userFullName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,68 +57,68 @@ export interface PayoutRunItem {
 export interface SellerPayout {
   id: string;
   sellerId: string;
-  sellerFullName: string;
+  amount: number;
   createdBy: string;
   createdByFullName: string;
-  amount: number;
   method: string;
-  reference: string;
   notes: string | null;
-  status: string;
   paidAt: string;
-  periodStart: string | null;
   periodEnd: string | null;
+  periodStart: string | null;
+  reference: string;
+  sellerFullName: string;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreatePayoutRunPayload {
-  periodStart: string;
   periodEnd: string;
+  periodStart: string;
 }
 
 export interface CreateSellerPayoutPayload {
   sellerId: string;
   amount: number;
   method: string;
-  reference: string;
   notes?: string | null;
   paidAt?: string;
-  periodStart: string;
   periodEnd: string;
-  status?: "PAID" | "PENDING" | "FAILED" | "CANCELLED";
+  periodStart: string;
+  reference: string;
+  status?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING';
 }
 
 export interface UpdatePayoutRunItemStatusPayload {
-  status: "PAID" | "UNPAID";
   paidAt?: string;
+  status: 'PAID' | 'UNPAID';
 }
 
 export interface PayoutRunListParams {
   page?: number;
-  size?: number;
-  periodStart?: string;
   periodEnd?: string;
+  periodStart?: string;
+  size?: number;
 }
 
 export interface PayoutRunItemListParams {
+  itemType?: 'BUYER_REFUND' | 'SELLER_PAYOUT';
   page?: number;
   size?: number;
-  itemType?: "SELLER_PAYOUT" | "BUYER_REFUND";
-  status?: "PAID" | "UNPAID";
+  status?: 'PAID' | 'UNPAID';
 }
 
 export interface AdminRefundReportParams {
+  payoutRunId?: string;
   page?: number;
   size?: number;
-  payoutRunId?: string;
-  status?: "PAID" | "UNPAID";
+  status?: 'PAID' | 'UNPAID';
 }
 
 export interface AdminSellerPayoutListParams {
-  page?: number;
-  size?: number;
   sellerId?: string;
-  periodStart?: string;
+  page?: number;
   periodEnd?: string;
+  periodStart?: string;
+  size?: number;
 }

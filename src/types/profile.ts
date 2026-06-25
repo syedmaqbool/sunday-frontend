@@ -1,9 +1,9 @@
 export interface ProfileImage {
   id: string;
-  url: string;
   filename: string;
   mimetype: string;
   size: string;
+  url: string;
 }
 
 export interface Profile {
@@ -45,8 +45,8 @@ export interface UpdateBankDetailsPayload {
 
 export interface UploadedFile {
   id: string;
-  url: string;
   filename: string;
   mimetype: string;
   size: string;
+  url: string;
 }

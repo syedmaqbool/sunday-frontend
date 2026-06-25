@@ -1,5 +1,5 @@
-import { tokenStorage } from "@/lib/tokenStorage";
-import base, { API_BASE_URL } from "./ky-base-instance";
+import { tokenStorage } from '@/lib/tokenStorage';
+import base, { API_BASE_URL } from './ky-base-instance';
 
 interface RefreshResponse {
   data: {
@@ -8,8 +8,13 @@ interface RefreshResponse {
   };
 }
 
-let isRefreshing = false;
-let waitingQueue: Array<(newToken: string | null) => void> = [];
+const refreshState: {
+  isRefreshing: boolean;
+  waitingQueue: Array<(newToken: string | null) => void>;
+} = {
+  isRefreshing: false,
+  waitingQueue: [],
+};
 
 export const refreshInstance = base.extend({
   baseUrl: API_BASE_URL,
@@ -18,7 +23,7 @@ export const refreshInstance = base.extend({
       ({ request }) => {
         const refreshToken = tokenStorage.getRefresh();
         if (refreshToken) {
-          request.headers.set("Authorization", `Bearer ${refreshToken}`);
+          request.headers.set('Authorization', `Bearer ${refreshToken}`);
         }
       },
     ],
@@ -27,7 +32,7 @@ export const refreshInstance = base.extend({
 
 export function refresh() {
   return refreshInstance
-    .post("/api/v1/auth/refresh", { context: { skipAuthRefresh: true } })
+    .post('/api/v1/auth/refresh', { context: { skipAuthRefresh: true } })
     .json<RefreshResponse>();
 }
 
@@ -36,44 +41,39 @@ async function runRefresh(): Promise<string | null> {
     const body = await refresh();
     tokenStorage.set(body.data.accessToken, body.data.refreshToken);
     return body.data.accessToken;
-  } catch {
+  }
+  catch {
     return null;
   }
 }
 
 async function attemptRefresh(): Promise<string | null> {
-  if (isRefreshing) {
-    return new Promise((resolve) => waitingQueue.push(resolve));
+  if (refreshState.isRefreshing) {
+    return new Promise((resolve) => {
+      refreshState.waitingQueue.push(resolve);
+    });
   }
 
-  isRefreshing = true;
+  refreshState.isRefreshing = true;
   const newToken = await runRefresh();
-  isRefreshing = false;
-  waitingQueue.forEach((cb) => cb(newToken));
-  waitingQueue = [];
+  refreshState.isRefreshing = false;
+  for (const callback of refreshState.waitingQueue) callback(newToken);
+  refreshState.waitingQueue = [];
   return newToken;
 }
 
 function expireSession() {
   tokenStorage.clear();
-  if (globalThis.window && window.location.pathname !== "/auth") {
-    window.location.href = "/auth";
+  if (globalThis && location.pathname !== '/auth') {
+    location.assign('/auth');
   }
 }
 
 export const authInstance = base.extend({
   baseUrl: API_BASE_URL,
   hooks: {
-    beforeRequest: [
-      ({ request }) => {
-        const accessToken = tokenStorage.getAccess();
-        if (accessToken) {
-          request.headers.set("Authorization", `Bearer ${accessToken}`);
-        }
-      },
-    ],
     afterResponse: [
-      async ({ request, options, response }) => {
+      async ({ options, request, response }) => {
         if (response.status !== 401 || options.context?.skipAuthRefresh) {
           return response;
         }
@@ -81,16 +81,24 @@ export const authInstance = base.extend({
         const newToken = await attemptRefresh();
         if (!newToken) {
           expireSession();
-          throw new Error("Session expired. Please login again.");
+          throw new Error('Session expired. Please login again.');
         }
 
         const headers = new Headers(options.headers);
-        headers.set("Authorization", `Bearer ${newToken}`);
+        headers.set('Authorization', `Bearer ${newToken}`);
 
         return authInstance(request, {
           ...options,
           headers,
         });
+      },
+    ],
+    beforeRequest: [
+      ({ request }) => {
+        const accessToken = tokenStorage.getAccess();
+        if (accessToken) {
+          request.headers.set('Authorization', `Bearer ${accessToken}`);
+        }
       },
     ],
   },

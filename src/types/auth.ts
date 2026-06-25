@@ -1,10 +1,10 @@
-import type { Response } from "./response.type";
+import type { Response } from './response.type';
 
 export interface AuthUser {
   id: string;
+  [key: string]: unknown;
   email: string;
   permissions: Array<{ id: string; name: string }>;
-  [key: string]: unknown;
 }
 
 export interface AuthProfile {
@@ -21,26 +21,26 @@ export interface AuthSession {
 }
 
 export interface RegisterData {
-  fullName: string;
+  address?: string;
+  dateOfBirth: string;
   email: string;
+  fullName: string;
+  marketingEmailConsent?: boolean;
   password: string;
   phone: string;
-  dateOfBirth: string;
-  address?: string;
-  marketingEmailConsent?: boolean;
   termsAccepted: true;
 }
 
 export interface AuthSessionData extends AuthSession {
-  user: AuthUser;
-  profile: AuthProfile;
   preferences: AuthPreferences;
+  profile: AuthProfile;
+  user: AuthUser;
 }
 
 export type AuthSessionResponse = Response<AuthSessionData>;
 
 export type AuthMeResponse = Response<{
-  user: AuthUser;
-  profile: AuthProfile;
   preferences: AuthPreferences;
+  profile: AuthProfile;
+  user: AuthUser;
 }>;

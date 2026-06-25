@@ -1,18 +1,3 @@
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  createPayoutRun,
-  createSellerPayout,
-  listPayoutRunItems,
-  listPayoutRuns,
-  listRefundPayouts,
-  listSellerPayouts,
-  updatePayoutRunItemStatus,
-} from "@/services/payout.service";
 import type {
   AdminRefundReportParams,
   AdminSellerPayoutListParams,
@@ -21,39 +6,56 @@ import type {
   PayoutRunItemListParams,
   PayoutRunListParams,
   UpdatePayoutRunItemStatusPayload,
-} from "@/types/payout";
+} from '@/types/payout';
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  createPayoutRun,
+  createSellerPayout,
+  listPayoutRunItems,
+  listPayoutRuns,
+  listRefundPayouts,
+  listSellerPayouts,
+  updatePayoutRunItemStatus,
+} from '@/services/payout.service';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const payoutQueryKey = {
-  runs: () => ["payout-runs"] as const,
-  runList: (params: PayoutRunListParams = {}) =>
-    [...payoutQueryKey.runs(), "list", params] as const,
-  runItems: (runId: string, params: PayoutRunItemListParams = {}) =>
-    [...payoutQueryKey.runs(), runId, "items", params] as const,
-  refunds: () => ["payout-refunds"] as const,
-  refundList: (params: AdminRefundReportParams = {}) =>
-    [...payoutQueryKey.refunds(), "list", params] as const,
-  sellerPayouts: () => ["admin-seller-payouts"] as const,
-  sellerPayoutList: (params: AdminSellerPayoutListParams = {}) =>
-    [...payoutQueryKey.sellerPayouts(), "list", params] as const,
+  refundList: (parameters: AdminRefundReportParams = {}) =>
+    [...payoutQueryKey.refunds(), 'list', parameters] as const,
+  refunds: () => ['payout-refunds'] as const,
+  runItems: (runId: string, parameters: PayoutRunItemListParams = {}) =>
+    [...payoutQueryKey.runs(), runId, 'items', parameters] as const,
+  runList: (parameters: PayoutRunListParams = {}) =>
+    [...payoutQueryKey.runs(), 'list', parameters] as const,
+  runs: () => ['payout-runs'] as const,
+  sellerPayoutList: (parameters: AdminSellerPayoutListParams = {}) =>
+    [...payoutQueryKey.sellerPayouts(), 'list', parameters] as const,
+  sellerPayouts: () => ['admin-seller-payouts'] as const,
 };
 
 // ─── Payout Runs ──────────────────────────────────────────────────────────────
 
-export const getPayoutRunsOptions = (params: PayoutRunListParams = {}) =>
-  queryOptions({
-    queryKey: payoutQueryKey.runList(params),
+export function getPayoutRunsOptions(parameters: PayoutRunListParams = {}) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listPayoutRuns(params);
-      return res;
+      const response = await listPayoutRuns(parameters);
+      return response;
     },
+    queryKey: payoutQueryKey.runList(parameters),
   });
+}
 
-export const usePayoutRuns = (params: PayoutRunListParams = {}) =>
-  useQuery(getPayoutRunsOptions(params));
+export function usePayoutRuns(parameters: PayoutRunListParams = {}) {
+  return useQuery(getPayoutRunsOptions(parameters));
+}
 
-export const useCreatePayoutRun = () => {
+export function useCreatePayoutRun() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -63,29 +65,26 @@ export const useCreatePayoutRun = () => {
       queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
     },
   });
-};
+}
 
 // ─── Payout Run Items ─────────────────────────────────────────────────────────
 
-export const getPayoutRunItemsOptions = (
-  runId: string,
-  params: PayoutRunItemListParams = {},
-) =>
-  queryOptions({
-    queryKey: payoutQueryKey.runItems(runId, params),
-    queryFn: async () => {
-      const res = await listPayoutRunItems(runId, params);
-      return res;
-    },
+export function getPayoutRunItemsOptions(runId: string, parameters: PayoutRunItemListParams = {}) {
+  return queryOptions({
     enabled: Boolean(runId),
+    queryFn: async () => {
+      const response = await listPayoutRunItems(runId, parameters);
+      return response;
+    },
+    queryKey: payoutQueryKey.runItems(runId, parameters),
   });
+}
 
-export const usePayoutRunItems = (
-  runId: string,
-  params: PayoutRunItemListParams = {},
-) => useQuery(getPayoutRunItemsOptions(runId, params));
+export function usePayoutRunItems(runId: string, parameters: PayoutRunItemListParams = {}) {
+  return useQuery(getPayoutRunItemsOptions(runId, parameters));
+}
 
-export const useUpdatePayoutRunItemStatus = () => {
+export function useUpdatePayoutRunItemStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -102,42 +101,41 @@ export const useUpdatePayoutRunItemStatus = () => {
       queryClient.invalidateQueries({ queryKey: payoutQueryKey.refunds() });
     },
   });
-};
+}
 
 // ─── Buyer Refund Report ──────────────────────────────────────────────────────
 
-export const getAdminRefundReportOptions = (
-  params: AdminRefundReportParams = {},
-) =>
-  queryOptions({
-    queryKey: payoutQueryKey.refundList(params),
+export function getAdminRefundReportOptions(parameters: AdminRefundReportParams = {}) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listRefundPayouts(params);
-      return res;
+      const response = await listRefundPayouts(parameters);
+      return response;
     },
+    queryKey: payoutQueryKey.refundList(parameters),
   });
+}
 
-export const useAdminRefundReport = (params: AdminRefundReportParams = {}) =>
-  useQuery(getAdminRefundReportOptions(params));
+export function useAdminRefundReport(parameters: AdminRefundReportParams = {}) {
+  return useQuery(getAdminRefundReportOptions(parameters));
+}
 
 // ─── Seller Payouts (manual records) ─────────────────────────────────────────
 
-export const getAdminSellerPayoutsOptions = (
-  params: AdminSellerPayoutListParams = {},
-) =>
-  queryOptions({
-    queryKey: payoutQueryKey.sellerPayoutList(params),
+export function getAdminSellerPayoutsOptions(parameters: AdminSellerPayoutListParams = {}) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listSellerPayouts(params);
-      return res;
+      const response = await listSellerPayouts(parameters);
+      return response;
     },
+    queryKey: payoutQueryKey.sellerPayoutList(parameters),
   });
+}
 
-export const useAdminSellerPayouts = (
-  params: AdminSellerPayoutListParams = {},
-) => useQuery(getAdminSellerPayoutsOptions(params));
+export function useAdminSellerPayouts(parameters: AdminSellerPayoutListParams = {}) {
+  return useQuery(getAdminSellerPayoutsOptions(parameters));
+}
 
-export const useCreateSellerPayout = () => {
+export function useCreateSellerPayout() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -151,4 +149,4 @@ export const useCreateSellerPayout = () => {
       queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
     },
   });
-};
+}

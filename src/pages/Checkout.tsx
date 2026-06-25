@@ -1,45 +1,45 @@
-import { useCart } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  Trash2,
-  ShoppingBag,
   ArrowLeft,
   CheckCircle2,
-  Tag,
-  X,
   Loader2,
-} from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { useActiveTax } from "@/hooks/useActiveTax";
-import { useCommissionTiers } from "@/hooks/useCommissionTiers";
-import { calcCommission } from "@/lib/commission";
-import { trackEvent } from "@/lib/analytics";
+  ShoppingBag,
+  Tag,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { toast } from '@/hooks/use-toast';
+import { useActiveTax } from '@/hooks/useActiveTax';
+import { useCommissionTiers } from '@/hooks/useCommissionTiers';
+import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
+import { calcCommission } from '@/lib/commission';
 // Mock switcher config  import
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
 interface AppliedDiscount {
   id: string;
+  applicable_listing_ids?: string[]; // undefined = all eligible items in scope
   code: string;
   discount_type: string;
   discount_value: number;
   min_order_amount: number;
-  source: "platform" | "seller";
   seller_id?: string;
-  applicable_listing_ids?: string[]; // undefined = all eligible items in scope
+  source: 'platform' | 'seller';
 }
 
-const Checkout = () => {
-  const { items, removeItem, totalPrice, clearCart, totalItems } = useCart();
+function Checkout() {
+  const { clearCart, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -47,34 +47,33 @@ const Checkout = () => {
   const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] =
-    useState<AppliedDiscount | null>(null);
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount]
+    = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [shipping, setShipping] = useState({
-    firstName: "",
-    lastName: "",
-    address: "",
-    city: "",
-    postal: "",
-    phone: "",
+    address: '',
+    city: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    postal: '',
   });
 
   useEffect(() => {
     if (items.length > 0) {
-      trackEvent("begin_checkout", {
-        currency: "PKR",
-        value: totalPrice,
-        items: items.map((i) => ({
-          item_id: i.listing.id,
-          item_name: i.listing.title,
-          price: i.listing.price,
-          quantity: i.quantity,
+      trackEvent('begin_checkout', {
+        currency: 'PKR',
+        items: items.map(index => ({
+          item_id: index.listing.id,
+          item_name: index.listing.title,
+          price: index.listing.price,
+          quantity: index.quantity,
         })),
+        value: totalPrice,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [items, totalPrice]);
 
   const itemCommissions = items.map(({ listing, quantity }) => {
     const c = calcCommission(
@@ -85,22 +84,25 @@ const Checkout = () => {
     );
     return { listingId: listing.id, ...c };
   });
-  const commissionTotal = itemCommissions.reduce((s, i) => s + i.amount, 0);
+  const commissionTotal = itemCommissions.reduce((s, index) => s + index.amount, 0);
 
   // Compute the subtotal eligible for the applied discount.
   const eligibleSubtotalFor = (
     cartItems: typeof items,
     d: AppliedDiscount | null,
   ) => {
-    if (!d) return 0;
+    if (!d)
+      return 0;
     return cartItems.reduce((sum, { listing, quantity }) => {
-      if (d.source === "seller") {
-        if (d.seller_id && listing.seller_id !== d.seller_id) return sum;
-        if (
-          d.applicable_listing_ids &&
-          !d.applicable_listing_ids.includes(listing.id)
-        )
+      if (d.source === 'seller') {
+        if (d.seller_id && listing.seller_id !== d.seller_id)
           return sum;
+        if (
+          d.applicable_listing_ids
+          && !d.applicable_listing_ids.includes(listing.id)
+        ) {
+          return sum;
+        }
       }
       return sum + listing.price * quantity;
     }, 0);
@@ -108,9 +110,9 @@ const Checkout = () => {
 
   const eligibleSubtotal = eligibleSubtotalFor(items, appliedDiscount);
   const discountAmount = appliedDiscount
-    ? appliedDiscount.discount_type === "percentage"
-      ? Math.round((eligibleSubtotal * appliedDiscount.discount_value) / 100)
-      : Math.min(appliedDiscount.discount_value, eligibleSubtotal)
+    ? (appliedDiscount.discount_type === 'percentage'
+        ? Math.round((eligibleSubtotal * appliedDiscount.discount_value) / 100)
+        : Math.min(appliedDiscount.discount_value, eligibleSubtotal))
     : 0;
 
   const taxableAmount = totalPrice - discountAmount;
@@ -120,26 +122,27 @@ const Checkout = () => {
 
   const handleApplyDiscount = async () => {
     const code = discountCode.trim().toUpperCase();
-    if (!code) return;
+    if (!code)
+      return;
 
     setApplyingCode(true);
 
     // Mock Code Interception
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+    if (isMockDataEnabled) {
       setTimeout(() => {
         setAppliedDiscount({
-          id: "mock-coupon-id",
-          code: code,
-          discount_type: "percentage",
+          id: 'mock-coupon-id',
+          code,
+          discount_type: 'percentage',
           discount_value: 10, // 10% Flat Mock discount
           min_order_amount: 0,
-          source: "platform",
+          source: 'platform',
         });
-        setDiscountCode("");
+        setDiscountCode('');
         setApplyingCode(false);
         toast({
-          title: "Mock Discount applied!",
           description: `Promo code "${code}" (10% off) applied successfully.`,
+          title: 'Mock Discount applied!',
         });
       }, 600);
       return;
@@ -148,29 +151,29 @@ const Checkout = () => {
     try {
       // 1) Try platform-wide discount_codes first
       const { data: platform } = await supabase
-        .from("discount_codes")
-        .select("*")
-        .eq("code", code)
-        .eq("active", true)
+        .from('discount_codes')
+        .select('*')
+        .eq('code', code)
+        .eq('active', true)
         .maybeSingle();
 
       if (platform) {
         if (platform.expires_at && new Date(platform.expires_at) < new Date()) {
-          toast({ title: "Code expired", variant: "destructive" });
+          toast({ title: 'Code expired', variant: 'destructive' });
           return;
         }
         if (
-          platform.max_uses !== null &&
-          platform.current_uses >= platform.max_uses
+          platform.max_uses !== null
+          && platform.current_uses >= platform.max_uses
         ) {
-          toast({ title: "Code exhausted", variant: "destructive" });
+          toast({ title: 'Code exhausted', variant: 'destructive' });
           return;
         }
         if (totalPrice < (platform.min_order_amount || 0)) {
           toast({
-            title: "Minimum not met",
             description: `Order must be at least Rs ${platform.min_order_amount} to use this code.`,
-            variant: "destructive",
+            title: 'Minimum not met',
+            variant: 'destructive',
           });
           return;
         }
@@ -180,29 +183,29 @@ const Checkout = () => {
           discount_type: platform.discount_type,
           discount_value: Number(platform.discount_value),
           min_order_amount: Number(platform.min_order_amount || 0),
-          source: "platform",
+          source: 'platform',
         });
-        setDiscountCode("");
+        setDiscountCode('');
         toast({
-          title: "Discount applied!",
           description: `Code "${platform.code}" has been applied.`,
+          title: 'Discount applied!',
         });
         return;
       }
 
       // 2) Try seller coupons
       const { data: sc } = await supabase
-        .from("seller_coupons" as any)
-        .select("*")
-        .eq("code", code)
-        .eq("active", true)
+        .from('seller_coupons' as any)
+        .select('*')
+        .eq('code', code)
+        .eq('active', true)
         .maybeSingle();
 
       if (!sc) {
         toast({
-          title: "Invalid code",
-          description: "This code is not valid.",
-          variant: "destructive",
+          description: 'This code is not valid.',
+          title: 'Invalid code',
+          variant: 'destructive',
         });
         return;
       }
@@ -210,36 +213,36 @@ const Checkout = () => {
       const now = new Date();
       if (sCoupon.starts_at && new Date(sCoupon.starts_at) > now) {
         toast({
-          title: "Not yet active",
-          description: "This coupon isn't active yet.",
-          variant: "destructive",
+          description: 'This coupon isn\'t active yet.',
+          title: 'Not yet active',
+          variant: 'destructive',
         });
         return;
       }
       if (sCoupon.expires_at && new Date(sCoupon.expires_at) < now) {
-        toast({ title: "Code expired", variant: "destructive" });
+        toast({ title: 'Code expired', variant: 'destructive' });
         return;
       }
       if (
-        sCoupon.max_uses !== null &&
-        sCoupon.current_uses >= sCoupon.max_uses
+        sCoupon.max_uses !== null
+        && sCoupon.current_uses >= sCoupon.max_uses
       ) {
-        toast({ title: "Code exhausted", variant: "destructive" });
+        toast({ title: 'Code exhausted', variant: 'destructive' });
         return;
       }
 
       // Per-user limit
       if (sCoupon.per_user_limit && user) {
         const { count } = await supabase
-          .from("seller_coupon_redemptions" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("coupon_id", sCoupon.id)
-          .eq("user_id", user.id);
+          .from('seller_coupon_redemptions' as any)
+          .select('id', { count: 'exact', head: true })
+          .eq('coupon_id', sCoupon.id)
+          .eq('user_id', user.id);
         if ((count ?? 0) >= sCoupon.per_user_limit) {
           toast({
-            title: "Limit reached",
-            description: "You've already used this coupon.",
-            variant: "destructive",
+            description: 'You\'ve already used this coupon.',
+            title: 'Limit reached',
+            variant: 'destructive',
           });
           return;
         }
@@ -247,64 +250,65 @@ const Checkout = () => {
 
       // Load listing ids for item-based
       let applicableIds: string[] | undefined;
-      if (sCoupon.scope === "item_based") {
+      if (sCoupon.scope === 'item_based') {
         const { data: links } = await supabase
-          .from("seller_coupon_listings" as any)
-          .select("listing_id")
-          .eq("coupon_id", sCoupon.id);
-        applicableIds = ((links ?? []) as any[]).map((l) => l.listing_id);
+          .from('seller_coupon_listings' as any)
+          .select('listing_id')
+          .eq('coupon_id', sCoupon.id);
+        applicableIds = ((links ?? []) as any[]).map(l => l.listing_id);
       }
 
       // Confirm the cart contains qualifying items
-      const cartHasMatch = items.some((i) => {
-        if (i.listing.seller_id !== sCoupon.seller_id) return false;
-        if (applicableIds && !applicableIds.includes(i.listing.id))
+      const cartHasMatch = items.some((index) => {
+        if (index.listing.seller_id !== sCoupon.seller_id)
           return false;
-        return true;
+        return !(applicableIds && !applicableIds.includes(index.listing.id));
       });
       if (!cartHasMatch) {
         toast({
-          title: "Not applicable",
-          description: "Your cart has no items eligible for this coupon.",
-          variant: "destructive",
+          description: 'Your cart has no items eligible for this coupon.',
+          title: 'Not applicable',
+          variant: 'destructive',
         });
         return;
       }
 
       const candidate: AppliedDiscount = {
         id: sCoupon.id,
+        applicable_listing_ids: applicableIds,
         code: sCoupon.code,
         discount_type: sCoupon.discount_type,
         discount_value: Number(sCoupon.discount_value),
         min_order_amount: Number(sCoupon.min_order_amount || 0),
-        source: "seller",
         seller_id: sCoupon.seller_id,
-        applicable_listing_ids: applicableIds,
+        source: 'seller',
       };
 
       const eligible = eligibleSubtotalFor(items, candidate);
       if (eligible < (sCoupon.min_order_amount || 0)) {
         toast({
-          title: "Minimum not met",
           description: `Eligible items must total at least Rs ${sCoupon.min_order_amount}.`,
-          variant: "destructive",
+          title: 'Minimum not met',
+          variant: 'destructive',
         });
         return;
       }
 
       setAppliedDiscount(candidate);
-      setDiscountCode("");
+      setDiscountCode('');
       toast({
-        title: "Coupon applied!",
         description: `"${sCoupon.code}" applied to eligible items.`,
+        title: 'Coupon applied!',
       });
-    } catch {
+    }
+    catch {
       toast({
-        title: "Error",
-        description: "Could not validate code.",
-        variant: "destructive",
+        description: 'Could not validate code.',
+        title: 'Error',
+        variant: 'destructive',
       });
-    } finally {
+    }
+    finally {
       setApplyingCode(false);
     }
   };
@@ -315,42 +319,44 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     // Basic Auth Check Override for testing
-    if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
-      navigate("/auth");
+    if (!user && !isMockDataEnabled) {
+      navigate('/auth');
       return;
     }
 
     // Basic shipping validation
     const required = [
-      "firstName",
-      "lastName",
-      "address",
-      "city",
-      "postal",
-      "phone",
+      'firstName',
+      'lastName',
+      'address',
+      'city',
+      'postal',
+      'phone',
     ] as const;
     for (const k of required) {
-      if (!shipping[k].trim()) {
-        toast({
-          title: "Missing details",
-          description: "Please fill in all shipping information.",
-          variant: "destructive",
-        });
-        return;
+      if (shipping[k].trim()) {
+        continue;
       }
+
+      toast({
+        description: 'Please fill in all shipping information.',
+        title: 'Missing details',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setPlacing(true);
 
     // Mock Place Order Flow
-    if (NEXT_PUBLIC_USE_MOCK_DATA) {
+    if (isMockDataEnabled) {
       setTimeout(() => {
         setPlaced(true);
         clearCart();
         setPlacing(false);
         toast({
-          title: "Mock Order placed!",
-          description: "Your demo order has been confirmed successfully.",
+          description: 'Your demo order has been confirmed successfully.',
+          title: 'Mock Order placed!',
         });
       }, 1500);
       return;
@@ -358,36 +364,37 @@ const Checkout = () => {
 
     try {
       // Re-validate listings server-side: block if any item is reserved for another buyer.
-      const listingIds = items.map((i) => i.listing.id);
-      const { data: freshListings, error: freshErr } = await supabase
-        .from("listings")
+      const listingIds = items.map(index => index.listing.id);
+      const { data: freshListings, error: freshError } = await supabase
+        .from('listings')
         .select(
-          "id, title, status, reserved_for, reserved_until, reserved_offer_id, price",
+          'id, title, status, reserved_for, reserved_until, reserved_offer_id, price',
         )
-        .in("id", listingIds);
-      if (freshErr) {
+        .in('id', listingIds);
+      if (freshError) {
         toast({
-          title: "Validation failed",
-          description: freshErr.message,
-          variant: "destructive",
+          description: freshError.message,
+          title: 'Validation failed',
+          variant: 'destructive',
         });
         setPlacing(false);
         return;
       }
       const blocked = (freshListings ?? []).find((l: any) => {
-        if (l.status === "sold") return true;
-        if (l.status === "reserved") {
-          const stillValid =
-            l.reserved_until && new Date(l.reserved_until) > new Date();
+        if (l.status === 'sold')
+          return true;
+        if (l.status === 'reserved') {
+          const stillValid
+            = l.reserved_until && new Date(l.reserved_until) > new Date();
           return stillValid && l.reserved_for !== user?.id;
         }
         return false;
       });
       if (blocked) {
         toast({
-          title: "Item unavailable",
           description: `"${blocked.title}" is reserved for another buyer or already sold.`,
-          variant: "destructive",
+          title: 'Item unavailable',
+          variant: 'destructive',
         });
         setPlacing(false);
         return;
@@ -397,20 +404,20 @@ const Checkout = () => {
       const reservedOfferIds = (freshListings ?? [])
         .filter(
           (l: any) =>
-            l.status === "reserved" &&
-            l.reserved_for === user?.id &&
-            l.reserved_offer_id,
+            l.status === 'reserved'
+            && l.reserved_for === user?.id
+            && l.reserved_offer_id,
         )
         .map((l: any) => l.reserved_offer_id as string);
       const offerAmountByListing = new Map<string, number>();
-      if (reservedOfferIds.length) {
+      if (reservedOfferIds.length > 0) {
         const { data: acceptedOffers } = await supabase
-          .from("offers")
-          .select("id, listing_id, amount, status, buyer_id")
-          .in("id", reservedOfferIds);
-        for (const o of acceptedOffers ?? []) {
-          if (o.status === "accepted" && o.buyer_id === user?.id) {
-            offerAmountByListing.set(o.listing_id as string, Number(o.amount));
+          .from('offers')
+          .select('id, listing_id, amount, status, buyer_id')
+          .in('id', reservedOfferIds);
+        for (const offer of acceptedOffers) {
+          if (offer.status === 'accepted' && offer.buyer_id === user?.id) {
+            offerAmountByListing.set(offer.listing_id as string, Number(offer.amount));
           }
         }
       }
@@ -418,8 +425,8 @@ const Checkout = () => {
       // Snapshot items for the order record (apply authoritative reserved price)
       const itemsSnapshot = items.map(({ listing, quantity }) => {
         const overridePrice = offerAmountByListing.get(listing.id);
-        const price =
-          typeof overridePrice === "number" ? overridePrice : listing.price;
+        const price
+          = typeof overridePrice === 'number' ? overridePrice : listing.price;
         const c = calcCommission(
           commissionTiers,
           (listing as any).category,
@@ -427,207 +434,210 @@ const Checkout = () => {
           quantity,
         );
         return {
+          brand: listing.brand,
+          category: (listing as any).category ?? null,
+          commission_amount: c.amount,
+          commission_rate: c.rate,
+          commission_tier_id: c.tier?.id ?? null,
+          commission_tier_name: c.tier?.name ?? null,
+          image: listing.images?.[0] ?? null,
           listing_id: listing.id,
+          price,
+          quantity,
           seller_id: listing.seller_id,
           seller_name: listing.seller_name,
           title: listing.title,
-          brand: listing.brand,
-          image: listing.images?.[0] ?? null,
-          category: (listing as any).category ?? null,
-          price,
-          quantity,
-          commission_rate: c.rate,
-          commission_amount: c.amount,
-          commission_tier_id: c.tier?.id ?? null,
-          commission_tier_name: c.tier?.name ?? null,
-          ...(typeof overridePrice === "number"
-            ? { reserved_offer_price: true }
-            : {}),
+          ...((typeof overridePrice === 'number') && { reserved_offer_price: true }),
         };
       });
 
       // Recompute monetary totals from the authoritative snapshot
       const authoritativeSubtotal = itemsSnapshot.reduce(
-        (s, i) => s + i.price * i.quantity,
+        (s, index) => s + index.price * index.quantity,
         0,
       );
       const authoritativeCommission = itemsSnapshot.reduce(
-        (s, i) => s + Number(i.commission_amount || 0),
+        (s, index) => s + Number(index.commission_amount || 0),
         0,
       );
       const authoritativeEligible = appliedDiscount
-        ? itemsSnapshot.reduce((sum, i) => {
-            if (appliedDiscount.source === "seller") {
+        ? itemsSnapshot.reduce((sum, index) => {
+            if (appliedDiscount.source === 'seller') {
               if (
-                appliedDiscount.seller_id &&
-                i.seller_id !== appliedDiscount.seller_id
-              )
+                appliedDiscount.seller_id
+                && index.seller_id !== appliedDiscount.seller_id
+              ) {
                 return sum;
+              }
               if (
-                appliedDiscount.applicable_listing_ids &&
-                !appliedDiscount.applicable_listing_ids.includes(i.listing_id)
-              )
+                appliedDiscount.applicable_listing_ids
+                && !appliedDiscount.applicable_listing_ids.includes(index.listing_id)
+              ) {
                 return sum;
+              }
             }
-            return sum + i.price * i.quantity;
+            return sum + index.price * index.quantity;
           }, 0)
         : 0;
       const authoritativeDiscount = appliedDiscount
-        ? appliedDiscount.discount_type === "percentage"
-          ? Math.round(
-              (authoritativeEligible * appliedDiscount.discount_value) / 100,
-            )
-          : Math.min(appliedDiscount.discount_value, authoritativeEligible)
+        ? (appliedDiscount.discount_type === 'percentage'
+            ? Math.round(
+                (authoritativeEligible * appliedDiscount.discount_value) / 100,
+              )
+            : Math.min(appliedDiscount.discount_value, authoritativeEligible))
         : 0;
-      const authoritativeTaxable =
-        authoritativeSubtotal - authoritativeDiscount;
+      const authoritativeTaxable
+        = authoritativeSubtotal - authoritativeDiscount;
       const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
-      const authoritativeTotal =
-        authoritativeTaxable + authoritativeTax + authoritativeCommission;
+      const authoritativeTotal
+        = authoritativeTaxable + authoritativeTax + authoritativeCommission;
       const { data: orderRow, error: orderError } = await supabase
-        .from("orders")
+        .from('orders')
         .insert({
           buyer_id: user?.id,
-          items: itemsSnapshot,
-          subtotal: authoritativeSubtotal,
-          discount_code: appliedDiscount?.code ?? null,
-          discount_amount: authoritativeDiscount,
-          tax_rate: taxRate,
-          tax_amount: authoritativeTax,
           commission_amount: authoritativeCommission,
-          total: authoritativeTotal,
-          shipping_first_name: shipping.firstName,
-          shipping_last_name: shipping.lastName,
+          discount_amount: authoritativeDiscount,
+          discount_code: appliedDiscount?.code ?? null,
+          items: itemsSnapshot,
           shipping_address: shipping.address,
           shipping_city: shipping.city,
-          shipping_postal: shipping.postal,
+          shipping_first_name: shipping.firstName,
+          shipping_last_name: shipping.lastName,
           shipping_phone: shipping.phone,
-          status: "confirmed",
+          shipping_postal: shipping.postal,
+          status: 'confirmed',
+          subtotal: authoritativeSubtotal,
+          tax_amount: authoritativeTax,
+          tax_rate: taxRate,
+          total: authoritativeTotal,
         } as any)
-        .select("id")
+        .select('id')
         .single();
 
       if (orderError || !orderRow) {
         toast({
-          title: "Order failed",
-          description: orderError?.message ?? "Unknown error",
-          variant: "destructive",
+          description: orderError?.message ?? 'Unknown error',
+          title: 'Order failed',
+          variant: 'destructive',
         });
         setPlacing(false);
         return;
       }
 
-      trackEvent("purchase", {
-        transaction_id: orderRow.id,
-        currency: "PKR",
-        value: authoritativeTotal,
-        tax: authoritativeTax,
+      trackEvent('purchase', {
         coupon: appliedDiscount?.code ?? undefined,
-        items: itemsSnapshot.map((i) => ({
-          item_id: i.listing_id,
-          item_name: i.title,
-          item_brand: i.brand,
-          price: i.price,
-          quantity: i.quantity,
+        currency: 'PKR',
+        items: itemsSnapshot.map(index => ({
+          item_brand: index.brand,
+          item_id: index.listing_id,
+          item_name: index.title,
+          price: index.price,
+          quantity: index.quantity,
         })),
+        tax: authoritativeTax,
+        transaction_id: orderRow.id,
+        value: authoritativeTotal,
       });
 
       // Send invoice email (fire-and-forget — don't block the UI)
       if (user?.email) {
-        supabase.functions
-          .invoke("send-transactional-email", {
+        try {
+          await supabase.functions.invoke('send-transactional-email', {
             body: {
-              templateName: "order-invoice",
-              recipientEmail: user.email,
               idempotencyKey: `order-invoice-${orderRow.id}`,
+              recipientEmail: user.email,
               templateData: {
-                buyerName: shipping.firstName,
                 orderId: orderRow.id,
-                orderDate: new Date().toLocaleDateString("en-ZA", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                }),
-                items: itemsSnapshot.map((i) => ({
-                  title: i.title,
-                  brand: i.brand,
-                  quantity: i.quantity,
-                  price: i.price,
-                })),
-                subtotal: authoritativeSubtotal,
-                discountCode: appliedDiscount?.code ?? null,
-                discountAmount: authoritativeDiscount,
-                taxName: activeTax?.name,
-                taxRate,
-                taxAmount: authoritativeTax,
+                buyerName: shipping.firstName,
                 commissionAmount: authoritativeCommission,
-                total: authoritativeTotal,
-                shippingName: `${shipping.firstName} ${shipping.lastName}`,
+                discountAmount: authoritativeDiscount,
+                discountCode: appliedDiscount?.code ?? null,
+                items: itemsSnapshot.map(index => ({
+                  brand: index.brand,
+                  price: index.price,
+                  quantity: index.quantity,
+                  title: index.title,
+                })),
+                orderDate: new Date().toLocaleDateString('en-ZA', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }),
                 shippingAddress: shipping.address,
                 shippingCity: shipping.city,
-                shippingPostal: shipping.postal,
+                shippingName: `${shipping.firstName} ${shipping.lastName}`,
                 shippingPhone: shipping.phone,
+                shippingPostal: shipping.postal,
+                subtotal: authoritativeSubtotal,
+                taxAmount: authoritativeTax,
+                taxName: activeTax?.name,
+                taxRate,
+                total: authoritativeTotal,
               },
+              templateName: 'order-invoice',
             },
-          })
-          .catch((err) =>
-            console.error("Failed to enqueue invoice email", err),
-          );
+          });
+        }
+        catch (error) {
+          console.error('Failed to enqueue invoice email', error);
+        }
       }
 
       // Mark purchased listings as sold so they disappear from browse
-      const soldIds = itemsSnapshot.map((i) => i.listing_id).filter(Boolean);
-      if (soldIds.length) {
-        await supabase.rpc("mark_listings_sold", { _listing_ids: soldIds });
+      const soldIds = itemsSnapshot.map(index => index.listing_id).filter(Boolean);
+      if (soldIds.length > 0) {
+        await supabase.rpc('mark_listings_sold', { _listing_ids: soldIds });
       }
 
       // Increment coupon usage + record redemption
       if (appliedDiscount) {
-        if (appliedDiscount.source === "platform") {
+        if (appliedDiscount.source === 'platform') {
           const { data: codeData } = await supabase
-            .from("discount_codes")
-            .select("current_uses")
-            .eq("id", appliedDiscount.id)
+            .from('discount_codes')
+            .select('current_uses')
+            .eq('id', appliedDiscount.id)
             .single();
           if (codeData) {
             await supabase
-              .from("discount_codes")
+              .from('discount_codes')
               .update({ current_uses: codeData.current_uses + 1 })
-              .eq("id", appliedDiscount.id);
+              .eq('id', appliedDiscount.id);
           }
-        } else {
+        }
+        else {
           const { data: cd } = await supabase
-            .from("seller_coupons" as any)
-            .select("current_uses")
-            .eq("id", appliedDiscount.id)
+            .from('seller_coupons' as any)
+            .select('current_uses')
+            .eq('id', appliedDiscount.id)
             .single();
           if (cd) {
             await supabase
-              .from("seller_coupons" as any)
+              .from('seller_coupons' as any)
               .update({ current_uses: ((cd as any).current_uses ?? 0) + 1 })
-              .eq("id", appliedDiscount.id);
+              .eq('id', appliedDiscount.id);
           }
-          await supabase.from("seller_coupon_redemptions" as any).insert({
+          await supabase.from('seller_coupon_redemptions' as any).insert({
             coupon_id: appliedDiscount.id,
-            user_id: user?.id,
+            discount_amount: authoritativeDiscount,
             order_id: orderRow.id,
             seller_id: appliedDiscount.seller_id,
-            discount_amount: authoritativeDiscount,
+            user_id: user?.id,
           });
         }
       }
 
       setPlaced(true);
       clearCart();
-      queryClient.invalidateQueries({ queryKey: ["listings"] });
-      queryClient.invalidateQueries({ queryKey: ["featured-listings"] });
-      queryClient.invalidateQueries({ queryKey: ["trending-listings"] });
-      queryClient.invalidateQueries({ queryKey: ["listing"] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listing'] });
       toast({
-        title: "Order placed!",
-        description: "Your order has been confirmed.",
+        description: 'Your order has been confirmed.',
+        title: 'Order placed!',
       });
-    } finally {
+    }
+    finally {
       setPlacing(false);
     }
   };
@@ -637,7 +647,7 @@ const Checkout = () => {
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
-          <CheckCircle2 className="h-16 w-16 text-primary mb-4" />
+          <CheckCircle2 className="mb-4 h-16 w-16 text-primary" />
           <h1 className="font-heading text-3xl font-bold text-foreground">
             Order Confirmed
           </h1>
@@ -646,10 +656,10 @@ const Checkout = () => {
             shortly.
           </p>
           <div className="mt-6 flex gap-3">
-            <Button variant="outline" onClick={() => navigate("/listings")}>
+            <Button onClick={() => navigate('/listings')} variant="outline">
               Continue Shopping
             </Button>
-            <Button onClick={() => navigate("/profile")}>View My Orders</Button>
+            <Button onClick={() => navigate('/profile')}>View My Orders</Button>
           </div>
         </main>
         <Footer />
@@ -662,11 +672,17 @@ const Checkout = () => {
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
-          <ShoppingBag className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <h1 className="font-heading text-2xl font-bold text-foreground">
             Your cart is empty
           </h1>
-          <Link to="/listings" className="mt-4 text-primary hover:underline">
+          <Link
+            to="/listings"
+            className="
+              mt-4 text-primary
+              hover:underline
+            "
+          >
             Browse listings
           </Link>
         </main>
@@ -678,90 +694,122 @@ const Checkout = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="container flex-1 px-4 py-6 sm:py-8">
+      <main className="
+        container flex-1 px-4 py-6
+        sm:py-8
+      "
+      >
         <Link
           to="/listings"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground sm:mb-6"
+          className="
+            mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground
+            hover:text-foreground
+            sm:mb-6
+          "
         >
-          <ArrowLeft className="h-4 w-4" /> Continue shopping
+          <ArrowLeft className="h-4 w-4" />
+          {' '}
+          Continue shopping
         </Link>
 
-        <h1 className="font-heading text-2xl font-bold text-foreground mb-6 sm:text-3xl sm:mb-8">
+        <h1 className="
+          mb-6 font-heading text-2xl font-bold text-foreground
+          sm:mb-8 sm:text-3xl
+        "
+        >
           Checkout
         </h1>
 
-        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+        <div className="
+          grid gap-6
+          lg:grid-cols-5 lg:gap-8
+        "
+        >
           {/* Shipping info */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">
+          <div className="
+            space-y-6
+            lg:col-span-3
+          "
+          >
+            <div className="
+              rounded-lg border border-border bg-card p-4
+              sm:p-6
+            "
+            >
+              <h2 className="mb-4 font-heading text-lg font-semibold text-foreground">
                 Shipping Information
               </h2>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="
+                grid gap-4
+                sm:grid-cols-2
+              "
+              >
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
                   <Input
                     id="firstName"
-                    placeholder="Jane"
+                    onChange={event =>
+                      setShipping({ ...shipping, firstName: event.target.value })}
                     value={shipping.firstName}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, firstName: e.target.value })
-                    }
+                    placeholder="Jane"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
                   <Input
                     id="lastName"
-                    placeholder="Doe"
+                    onChange={event =>
+                      setShipping({ ...shipping, lastName: event.target.value })}
                     value={shipping.lastName}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, lastName: e.target.value })
-                    }
+                    placeholder="Doe"
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="
+                  space-y-2
+                  sm:col-span-2
+                "
+                >
                   <Label htmlFor="address">Address</Label>
                   <Input
                     id="address"
-                    placeholder="123 Main St"
+                    onChange={event =>
+                      setShipping({ ...shipping, address: event.target.value })}
                     value={shipping.address}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, address: e.target.value })
-                    }
+                    placeholder="123 Main St"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
                   <Input
                     id="city"
-                    placeholder="Cape Town"
+                    onChange={event =>
+                      setShipping({ ...shipping, city: event.target.value })}
                     value={shipping.city}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, city: e.target.value })
-                    }
+                    placeholder="Cape Town"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal">Postal code</Label>
                   <Input
                     id="postal"
-                    placeholder="8001"
+                    onChange={event =>
+                      setShipping({ ...shipping, postal: event.target.value })}
                     value={shipping.postal}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, postal: e.target.value })
-                    }
+                    placeholder="8001"
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
+                <div className="
+                  space-y-2
+                  sm:col-span-2
+                "
+                >
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
-                    placeholder="+27 12 345 6789"
+                    onChange={event =>
+                      setShipping({ ...shipping, phone: event.target.value })}
                     value={shipping.phone}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, phone: e.target.value })
-                    }
+                    placeholder="+27 12 345 6789"
                   />
                 </div>
               </div>
@@ -770,19 +818,29 @@ const Checkout = () => {
 
           {/* Order summary */}
           <div className="lg:col-span-2">
-            <div className="rounded-lg border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-24">
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-4">
-                Order Summary ({totalItems})
+            <div className="
+              rounded-lg border border-border bg-card p-4
+              sm:p-6
+              lg:sticky lg:top-24
+            "
+            >
+              <h2 className="mb-4 font-heading text-lg font-semibold text-foreground">
+                Order Summary (
+                {totalItems}
+                )
               </h2>
-              <div className="space-y-3 mb-4">
+              <div className="mb-4 space-y-3">
                 {items.map(({ listing, quantity }) => {
                   const c = itemCommissions.find(
-                    (x) => x.listingId === listing.id,
+                    x => x.listingId === listing.id,
                   );
                   return (
                     <div
                       key={listing.id}
-                      className="flex items-start gap-2 sm:gap-3"
+                      className="
+                        flex items-start gap-2
+                        sm:gap-3
+                      "
                     >
                       <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
                         <img
@@ -791,29 +849,39 @@ const Checkout = () => {
                           className="h-full w-full object-cover"
                         />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {listing.title}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Qty: {quantity}
+                          Qty:
+                          {' '}
+                          {quantity}
                         </p>
                         {c && c.amount > 0 && (
                           <p className="text-[11px] text-muted-foreground">
-                            Platform fee ({c.rate}%): Rs{" "}
+                            Platform fee (
+                            {c.rate}
+                            %): Rs
+                            {' '}
                             {c.amount.toLocaleString()}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                        <p className="text-sm font-semibold text-foreground whitespace-nowrap">
-                          Rs {(listing.price * quantity).toLocaleString()}
+                        <p className="whitespace-nowrap text-sm font-semibold text-foreground">
+                          Rs
+                          {' '}
+                          {(listing.price * quantity).toLocaleString()}
                         </p>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
                           onClick={() => removeItem(listing.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            h-6 w-6 text-muted-foreground
+                            hover:text-destructive
+                          "
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -826,69 +894,78 @@ const Checkout = () => {
               {/* Discount code input */}
               <Separator />
               <div className="py-3">
-                {appliedDiscount ? (
-                  <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium text-foreground">
-                        {appliedDiscount.code}
-                      </span>
-                      <span className="text-xs text-primary">
-                        {appliedDiscount.discount_type === "percentage"
-                          ? `−${appliedDiscount.discount_value}%`
-                          : `−Rs ${appliedDiscount.discount_value.toLocaleString()}`}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={handleRemoveDiscount}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Discount code"
-                      value={discountCode}
-                      onChange={(e) =>
-                        setDiscountCode(e.target.value.toUpperCase())
-                      }
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleApplyDiscount()
-                      }
-                      className="flex-1 uppercase"
-                    />
-                    <Button
-                      variant="outline"
-                      size="default"
-                      onClick={handleApplyDiscount}
-                      disabled={applyingCode || !discountCode.trim()}
-                    >
-                      {applyingCode ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Apply"
-                      )}
-                    </Button>
-                  </div>
-                )}
+                {appliedDiscount
+                  ? (
+                      <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium text-foreground">
+                            {appliedDiscount.code}
+                          </span>
+                          <span className="text-xs text-primary">
+                            {appliedDiscount.discount_type === 'percentage'
+                              ? `−${appliedDiscount.discount_value}%`
+                              : `−Rs ${appliedDiscount.discount_value.toLocaleString()}`}
+                          </span>
+                        </div>
+                        <Button
+                          onClick={handleRemoveDiscount}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            h-6 w-6 text-muted-foreground
+                            hover:text-destructive
+                          "
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )
+                  : (
+                      <div className="flex gap-2">
+                        <Input
+                          onChange={event =>
+                            setDiscountCode(event.target.value.toUpperCase())}
+                          onKeyDown={event =>
+                            event.key === 'Enter' && handleApplyDiscount()}
+                          value={discountCode}
+                          placeholder="Discount code"
+                          className="flex-1 uppercase"
+                        />
+                        <Button
+                          onClick={handleApplyDiscount}
+                          disabled={applyingCode || !discountCode.trim()}
+                          size="default"
+                          variant="outline"
+                        >
+                          {applyingCode
+                            ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              )
+                            : (
+                                'Apply'
+                              )}
+                        </Button>
+                      </div>
+                    )}
               </div>
 
               <Separator />
               <div className="flex items-center justify-between py-3">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
                 <span className="font-medium text-foreground">
-                  Rs {totalPrice.toLocaleString()}
+                  Rs
+                  {' '}
+                  {totalPrice.toLocaleString()}
                 </span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-primary">Discount</span>
                   <span className="text-sm font-medium text-primary">
-                    −Rs {discountAmount.toLocaleString()}
+                    −Rs
+                    {' '}
+                    {discountAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -899,10 +976,16 @@ const Checkout = () => {
               {taxAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">
-                    {activeTax?.name} ({taxRate}%)
+                    {activeTax?.name}
+                    {' '}
+                    (
+                    {taxRate}
+                    %)
                   </span>
                   <span className="text-sm text-foreground">
-                    Rs {taxAmount.toLocaleString()}
+                    Rs
+                    {' '}
+                    {taxAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -912,7 +995,9 @@ const Checkout = () => {
                     Platform fee
                   </span>
                   <span className="text-sm text-foreground">
-                    Rs {commissionTotal.toLocaleString()}
+                    Rs
+                    {' '}
+                    {commissionTotal.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -922,20 +1007,24 @@ const Checkout = () => {
                   Total
                 </span>
                 <span className="font-heading text-xl font-bold text-foreground">
-                  Rs {finalPrice.toLocaleString()}
+                  Rs
+                  {' '}
+                  {finalPrice.toLocaleString()}
                 </span>
               </div>
               <Button
-                className="w-full"
-                size="lg"
                 onClick={handlePlaceOrder}
                 disabled={placing}
+                size="lg"
+                className="w-full"
               >
-                {placing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Place Order"
-                )}
+                {placing
+                  ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      'Place Order'
+                    )}
               </Button>
             </div>
           </div>
@@ -944,6 +1033,6 @@ const Checkout = () => {
       <Footer />
     </div>
   );
-};
+}
 
 export default Checkout;

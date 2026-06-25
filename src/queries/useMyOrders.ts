@@ -3,42 +3,44 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   listOrders,
   listSales,
   updateItemStatus,
-} from "@/services/myorders.service";
+} from '@/services/myorders.service';
 
 export const myOrdersQueryKey = {
-  all: () => ["my-orders"] as const,
-  list: () => [...myOrdersQueryKey.all(), "list"] as const,
-  sales: () => ["my-sales", "list"] as const,
+  all: () => ['my-orders'] as const,
+  list: () => [...myOrdersQueryKey.all(), 'list'] as const,
+  sales: () => ['my-sales', 'list'] as const,
 };
 
-export const getMyOrdersOptions = () =>
-  queryOptions({
+export function getMyOrdersOptions() {
+  return queryOptions({
+    queryFn: async () => {
+      const response = await listOrders();
+      return response.data;
+    },
     queryKey: myOrdersQueryKey.list(),
-    queryFn: async () => {
-      const res = await listOrders();
-      return res.data;
-    },
   });
+}
 
-export const getMySalesOptions = () =>
-  queryOptions({
-    queryKey: myOrdersQueryKey.sales(),
+export function getMySalesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listSales();
-      return res.data;
+      const response = await listSales();
+      return response.data;
     },
+    queryKey: myOrdersQueryKey.sales(),
   });
+}
 
 export const useMyOrders = () => useQuery(getMyOrdersOptions());
 
 export const useMySales = () => useQuery(getMySalesOptions());
 
-export const useUpdateOrderItemStatus = () => {
+export function useUpdateOrderItemStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -49,10 +51,10 @@ export const useUpdateOrderItemStatus = () => {
       orderId: string;
       orderItemId: string;
       payload: {
-        status: "SHIPPED" | "DELIVERED";
-        shippingMethod?: string;
-        trackingNumber?: string;
         expectedDelivery?: string;
+        shippingMethod?: string;
+        status: 'DELIVERED' | 'SHIPPED';
+        trackingNumber?: string;
       };
     }) => updateItemStatus(orderId, orderItemId, payload),
     onSuccess: () => {
@@ -60,4 +62,4 @@ export const useUpdateOrderItemStatus = () => {
       qc.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     },
   });
-};
+}

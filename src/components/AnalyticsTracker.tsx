@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { initGA, trackPageView, setUser } from "@/lib/analytics";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { initGA, setUser, trackPageView } from '@/lib/analytics';
 
-export const AnalyticsTracker = () => {
+export function AnalyticsTracker() {
   const location = useLocation();
   const { user } = useAuth();
 
@@ -20,4 +20,4 @@ export const AnalyticsTracker = () => {
   }, [user?.id]);
 
   return null;
-};
+}

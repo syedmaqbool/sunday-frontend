@@ -1,35 +1,36 @@
+import type { CreateBrandPayload, UpdateBrandPayload } from '@/types/brand';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   createBrand,
   deleteBrand,
   listBrands,
   updateBrand,
-} from "@/services/brand.service";
-import type { CreateBrandPayload, UpdateBrandPayload } from "@/types/brand";
+} from '@/services/brand.service';
 
 export const brandsQueryKey = {
-  all: () => ["brands"] as const,
-  list: () => [...brandsQueryKey.all(), "list"] as const,
+  all: () => ['brands'] as const,
+  list: () => [...brandsQueryKey.all(), 'list'] as const,
 };
 
-export const getBrandsQueryOptions = () =>
-  queryOptions({
-    queryKey: brandsQueryKey.list(),
+export function getBrandsQueryOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listBrands();
-      return res.data;
+      const response = await listBrands();
+      return response.data;
     },
+    queryKey: brandsQueryKey.list(),
     staleTime: 5 * 60 * 1000,
   });
+}
 
 export const useBrands = () => useQuery(getBrandsQueryOptions());
 
-export const useCreateBrand = () => {
+export function useCreateBrand() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -39,9 +40,9 @@ export const useCreateBrand = () => {
       queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
-};
+}
 
-export const useUpdateBrand = () => {
+export function useUpdateBrand() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -57,9 +58,9 @@ export const useUpdateBrand = () => {
       queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
-};
+}
 
-export const useDeleteBrand = () => {
+export function useDeleteBrand() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -69,4 +70,4 @@ export const useDeleteBrand = () => {
       queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
-};
+}

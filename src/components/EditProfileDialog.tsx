@@ -1,7 +1,12 @@
-import { useState, useRef } from "react";
-import { z } from "zod";
-import { toast } from "sonner";
+import type { Profile } from '@/types/profile';
+import { Loader2, Pencil, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 
+import { toast } from 'sonner';
+
+import { z } from 'zod';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,88 +15,86 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from '@/components/ui/label';
 
-import { Loader2, Upload, Pencil } from "lucide-react";
-
-import { useUpdateProfile } from "@/queries/useMyProfile";
-import { uploadProfileFile } from "@/services/profile.service";
-import type { Profile } from "@/types/profile";
+import { Textarea } from '@/components/ui/textarea';
+import { useUpdateProfile } from '@/queries/useMyProfile';
+import { uploadProfileFile } from '@/services/profile.service';
 
 const profileSchema = z.object({
-  fullName: z.string().trim().max(80).optional().or(z.literal("")),
-  bio: z.string().trim().max(280).optional().or(z.literal("")),
-  phone: z.string().trim().max(30).optional().or(z.literal("")),
-  location: z.string().trim().max(80).optional().or(z.literal("")),
+  bio: z.string().trim().max(280).optional().or(z.literal('')),
+  fullName: z.string().trim().max(80).optional().or(z.literal('')),
+  location: z.string().trim().max(80).optional().or(z.literal('')),
+  phone: z.string().trim().max(30).optional().or(z.literal('')),
 });
 
 interface Props {
   profile: Profile | null;
 }
 
-export const EditProfileDialog = ({ profile }: Props) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export function EditProfileDialog({ profile }: Props) {
+  const fileInputReference = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const [avatarUrl, setAvatarUrl] = useState(profile?.image?.url ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(profile?.image?.url ?? '');
   const [imageId, setImageId] = useState<string | null>(
     profile?.image?.id ?? null,
   );
 
-  const [fullName, setFullName] = useState(profile?.fullName ?? "");
-  const [bio, setBio] = useState(profile?.bio ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [location, setLocation] = useState(profile?.location ?? "");
+  const [fullName, setFullName] = useState(profile?.fullName ?? '');
+  const [bio, setBio] = useState(profile?.bio ?? '');
+  const [phone, setPhone] = useState(profile?.phone ?? '');
+  const [location, setLocation] = useState(profile?.location ?? '');
 
   const updateProfile = useUpdateProfile();
 
-  const initials = (fullName || "U")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
+  const initials = (fullName || 'U')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
     .toUpperCase()
     .slice(0, 2);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
 
-    if (!file) return;
+    if (!file)
+      return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
+      toast.error('Image must be under 5MB');
       return;
     }
 
     setUploading(true);
 
     try {
-      const res = await uploadProfileFile(file);
+      const response = await uploadProfileFile(file);
 
-      setAvatarUrl(res.data.url);
+      setAvatarUrl(response.data.url);
       setImageId(res.data.id);
 
-      toast.success("Photo uploaded");
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed");
-    } finally {
+      toast.success('Photo uploaded');
+    }
+    catch (error: any) {
+      toast.error(error.message || 'Upload failed');
+    }
+    finally {
       setUploading(false);
     }
   };
 
   const save = () => {
     const parsed = profileSchema.safeParse({
-      fullName,
       bio,
-      phone,
+      fullName,
       location,
+      phone,
     });
 
     if (!parsed.success) {
@@ -101,28 +104,28 @@ export const EditProfileDialog = ({ profile }: Props) => {
 
     updateProfile.mutate(
       {
-        fullName,
         bio,
-        phone,
-        location,
+        fullName,
         image: imageId,
+        location,
+        phone,
       },
       {
-        onSuccess: () => {
-          toast.success("Profile updated");
-          setOpen(false);
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to save');
         },
-        onError: (err: any) => {
-          toast.error(err.message || "Failed to save");
+        onSuccess: () => {
+          toast.success('Profile updated');
+          setOpen(false);
         },
       },
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button size="sm" variant="outline" className="gap-1">
           <Pencil className="h-4 w-4" />
           Edit Profile
         </Button>
@@ -147,40 +150,42 @@ export const EditProfileDialog = ({ profile }: Props) => {
 
             <div className="flex-1">
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
                 onChange={handleAvatarUpload}
+                ref={fileInputReference}
+                accept="image/*"
+                type="file"
+                className="hidden"
               />
 
               <Button
+                onClick={() => fileInputReference.current?.click()}
+                disabled={uploading}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
                 className="gap-1"
               >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
+                {uploading
+                  ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <Upload className="h-4 w-4" />
+                    )}
 
-                {uploading ? "Uploading..." : "Change photo"}
+                {uploading ? 'Uploading...' : 'Change photo'}
               </Button>
 
               {avatarUrl && (
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-1 text-destructive"
                   onClick={() => {
-                    setAvatarUrl("");
+                    setAvatarUrl('');
                     setImageId(null);
                   }}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                  className="ml-1 text-destructive"
                 >
                   Remove
                 </Button>
@@ -196,8 +201,8 @@ export const EditProfileDialog = ({ profile }: Props) => {
             <Label htmlFor="fullName">Full name</Label>
             <Input
               id="fullName"
+              onChange={event => setFullName(event.target.value)}
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
               maxLength={80}
               placeholder="Your name"
             />
@@ -207,14 +212,15 @@ export const EditProfileDialog = ({ profile }: Props) => {
             <Label htmlFor="bio">Bio</Label>
             <Textarea
               id="bio"
+              onChange={event => setBio(event.target.value)}
               value={bio}
-              onChange={(e) => setBio(e.target.value)}
               maxLength={280}
-              rows={3}
               placeholder="Tell others a bit about yourself..."
+              rows={3}
             />
             <p className="mt-1 text-right text-xs text-muted-foreground">
-              {bio.length}/280
+              {bio.length}
+              /280
             </p>
           </div>
 
@@ -223,8 +229,8 @@ export const EditProfileDialog = ({ profile }: Props) => {
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
+                onChange={event => setPhone(event.target.value)}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 maxLength={30}
                 placeholder="+92..."
               />
@@ -234,8 +240,8 @@ export const EditProfileDialog = ({ profile }: Props) => {
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
+                onChange={event => setLocation(event.target.value)}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
                 maxLength={80}
                 placeholder="Karachi, PK"
               />
@@ -244,7 +250,7 @@ export const EditProfileDialog = ({ profile }: Props) => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button onClick={() => setOpen(false)} variant="outline">
             Cancel
           </Button>
 
@@ -252,14 +258,16 @@ export const EditProfileDialog = ({ profile }: Props) => {
             onClick={save}
             disabled={updateProfile.isPending || uploading}
           >
-            {updateProfile.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Save"
-            )}
+            {updateProfile.isPending
+              ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )
+              : (
+                  'Save'
+                )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}

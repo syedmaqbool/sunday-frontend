@@ -1,12 +1,12 @@
-import { authInstance } from "@/services/ky.instance";
-import type { FlaggedMessage } from "@/types/admin/message-moderation";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+import type { FlaggedMessage } from '@/types/admin/message-moderation';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listFlaggedMessages(
-  params: { page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/messages/flagged", { searchParams: params })
+    .get('/api/v1/admin/messages/flagged', { searchParams: parameters })
     .json<PaginatedResponse<FlaggedMessage>>();
 }
 

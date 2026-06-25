@@ -1,14 +1,18 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import type { AdminOrder, AdminOrderItem } from '@/types/admin/order';
+import { useQuery } from '@tanstack/react-query';
+import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
+import { ExternalLink, Loader2, Package } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
-  getAdminOrdersOptions,
-  getAdminReservedListingsOptions,
-} from "@/queries/useAdminOrders";
-import type { AdminOrder, AdminOrderItem } from "@/types/admin/order";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -16,56 +20,57 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Loader2, Package, ExternalLink } from "lucide-react";
-import { format, startOfDay, startOfMonth, subDays } from "date-fns";
+  getAdminOrdersOptions,
+  getAdminReservedListingsOptions,
+} from '@/queries/useAdminOrders';
 
 // ── Display types ─────────────────────────────────────────────────────────────
-type EffectiveStatus = "sold" | "shipped" | "delivered";
-type StatusFilter = "all" | EffectiveStatus | "reserved";
-type DateFilter = "all" | "today" | "7d" | "month";
+type EffectiveStatus = 'delivered' | 'shipped' | 'sold';
+type StatusFilter = 'all' | 'reserved' | EffectiveStatus;
+type DateFilter = '7d' | 'all' | 'month' | 'today';
 
 interface Row {
   orderId: string;
-  created_at: string;
   buyerName: string;
   city: string;
-  item: AdminOrderItem;
+  created_at: string;
   effective: EffectiveStatus;
+  item: AdminOrderItem;
   order: AdminOrder;
 }
 
-const dateFilterStart = (filter: DateFilter) => {
+function dateFilterStart(filter: DateFilter) {
   const now = new Date();
-  if (filter === "today") return startOfDay(now);
-  if (filter === "7d") return subDays(startOfDay(now), 6);
-  if (filter === "month") return startOfMonth(now);
+  if (filter === 'today')
+    return startOfDay(now);
+  if (filter === '7d')
+    return subDays(startOfDay(now), 6);
+  if (filter === 'month')
+    return startOfMonth(now);
   return null;
-};
+}
 
 // Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
-const effectiveStatus = (status: AdminOrderItem["status"]): EffectiveStatus => {
-  if (status === "CONFIRMED") return "sold";
-  if (status === "SHIPPED") return "shipped";
-  return "delivered";
-};
+function effectiveStatus(status: AdminOrderItem['status']): EffectiveStatus {
+  if (status === 'CONFIRMED')
+    return 'sold';
+  if (status === 'SHIPPED')
+    return 'shipped';
+  return 'delivered';
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
-const AdminOrders = () => {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+function AdminOrders() {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selected, setSelected] = useState<Row | null>(null);
 
   const { data: orders = [], isLoading } = useQuery(getAdminOrdersOptions());
   const { data: reservedListings = [], isLoading: reservedLoading } = useQuery(
-    getAdminReservedListingsOptions(statusFilter === "reserved"),
+    getAdminReservedListingsOptions(statusFilter === 'reserved'),
   );
 
   // Flatten orders → item rows
@@ -74,27 +79,29 @@ const AdminOrders = () => {
     const flat: Row[] = [];
 
     for (const o of orders) {
-      if (start && new Date(o.createdAt) < start) continue;
-      const buyerName =
-        [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(" ") ||
-        "—";
+      if (start && new Date(o.createdAt) < start)
+        continue;
+      const buyerName
+        = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(' ')
+          || '—';
 
       for (const item of o.items) {
         const eff = effectiveStatus(item.status);
         if (
-          statusFilter !== "all" &&
-          statusFilter !== "reserved" &&
-          eff !== statusFilter
-        )
+          statusFilter !== 'all'
+          && statusFilter !== 'reserved'
+          && eff !== statusFilter
+        ) {
           continue;
+        }
 
         flat.push({
           orderId: o.id,
-          created_at: o.createdAt,
           buyerName,
           city: o.shippingCity,
-          item,
+          created_at: o.createdAt,
           effective: eff,
+          item,
           order: o,
         });
       }
@@ -105,23 +112,24 @@ const AdminOrders = () => {
   // KPI counts — aggregate counts come directly from backend's itemStatusCounts per order
   const counts = useMemo(() => {
     const start = dateFilterStart(dateFilter);
-    let sold = 0,
-      shipped = 0,
-      received = 0,
-      completed = 0;
+    let sold = 0;
+    let shipped = 0;
+    let received = 0;
+    let completed = 0;
 
     for (const o of orders) {
-      if (start && new Date(o.createdAt) < start) continue;
+      if (start && new Date(o.createdAt) < start)
+        continue;
       sold += o.itemStatusCounts.confirmed;
       shipped += o.itemStatusCounts.shipped;
       received += o.itemStatusCounts.received;
       completed += o.itemStatusCounts.completed;
     }
     return {
-      sold,
-      shipped,
-      received,
       completed,
+      received,
+      shipped,
+      sold,
       total: sold + shipped + received + completed,
     };
   }, [orders, dateFilter]);
@@ -137,7 +145,12 @@ const AdminOrders = () => {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="
+        grid gap-3
+        sm:grid-cols-2
+        lg:grid-cols-5
+      "
+      >
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
@@ -185,8 +198,8 @@ const AdminOrders = () => {
 
       <div className="flex flex-wrap gap-3">
         <Tabs
+          onValueChange={v => setStatusFilter(v as StatusFilter)}
           value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
@@ -197,8 +210,8 @@ const AdminOrders = () => {
           </TabsList>
         </Tabs>
         <Tabs
+          onValueChange={v => setDateFilter(v as DateFilter)}
           value={dateFilter}
-          onValueChange={(v) => setDateFilter(v as DateFilter)}
         >
           <TabsList>
             <TabsTrigger value="all">All time</TabsTrigger>
@@ -209,157 +222,179 @@ const AdminOrders = () => {
         </Tabs>
       </div>
 
-      {statusFilter === "reserved" ? (
-        <Card>
-          <CardContent className="p-0">
-            {reservedLoading ? (
-              <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : reservedListings.length === 0 ? (
-              <p className="p-12 text-center text-sm text-muted-foreground">
-                No reserved listings right now.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Seller</TableHead>
-                    <TableHead>Reserved for</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reservedListings.map((l) => {
-                    const expiresAt = new Date(l.reservationExpiresAt);
-                    const expired = expiresAt.getTime() < Date.now();
-                    return (
-                      <TableRow key={l.reservationId}>
-                        <TableCell className="font-medium">
-                          <Link
-                            to={`/listing/${l.listingId}`}
-                            className="inline-flex items-center gap-1 hover:underline"
-                          >
-                            {l.title} <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {l.sellerFullName}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {l.buyerFullName}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={expired ? "destructive" : "secondary"}
-                          >
-                            {format(expiresAt, "MMM d, p")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          Rs {l.price.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : rows.length === 0 ? (
-              <p className="p-12 text-center text-sm text-muted-foreground">
-                No orders match these filters.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Buyer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Tracking</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((r) => (
-                    <TableRow
-                      key={r.item.id}
-                      className="cursor-pointer"
-                      onClick={() => setSelected(r)}
-                    >
-                      <TableCell className="font-medium">
-                        {r.item.title}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{r.buyerName}</div>
-                        {r.city && (
-                          <div className="text-xs text-muted-foreground">
-                            {r.city}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            r.effective === "shipped" ? "default" : "secondary"
-                          }
-                        >
-                          {r.effective}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {r.item.trackingNumber ? (
-                          <div>
-                            <div>{r.item.shippingMethod ?? "—"}</div>
-                            <div className="font-mono text-xs">
-                              {r.item.trackingNumber}
-                            </div>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(r.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        Rs {r.item.price.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {statusFilter === 'reserved'
+        ? (
+            <Card>
+              <CardContent className="p-0">
+                {reservedLoading
+                  ? (
+                      <div className="flex items-center justify-center p-12">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    )
+                  : (reservedListings.length === 0
+                      ? (
+                          <p className="p-12 text-center text-sm text-muted-foreground">
+                            No reserved listings right now.
+                          </p>
+                        )
+                      : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead>Seller</TableHead>
+                                <TableHead>Reserved for</TableHead>
+                                <TableHead>Expires</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {reservedListings.map((l) => {
+                                const expiresAt = new Date(l.reservationExpiresAt);
+                                const isExpired = expiresAt.getTime() < Date.now();
+                                return (
+                                  <TableRow key={l.reservationId}>
+                                    <TableCell className="font-medium">
+                                      <Link
+                                        to={`/listing/${l.listingId}`}
+                                        className="
+                                          inline-flex items-center gap-1
+                                          hover:underline
+                                        "
+                                      >
+                                        {l.title}
+                                        {' '}
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Link>
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {l.sellerFullName}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {l.buyerFullName}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant={isExpired ? 'destructive' : 'secondary'}
+                                      >
+                                        {format(expiresAt, 'MMM d, p')}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      Rs
+                                      {' '}
+                                      {l.price.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        ))}
+              </CardContent>
+            </Card>
+          )
+        : (
+            <Card>
+              <CardContent className="p-0">
+                {isLoading
+                  ? (
+                      <div className="flex items-center justify-center p-12">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    )
+                  : (rows.length === 0
+                      ? (
+                          <p className="p-12 text-center text-sm text-muted-foreground">
+                            No orders match these filters.
+                          </p>
+                        )
+                      : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead>Buyer</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Tracking</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {rows.map(r => (
+                                <TableRow
+                                  key={r.item.id}
+                                  onClick={() => setSelected(r)}
+                                  className="cursor-pointer"
+                                >
+                                  <TableCell className="font-medium">
+                                    {r.item.title}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">{r.buyerName}</div>
+                                    {r.city && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {r.city}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        r.effective === 'shipped' ? 'default' : 'secondary'
+                                      }
+                                    >
+                                      {r.effective}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {r.item.trackingNumber
+                                      ? (
+                                          <div>
+                                            <div>{r.item.shippingMethod ?? '—'}</div>
+                                            <div className="font-mono text-xs">
+                                              {r.item.trackingNumber}
+                                            </div>
+                                          </div>
+                                        )
+                                      : (
+                                          '—'
+                                        )}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {format(new Date(r.created_at), 'MMM d, yyyy')}
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    Rs
+                                    {' '}
+                                    {r.item.price.toLocaleString()}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        ))}
+              </CardContent>
+            </Card>
+          )}
 
-      <OrderDetailDialog row={selected} onClose={() => setSelected(null)} />
+      <OrderDetailDialog onClose={() => setSelected(null)} row={selected} />
     </div>
   );
-};
+}
 
 // ── Detail dialog — no extra API calls, item already carries all display data ──
-const OrderDetailDialog = ({
-  row,
+function OrderDetailDialog({
   onClose,
+  row,
 }: {
-  row: Row | null;
   onClose: () => void;
-}) => {
-  if (!row) return null;
+  row: Row | null;
+}) {
+  if (!row)
+    return null;
 
   const { item, order } = row;
   const shippingAddr = [
@@ -368,16 +403,20 @@ const OrderDetailDialog = ({
     order.shippingPostal,
   ]
     .filter(Boolean)
-    .join(", ");
+    .join(', ');
 
   return (
-    <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={o => !o && onClose()} open={!!row}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">{item.title}</DialogTitle>
           <DialogDescription>
-            Order #{order.id.slice(0, 8)} ·{" "}
-            {format(new Date(order.createdAt), "PPp")}
+            Order #
+            {order.id.slice(0, 8)}
+            {' '}
+            ·
+            {' '}
+            {format(new Date(order.createdAt), 'PPp')}
           </DialogDescription>
         </DialogHeader>
 
@@ -393,24 +432,35 @@ const OrderDetailDialog = ({
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Badge
-                  variant={item.status === "SHIPPED" ? "default" : "secondary"}
+                  variant={item.status === 'SHIPPED' ? 'default' : 'secondary'}
                 >
                   {effectiveStatus(item.status)}
                 </Badge>
                 <Link
                   to={`/listing/${item.listingId}`}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="
+                    inline-flex items-center gap-1 text-xs text-primary
+                    hover:underline
+                  "
                 >
-                  View listing <ExternalLink className="h-3 w-3" />
+                  View listing
+                  {' '}
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Price: Rs {item.price.toLocaleString()}
+                Price: Rs
+                {' '}
+                {item.price.toLocaleString()}
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="
+            grid gap-4
+            sm:grid-cols-2
+          "
+          >
             <Card>
               <CardContent className="p-4">
                 <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
@@ -424,9 +474,14 @@ const OrderDetailDialog = ({
                 )}
                 <Link
                   to={`/seller/${item.buyerId}`}
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="
+                    mt-2 inline-flex items-center gap-1 text-xs text-primary
+                    hover:underline
+                  "
                 >
-                  View profile <ExternalLink className="h-3 w-3" />
+                  View profile
+                  {' '}
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               </CardContent>
             </Card>
@@ -439,9 +494,14 @@ const OrderDetailDialog = ({
                 <p className="text-sm font-medium">{item.sellerFullName}</p>
                 <Link
                   to={`/seller/${item.sellerId}`}
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="
+                    mt-2 inline-flex items-center gap-1 text-xs text-primary
+                    hover:underline
+                  "
                 >
-                  View profile <ExternalLink className="h-3 w-3" />
+                  View profile
+                  {' '}
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               </CardContent>
             </Card>
@@ -456,18 +516,18 @@ const OrderDetailDialog = ({
                 <span className="text-muted-foreground">
                   Sold (order placed)
                 </span>
-                <span>{format(new Date(order.createdAt), "PPp")}</span>
+                <span>{format(new Date(order.createdAt), 'PPp')}</span>
               </div>
               {item.shippedAt && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipped</span>
-                  <span>{format(new Date(item.shippedAt), "PPp")}</span>
+                  <span>{format(new Date(item.shippedAt), 'PPp')}</span>
                 </div>
               )}
               {item.receivedAt && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Delivered</span>
-                  <span>{format(new Date(item.receivedAt), "PPp")}</span>
+                  <span>{format(new Date(item.receivedAt), 'PPp')}</span>
                 </div>
               )}
               {item.expectedDelivery && (
@@ -475,15 +535,15 @@ const OrderDetailDialog = ({
                   <span className="text-muted-foreground">
                     Expected delivery
                   </span>
-                  <span>{format(new Date(item.expectedDelivery), "PPp")}</span>
+                  <span>{format(new Date(item.expectedDelivery), 'PPp')}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {(item.trackingNumber ||
-            item.shippingMethod ||
-            item.proofImageUrl) && (
+          {(item.trackingNumber
+            || item.shippingMethod
+            || item.proofImageUrl) && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -504,7 +564,7 @@ const OrderDetailDialog = ({
                   </div>
                 )}
                 {item.proofImageUrl && (
-                  <a href={item.proofImageUrl} target="_blank" rel="noreferrer">
+                  <a href={item.proofImageUrl} rel="noreferrer" target="_blank">
                     <img
                       src={item.proofImageUrl}
                       alt="Shipping proof"
@@ -530,6 +590,6 @@ const OrderDetailDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default AdminOrders;

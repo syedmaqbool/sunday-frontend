@@ -1,14 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { tokenStorage } from "@/lib/tokenStorage";
-import { fetchAuthMe, login, logout, register } from "@/services/auth.service";
+import type { ReactNode } from 'react';
 import type {
   AuthPreferences,
   AuthProfile,
@@ -16,37 +6,48 @@ import type {
   AuthSessionData,
   AuthUser,
   RegisterData,
-} from "@/types/auth";
+} from '@/types/auth';
+import {
+  createContext,
 
-interface AuthCtx {
-  user: AuthUser | null;
-  session: AuthSession | null;
-  profile: AuthProfile | null;
-  preferences: AuthPreferences | null;
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { tokenStorage } from '@/lib/tokenStorage';
+import { fetchAuthMe, login, logout, register } from '@/services/auth.service';
+
+interface AuthContext_ {
   loading: boolean;
+  preferences: AuthPreferences | null;
+  profile: AuthProfile | null;
+  session: AuthSession | null;
   signIn: (email: string, password: string) => Promise<AuthSessionData>;
-  signUp: (data: RegisterData) => Promise<void>;
   signOut: () => Promise<void>;
+  signUp: (data: RegisterData) => Promise<void>;
+  user: AuthUser | null;
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
-const AuthContext = createContext<AuthCtx>({
-  user: null,
-  session: null,
-  profile: null,
-  preferences: null,
+const AuthContext = createContext<AuthContext_>({
   loading: true,
+  preferences: null,
+  profile: null,
+  session: null,
   signIn: async () => {
-    throw new Error("AuthProvider not mounted");
+    throw new Error('AuthProvider not mounted');
   },
-  signUp: async () => {},
   signOut: async () => {},
+  signUp: async () => {},
+  user: null,
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 // ── Provider ─────────────────────────────────────────────────────────────────
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
@@ -81,14 +82,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const res = await fetchAuthMe();
+        const response = await fetchAuthMe();
         setSession({ accessToken, refreshToken });
-        setUser(res.data.user);
-        setProfile(res.data.profile);
-        setPreferences(res.data.preferences);
-      } catch {
+        setUser(response.data.user);
+        setProfile(response.data.profile);
+        setPreferences(response.data.preferences);
+      }
+      catch {
         tokenStorage.clear();
-      } finally {
+      }
+      finally {
         setLoading(false);
       }
     };
@@ -99,17 +102,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── signIn ────────────────────────────────────────────────────────────────
   const signIn = useCallback(
     async (email: string, password: string): Promise<AuthSessionData> => {
-      const res = await login({ email, password });
+      const response = await login({ email, password });
       applySession(
         {
-          accessToken: res.data.accessToken,
-          refreshToken: res.data.refreshToken,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
         },
-        res.data.user,
-        res.data.profile,
-        res.data.preferences,
+        response.data.user,
+        response.data.profile,
+        response.data.preferences,
       );
-      return res.data;
+      return response.data;
     },
     [applySession],
   );
@@ -117,15 +120,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── signUp ────────────────────────────────────────────────────────────────
   const signUp = useCallback(
     async (data: RegisterData): Promise<void> => {
-      const res = await register(data);
+      const response = await register(data);
       applySession(
         {
-          accessToken: res.data.accessToken,
-          refreshToken: res.data.refreshToken,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
         },
-        res.data.user,
-        res.data.profile,
-        res.data.preferences,
+        response.data.user,
+        response.data.profile,
+        response.data.preferences,
       );
     },
     [applySession],
@@ -135,9 +138,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = useCallback(async (): Promise<void> => {
     try {
       await logout();
-    } catch {
+    }
+    catch {
       // server-side fail ho bhi jaye — client state zaroor clear karo
-    } finally {
+    }
+    finally {
       tokenStorage.clear();
       setUser(null);
       setSession(null);
@@ -148,17 +153,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo(
     () => ({
-      user,
-      session,
-      profile,
-      preferences,
       loading,
+      preferences,
+      profile,
+      session,
       signIn,
-      signUp,
       signOut,
+      signUp,
+      user,
     }),
     [user, session, profile, preferences, loading, signIn, signUp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}

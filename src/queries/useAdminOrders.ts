@@ -1,38 +1,41 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import {
   listAdminOrders,
   listReservedListings,
-} from "@/services/adminOrders.service";
+} from '@/services/adminOrders.service';
 
 export const adminOrdersQueryKey = {
-  orders: () => ["admin-orders"] as const,
-  reservedListings: () => ["admin-reserved-listings"] as const,
+  orders: () => ['admin-orders'] as const,
+  reservedListings: () => ['admin-reserved-listings'] as const,
 };
 
-export const getAdminOrdersOptions = () =>
-  queryOptions({
-    queryKey: adminOrdersQueryKey.orders(),
+export function getAdminOrdersOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listAdminOrders({
+      const response = await listAdminOrders({
         size: 100,
-        sortBy: "createdAt",
-        sortOrder: "desc",
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
-      return res.data;
+      return response.data;
     },
+    queryKey: adminOrdersQueryKey.orders(),
   });
+}
 
 export const useAdminOrders = () => useQuery(getAdminOrdersOptions());
 
-export const getAdminReservedListingsOptions = (enabled: boolean) =>
-  queryOptions({
-    queryKey: adminOrdersQueryKey.reservedListings(),
+export function getAdminReservedListingsOptions(isEnabled: boolean) {
+  return queryOptions({
+    enabled: isEnabled,
     queryFn: async () => {
-      const res = await listReservedListings({ size: 100 });
-      return res.data;
+      const response = await listReservedListings({ size: 100 });
+      return response.data;
     },
-    enabled,
+    queryKey: adminOrdersQueryKey.reservedListings(),
   });
+}
 
-export const useAdminReservedListings = (enabled: boolean) =>
-  useQuery(getAdminReservedListingsOptions(enabled));
+export function useAdminReservedListings(isEnabled: boolean) {
+  return useQuery(getAdminReservedListingsOptions(isEnabled));
+}

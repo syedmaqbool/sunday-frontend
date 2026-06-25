@@ -5,13 +5,13 @@ export interface SellerCoupon {
   active: boolean;
   code: string;
   currentUses: number;
-  discountType: "PERCENTAGE" | "FIXED";
+  discountType: 'FIXED' | 'PERCENTAGE';
   discountValue: number;
   expiresAt: string | null;
   maxUses: number | null;
   minOrderAmount: number;
   perUserLimit: number | null;
-  scope: "SELLER_WIDE" | "ITEM_BASED";
+  scope: 'ITEM_BASED' | 'SELLER_WIDE';
   startsAt: string | null;
   createdAt: string;
   updatedAt: string;

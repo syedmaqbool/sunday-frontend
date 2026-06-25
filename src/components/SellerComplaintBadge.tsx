@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, MapPin, PackageCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -12,86 +11,94 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Loader2, MapPin, PackageCheck } from "lucide-react";
-import { toast } from "sonner";
-import { ComplaintDetailsView } from "@/components/ComplaintDetailsView";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 
 export function SellerComplaintBadge({
-  orderId,
   listingId,
+  orderId,
 }: {
-  orderId: string;
   listingId: string;
+  orderId: string;
 }) {
   const queryClient = useQueryClient();
   const [addressOpen, setAddressOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [postal, setPostal] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [postal, setPostal] = useState('');
+  const [phone, setPhone] = useState('');
+  const [notes, setNotes] = useState('');
 
   const { data: complaint, refetch } = useQuery({
-    queryKey: ["complaint", orderId, listingId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("complaints")
+        .from('complaints')
         .select(
-          "id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes",
+          'id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes',
         )
-        .eq("order_id", orderId)
-        .eq("listing_id", listingId)
+        .eq('order_id', orderId)
+        .eq('listing_id', listingId)
         .maybeSingle();
-      if (error) throw error;
+      if (error)
+        throw error;
       return data;
     },
+    queryKey: ['complaint', orderId, listingId],
   });
 
   // Prefill form when dialog opens with any existing address values
   useEffect(() => {
-    if (addressOpen && complaint) {
-      setName((complaint as any).return_to_name ?? "");
-      setAddress((complaint as any).return_to_address ?? "");
-      setCity((complaint as any).return_to_city ?? "");
-      setPostal((complaint as any).return_to_postal ?? "");
-      setPhone((complaint as any).return_to_phone ?? "");
-      setNotes((complaint as any).return_to_notes ?? "");
+    if (!(addressOpen && complaint)) {
+      return;
     }
+
+    setName((complaint as any).return_to_name ?? '');
+    setAddress((complaint as any).return_to_address ?? '');
+    setCity((complaint as any).return_to_city ?? '');
+    setPostal((complaint as any).return_to_postal ?? '');
+    setPhone((complaint as any).return_to_phone ?? '');
+    setNotes((complaint as any).return_to_notes ?? '');
   }, [addressOpen, complaint]);
 
-  if (!complaint) return null;
+  if (!complaint)
+    return null;
 
   const saveAddress = async () => {
     if (!address.trim() || !city.trim() || !name.trim()) {
-      toast.error("Recipient name, address and city are required");
+      toast.error('Recipient name, address and city are required');
       return;
     }
     setBusy(true);
     try {
       const { error } = await supabase
-        .from("complaints")
+        .from('complaints')
         .update({
-          return_to_name: name.trim(),
+          return_address_provided_at: new Date().toISOString(),
           return_to_address: address.trim(),
           return_to_city: city.trim(),
-          return_to_postal: postal.trim() || null,
-          return_to_phone: phone.trim() || null,
+          return_to_name: name.trim(),
           return_to_notes: notes.trim() || null,
-          return_address_provided_at: new Date().toISOString(),
-          status: "return_address_provided",
+          return_to_phone: phone.trim() || null,
+          return_to_postal: postal.trim() || null,
+          status: 'return_address_provided',
         })
-        .eq("id", (complaint as any).id);
-      if (error) throw error;
-      toast.success("Return address shared with the buyer.");
+        .eq('id', (complaint as any).id);
+      if (error)
+        throw error;
+      toast.success('Return address shared with the buyer.');
       setAddressOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["sold-orders"] });
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to save return address");
-    } finally {
+      queryClient.invalidateQueries({ queryKey: ['sold-orders'] });
+    }
+    catch (error: any) {
+      toast.error(error.message ?? 'Failed to save return address');
+    }
+    finally {
       setBusy(false);
     }
   };
@@ -100,18 +107,21 @@ export function SellerComplaintBadge({
     setBusy(true);
     try {
       const { error } = await supabase
-        .from("complaints")
-        .update({ status: "return_received" })
-        .eq("id", (complaint as any).id);
-      if (error) throw error;
+        .from('complaints')
+        .update({ status: 'return_received' })
+        .eq('id', (complaint as any).id);
+      if (error)
+        throw error;
       toast.success(
-        "Marked return as received. Admin will finalize the refund.",
+        'Marked return as received. Admin will finalize the refund.',
       );
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["sold-orders"] });
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to update status");
-    } finally {
+      queryClient.invalidateQueries({ queryKey: ['sold-orders'] });
+    }
+    catch (error: any) {
+      toast.error(error.message ?? 'Failed to update status');
+    }
+    finally {
       setBusy(false);
     }
   };
@@ -122,52 +132,56 @@ export function SellerComplaintBadge({
     <div className="flex flex-wrap items-center gap-2">
       <ComplaintDetailsView complaint={complaint as any} viewerRole="seller" />
 
-      {status === "return_approved" && (
+      {status === 'return_approved' && (
         <Button
+          onClick={() => setAddressOpen(true)}
           size="sm"
           variant="default"
           className="h-7 gap-1 text-xs"
-          onClick={() => setAddressOpen(true)}
         >
           <MapPin className="h-3 w-3" />
           Provide return address
         </Button>
       )}
 
-      {status === "return_address_provided" && (
+      {status === 'return_address_provided' && (
         <Button
+          onClick={() => setAddressOpen(true)}
           size="sm"
           variant="outline"
           className="h-7 gap-1 text-xs"
-          onClick={() => setAddressOpen(true)}
         >
           <MapPin className="h-3 w-3" />
           Edit return address
         </Button>
       )}
 
-      {status === "return_in_transit" && (
+      {status === 'return_in_transit' && (
         <Button
+          onClick={markReturnReceived}
+          disabled={busy}
           size="sm"
           variant="outline"
           className="h-7 gap-1 text-xs"
-          disabled={busy}
-          onClick={markReturnReceived}
         >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <PackageCheck className="h-3 w-3" />
-          )}
+          {busy
+            ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )
+            : (
+                <PackageCheck className="h-3 w-3" />
+              )}
           Mark return received
         </Button>
       )}
 
-      <Dialog open={addressOpen} onOpenChange={setAddressOpen}>
+      <Dialog onOpenChange={setAddressOpen} open={addressOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
-              <MapPin className="h-5 w-5" /> Return shipping address
+              <MapPin className="h-5 w-5" />
+              {' '}
+              Return shipping address
             </DialogTitle>
             <DialogDescription>
               Provide the address where the buyer should ship the return. The
@@ -179,8 +193,8 @@ export function SellerComplaintBadge({
               <Label htmlFor="ret-name">Recipient name *</Label>
               <Input
                 id="ret-name"
+                onChange={event => setName(event.target.value)}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
                 maxLength={100}
               />
             </div>
@@ -188,8 +202,8 @@ export function SellerComplaintBadge({
               <Label htmlFor="ret-address">Street address *</Label>
               <Input
                 id="ret-address"
+                onChange={event => setAddress(event.target.value)}
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
                 maxLength={200}
               />
             </div>
@@ -198,8 +212,8 @@ export function SellerComplaintBadge({
                 <Label htmlFor="ret-city">City *</Label>
                 <Input
                   id="ret-city"
+                  onChange={event => setCity(event.target.value)}
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
                   maxLength={80}
                 />
               </div>
@@ -207,8 +221,8 @@ export function SellerComplaintBadge({
                 <Label htmlFor="ret-postal">Postal code</Label>
                 <Input
                   id="ret-postal"
+                  onChange={event => setPostal(event.target.value)}
                   value={postal}
-                  onChange={(e) => setPostal(e.target.value)}
                   maxLength={20}
                 />
               </div>
@@ -217,8 +231,8 @@ export function SellerComplaintBadge({
               <Label htmlFor="ret-phone">Phone</Label>
               <Input
                 id="ret-phone"
+                onChange={event => setPhone(event.target.value)}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 maxLength={30}
               />
             </div>
@@ -228,28 +242,30 @@ export function SellerComplaintBadge({
               </Label>
               <Textarea
                 id="ret-notes"
-                rows={2}
+                onChange={event => setNotes(event.target.value)}
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
                 maxLength={300}
                 placeholder="e.g. Please use a tracked courier and message me the tracking number."
+                rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
-              variant="ghost"
               onClick={() => setAddressOpen(false)}
               disabled={busy}
+              variant="ghost"
             >
               Cancel
             </Button>
             <Button onClick={saveAddress} disabled={busy}>
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <MapPin className="mr-2 h-4 w-4" />
-              )}
+              {busy
+                ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )
+                : (
+                    <MapPin className="mr-2 h-4 w-4" />
+                  )}
               Share with buyer
             </Button>
           </DialogFooter>

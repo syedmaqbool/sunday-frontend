@@ -1,9 +1,9 @@
-export type DimKey =
-  | "location"
-  | "category"
-  | "priceRange"
-  | "buyerAgeBucket"
-  | "listingSize";
+export type DimKey
+  = | 'buyerAgeBucket'
+    | 'category'
+    | 'listingSize'
+    | 'location'
+    | 'priceRange';
 
 export interface BreakdownRow {
   key: string;
@@ -14,8 +14,8 @@ export interface BreakdownRow {
 
 export interface FunnelRow {
   key: string;
-  engagedOfferPairs: number;
   acceptedOfferPairs: number;
+  engagedOfferPairs: number;
   orderedPairs: number;
 }
 
@@ -34,6 +34,9 @@ export interface PriceVarianceRow {
 type DimMap<T> = Record<DimKey, T[]>;
 
 export interface AdminAnalytics {
+  averageOffersBeforePurchase: DimMap<AvgOffersRow>;
+  breakdowns: DimMap<BreakdownRow>;
+  funnels: DimMap<FunnelRow>;
   kpis: {
     approvedListings: number;
     averageOfferToOrderConversionRate: number;
@@ -47,15 +50,12 @@ export interface AdminAnalytics {
     totalRevenue: number;
     totalUsers: number;
   };
-  breakdowns: DimMap<BreakdownRow>;
-  funnels: DimMap<FunnelRow>;
-  averageOffersBeforePurchase: DimMap<AvgOffersRow>;
   priceVariance: DimMap<PriceVarianceRow>;
 }
 
 export interface AdminMarketingLead {
   userId: string;
-  leadStatus: "CUSTOMER" | "ENGAGED" | "NEW";
+  leadStatus: 'CUSTOMER' | 'ENGAGED' | 'NEW';
   location: string;
   name: string;
   offerCount: number;
@@ -64,8 +64,8 @@ export interface AdminMarketingLead {
 }
 
 export interface AdminMarketingLeadsParams {
-  page?: number;
-  size?: number;
-  search?: string;
   leadStatus?: string;
+  page?: number;
+  search?: string;
+  size?: number;
 }

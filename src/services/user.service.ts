@@ -1,22 +1,22 @@
-import { authInstance } from "@/services/ky.instance";
-import type { AdminUser, AdminUserStatus } from "@/types/admin/user";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+import type { AdminUser, AdminUserStatus } from '@/types/admin/user';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listAdminUsers(
-  params: {
+  parameters: {
     page?: number;
-    size?: number;
     search?: string;
+    size?: number;
     status?: AdminUserStatus;
   } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/users", {
+    .get('/api/v1/admin/users', {
       searchParams: {
-        page: params.page ?? 1,
-        size: params.size ?? 100,
-        search: params.search?.trim() || undefined,
-        status: params.status,
+        page: parameters.page ?? 1,
+        search: parameters.search?.trim() || undefined,
+        size: parameters.size ?? 100,
+        status: parameters.status,
       },
     })
     .json<PaginatedResponse<AdminUser>>();

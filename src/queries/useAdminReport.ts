@@ -1,47 +1,49 @@
+import type { ReportStatus } from '@/types/admin/report';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
-import { listAdminReports, resolveReport } from "@/services/report.service";
-import type { ReportStatus } from "@/types/admin/report";
+} from '@tanstack/react-query';
+import { listAdminReports, resolveReport } from '@/services/report.service';
 
 export const adminReportsQueryKey = {
-  all: () => ["admin-reports"] as const,
-  list: (status?: ReportStatus | "all") =>
-    [...adminReportsQueryKey.all(), "list", status] as const,
+  all: () => ['admin-reports'] as const,
+  list: (status?: 'all' | ReportStatus) =>
+    [...adminReportsQueryKey.all(), 'list', status] as const,
 };
 
-export const getAdminReportsOptions = (status?: ReportStatus | "all") =>
-  queryOptions({
-    queryKey: adminReportsQueryKey.list(status),
+export function getAdminReportsOptions(status?: 'all' | ReportStatus) {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listAdminReports({
-        status: status && status !== "all" ? status : undefined,
+      const response = await listAdminReports({
         size: 100,
+        status: status && status !== 'all' ? status : undefined,
       });
-      return res.data;
+      return response.data;
     },
+    queryKey: adminReportsQueryKey.list(status),
   });
+}
 
-export const useAdminReports = (status?: ReportStatus | "all") =>
-  useQuery(getAdminReportsOptions(status));
+export function useAdminReports(status?: 'all' | ReportStatus) {
+  return useQuery(getAdminReportsOptions(status));
+}
 
-export const useResolveReport = () => {
+export function useResolveReport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       reportId,
-      status,
       adminNotes,
+      status,
     }: {
       reportId: string;
-      status: "DISMISSED" | "RESOLVED";
       adminNotes?: string;
-    }) => resolveReport(reportId, { status, adminNotes }),
+      status: 'DISMISSED' | 'RESOLVED';
+    }) => resolveReport(reportId, { adminNotes, status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminReportsQueryKey.all() });
     },
   });
-};
+}

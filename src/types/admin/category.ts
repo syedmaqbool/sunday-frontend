@@ -21,30 +21,30 @@ export interface Subcategory {
   updatedAt: string;
 }
 
-export type CreateCategoryPayload = {
+export interface CreateCategoryPayload {
+  icon?: string;
   label: string;
+  sortOrder?: number;
   value: string;
-  icon?: string;
-  sortOrder?: number;
-};
+}
 
-export type UpdateCategoryPayload = {
+export interface UpdateCategoryPayload {
+  icon?: string;
   label?: string;
-  icon?: string;
   sortOrder?: number;
-};
+}
 
-export type CreateSubcategoryPayload = {
+export interface CreateSubcategoryPayload {
   categoryId: string;
+  icon?: string;
   label: string;
+  sortOrder?: number;
   value: string;
-  icon?: string;
-  sortOrder?: number;
-};
+}
 
-export type UpdateSubcategoryPayload = {
-  label?: string;
-  icon?: string;
-  sortOrder?: number;
+export interface UpdateSubcategoryPayload {
   categoryId?: string;
-};
+  icon?: string;
+  label?: string;
+  sortOrder?: number;
+}

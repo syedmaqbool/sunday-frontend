@@ -1,50 +1,54 @@
+import type { SupportTicketStatus } from '@/types/support';
 import {
   queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
 import {
   listAdminSupportMessages,
   listAdminSupportTickets,
   replyToSupportTicket,
   updateSupportTicketStatus,
-} from "@/services/adminSupport.service";
-import type { SupportTicketStatus } from "@/types/support";
+} from '@/services/adminSupport.service';
 
 export const adminSupportQueryKey = {
-  tickets: () => ["admin-support-tickets"] as const,
-  messages: (ticketId: string) => ["admin-support-messages", ticketId] as const,
+  messages: (ticketId: string) => ['admin-support-messages', ticketId] as const,
+  tickets: () => ['admin-support-tickets'] as const,
 };
 
-export const getAdminSupportTicketsOptions = () =>
-  queryOptions({
-    queryKey: adminSupportQueryKey.tickets(),
+export function getAdminSupportTicketsOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await listAdminSupportTickets({ size: 100 });
-      return res.data;
+      const response = await listAdminSupportTickets({ size: 100 });
+      return response.data;
     },
+    queryKey: adminSupportQueryKey.tickets(),
     refetchInterval: 5000, // polling — no websocket client wired up yet
   });
+}
 
-export const useAdminSupportTickets = () =>
-  useQuery(getAdminSupportTicketsOptions());
+export function useAdminSupportTickets() {
+  return useQuery(getAdminSupportTicketsOptions());
+}
 
-export const getAdminSupportMessagesOptions = (ticketId: string | null) =>
-  queryOptions({
-    queryKey: adminSupportQueryKey.messages(ticketId ?? ""),
-    queryFn: async () => {
-      const res = await listAdminSupportMessages(ticketId!, { size: 100 });
-      return res.data;
-    },
+export function getAdminSupportMessagesOptions(ticketId: string | null) {
+  return queryOptions({
     enabled: !!ticketId,
+    queryFn: async () => {
+      const response = await listAdminSupportMessages(ticketId!, { size: 100 });
+      return response.data;
+    },
+    queryKey: adminSupportQueryKey.messages(ticketId ?? ''),
     refetchInterval: ticketId ? 3000 : false,
   });
+}
 
-export const useAdminSupportMessages = (ticketId: string | null) =>
-  useQuery(getAdminSupportMessagesOptions(ticketId));
+export function useAdminSupportMessages(ticketId: string | null) {
+  return useQuery(getAdminSupportMessagesOptions(ticketId));
+}
 
-export const useReplyToSupportTicket = () => {
+export function useReplyToSupportTicket() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -61,9 +65,9 @@ export const useReplyToSupportTicket = () => {
       qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
     },
   });
-};
+}
 
-export const useUpdateSupportTicketStatus = () => {
+export function useUpdateSupportTicketStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -77,4 +81,4 @@ export const useUpdateSupportTicketStatus = () => {
       qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
     },
   });
-};
+}

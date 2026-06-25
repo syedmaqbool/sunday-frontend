@@ -1,20 +1,20 @@
-import { authInstance } from "@/services/ky.instance";
 import type {
   Order,
   OrderItem,
   UpdateOrderItemStatusPayload,
-} from "@/types/order";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/order';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listOrders() {
   return authInstance
-    .get("/api/v1/me/orders", { searchParams: { size: 100 } })
+    .get('/api/v1/me/orders', { searchParams: { size: 100 } })
     .json<PaginatedResponse<Order>>();
 }
 
 export function listSales() {
   return authInstance
-    .get("/api/v1/me/sales", { searchParams: { size: 100 } })
+    .get('/api/v1/me/sales', { searchParams: { size: 100 } })
     .json<PaginatedResponse<OrderItem>>();
 }
 

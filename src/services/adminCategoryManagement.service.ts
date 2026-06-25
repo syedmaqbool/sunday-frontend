@@ -1,4 +1,3 @@
-import { authInstance } from "@/services/ky.instance";
 import type {
   Category,
   CreateCategoryPayload,
@@ -6,18 +5,19 @@ import type {
   Subcategory,
   UpdateCategoryPayload,
   UpdateSubcategoryPayload,
-} from "@/types/admin/category";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/admin/category';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listCategories() {
   return authInstance
-    .get("/api/v1/admin/categories")
+    .get('/api/v1/admin/categories')
     .json<PaginatedResponse<Category>>();
 }
 
 export function createCategory(payload: CreateCategoryPayload) {
   return authInstance
-    .post("/api/v1/admin/categories", { json: payload })
+    .post('/api/v1/admin/categories', { json: payload })
     .json<Response<Category>>();
 }
 
@@ -38,13 +38,13 @@ export function deleteCategory(categoryId: string) {
 
 export function listSubcategories() {
   return authInstance
-    .get("/api/v1/admin/subcategories")
+    .get('/api/v1/admin/subcategories')
     .json<PaginatedResponse<Subcategory>>();
 }
 
 export function createSubcategory(payload: CreateSubcategoryPayload) {
   return authInstance
-    .post("/api/v1/admin/subcategories", { json: payload })
+    .post('/api/v1/admin/subcategories', { json: payload })
     .json<Response<Subcategory>>();
 }
 

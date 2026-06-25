@@ -1,92 +1,98 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
-export type Category = {
+export interface Category {
   id: string;
-  label: string;
-  value: string;
   icon: string;
+  label: string;
   sort_order: number;
-};
+  value: string;
+}
 export type Subcategory = Category;
 
 const MOCK_CATEGORIES: Category[] = [
   {
-    id: "mock-cat-1",
-    label: "Women",
-    value: "women",
-    icon: "👗",
+    id: 'mock-cat-1',
+    icon: '👗',
+    label: 'Women',
     sort_order: 1,
+    value: 'women',
   },
-  { id: "mock-cat-2", label: "Men", value: "men", icon: "👔", sort_order: 2 },
+  { id: 'mock-cat-2', icon: '👔', label: 'Men', sort_order: 2, value: 'men' },
   {
-    id: "mock-cat-3",
-    label: "Children",
-    value: "children",
-    icon: "🧸",
+    id: 'mock-cat-3',
+    icon: '🧸',
+    label: 'Children',
     sort_order: 3,
+    value: 'children',
   },
 ];
 
 const MOCK_SUBCATEGORIES: Subcategory[] = [
-  { id: "mock-sub-1", label: "Tops", value: "tops", icon: "👕", sort_order: 1 },
+  { id: 'mock-sub-1', icon: '👕', label: 'Tops', sort_order: 1, value: 'tops' },
   {
-    id: "mock-sub-2",
-    label: "Bottoms",
-    value: "bottoms",
-    icon: "👖",
+    id: 'mock-sub-2',
+    icon: '👖',
+    label: 'Bottoms',
     sort_order: 2,
+    value: 'bottoms',
   },
   {
-    id: "mock-sub-3",
-    label: "Dresses",
-    value: "dresses",
-    icon: "👗",
+    id: 'mock-sub-3',
+    icon: '👗',
+    label: 'Dresses',
     sort_order: 3,
+    value: 'dresses',
   },
   {
-    id: "mock-sub-4",
-    label: "Shoes",
-    value: "shoes",
-    icon: "👟",
+    id: 'mock-sub-4',
+    icon: '👟',
+    label: 'Shoes',
     sort_order: 4,
+    value: 'shoes',
   },
   {
-    id: "mock-sub-5",
-    label: "Jackets",
-    value: "jackets",
-    icon: "🧥",
+    id: 'mock-sub-5',
+    icon: '🧥',
+    label: 'Jackets',
     sort_order: 5,
+    value: 'jackets',
   },
 ];
 
-export const useCategories = () =>
-  useQuery<Category[]>({
-    queryKey: ["categories"],
+export function useCategories() {
+  return useQuery<Category[]>({
     queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_CATEGORIES;
+      if (isMockDataEnabled)
+        return MOCK_CATEGORIES;
       const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
+        .from('categories')
+        .select('*')
+        .order('sort_order');
+      if (error)
+        throw error;
       return data as Category[];
     },
+    queryKey: ['categories'],
     staleTime: 5 * 60 * 1000,
   });
+}
 
-export const useSubcategories = () =>
-  useQuery<Subcategory[]>({
-    queryKey: ["subcategories"],
+export function useSubcategories() {
+  return useQuery<Subcategory[]>({
     queryFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return MOCK_SUBCATEGORIES;
+      if (isMockDataEnabled)
+        return MOCK_SUBCATEGORIES;
       const { data, error } = await supabase
-        .from("subcategories")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
+        .from('subcategories')
+        .select('*')
+        .order('sort_order');
+      if (error)
+        throw error;
       return data as Subcategory[];
     },
+    queryKey: ['subcategories'],
     staleTime: 5 * 60 * 1000,
   });
+}

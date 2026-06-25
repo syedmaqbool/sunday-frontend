@@ -1,14 +1,15 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getSellerAnalytics } from "@/services/selleranalytic.service";
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { getSellerAnalytics } from '@/services/selleranalytic.service';
 
 export const sellerAnalyticsQueryKey = {
-  all: () => ["seller-analytics"] as const,
+  all: () => ['seller-analytics'] as const,
 };
 
-export const getSellerAnalyticsOptions = () =>
-  queryOptions({
-    queryKey: sellerAnalyticsQueryKey.all(),
+export function getSellerAnalyticsOptions() {
+  return queryOptions({
     queryFn: () => getSellerAnalytics(),
+    queryKey: sellerAnalyticsQueryKey.all(),
   });
+}
 
 export const useSellerAnalytics = () => useQuery(getSellerAnalyticsOptions());

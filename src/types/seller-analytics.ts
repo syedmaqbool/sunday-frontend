@@ -1,10 +1,10 @@
-export type OfferStatus =
-  | "PENDING"
-  | "COUNTERED"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "WITHDRAWN"
-  | "EXPIRED";
+export type OfferStatus
+  = | 'ACCEPTED'
+    | 'COUNTERED'
+    | 'EXPIRED'
+    | 'PENDING'
+    | 'REJECTED'
+    | 'WITHDRAWN';
 
 export interface OfferStatusCount {
   count: number;
@@ -27,7 +27,7 @@ export interface SellerAnalytics {
   activeListings: number;
   averageRating: number;
   conversionRate: number;
-  currency: "PKR";
+  currency: 'PKR';
   listingCategoryDistribution: CategoryDistribution[];
   monthlyAcceptedOfferValue: MonthlyValue[];
   offerStatusCounts: OfferStatusCount[];

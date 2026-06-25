@@ -1,73 +1,75 @@
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { format } from 'date-fns';
 import {
   AlertTriangle,
-  PackageCheck,
   CheckCircle2,
   ImageIcon,
   MapPin,
-} from "lucide-react";
-import { format } from "date-fns";
+  PackageCheck,
+} from 'lucide-react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const STATUS_LABEL: Record<string, string> = {
-  raised: "Complaint Raised",
-  under_review: "Under Review",
-  return_approved: "Return Approved",
-  return_address_provided: "Return Address Provided",
-  return_in_transit: "Return In Transit",
-  return_received: "Return Received",
-  refunded: "Completed · Refunded",
-  rejected: "Completed · Rejected",
+  raised: 'Complaint Raised',
+  refunded: 'Completed · Refunded',
+  rejected: 'Completed · Rejected',
+  return_address_provided: 'Return Address Provided',
+  return_approved: 'Return Approved',
+  return_in_transit: 'Return In Transit',
+  return_received: 'Return Received',
+  under_review: 'Under Review',
 };
 
 export interface ComplaintDetailsData {
   id: string;
-  status: string;
-  reason: string;
-  evidence_urls: string[];
-  return_proof_urls?: string[] | null;
-  return_carrier?: string | null;
-  return_tracking?: string | null;
   admin_notes?: string | null;
   created_at?: string;
-  return_to_name?: string | null;
+  evidence_urls: string[];
+  reason: string;
+  return_carrier?: string | null;
+  return_proof_urls?: string[] | null;
   return_to_address?: string | null;
   return_to_city?: string | null;
-  return_to_postal?: string | null;
-  return_to_phone?: string | null;
+  return_to_name?: string | null;
   return_to_notes?: string | null;
+  return_to_phone?: string | null;
+  return_to_postal?: string | null;
+  return_tracking?: string | null;
+  status: string;
 }
 
 export function ComplaintDetailsView({
+  className,
   complaint,
   viewerRole,
-  className,
 }: {
-  complaint: ComplaintDetailsData;
-  viewerRole: "buyer" | "seller";
   className?: string;
+  complaint: ComplaintDetailsData;
+  viewerRole: 'buyer' | 'seller';
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const isCompleted =
-    complaint.status === "refunded" || complaint.status === "rejected";
-  const isReturn =
-    complaint.status === "return_in_transit" ||
-    complaint.status === "return_received" ||
-    complaint.status === "return_address_provided" ||
-    complaint.status === "return_approved";
+  const isCompleted
+    = ['refunded', 'rejected'].includes(complaint.status);
+  const isReturn
+    = [
+      'return_in_transit',
+      'return_received',
+      'return_address_provided',
+      'return_approved',
+    ].includes(complaint.status);
   const Icon = isCompleted
     ? CheckCircle2
-    : isReturn
-      ? PackageCheck
-      : AlertTriangle;
+    : (isReturn
+        ? PackageCheck
+        : AlertTriangle);
 
   const evidence = complaint.evidence_urls ?? [];
   const proofs = complaint.return_proof_urls ?? [];
@@ -76,21 +78,29 @@ export function ComplaintDetailsView({
   );
 
   return (
-    <div className={`mt-2 ${className ?? ""}`}>
+    <div className={`
+      mt-2
+      ${className ?? ''}
+    `}
+    >
       <button
-        type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex"
         aria-label="View complaint details"
+        type="button"
+        className="inline-flex"
       >
-        <Badge className="cursor-pointer gap-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/25">
+        <Badge className="
+          cursor-pointer gap-1 bg-amber-500/15 text-amber-700
+          hover:bg-amber-500/25
+        "
+        >
           <Icon className="h-3 w-3" />
           {STATUS_LABEL[complaint.status] ?? complaint.status}
         </Badge>
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <Dialog onOpenChange={setOpen} open={open}>
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
               <Icon className="h-5 w-5" />
@@ -98,7 +108,9 @@ export function ComplaintDetailsView({
             </DialogTitle>
             {complaint.created_at && (
               <DialogDescription>
-                Raised {format(new Date(complaint.created_at), "PPp")}
+                Raised
+                {' '}
+                {format(new Date(complaint.created_at), 'PPp')}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -107,9 +119,9 @@ export function ComplaintDetailsView({
             {complaint.reason && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {viewerRole === "seller" ? "Buyer's message" : "Your message"}
+                  {viewerRole === 'seller' ? 'Buyer\'s message' : 'Your message'}
                 </p>
-                <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">
+                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
                   {complaint.reason}
                 </p>
               </div>
@@ -117,21 +129,24 @@ export function ComplaintDetailsView({
 
             {evidence.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                  <ImageIcon className="h-3 w-3" /> Evidence photos (
-                  {evidence.length})
+                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" />
+                  {' '}
+                  Evidence photos (
+                  {evidence.length}
+                  )
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {evidence.map((url, i) => (
+                  {evidence.map((url, index) => (
                     <button
-                      key={i}
-                      type="button"
+                      key={index}
                       onClick={() => setPreview(url)}
+                      type="button"
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"
                     >
                       <img
                         src={url}
-                        alt={`Evidence ${i + 1}`}
+                        alt={`Evidence ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                     </button>
@@ -142,8 +157,10 @@ export function ComplaintDetailsView({
 
             {hasReturnAddress && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> Ship return to
+                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {' '}
+                  Ship return to
                 </p>
                 <div className="mt-1 space-y-0.5 text-sm text-foreground">
                   {complaint.return_to_name && (
@@ -157,7 +174,7 @@ export function ComplaintDetailsView({
                       {complaint.return_to_city}
                       {complaint.return_to_postal
                         ? `, ${complaint.return_to_postal}`
-                        : ""}
+                        : ''}
                     </p>
                   )}
                   {complaint.return_to_phone && (
@@ -166,7 +183,7 @@ export function ComplaintDetailsView({
                     </p>
                   )}
                   {complaint.return_to_notes && (
-                    <p className="text-xs text-muted-foreground italic">
+                    <p className="text-xs italic text-muted-foreground">
                       {complaint.return_to_notes}
                     </p>
                   )}
@@ -176,29 +193,32 @@ export function ComplaintDetailsView({
 
             {proofs.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                  <PackageCheck className="h-3 w-3" /> Return proof (
-                  {proofs.length})
+                <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <PackageCheck className="h-3 w-3" />
+                  {' '}
+                  Return proof (
+                  {proofs.length}
+                  )
                 </p>
                 {(complaint.return_carrier || complaint.return_tracking) && (
                   <p className="text-xs text-muted-foreground">
-                    {complaint.return_carrier ?? ""}
+                    {complaint.return_carrier ?? ''}
                     {complaint.return_tracking
                       ? ` · ${complaint.return_tracking}`
-                      : ""}
+                      : ''}
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {proofs.map((url, i) => (
+                  {proofs.map((url, index) => (
                     <button
-                      key={i}
-                      type="button"
+                      key={index}
                       onClick={() => setPreview(url)}
+                      type="button"
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"
                     >
                       <img
                         src={url}
-                        alt={`Return proof ${i + 1}`}
+                        alt={`Return proof ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                     </button>
@@ -221,7 +241,7 @@ export function ComplaintDetailsView({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+      <Dialog onOpenChange={o => !o && setPreview(null)} open={!!preview}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="font-heading">Photo</DialogTitle>

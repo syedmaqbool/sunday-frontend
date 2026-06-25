@@ -1,4 +1,4 @@
-export type ListingStatus = "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_REVISION" | "SOLD" | "RESERVED";
+export type ListingStatus = 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
 
 export interface ListingMediaFile {
   id: string;
@@ -10,37 +10,37 @@ export interface ListingMediaFile {
 
 export interface ListingMedia {
   id: string;
-  type: "IMAGE" | "VIDEO";
-  sortOrder: number;
-  createdAt: string;
   file: ListingMediaFile | null;
+  sortOrder: number;
+  type: 'IMAGE' | 'VIDEO';
+  createdAt: string;
 }
 
 export interface AdminListing {
   id: string;
-  sellerId: string;
   categoryId: string;
+  sellerId: string;
   subcategoryId: string;
-  title: string;
-  description: string;
-  price: number;
-  reservedUntil: string | null;
   brand: string;
-  condition: string;
-  size: string;
-  weight: number | null;
-  status: ListingStatus;
-  createdAt: string;
-  updatedAt: string;
   categoryLabel: string;
   categoryValue: string;
+  condition: string;
+  coverImage: ListingMediaFile | null;
+  description: string;
+  media: ListingMedia[];
+  price: number;
+  reservedUntil: string | null;
+  size: string;
+  status: ListingStatus;
   subcategoryLabel: string;
   subcategoryValue: string;
-  coverImage: ListingMediaFile | null;
-  media: ListingMedia[];
+  title: string;
+  weight: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ModerateListingPayload {
-  status: "APPROVED" | "REJECTED" | "NEEDS_REVISION";
   feedback?: string;
+  status: 'APPROVED' | 'NEEDS_REVISION' | 'REJECTED';
 }

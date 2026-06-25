@@ -1,33 +1,27 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { trackEvent } from "@/lib/analytics";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-
+import type { Listing } from '@/lib/constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ShoppingBag,
-  Shield,
   ArrowLeft,
-  Loader2,
   Check,
-  Pencil,
-  Trash2,
-  Weight,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
-import { ListingFeedbackSection } from "@/components/ListingFeedbackWidgets";
-import { ReportDialog } from "@/components/ReportDialog";
-import { ReviewsList } from "@/components/ReviewsList";
-import { MakeOfferButton } from "@/components/MakeOfferButton";
-import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import type { Listing } from "@/lib/constants";
-import { getWeightLabel } from "@/lib/constants";
+  Loader2,
+  Pencil,
+  Shield,
+  ShoppingBag,
+  Trash2,
+  Weight,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import Footer from '@/components/Footer';
+import { ListingFeedbackSection } from '@/components/ListingFeedbackWidgets';
+import { MakeOfferButton } from '@/components/MakeOfferButton';
+import Navbar from '@/components/Navbar';
+import { ReportDialog } from '@/components/ReportDialog';
+import { ReviewsList } from '@/components/ReviewsList';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,137 +32,165 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
+import { getWeightLabel } from '@/lib/constants';
 //  Mock configuration data  import
-import { DUMMY_LISTINGS, NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { DUMMY_LISTINGS, isMockDataEnabled } from '@/lib/mockConfig';
 
-const fetchListing = async (id: string): Promise<Listing | null> => {
+async function fetchListing(id: string): Promise<Listing | null> {
   // Agar mock toggle active hai toh array me se product dhoond kar return karein
-  if (NEXT_PUBLIC_USE_MOCK_DATA) {
+  if (isMockDataEnabled) {
     const matchedMock = DUMMY_LISTINGS.find(
-      (item) => String(item.id) === String(id),
+      item => String(item.id) === id,
     );
     if (matchedMock) {
       return {
         ...matchedMock,
-        images: [matchedMock.image_url], // String image_url ko array me wrap kiya
-        seller_name: "Mock Seller",
         created_at: new Date().toISOString(),
-        status: "approved",
+        images: [matchedMock.image_url], // String image_url ko array me wrap kiya
+        seller_name: 'Mock Seller',
+        status: 'approved',
       } as unknown as Listing;
     }
   }
 
   // Real Supabase Database call (Agar mock config true hai aur ID match ho jaye toh skip ho jayega)
   const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("id", id)
+    .from('listings')
+    .select('*')
+    .eq('id', id)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error || !data)
+    return null;
 
   return {
     id: data.id,
-    title: data.title,
-    description: data.description,
-    price: data.price,
-    images: (data.images as string[])?.length
-      ? (data.images as string[])
-      : ["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600"],
+    admin_feedback: (data as any).admin_feedback,
+    brand: data.brand,
     category: data.category,
     condition: data.condition,
-    size: data.size,
-    brand: data.brand,
-    seller_id: data.seller_id,
-    seller_name: "Seller",
     created_at: data.created_at,
-    status: data.status as Listing["status"],
-    weight: data.weight,
-    admin_feedback: (data as any).admin_feedback,
+    description: data.description,
+    images: (data.images as string[])?.length
+      ? (data.images as string[])
+      : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600'],
+    price: data.price,
     reserved_for: (data as any).reserved_for,
-    reserved_until: (data as any).reserved_until,
     reserved_offer_id: (data as any).reserved_offer_id,
+    reserved_until: (data as any).reserved_until,
+    seller_id: data.seller_id,
+    seller_name: 'Seller',
+    size: data.size,
+    status: data.status as Listing['status'],
+    title: data.title,
+    weight: data.weight,
   };
-};
+}
 
 function useCountdown(target?: string | null) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!target) return;
+    if (!target)
+      return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [target]);
-  if (!target) return null;
+  if (!target)
+    return null;
   const ms = new Date(target).getTime() - now;
-  if (ms <= 0) return "00:00:00";
+  if (ms <= 0)
+    return '00:00:00';
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+function isVideoUrl(url: string) {
+  return /\.(?:mp4|webm|mov|m4v|ogg)(?:\?|$)/i.test(url);
+}
 
-const ImageGallery = ({
+function ImageGallery({
   images,
-  title,
   status,
+  title,
 }: {
   images: string[];
-  title: string;
   status?: string;
-}) => {
+  title: string;
+}) {
   const [selected, setSelected] = useState(0);
   const current = images[selected];
-  const currentIsVideo = isVideoUrl(current);
+  const isCurrentIsVideo = isVideoUrl(current);
 
-  const isUnavailable = status === "sold" || status === "reserved";
-  const unavailableClass = isUnavailable ? "grayscale opacity-60" : "";
+  const isUnavailable = status === 'sold' || status === 'reserved';
+  const unavailableClass = isUnavailable ? 'grayscale opacity-60' : '';
 
   return (
     <div className="space-y-3">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-        {currentIsVideo ? (
-          <video
-            key={current}
-            src={current}
-            controls
-            playsInline
-            className={`h-full w-full bg-black object-contain ${unavailableClass}`}
-          />
-        ) : (
-          <img
-            src={current}
-            alt={`${title} - photo ${selected + 1}`}
-            className={`h-full w-full object-cover transition-opacity duration-300 ${unavailableClass}`}
-          />
-        )}
+        {isCurrentIsVideo
+          ? (
+              <video
+                key={current}
+                src={current}
+                controls
+                playsInline
+                className={`
+                  h-full w-full bg-black object-contain
+                  ${unavailableClass}
+                `}
+              />
+            )
+          : (
+              <img
+                src={current}
+                alt={`${title} - photo ${selected + 1}`}
+                className={`
+                  h-full w-full object-cover transition-opacity duration-300
+                  ${unavailableClass}
+                `}
+              />
+            )}
         {images.length > 1 && (
           <>
             <button
               onClick={() =>
-                setSelected((p) => (p - 1 + images.length) % images.length)
-              }
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background"
+                setSelected(p => (p - 1 + images.length) % images.length)}
               aria-label="Previous photo"
+              className="
+                absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition
+                hover:bg-background
+              "
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setSelected((p) => (p + 1) % images.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition hover:bg-background"
+              onClick={() => setSelected(p => (p + 1) % images.length)}
               aria-label="Next photo"
+              className="
+                absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition
+                hover:bg-background
+              "
             >
               <ChevronRight className="h-5 w-5" />
             </button>
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-              {images.map((_, i) => (
+              {images.map((image, index) => (
                 <button
-                  key={i}
-                  onClick={() => setSelected(i)}
-                  className={`h-2 w-2 rounded-full transition ${i === selected ? "bg-primary scale-125" : "bg-background/70"}`}
-                  aria-label={`Photo ${i + 1}`}
+                  key={image}
+                  onClick={() => setSelected(index)}
+                  aria-label={`Photo ${index + 1}`}
+                  className={`
+                    h-2 w-2 rounded-full transition
+                    ${index === selected ? 'scale-125 bg-primary' : 'bg-background/70'}
+                  `}
                 />
               ))}
             </div>
@@ -177,33 +199,46 @@ const ImageGallery = ({
       </div>
       {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {images.map((img, i) => {
-            const vid = isVideoUrl(img);
+          {images.map((image, index) => {
+            const isVid = isVideoUrl(image);
             return (
               <button
-                key={i}
-                onClick={() => setSelected(i)}
-                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition ${i === selected ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
+                key={image}
+                onClick={() => setSelected(index)}
+                className={`
+                  relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition
+                  ${index === selected
+                ? 'border-primary'
+                : `
+                  border-transparent opacity-60
+                  hover:opacity-100
+                `}
+                `}
               >
-                {vid ? (
-                  <>
-                    <video
-                      src={img}
-                      className="h-full w-full bg-black object-cover"
-                      muted
-                      preload="metadata"
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">
-                      ▶
-                    </span>
-                  </>
-                ) : (
-                  <img
-                    src={img}
-                    alt={`${title} thumbnail ${i + 1}`}
-                    className={`h-full w-full object-cover ${isUnavailable ? "grayscale opacity-60" : ""}`}
-                  />
-                )}
+                {isVid
+                  ? (
+                      <>
+                        <video
+                          src={image}
+                          muted
+                          preload="metadata"
+                          className="h-full w-full bg-black object-cover"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">
+                          ▶
+                        </span>
+                      </>
+                    )
+                  : (
+                      <img
+                        src={image}
+                        alt={`${title} thumbnail ${index + 1}`}
+                        className={`
+                          h-full w-full object-cover
+                          ${isUnavailable ? 'opacity-60 grayscale' : ''}
+                        `}
+                      />
+                    )}
               </button>
             );
           })}
@@ -211,96 +246,100 @@ const ImageGallery = ({
       )}
     </div>
   );
-};
+}
 
-const ListingDetail = () => {
+function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, addItem } = useCart();
+  const { addItem, items } = useCart();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const inCart = items.some((i) => i.listing.id === id);
+  const inCart = items.some(index => index.listing.id === id);
 
   const { data: listing, isLoading } = useQuery({
-    queryKey: ["listing", id],
-    queryFn: () => fetchListing(id!),
     enabled: !!id,
+    queryFn: () => fetchListing(id!),
+    queryKey: ['listing', id],
   });
 
   useEffect(() => {
     if (listing) {
-      trackEvent("view_item", {
-        currency: "PKR",
-        value: listing.price,
+      trackEvent('view_item', {
+        currency: 'PKR',
         items: [
           {
+            item_brand: listing.brand,
+            item_category: listing.category,
             item_id: listing.id,
             item_name: listing.title,
-            item_category: listing.category,
-            item_brand: listing.brand,
             price: listing.price,
           },
         ],
+        value: listing.price,
       });
     }
   }, [listing, listing.id]);
 
   const isOwner = listing && user && listing.seller_id === user.id;
-  const isReserved = listing?.status === "reserved";
-  const isReservedForMe =
-    isReserved && !!user && listing?.reserved_for === user.id;
+  const isReserved = listing?.status === 'reserved';
+  const isReservedForMe
+    = isReserved && !!user && listing?.reserved_for === user.id;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
 
   const { data: reservedOfferAmount } = useQuery({
-    queryKey: ["reserved-offer-amount", listing?.reserved_offer_id],
+    enabled: !!(isReservedForMe && listing?.reserved_offer_id),
     queryFn: async () => {
       // 👇 Mocking scenario safety check
-      if (NEXT_PUBLIC_USE_MOCK_DATA) return null;
+      if (isMockDataEnabled)
+        return null;
 
       const { data, error } = await supabase
-        .from("offers")
-        .select("amount")
-        .eq("id", listing!.reserved_offer_id!)
+        .from('offers')
+        .select('amount')
+        .eq('id', listing!.reserved_offer_id!)
         .maybeSingle();
-      if (error || !data) return null;
+      if (error || !data)
+        return null;
       return Number(data.amount);
     },
-    enabled: !!(isReservedForMe && listing?.reserved_offer_id),
+    queryKey: ['reserved-offer-amount', listing?.reserved_offer_id],
   });
 
-  const effectivePrice =
-    isReservedForMe && reservedOfferAmount
+  const effectivePrice
+    = isReservedForMe && reservedOfferAmount
       ? reservedOfferAmount
       : (listing?.price ?? 0);
 
   const cancelReservation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("expire_listing_reservation", {
-        _listing_id: listing!.id,
+      const { error } = await supabase.rpc('expire_listing_reservation', {
         _force: true,
+        _listing_id: listing!.id,
       });
-      if (error) throw error;
+      if (error)
+        throw error;
     },
+    onError: (error: any) => toast.error(error.message ?? 'Failed to cancel'),
     onSuccess: () => {
-      toast.success("Reservation cancelled");
-      queryClient.invalidateQueries({ queryKey: ["listing", id] });
-      queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      toast.success('Reservation cancelled');
+      queryClient.invalidateQueries({ queryKey: ['listing', id] });
+      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to cancel"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("listings").delete().eq("id", id!);
-      if (error) throw error;
+      const { error } = await supabase.from('listings').delete().eq('id', id!);
+      if (error)
+        throw error;
     },
+    onError: () => toast.error('Failed to delete'),
     onSuccess: () => {
-      toast.success("Listing deleted");
-      queryClient.invalidateQueries({ queryKey: ["listings"] });
-      navigate("/my-listings");
+      toast.success('Listing deleted');
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      navigate('/my-listings');
     },
-    onError: () => toast.error("Failed to delete"),
   });
 
   if (isLoading) {
@@ -323,7 +362,13 @@ const ListingDetail = () => {
           <h1 className="font-heading text-3xl font-bold text-foreground">
             Listing not found
           </h1>
-          <Link to="/listings" className="mt-4 text-primary hover:underline">
+          <Link
+            to="/listings"
+            className="
+              mt-4 text-primary
+              hover:underline
+            "
+          >
             Back to browse
           </Link>
         </main>
@@ -338,58 +383,82 @@ const ListingDetail = () => {
       <main className="container flex-1 py-8">
         <Link
           to="/listings"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="
+            mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground
+            hover:text-foreground
+          "
         >
-          <ArrowLeft className="h-4 w-4" /> Back to listings
+          <ArrowLeft className="h-4 w-4" />
+          {' '}
+          Back to listings
         </Link>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="
+          grid gap-8
+          md:grid-cols-2
+        "
+        >
           <ImageGallery
             images={listing.images}
-            title={listing.title}
             status={listing.status}
+            title={listing.title}
           />
 
           <div className="flex flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {listing.brand}
             </p>
-            <h1 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">
+            <h1 className="
+              mt-2 font-heading text-3xl font-bold text-foreground
+              md:text-4xl
+            "
+            >
               {listing.title}
             </h1>
-            {isReservedForMe &&
-            reservedOfferAmount &&
-            reservedOfferAmount !== listing.price ? (
-              <div className="mt-4 flex items-baseline gap-3">
-                <p className="text-3xl font-bold text-foreground">
-                  Rs {reservedOfferAmount.toLocaleString()}
-                </p>
-                <p className="text-lg text-muted-foreground line-through">
-                  Rs {listing.price.toLocaleString()}
-                </p>
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  Your accepted offer
-                </span>
-              </div>
-            ) : (
-              <p className="mt-4 text-3xl font-bold text-foreground">
-                Rs {listing.price.toLocaleString()}
-              </p>
-            )}
+            {isReservedForMe
+              && reservedOfferAmount
+              && reservedOfferAmount !== listing.price
+              ? (
+                  <div className="mt-4 flex items-baseline gap-3">
+                    <p className="text-3xl font-bold text-foreground">
+                      Rs
+                      {' '}
+                      {reservedOfferAmount.toLocaleString()}
+                    </p>
+                    <p className="text-lg text-muted-foreground line-through">
+                      Rs
+                      {' '}
+                      {listing.price.toLocaleString()}
+                    </p>
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      Your accepted offer
+                    </span>
+                  </div>
+                )
+              : (
+                  <p className="mt-4 text-3xl font-bold text-foreground">
+                    Rs
+                    {' '}
+                    {listing.price.toLocaleString()}
+                  </p>
+                )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                Size {listing.size}
+                Size
+                {' '}
+                {listing.size}
               </span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
-                {listing.condition.replace("_", " ")}
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
+                {listing.condition.replace('_', ' ')}
               </span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground capitalize">
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
                 {listing.category}
               </span>
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                  <Weight className="h-3 w-3" />{" "}
+                  <Weight className="h-3 w-3" />
+                  {' '}
                   {getWeightLabel(listing.weight)}
                 </span>
               )}
@@ -401,7 +470,7 @@ const ListingDetail = () => {
 
             {isOwner && <ListingFeedbackSection listingId={listing.id} />}
 
-            {listing.status === "sold" && !isOwner && (
+            {listing.status === 'sold' && !isOwner && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
                 <p className="font-heading text-lg font-semibold text-foreground">
                   Sold
@@ -411,9 +480,9 @@ const ListingDetail = () => {
                   available.
                 </p>
                 <Button
+                  onClick={() => navigate('/listings')}
                   variant="outline"
                   className="mt-4"
-                  onClick={() => navigate("/listings")}
                 >
                   Browse other listings
                 </Button>
@@ -422,138 +491,168 @@ const ListingDetail = () => {
 
             {isReserved && (
               <div
-                className={`mt-6 rounded-lg border px-4 py-3 text-sm ${isReservedForMe ? "border-primary/40 bg-primary/5 text-foreground" : "border-border bg-muted text-muted-foreground"}`}
+                className={`
+                  mt-6 rounded-lg border px-4 py-3 text-sm
+                  ${isReservedForMe ? 'border-primary/40 bg-primary/5 text-foreground' : 'border-border bg-muted text-muted-foreground'}
+                `}
               >
-                {isReservedForMe ? (
-                  <p>
-                    <span className="font-semibold text-primary">
-                      Reserved for you.
-                    </span>{" "}
-                    Complete your purchase within{" "}
-                    <span className="font-mono font-semibold text-foreground">
-                      {countdown}
-                    </span>
-                    .
-                  </p>
-                ) : isOwner ? (
-                  <p>
-                    Reserved for an approved buyer · expires in{" "}
-                    <span className="font-mono font-semibold text-foreground">
-                      {countdown}
-                    </span>
-                    .
-                  </p>
-                ) : (
-                  <p>
-                    Currently reserved for another buyer · available again in{" "}
-                    <span className="font-mono font-semibold text-foreground">
-                      {countdown}
-                    </span>
-                    .
-                  </p>
-                )}
+                {isReservedForMe
+                  ? (
+                      <p>
+                        <span className="font-semibold text-primary">
+                          Reserved for you.
+                        </span>
+                        {' '}
+                        Complete your purchase within
+                        {' '}
+                        <span className="font-mono font-semibold text-foreground">
+                          {countdown}
+                        </span>
+                        .
+                      </p>
+                    )
+                  : (isOwner
+                      ? (
+                          <p>
+                            Reserved for an approved buyer · expires in
+                            {' '}
+                            <span className="font-mono font-semibold text-foreground">
+                              {countdown}
+                            </span>
+                            .
+                          </p>
+                        )
+                      : (
+                          <p>
+                            Currently reserved for another buyer · available again in
+                            {' '}
+                            <span className="font-mono font-semibold text-foreground">
+                              {countdown}
+                            </span>
+                            .
+                          </p>
+                        ))}
               </div>
             )}
 
-            {isOwner ? (
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                >
-                  <Pencil className="h-4 w-4" /> Edit Listing
-                </Button>
-                {isReserved && (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => cancelReservation.mutate()}
-                    disabled={cancelReservation.isPending}
-                  >
-                    Cancel reservation
-                  </Button>
-                )}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+            {isOwner
+              ? (
+                  <div className="mt-8 flex flex-wrap gap-3">
                     <Button
+                      onClick={() => navigate(`/edit-listing/${listing.id}`)}
                       size="lg"
                       variant="outline"
-                      className="gap-2 text-destructive"
+                      className="flex-1 gap-2"
                     >
-                      <Trash2 className="h-4 w-4" /> Delete
+                      <Pencil className="h-4 w-4" />
+                      {' '}
+                      Edit Listing
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently remove "{listing.title}" and
-                        cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteMutation.mutate()}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {isReserved && (
+                      <Button
+                        onClick={() => cancelReservation.mutate()}
+                        disabled={cancelReservation.isPending}
+                        size="lg"
+                        variant="outline"
                       >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            ) : listing.status !== "sold" ? (
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button
-                  size="lg"
-                  className="min-w-0 flex-1 gap-2"
-                  disabled={inCart || isReservedForOther}
-                  onClick={() =>
-                    addItem(
-                      listing,
-                      isReservedForMe ? effectivePrice : undefined,
-                    )
-                  }
-                >
-                  {inCart ? (
-                    <>
-                      <Check className="h-4 w-4" /> In Cart
-                    </>
-                  ) : isReservedForOther ? (
-                    <>Currently Reserved</>
-                  ) : (
-                    <>
-                      <ShoppingBag className="h-4 w-4" />{" "}
-                      {isReservedForMe ? "Complete Purchase" : "Add to Cart"}
-                    </>
-                  )}
-                </Button>
-                {!isReserved && (
-                  <MakeOfferButton
-                    listingId={listing.id}
-                    sellerId={listing.seller_id}
-                    listingPrice={listing.price}
-                    listingTitle={listing.title}
-                  />
-                )}
-              </div>
-            ) : null}
+                        Cancel reservation
+                      </Button>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="gap-2 text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          {' '}
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently remove "
+                            {listing.title}
+                            " and
+                            cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteMutation.mutate()}
+                            className="
+                              bg-destructive text-destructive-foreground
+                              hover:bg-destructive/90
+                            "
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )
+              : (listing.status === 'sold'
+                  ? null
+                  : (
+                      <div className="mt-8 flex flex-wrap gap-3">
+                        <Button
+                          onClick={() =>
+                            addItem(
+                              listing,
+                              isReservedForMe ? effectivePrice : undefined,
+                            )}
+                          disabled={inCart || isReservedForOther}
+                          size="lg"
+                          className="min-w-0 flex-1 gap-2"
+                        >
+                          {inCart
+                            ? (
+                                <>
+                                  <Check className="h-4 w-4" />
+                                  {' '}
+                                  In Cart
+                                </>
+                              )
+                            : (isReservedForOther
+                                ? (
+                                    <>Currently Reserved</>
+                                  )
+                                : (
+                                    <>
+                                      <ShoppingBag className="h-4 w-4" />
+                                      {' '}
+                                      {isReservedForMe ? 'Complete Purchase' : 'Add to Cart'}
+                                    </>
+                                  ))}
+                        </Button>
+                        {!isReserved && (
+                          <MakeOfferButton
+                            listingId={listing.id}
+                            sellerId={listing.seller_id}
+                            listingPrice={listing.price}
+                            listingTitle={listing.title}
+                          />
+                        )}
+                      </div>
+                    ))}
 
             {!isOwner && (
               <div className="mt-3 flex justify-end gap-2">
                 <ReportDialog
-                  targetType="listing"
                   targetId={listing.id}
                   label="Report listing"
+                  targetType="listing"
                 />
                 {listing.seller_id && (
                   <ReportDialog
-                    targetType="user"
                     targetId={listing.seller_id}
                     label="Report seller"
+                    targetType="user"
                   />
                 )}
               </div>
@@ -572,16 +671,20 @@ const ListingDetail = () => {
             </div>
 
             <div className="mt-6 border-t border-border pt-4">
-              <p className="text-sm text-muted-foreground mt-4">
-                Sold by{" "}
+              <p className="mt-4 text-sm text-muted-foreground">
+                Sold by
+                {' '}
                 <Link
-                  to={`/seller/${listing?.seller_id || "mock-seller-id"}`}
-                  className="text-primary font-medium hover:underline transition-colors"
+                  to={`/seller/${listing?.seller_id || 'mock-seller-id'}`}
+                  className="
+                    font-medium text-primary transition-colors
+                    hover:underline
+                  "
                 >
-                  {listing?.seller_name || "Mock Seller"}
+                  {listing?.seller_name || 'Mock Seller'}
                 </Link>
               </p>
-              {listing.seller_id && !NEXT_PUBLIC_USE_MOCK_DATA && (
+              {listing.seller_id && !isMockDataEnabled && (
                 <div className="mt-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Seller Reviews
@@ -596,6 +699,6 @@ const ListingDetail = () => {
       <Footer />
     </div>
   );
-};
+}
 
 export default ListingDetail;

@@ -1,20 +1,20 @@
-import { authInstance } from "@/services/ky.instance";
 import type {
   AdminReport,
   ReportStatus,
   ResolveReportPayload,
-} from "@/types/admin/report";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/admin/report';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listAdminReports(
-  params: { status?: ReportStatus; page?: number; size?: number } = {},
+  parameters: { page?: number; size?: number; status?: ReportStatus } = {},
 ) {
   return authInstance
-    .get("/api/v1/admin/reports", {
+    .get('/api/v1/admin/reports', {
       searchParams: {
-        status: params.status,
-        page: params.page ?? 1,
-        size: params.size ?? 100,
+        page: parameters.page ?? 1,
+        size: parameters.size ?? 100,
+        status: parameters.status,
       },
     })
     .json<PaginatedResponse<AdminReport>>();

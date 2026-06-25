@@ -1,35 +1,35 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { Loader2, MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { MessageSquare, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { trackEvent } from "@/lib/analytics";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
 //  Mock config  import
-import { NEXT_PUBLIC_USE_MOCK_DATA } from "@/lib/mockConfig";
+import { isMockDataEnabled } from '@/lib/mockConfig';
 
 interface Offer {
   id: string;
   amount: number;
   counter_amount: number | null;
-  status: string;
+  created_at: string;
   message: string;
   seller_message: string;
-  created_at: string;
+  status: string;
   updated_at: string;
 }
 
@@ -40,107 +40,120 @@ interface MakeOfferProps {
   listingTitle: string;
 }
 
-export const MakeOfferButton = ({
+function statusBadge(s: string) {
+  const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
+    accepted: 'default',
+    countered: 'secondary',
+    pending: 'secondary',
+    rejected: 'destructive',
+    withdrawn: 'destructive',
+  };
+  return map[s] ?? 'secondary';
+}
+
+export function MakeOfferButton({
   listingId,
   sellerId,
   listingPrice,
   listingTitle,
-}: MakeOfferProps) => {
+}: MakeOfferProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [message, setMessage] = useState("");
+  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState('');
 
   //  Local State to manage live session mock offers mock lifecycle
   const [localMockOffers, setLocalMockOffers] = useState<Offer[]>([
     {
-      id: "mock-offer-init-1",
+      id: 'mock-offer-init-1',
       amount: Math.round(listingPrice * 0.75),
       counter_amount: Math.round(listingPrice * 0.9),
-      status: "countered",
-      message: "Is this price negotiable?",
-      seller_message: "Can do slightly lower but not that much. Let me know!",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 86400000).toISOString(),
+      created_at: new Date(Date.now() - 86_400_000).toISOString(),
+      message: 'Is this price negotiable?',
+      seller_message: 'Can do slightly lower but not that much. Let me know!',
+      status: 'countered',
+      updated_at: new Date(Date.now() - 86_400_000).toISOString(),
     },
   ]);
 
   // Fetch existing offers from this buyer on this listing
   const { data: existingOffers = [] } = useQuery({
-    queryKey: ["my-offers", listingId, user?.id],
+    enabled: !!user || isMockDataEnabled,
     queryFn: async () => {
       //  Mock Data Interception
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      if (isMockDataEnabled) {
         return localMockOffers;
       }
 
       const { data, error } = await supabase
-        .from("offers")
-        .select("*")
-        .eq("listing_id", listingId)
-        .eq("buyer_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+        .from('offers')
+        .select('*')
+        .eq('listing_id', listingId)
+        .eq('buyer_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (error)
+        throw error;
       return (data ?? []) as Offer[];
     },
-    enabled: !!user || NEXT_PUBLIC_USE_MOCK_DATA,
+    queryKey: ['my-offers', listingId, user?.id],
   });
 
   const submitOffer = useMutation({
     mutationFn: async () => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
+      if (isMockDataEnabled) {
         // Mocking mutation delay
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await new Promise(resolve => setTimeout(resolve, 600));
         const newOffer: Offer = {
           id: `mock-offer-${Date.now()}`,
-          amount: parseFloat(amount),
+          amount: Number(amount),
           counter_amount: null,
-          status: "pending",
-          message,
-          seller_message: "",
           created_at: new Date().toISOString(),
+          message,
+          seller_message: '',
+          status: 'pending',
           updated_at: new Date().toISOString(),
         };
-        setLocalMockOffers((prev) => [newOffer, ...prev]);
+        setLocalMockOffers(previous => [newOffer, ...previous]);
         return;
       }
 
-      const { error } = await supabase.from("offers").insert({
-        listing_id: listingId,
+      const { error } = await supabase.from('offers').insert({
+        amount: Number(amount),
         buyer_id: user!.id,
-        seller_id: sellerId,
-        amount: parseFloat(amount),
-        message,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      trackEvent("make_offer", {
         listing_id: listingId,
-        listing_title: listingTitle,
-        offer_amount: parseFloat(amount),
-        listing_price: listingPrice,
+        message,
+        seller_id: sellerId,
       });
-      toast.success("Offer sent!");
-      queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
-      setAmount("");
-      setMessage("");
+      if (error)
+        throw error;
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (error: any) => toast.error(error.message),
+    onSuccess: () => {
+      trackEvent('make_offer', {
+        listing_id: listingId,
+        listing_price: listingPrice,
+        listing_title: listingTitle,
+        offer_amount: Number(amount),
+      });
+      toast.success('Offer sent!');
+      queryClient.invalidateQueries({ queryKey: ['my-offers', listingId] });
+      setAmount('');
+      setMessage('');
+    },
   });
 
   const acceptCounter = useMutation({
     mutationFn: async (offerId: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setLocalMockOffers((prev) =>
-          prev.map((o) =>
+      if (isMockDataEnabled) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setLocalMockOffers(previous =>
+          previous.map(o =>
             o.id === offerId
               ? {
                   ...o,
-                  status: "accepted",
+                  status: 'accepted',
                   updated_at: new Date().toISOString(),
                 }
               : o,
@@ -150,36 +163,37 @@ export const MakeOfferButton = ({
       }
 
       const { error } = await supabase
-        .from("offers")
-        .update({ status: "accepted", updated_at: new Date().toISOString() })
-        .eq("id", offerId);
-      if (error) throw error;
+        .from('offers')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', offerId);
+      if (error)
+        throw error;
 
-      await supabase.from("conversations").insert({
-        offer_id: offerId,
-        listing_id: listingId,
+      await supabase.from('conversations').insert({
         buyer_id: user!.id,
+        listing_id: listingId,
+        offer_id: offerId,
         seller_id: sellerId,
       });
     },
     onSuccess: () => {
       toast.success(
-        "Counter-offer accepted! Check your Messages to chat with the seller.",
+        'Counter-offer accepted! Check your Messages to chat with the seller.',
       );
-      queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
+      queryClient.invalidateQueries({ queryKey: ['my-offers', listingId] });
     },
   });
 
   const withdrawOffer = useMutation({
     mutationFn: async (offerId: string) => {
-      if (NEXT_PUBLIC_USE_MOCK_DATA) {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        setLocalMockOffers((prev) =>
-          prev.map((o) =>
+      if (isMockDataEnabled) {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        setLocalMockOffers(previous =>
+          previous.map(o =>
             o.id === offerId
               ? {
                   ...o,
-                  status: "withdrawn",
+                  status: 'withdrawn',
                   updated_at: new Date().toISOString(),
                 }
               : o,
@@ -189,126 +203,144 @@ export const MakeOfferButton = ({
       }
 
       const { error } = await supabase
-        .from("offers")
-        .update({ status: "withdrawn", updated_at: new Date().toISOString() })
-        .eq("id", offerId);
-      if (error) throw error;
+        .from('offers')
+        .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
+        .eq('id', offerId);
+      if (error)
+        throw error;
     },
     onSuccess: () => {
-      toast.success("Offer withdrawn");
-      queryClient.invalidateQueries({ queryKey: ["my-offers", listingId] });
+      toast.success('Offer withdrawn');
+      queryClient.invalidateQueries({ queryKey: ['my-offers', listingId] });
     },
   });
 
   // Agar mock data active ho toh auth check bypass ho jaye
-  if (!user && !NEXT_PUBLIC_USE_MOCK_DATA) {
+  if (!user && !isMockDataEnabled) {
     return (
       <Button
-        variant="outline"
+        onClick={() => navigate('/auth')}
         size="lg"
-        className="w-full sm:w-auto gap-2"
-        onClick={() => navigate("/auth")}
+        variant="outline"
+        className="
+          w-full gap-2
+          sm:w-auto
+        "
       >
-        <MessageSquare className="h-4 w-4" /> Make Offer
+        <MessageSquare className="h-4 w-4" />
+        {' '}
+        Make Offer
       </Button>
     );
   }
 
   const activeOffer = existingOffers.find(
-    (o) => o.status === "pending" || o.status === "countered",
+    o => o.status === 'pending' || o.status === 'countered',
   );
 
-  const statusBadge = (s: string) => {
-    const map: Record<string, "default" | "secondary" | "destructive"> = {
-      pending: "secondary",
-      accepted: "default",
-      rejected: "destructive",
-      countered: "secondary",
-      withdrawn: "destructive",
-    };
-    return map[s] ?? "secondary";
-  };
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
-          <MessageSquare className="h-4 w-4" /> Make Offer
+        <Button
+          size="lg"
+          variant="outline"
+          className="
+            w-full gap-2
+            sm:w-auto
+          "
+        >
+          <MessageSquare className="h-4 w-4" />
+          {' '}
+          Make Offer
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading">
-            {activeOffer ? "Your Offer" : "Make an Offer"}
+            {activeOffer ? 'Your Offer' : 'Make an Offer'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {listingTitle} · Listed at Rs {listingPrice.toLocaleString()}
+            {listingTitle}
+            {' '}
+            · Listed at Rs
+            {listingPrice.toLocaleString()}
           </p>
         </DialogHeader>
 
         {existingOffers.length > 0 && (
-          <div className="max-h-48 space-y-2 overflow-y-auto my-2 pr-1">
-            {existingOffers.map((offer) => (
+          <div className="my-2 max-h-48 space-y-2 overflow-y-auto pr-1">
+            {existingOffers.map(offer => (
               <div
                 key={offer.id}
-                className="rounded-lg border border-border p-3 bg-card"
+                className="rounded-lg border border-border bg-card p-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
-                      Rs {offer.amount.toLocaleString()}
+                      Rs
+                      {' '}
+                      {offer.amount.toLocaleString()}
                     </span>
                     <Badge variant={statusBadge(offer.status)}>
                       {offer.status}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(offer.created_at), "MMM d")}
+                    {format(new Date(offer.created_at), 'MMM d')}
                   </span>
                 </div>
                 {offer.message && (
-                  <p className="mt-1 text-xs text-muted-foreground bg-muted/40 p-1.5 rounded">
+                  <p className="mt-1 rounded bg-muted/40 p-1.5 text-xs text-muted-foreground">
                     {offer.message}
                   </p>
                 )}
-                {offer.status === "countered" && offer.counter_amount && (
-                  <div className="mt-2 rounded-md bg-muted p-2 border border-border/60">
+                {offer.status === 'countered' && offer.counter_amount && (
+                  <div className="mt-2 rounded-md border border-border/60 bg-muted p-2">
                     <p className="text-xs font-semibold text-foreground">
-                      Counter: Rs {offer.counter_amount.toLocaleString()}
+                      Counter: Rs
+                      {' '}
+                      {offer.counter_amount.toLocaleString()}
                     </p>
                     {offer.seller_message && (
-                      <p className="text-xs text-muted-foreground mt-0.5 italic">
-                        "{offer.seller_message}"
+                      <p className="mt-0.5 text-xs italic text-muted-foreground">
+                        "
+                        {offer.seller_message}
+                        "
                       </p>
                     )}
                     <div className="mt-2 flex gap-2">
                       <Button
-                        size="sm"
-                        className="h-8 text-xs"
                         onClick={() => acceptCounter.mutate(offer.id)}
                         disabled={acceptCounter.isPending}
-                      >
-                        Accept Rs {offer.counter_amount.toLocaleString()}
-                      </Button>
-                      <Button
                         size="sm"
                         className="h-8 text-xs"
-                        variant="outline"
+                      >
+                        Accept Rs
+                        {' '}
+                        {offer.counter_amount.toLocaleString()}
+                      </Button>
+                      <Button
                         onClick={() => withdrawOffer.mutate(offer.id)}
                         disabled={withdrawOffer.isPending}
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs"
                       >
                         Decline
                       </Button>
                     </div>
                   </div>
                 )}
-                {offer.status === "pending" && (
+                {offer.status === 'pending' && (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-2 h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
                     onClick={() => withdrawOffer.mutate(offer.id)}
                     disabled={withdrawOffer.isPending}
+                    size="sm"
+                    variant="ghost"
+                    className="
+                      mt-2 h-7 px-2 text-xs text-destructive
+                      hover:bg-destructive/10
+                    "
                   >
                     Withdraw
                   </Button>
@@ -324,30 +356,30 @@ export const MakeOfferButton = ({
               <Label htmlFor="offer-amount">Your offer (PKR)</Label>
               <Input
                 id="offer-amount"
-                type="number"
+                onChange={event => setAmount(event.target.value)}
+                value={amount}
                 min="1"
                 placeholder={`e.g. ${Math.round(listingPrice * 0.8)}`}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                type="number"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="offer-message">Message (optional)</Label>
               <Textarea
                 id="offer-message"
+                onChange={event => setMessage(event.target.value)}
+                value={message}
+                maxLength={500}
                 placeholder="e.g. Would you consider this? I can pay immediately."
                 rows={2}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={500}
               />
             </div>
             <Button
-              className="w-full"
-              disabled={
-                !amount || parseFloat(amount) <= 0 || submitOffer.isPending
-              }
               onClick={() => submitOffer.mutate()}
+              disabled={
+                !amount || Number(amount) <= 0 || submitOffer.isPending
+              }
+              className="w-full"
             >
               {submitOffer.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -359,4 +391,4 @@ export const MakeOfferButton = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

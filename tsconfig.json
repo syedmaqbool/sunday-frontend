@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
-    "skipLibCheck": true,
-    "strictNullChecks": false
+    "allowJs": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true
   },
-  "files": [],
   "references": [
     {
       "path": "./tsconfig.app.json"
@@ -20,5 +19,6 @@
     {
       "path": "./tsconfig.node.json"
     }
-  ]
+  ],
+  "files": []
 }

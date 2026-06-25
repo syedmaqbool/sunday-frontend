@@ -1,13 +1,13 @@
-export type BoostPlacement = "SEARCH" | "FOR_YOU" | "TRENDING";
-export type BoostPaymentStatus = "MOCK" | "PAID" | "CANCELLED";
+export type BoostPlacement = 'FOR_YOU' | 'SEARCH' | 'TRENDING';
+export type BoostPaymentStatus = 'CANCELLED' | 'MOCK' | 'PAID';
 
 export interface BoostPackage {
   id: string;
-  name: string;
-  description: string;
   active: boolean;
   credits: number;
+  description: string;
   durationDays: number;
+  name: string;
   placement: BoostPlacement;
   price: number;
 }
@@ -18,34 +18,34 @@ export interface ListingBoost {
   id: string;
   listingId: string;
   packageId: string | null;
-  packageName: string | null;
-  pricePaid: number;
   sellerId: string;
   endsAt: string;
-  startsAt: string;
   isActive?: boolean;
+  packageName: string | null;
   paymentStatus: BoostPaymentStatus;
   placement: BoostPlacement;
+  pricePaid: number;
+  startsAt: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface BoostableListingItem {
   id: string;
-  title: string;
+  [key: string]: unknown;
   images: string[];
   price: number;
-  [key: string]: unknown;
+  title: string;
 }
 
 export interface BoostWithPackagePayload {
   packageId: string;
-  paymentStatus?: "MOCK" | "PAID";
+  paymentStatus?: 'MOCK' | 'PAID';
 }
 
 export interface BoostWithCampaignPayload {
-  placement: "SEARCH" | "FOR_YOU";
-  startsAt: string;
   endsAt: string;
-  paymentStatus?: "MOCK" | "PAID";
+  paymentStatus?: 'MOCK' | 'PAID';
+  placement: 'FOR_YOU' | 'SEARCH';
+  startsAt: string;
 }

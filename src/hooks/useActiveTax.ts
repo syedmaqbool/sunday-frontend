@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ActiveTax {
   id: string;
@@ -7,19 +7,20 @@ export interface ActiveTax {
   rate: number;
 }
 
-export const useActiveTax = () => {
+export function useActiveTax() {
   return useQuery({
-    queryKey: ["active-tax"],
     queryFn: async (): Promise<ActiveTax | null> => {
       const { data, error } = await supabase
-        .from("tax_settings")
-        .select("id, name, rate")
-        .eq("active", true)
-        .order("created_at", { ascending: false })
+        .from('tax_settings')
+        .select('id, name, rate')
+        .eq('active', true)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error) throw error;
+      if (error)
+        throw error;
       return data ? { ...data, rate: Number(data.rate) } : null;
     },
+    queryKey: ['active-tax'],
   });
-};
+}

@@ -1,15 +1,15 @@
-import "@testing-library/jest-dom";
+import '@testing-library/jest-dom';
 
-Object.defineProperty(window, "matchMedia", {
-  writable: true,
+Object.defineProperty(globalThis, 'matchMedia', {
   value: (query: string) => ({
+    addEventListener: () => {},
+    addListener: () => {},
+    dispatchEvent: () => {},
     matches: false,
     media: query,
     onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
     removeEventListener: () => {},
-    dispatchEvent: () => {},
+    removeListener: () => {},
   }),
+  writable: true,
 });

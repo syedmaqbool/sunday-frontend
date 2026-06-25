@@ -1,35 +1,37 @@
+import type { LucideIcon } from 'lucide-react';
 import {
-  ShoppingBag,
-  Tag,
-  MessageCircle,
-  ShieldCheck,
-  CreditCard,
-  Truck,
   BookOpen,
-  HelpCircle,
-  Sparkles,
+  CreditCard,
   Heart,
-  Star,
+  HelpCircle,
+
+  MessageCircle,
   Package,
-  type LucideIcon,
-} from "lucide-react";
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Tag,
+  Truck,
+} from 'lucide-react';
 
 const MAP: Record<string, LucideIcon> = {
-  ShoppingBag,
-  Tag,
-  MessageCircle,
-  ShieldCheck,
-  CreditCard,
-  Truck,
   BookOpen,
-  HelpCircle,
-  Sparkles,
+  CreditCard,
   Heart,
-  Star,
+  HelpCircle,
+  MessageCircle,
   Package,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Tag,
+  Truck,
 };
 
 export const HELP_ICON_OPTIONS = Object.keys(MAP);
 
-export const getHelpIcon = (name: string | null | undefined): LucideIcon =>
-  (name && MAP[name]) || BookOpen;
+export function getHelpIcon(name: string | null | undefined): LucideIcon {
+  return (name && MAP[name]) || BookOpen;
+}

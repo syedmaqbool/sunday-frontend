@@ -6,20 +6,20 @@ export interface AdminUserImage {
   url: string;
 }
 
-export type AdminUserStatus = "ACTIVE" | "INACTIVE";
+export type AdminUserStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface AdminUser {
   id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  roleId: string | null;
   address: string;
+  email: string;
+  firstName: string;
+  image: AdminUserImage | null;
+  lastName: string;
   phone: string;
+  roleName: string | null;
   status: AdminUserStatus;
   username: string;
-  image: AdminUserImage | null;
-  roleId: string | null;
-  roleName: string | null;
   createdAt: string;
   updatedAt: string;
 }

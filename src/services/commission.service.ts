@@ -1,16 +1,16 @@
-import { authInstance } from "@/services/ky.instance";
-import type { CommissionTier, CommissionTierPayload } from "@/types/commission";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+import type { CommissionTier, CommissionTierPayload } from '@/types/commission';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listCommissionTiers() {
   return authInstance
-    .get("/api/v1/admin/settings/commission-tiers")
+    .get('/api/v1/admin/settings/commission-tiers')
     .json<PaginatedResponse<CommissionTier>>();
 }
 
 export function createCommissionTier(payload: CommissionTierPayload) {
   return authInstance
-    .post("/api/v1/admin/settings/commission-tiers", { json: payload })
+    .post('/api/v1/admin/settings/commission-tiers', { json: payload })
     .json<Response<CommissionTier>>();
 }
 

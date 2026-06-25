@@ -1,20 +1,20 @@
-import { authInstance } from "@/services/ky.instance";
 import type {
   CreateDiscountCodePayload,
   DiscountCode,
   UpdateDiscountCodePayload,
-} from "@/types/discount-code";
-import type { PaginatedResponse, Response } from "@/types/response.type";
+} from '@/types/discount-code';
+import type { PaginatedResponse, Response } from '@/types/response.type';
+import { authInstance } from '@/services/ky.instance';
 
 export function listDiscountCodes() {
   return authInstance
-    .get("/api/v1/admin/settings/discount-codes")
+    .get('/api/v1/admin/settings/discount-codes')
     .json<PaginatedResponse<DiscountCode>>();
 }
 
 export function createDiscountCode(payload: CreateDiscountCodePayload) {
   return authInstance
-    .post("/api/v1/admin/settings/discount-codes", { json: payload })
+    .post('/api/v1/admin/settings/discount-codes', { json: payload })
     .json<Response<DiscountCode>>();
 }
 

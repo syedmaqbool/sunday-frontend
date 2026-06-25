@@ -1,41 +1,41 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getBrandsQueryOptions,
-  useCreateBrand,
-  useUpdateBrand,
-  useDeleteBrand,
-} from "@/queries/useAdminBrands";
-import type { Brand } from "@/types/brand";
+import type { Brand } from '@/types/brand';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import {
+  getBrandsQueryOptions,
+  useCreateBrand,
+  useDeleteBrand,
+  useUpdateBrand,
+} from '@/queries/useAdminBrands';
 
-type BrandForm = {
+interface BrandForm {
+  active: boolean;
   name: string;
   sort_order: number;
-  active: boolean;
-};
+}
 
 const emptyForm: BrandForm = {
-  name: "",
-  sort_order: 0,
   active: true,
+  name: '',
+  sort_order: 0,
 };
 
-const BrandManagement = () => {
+function BrandManagement() {
   const { data: brands = [], isLoading } = useQuery(getBrandsQueryOptions());
 
   const createBrand = useCreateBrand();
@@ -48,7 +48,7 @@ const BrandManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
 
   const filtered = useMemo(
     () =>
@@ -59,7 +59,8 @@ const BrandManagement = () => {
   );
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim())
+      return;
 
     setBusy(true);
 
@@ -68,35 +69,37 @@ const BrandManagement = () => {
         await updateBrand.mutateAsync({
           brandId: editingId,
           payload: {
-            name: form.name,
             active: form.active,
+            name: form.name,
             sortOrder: form.sort_order,
           },
         });
 
         toast({
-          title: "Brand updated",
+          title: 'Brand updated',
         });
-      } else {
+      }
+      else {
         await createBrand.mutateAsync({
-          name: form.name,
           active: form.active,
+          name: form.name,
           sortOrder: form.sort_order,
         });
 
         toast({
-          title: "Brand created",
+          title: 'Brand created',
         });
       }
 
       setDialogOpen(false);
       setForm(emptyForm);
       setEditingId(null);
-    } catch (err: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
+        description: error.message,
+        title: 'Error',
+        variant: 'destructive',
       });
     }
 
@@ -104,28 +107,27 @@ const BrandManagement = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this brand?")) return;
-
     try {
       await deleteBrand.mutateAsync(id);
 
       toast({
-        title: "Brand deleted",
+        title: 'Brand deleted',
       });
-    } catch (err: any) {
+    }
+    catch (error: any) {
       toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
+        description: error.message,
+        title: 'Error',
+        variant: 'destructive',
       });
     }
   };
 
   const openEdit = (b: Brand) => {
     setForm({
+      active: b.active,
       name: b.name,
       sort_order: b.sortOrder,
-      active: b.active,
     });
 
     setEditingId(b.id);
@@ -151,7 +153,6 @@ const BrandManagement = () => {
           <CardTitle>Brands</CardTitle>
 
           <Dialog
-            open={dialogOpen}
             onOpenChange={(o) => {
               setDialogOpen(o);
 
@@ -160,6 +161,7 @@ const BrandManagement = () => {
                 setEditingId(null);
               }
             }}
+            open={dialogOpen}
           >
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1">
@@ -171,7 +173,7 @@ const BrandManagement = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingId ? "Edit Brand" : "Add Brand"}
+                  {editingId ? 'Edit Brand' : 'Add Brand'}
                 </DialogTitle>
               </DialogHeader>
 
@@ -179,13 +181,12 @@ const BrandManagement = () => {
                 <div className="space-y-2">
                   <Label>Name</Label>
                   <Input
-                    value={form.name}
-                    onChange={(e) =>
+                    onChange={event =>
                       setForm({
                         ...form,
-                        name: e.target.value,
-                      })
-                    }
+                        name: event.target.value,
+                      })}
+                    value={form.name}
                     placeholder="e.g. Nike"
                   />
                 </div>
@@ -193,27 +194,25 @@ const BrandManagement = () => {
                 <div className="space-y-2">
                   <Label>Sort Order</Label>
                   <Input
-                    type="number"
-                    value={form.sort_order}
-                    onChange={(e) =>
+                    onChange={event =>
                       setForm({
                         ...form,
-                        sort_order: parseInt(e.target.value) || 0,
-                      })
-                    }
+                        sort_order: parseInt(event.target.value) || 0,
+                      })}
+                    value={form.sort_order}
+                    type="number"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Active</Label>
                   <Switch
-                    checked={form.active}
-                    onCheckedChange={(v) =>
+                    onCheckedChange={v =>
                       setForm({
                         ...form,
                         active: v,
-                      })
-                    }
+                      })}
+                    checked={form.active}
                   />
                 </div>
               </div>
@@ -225,7 +224,7 @@ const BrandManagement = () => {
               >
                 {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
-                {editingId ? "Save Changes" : "Create Brand"}
+                {editingId ? 'Save Changes' : 'Create Brand'}
               </Button>
             </DialogContent>
           </Dialog>
@@ -236,56 +235,67 @@ const BrandManagement = () => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
             <Input
+              onChange={event => setSearch(event.target.value)}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search brands..."
               className="pl-9"
             />
           </div>
 
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No brands found.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {filtered.map((b) => (
-                <div
-                  key={b.id}
-                  className="flex items-center justify-between py-3"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{b.name}</p>
-
-                    <p className="text-xs text-muted-foreground">
-                      order {b.sortOrder} · {b.active ? "active" : "inactive"}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(b)}
+          {filtered.length === 0
+            ? (
+                <p className="text-sm text-muted-foreground">No brands found.</p>
+              )
+            : (
+                <div className="divide-y divide-border">
+                  {filtered.map(b => (
+                    <div
+                      key={b.id}
+                      className="flex items-center justify-between py-3"
                     >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                      <div>
+                        <p className="font-medium text-foreground">{b.name}</p>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(b.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                        <p className="text-xs text-muted-foreground">
+                          order
+                          {' '}
+                          {b.sortOrder}
+                          {' '}
+                          ·
+                          {' '}
+                          {b.active ? 'active' : 'inactive'}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Button
+                          onClick={() => openEdit(b)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          onClick={() => handleDelete(b.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="
+                            text-destructive
+                            hover:text-destructive
+                          "
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
         </CardContent>
       </Card>
     </div>
   );
-};
+}
 
 export default BrandManagement;

@@ -1,96 +1,109 @@
+import type { PutPreferencesPayload } from '@/types/buyer-preferences';
 import {
   queryOptions,
-  useQuery,
   useMutation,
+  useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
+} from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import {
   getBrands,
   getCategories,
   getPreferences,
   getSubcategories,
   putPreferences,
-} from "@/services/buyer/preferences.service";
-import type { PutPreferencesPayload } from "@/types/buyer-preferences";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+} from '@/services/buyer/preferences.service';
 
 // ── QUERY KEYS ───────────────────────────────────────────────────────────────
 export const buyerPreferencesQueryKey = {
-  all: ["preferences"] as const,
-  current: () => [...buyerPreferencesQueryKey.all, "current"] as const,
-  categories: () => [...buyerPreferencesQueryKey.all, "categories"] as const,
+  all: ['preferences'] as const,
+  brands: () => [...buyerPreferencesQueryKey.all, 'brands'] as const,
+  categories: () => [...buyerPreferencesQueryKey.all, 'categories'] as const,
+  current: () => [...buyerPreferencesQueryKey.all, 'current'] as const,
   subcategories: () =>
-    [...buyerPreferencesQueryKey.all, "subcategories"] as const,
-  brands: () => [...buyerPreferencesQueryKey.all, "brands"] as const,
+    [...buyerPreferencesQueryKey.all, 'subcategories'] as const,
 };
 
 // ── 1. GET USER PREFERENCES QUERY ───────────────────────────────────────────
-export const getPreferencesOptions = () =>
-  queryOptions({
-    queryKey: buyerPreferencesQueryKey.current(),
+export function getPreferencesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await getPreferences();
-      return res.data;
+      const response = await getPreferences();
+      return response.data;
     },
+    queryKey: buyerPreferencesQueryKey.current(),
     retry: false, // Signup ke foran baad agar data na ho to bar bar network requests bhej kar console bhar na de
   });
+}
 
 export const useGetPreferences = () => useQuery(getPreferencesOptions());
 
 // ── 2. GET CATEGORIES QUERY ──────────────────────────────────────────────────
-export const getBackendCategoriesOptions = () =>
-  queryOptions({
-    queryKey: buyerPreferencesQueryKey.categories(),
+export function getBackendCategoriesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await getCategories();
-      return res.data;
+      const response = await getCategories();
+      return response.data;
     },
+    queryKey: buyerPreferencesQueryKey.categories(),
     staleTime: 10 * 60 * 1000, // 10 mins tak cache fresh rahegi
   });
+}
 
-export const useBackendCategories = () =>
-  useQuery(getBackendCategoriesOptions());
+export function useBackendCategories() {
+  return useQuery(getBackendCategoriesOptions());
+}
 
 // ── 3. GET SUBCATEGORIES QUERY ───────────────────────────────────────────────
-export const getBackendSubcategoriesOptions = () =>
-  queryOptions({
-    queryKey: buyerPreferencesQueryKey.subcategories(),
+export function getBackendSubcategoriesOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await getSubcategories();
-      return res.data;
+      const response = await getSubcategories();
+      return response.data;
     },
+    queryKey: buyerPreferencesQueryKey.subcategories(),
     staleTime: 10 * 60 * 1000,
   });
+}
 
-export const useBackendSubcategories = () =>
-  useQuery(getBackendSubcategoriesOptions());
+export function useBackendSubcategories() {
+  return useQuery(getBackendSubcategoriesOptions());
+}
 
 // ── 4. GET BRANDS QUERY (With Pagination & Aggregates Support) ───────────────
-export const getBackendBrandsOptions = () =>
-  queryOptions({
-    queryKey: buyerPreferencesQueryKey.brands(),
+export function getBackendBrandsOptions() {
+  return queryOptions({
     queryFn: async () => {
-      const res = await getBrands();
-      return res.data;
+      const response = await getBrands();
+      return response.data;
     },
+    queryKey: buyerPreferencesQueryKey.brands(),
     staleTime: 10 * 60 * 1000,
   });
+}
 
 export const useBackendBrands = () => useQuery(getBackendBrandsOptions());
 
 // ── 5. PUT/SAVE PREFERENCES MUTATION ─────────────────────────────────────────
-export const useSavePreferences = () => {
+export function useSavePreferences() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   return useMutation({
     mutationFn: (payload: PutPreferencesPayload) => putPreferences(payload),
+    onError: (error: any) => {
+      toast({
+        description: error?.response?.data?.message || 'Something went wrong',
+        title: 'Error saving preferences',
+        variant: 'destructive',
+      });
+    },
     onSuccess: () => {
       toast({
-        title: "Preferences saved!",
-        description: "Your feed is now personalized.",
+        description: 'Your feed is now personalized.',
+        title: 'Preferences saved!',
       });
 
       // Preferences save hote hi cache data invalidate hoga taake home page par updated feed dikhe
@@ -99,14 +112,7 @@ export const useSavePreferences = () => {
       });
 
       // Direct redirect to main route
-      navigate("/");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error saving preferences",
-        description: error?.response?.data?.message || "Something went wrong",
-        variant: "destructive",
-      });
+      navigate('/');
     },
   });
-};
+}

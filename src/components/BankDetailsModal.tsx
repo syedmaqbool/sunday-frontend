@@ -1,97 +1,97 @@
-import { useState, useEffect } from "react";
+import { AlertTriangle, Landmark, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Loader2, Landmark, AlertTriangle } from "lucide-react";
-import { z } from "zod";
-import { toast } from "sonner";
-import { useUpdateBankDetails } from "@/queries/useMyProfile";
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useUpdateBankDetails } from '@/queries/useMyProfile';
 
 const bankSchema = z.object({
   bank_account_holder: z
     .string()
     .trim()
-    .min(2, "Account holder name is required")
+    .min(2, 'Account holder name is required')
     .max(100),
-
-  bank_name: z.string().trim().min(2, "Bank name is required").max(80),
 
   bank_account_number: z
     .string()
     .trim()
-    .min(4, "Account number must be at least 4 digits")
-    .max(20, "Account number must be at most 20 digits")
-    .regex(/^\d+$/, "Account number must contain digits only"),
+    .min(4, 'Account number must be at least 4 digits')
+    .max(20, 'Account number must be at most 20 digits')
+    .regex(/^\d+$/, 'Account number must contain digits only'),
 
   bank_iban: z
     .string()
     .trim()
-    .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+    .transform(v => v.replaceAll(/\s+/g, '').toUpperCase())
     .pipe(
       z
         .string()
-        .min(15, "IBAN must be 15–34 characters")
-        .max(34, "IBAN must be 15–34 characters")
-        .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/, "Invalid IBAN format"),
+        .min(15, 'IBAN must be 15–34 characters')
+        .max(34, 'IBAN must be 15–34 characters')
+        .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/, 'Invalid IBAN format'),
     ),
+
+  bank_name: z.string().trim().min(2, 'Bank name is required').max(80),
 
   bank_swift: z
     .string()
     .trim()
-    .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+    .transform(v => v.replaceAll(/\s+/g, '').toUpperCase())
     .pipe(
       z
         .string()
         .regex(
           /^([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)?$/,
-          "Invalid SWIFT/BIC format",
+          'Invalid SWIFT/BIC format',
         ),
     )
     .optional(),
 });
 
-export type BankFormValues = {
+export interface BankFormValues {
   bank_account_holder: string;
-  bank_name: string;
   bank_account_number: string;
   bank_iban: string;
+  bank_name: string;
   bank_swift: string;
-};
+}
 
 interface BankDetailsModalProps {
-  open: boolean;
-  onSaved: () => void;
-  onCancel: () => void;
   initialValues?: Partial<BankFormValues>;
+  onCancel: () => void;
+  onSaved: () => void;
+  open: boolean;
 }
 
 const empty: BankFormValues = {
-  bank_account_holder: "",
-  bank_name: "",
-  bank_account_number: "",
-  bank_iban: "",
-  bank_swift: "",
+  bank_account_holder: '',
+  bank_account_number: '',
+  bank_iban: '',
+  bank_name: '',
+  bank_swift: '',
 };
 
-const BankDetailsModal = ({
-  open,
-  onSaved,
-  onCancel,
+function BankDetailsModal({
   initialValues,
-}: BankDetailsModalProps) => {
+  onCancel,
+  onSaved,
+  open,
+}: BankDetailsModalProps) {
   const updateBankDetails = useUpdateBankDetails();
 
   const isEditing = !!(
-    initialValues &&
-    (initialValues.bank_iban || initialValues.bank_account_number)
+    initialValues
+    && (initialValues.bank_iban || initialValues.bank_account_number)
   );
 
   const [form, setForm] = useState<BankFormValues>({
@@ -104,10 +104,12 @@ const BankDetailsModal = ({
   >({});
 
   useEffect(() => {
-    if (open) {
-      setForm({ ...empty, ...initialValues });
-      setErrors({});
+    if (!open) {
+      return;
     }
+
+    setForm({ ...empty, ...initialValues });
+    setErrors({});
   }, [open, initialValues]);
 
   const handleSave = () => {
@@ -116,12 +118,12 @@ const BankDetailsModal = ({
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof BankFormValues, string>> = {};
 
-      result.error.issues.forEach((issue) => {
+      for (const issue of result.error.issues) {
         const key = issue.path[0] as keyof BankFormValues;
-        if (!fieldErrors[key]) {
+        if (!Object.hasOwn(fieldErrors, key)) {
           fieldErrors[key] = issue.message;
         }
-      });
+      }
 
       setErrors(fieldErrors);
       return;
@@ -132,42 +134,46 @@ const BankDetailsModal = ({
     updateBankDetails.mutate(
       {
         bankAccountHolder: result.data.bank_account_holder,
-        bankName: result.data.bank_name,
         bankAccountNumber: result.data.bank_account_number,
         bankIban: result.data.bank_iban,
+        bankName: result.data.bank_name,
         bankSwift: result.data.bank_swift,
       },
       {
-        onSuccess: () => {
-          toast.success(
-            isEditing ? "Payout details updated" : "Payout details saved",
-          );
-          onSaved();
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to save');
         },
 
-        onError: (err: any) => {
-          toast.error(err.message || "Failed to save");
+        onSuccess: () => {
+          toast.success(
+            isEditing ? 'Payout details updated' : 'Payout details saved',
+          );
+          onSaved();
         },
       },
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={o => !o && onCancel()} open={open}>
+      <DialogContent className="
+        max-h-[90vh] overflow-y-auto
+        sm:max-w-md
+      "
+      >
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <Landmark className="h-5 w-5 text-primary" />
           </div>
 
           <DialogTitle>
-            {isEditing ? "Edit payout details" : "Add your payout details"}
+            {isEditing ? 'Edit payout details' : 'Add your payout details'}
           </DialogTitle>
 
           <DialogDescription>
             {isEditing
-              ? "Update the bank account we use to pay you out."
-              : "We need your bank account so we can pay you out when your items sell."}
+              ? 'Update the bank account we use to pay you out.'
+              : 'We need your bank account so we can pay you out when your items sell.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -183,13 +189,12 @@ const BankDetailsModal = ({
           <div>
             <Label>Account holder name</Label>
             <Input
-              value={form.bank_account_holder}
-              onChange={(e) =>
-                setForm((f) => ({
+              onChange={event =>
+                setForm(f => ({
                   ...f,
-                  bank_account_holder: e.target.value,
-                }))
-              }
+                  bank_account_holder: event.target.value,
+                }))}
+              value={form.bank_account_holder}
             />
             {errors.bank_account_holder && (
               <p className="text-xs text-destructive">
@@ -201,13 +206,12 @@ const BankDetailsModal = ({
           <div>
             <Label>Bank name</Label>
             <Input
-              value={form.bank_name}
-              onChange={(e) =>
-                setForm((f) => ({
+              onChange={event =>
+                setForm(f => ({
                   ...f,
-                  bank_name: e.target.value,
-                }))
-              }
+                  bank_name: event.target.value,
+                }))}
+              value={form.bank_name}
             />
             {errors.bank_name && (
               <p className="text-xs text-destructive">{errors.bank_name}</p>
@@ -217,14 +221,13 @@ const BankDetailsModal = ({
           <div>
             <Label>Account number</Label>
             <Input
-              inputMode="numeric"
-              value={form.bank_account_number}
-              onChange={(e) =>
-                setForm((f) => ({
+              onChange={event =>
+                setForm(f => ({
                   ...f,
-                  bank_account_number: e.target.value.replace(/\D/g, ""),
-                }))
-              }
+                  bank_account_number: event.target.value.replaceAll(/\D/g, ''),
+                }))}
+              value={form.bank_account_number}
+              inputMode="numeric"
             />
             {errors.bank_account_number && (
               <p className="text-xs text-destructive">
@@ -236,13 +239,12 @@ const BankDetailsModal = ({
           <div>
             <Label>IBAN</Label>
             <Input
-              value={form.bank_iban}
-              onChange={(e) =>
-                setForm((f) => ({
+              onChange={event =>
+                setForm(f => ({
                   ...f,
-                  bank_iban: e.target.value.toUpperCase(),
-                }))
-              }
+                  bank_iban: event.target.value.toUpperCase(),
+                }))}
+              value={form.bank_iban}
             />
             {errors.bank_iban && (
               <p className="text-xs text-destructive">{errors.bank_iban}</p>
@@ -252,13 +254,12 @@ const BankDetailsModal = ({
           <div>
             <Label>SWIFT / BIC (optional)</Label>
             <Input
-              value={form.bank_swift}
-              onChange={(e) =>
-                setForm((f) => ({
+              onChange={event =>
+                setForm(f => ({
                   ...f,
-                  bank_swift: e.target.value.toUpperCase(),
-                }))
-              }
+                  bank_swift: event.target.value.toUpperCase(),
+                }))}
+              value={form.bank_swift}
             />
             {errors.bank_swift && (
               <p className="text-xs text-destructive">{errors.bank_swift}</p>
@@ -268,9 +269,9 @@ const BankDetailsModal = ({
 
         <DialogFooter>
           <Button
-            variant="ghost"
             onClick={onCancel}
             disabled={updateBankDetails.isPending}
+            variant="ghost"
           >
             Cancel
           </Button>
@@ -280,12 +281,12 @@ const BankDetailsModal = ({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
 
-            {isEditing ? "Save changes" : "Save & continue"}
+            {isEditing ? 'Save changes' : 'Save & continue'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default BankDetailsModal;

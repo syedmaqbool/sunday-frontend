@@ -2,8 +2,8 @@ export interface Notification {
   id: string;
   entityId: string | null;
   userId: string;
+  audience: 'ADMIN' | 'USER';
   body: string;
-  audience: "USER" | "ADMIN";
   entityType: string | null;
   metadata: Record<string, unknown>;
   readAt: string | null;

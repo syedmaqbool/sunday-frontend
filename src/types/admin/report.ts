@@ -1,28 +1,28 @@
-export type ReportStatus = "OPEN" | "DISMISSED" | "RESOLVED";
+export type ReportStatus = 'DISMISSED' | 'OPEN' | 'RESOLVED';
 
 export interface AdminReport {
   id: string;
-  reporterId: string;
-  reportedUserId: string | null;
-  listingId: string | null;
   conversationId: string | null;
+  listingId: string | null;
   messageId: string | null;
-  reason: string;
-  details: string | null;
-  status: ReportStatus;
+  reportedUserId: string | null;
+  reporterId: string;
   adminNotes: string | null;
-  resolvedBy: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  reporterFullName: string;
-  reportedUserFullName: string | null;
+  details: string | null;
   listingTitle: string | null;
   messageContent: string | null;
+  reason: string;
+  reportedUserFullName: string | null;
+  reporterFullName: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
   resolverFullName: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ResolveReportPayload {
-  status: "DISMISSED" | "RESOLVED";
   adminNotes?: string;
+  status: 'DISMISSED' | 'RESOLVED';
 }

@@ -1,33 +1,35 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listConversationMessages,
   listConversations,
   markConversationRead,
   sendConversationMessage,
-} from "@/services/conversation.service";
+} from '@/services/conversation.service';
 
-const CONVERSATIONS_KEY = ["conversations"];
+const CONVERSATIONS_KEY = ['conversations'];
 
-export const useConversations = () =>
-  useQuery({
+export function useConversations() {
+  return useQuery({
+    queryFn: async () => {
+      const response = await listConversations();
+      return response.data;
+    },
     queryKey: CONVERSATIONS_KEY,
-    queryFn: async () => {
-      const res = await listConversations();
-      return res.data;
-    },
   });
+}
 
-export const useConversationMessages = (conversationId?: string) =>
-  useQuery({
-    queryKey: ["messages", conversationId],
-    queryFn: async () => {
-      const res = await listConversationMessages(conversationId!);
-      return res.data;
-    },
+export function useConversationMessages(conversationId?: string) {
+  return useQuery({
     enabled: !!conversationId,
+    queryFn: async () => {
+      const response = await listConversationMessages(conversationId!);
+      return response.data;
+    },
+    queryKey: ['messages', conversationId],
   });
+}
 
-export const useSendMessage = () => {
+export function useSendMessage() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -41,7 +43,7 @@ export const useSendMessage = () => {
 
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
-        queryKey: ["messages", variables.conversationId],
+        queryKey: ['messages', variables.conversationId],
       });
 
       qc.invalidateQueries({
@@ -49,9 +51,9 @@ export const useSendMessage = () => {
       });
     },
   });
-};
+}
 
-export const useMarkConversationRead = () => {
+export function useMarkConversationRead() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -60,7 +62,7 @@ export const useMarkConversationRead = () => {
 
     onSuccess: (_, conversationId) => {
       qc.invalidateQueries({
-        queryKey: ["messages", conversationId],
+        queryKey: ['messages', conversationId],
       });
 
       qc.invalidateQueries({
@@ -68,4 +70,4 @@ export const useMarkConversationRead = () => {
       });
     },
   });
-};
+}

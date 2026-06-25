@@ -1,6 +1,15 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import {
+  Check,
+  Facebook,
+  Link as LinkIcon,
+  Mail,
+  MessageCircle,
+  Share2,
+  Twitter,
+} from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,32 +17,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Share2,
-  MessageCircle,
-  Facebook,
-  Twitter,
-  Mail,
-  Link as LinkIcon,
-  Check,
-} from "lucide-react";
+} from '@/components/ui/dialog';
 
 interface ShareProfileDialogProps {
   userId: string;
   userName?: string | null;
 }
 
-const getShareUrl = (userId: string) =>
-  `${window.location.origin}/seller/${userId}`;
+function getShareUrl(userId: string) {
+  return `${location.origin}/seller/${userId}`;
+}
 
-export const ShareProfileDialog = ({
+export function ShareProfileDialog({
   userId,
   userName,
-}: ShareProfileDialogProps) => {
+}: ShareProfileDialogProps) {
   const [copied, setCopied] = useState(false);
   const profileUrl = getShareUrl(userId);
-  const displayName = userName || "My";
+  const displayName = userName || 'My';
   const shareText = `Check out ${displayName}'s profile on Sunday:`;
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(profileUrl);
@@ -42,54 +43,65 @@ export const ShareProfileDialog = ({
     try {
       await navigator.clipboard.writeText(profileUrl);
       setCopied(true);
-      toast.success("Link copied to clipboard");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy link");
+      toast.success('Link copied to clipboard');
+      setTimeout(setCopied, 2000, false);
+    }
+    catch {
+      toast.error('Failed to copy link');
     }
   };
 
   const shareOptions = [
     {
-      label: "WhatsApp",
-      icon: MessageCircle,
       href: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
-      iconBg: "bg-primary/10 text-primary",
+      icon: MessageCircle,
+      iconBg: 'bg-primary/10 text-primary',
+      label: 'WhatsApp',
     },
     {
-      label: "Facebook",
-      icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      iconBg: "bg-accent text-accent-foreground",
+      icon: Facebook,
+      iconBg: 'bg-accent text-accent-foreground',
+      label: 'Facebook',
     },
     {
-      label: "X",
-      icon: Twitter,
       href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
-      iconBg: "bg-foreground/10 text-foreground",
+      icon: Twitter,
+      iconBg: 'bg-foreground/10 text-foreground',
+      label: 'X',
     },
     {
-      label: "Email",
-      icon: Mail,
       href: `mailto:?subject=${encodeURIComponent(
         `${displayName}'s Sunday Profile`,
       )}&body=${encodedText}%20${encodedUrl}`,
-      iconBg: "bg-primary/10 text-primary",
+      icon: Mail,
+      iconBg: 'bg-primary/10 text-primary',
+      label: 'Email',
     },
   ];
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
-          <Share2 className="h-4 w-4" /> Share Profile
+        <Button size="sm" variant="outline" className="gap-1">
+          <Share2 className="h-4 w-4" />
+          {' '}
+          Share Profile
         </Button>
       </DialogTrigger>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-md overflow-hidden p-0">
-        <div className="min-w-0 p-5 sm:p-6">
-          <DialogHeader className="min-w-0 pr-6 text-left sm:text-left">
+        <div className="
+          min-w-0 p-5
+          sm:p-6
+        "
+        >
+          <DialogHeader className="
+            min-w-0 pr-6 text-left
+            sm:text-left
+          "
+          >
             <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Share2 className="h-5 w-5 text-primary" aria-hidden="true" />
+              <Share2 aria-hidden="true" className="h-5 w-5 text-primary" />
             </div>
             <DialogTitle className="text-xl leading-tight">
               Share your profile
@@ -106,18 +118,24 @@ export const ShareProfileDialog = ({
                 Share via
               </p>
               <div className="grid min-w-0 grid-cols-2 gap-2">
-                {shareOptions.map((option) => (
+                {shareOptions.map(option => (
                   <a
                     key={option.label}
                     href={option.href}
-                    target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/40"
+                    target="_blank"
+                    className="
+                      flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors
+                      hover:border-primary/40 hover:bg-accent/40
+                    "
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${option.iconBg}`}
+                      className={`
+                        flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                        ${option.iconBg}
+                      `}
                     >
-                      <option.icon className="h-4 w-4" aria-hidden="true" />
+                      <option.icon aria-hidden="true" className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 truncate text-sm font-medium text-foreground">
                       {option.label}
@@ -140,17 +158,21 @@ export const ShareProfileDialog = ({
                   </span>
                 </div>
                 <Button
-                  size="sm"
                   onClick={handleCopyLink}
+                  size="sm"
                   className="w-full gap-1"
                 >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4" /> Copied
-                    </>
-                  ) : (
-                    <>Copy</>
-                  )}
+                  {copied
+                    ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          {' '}
+                          Copied
+                        </>
+                      )
+                    : (
+                        <>Copy</>
+                      )}
                 </Button>
               </div>
             </div>
@@ -159,4 +181,4 @@ export const ShareProfileDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

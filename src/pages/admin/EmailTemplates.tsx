@@ -1,31 +1,31 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getAdminSettingsOptions,
-  useUpdateEmailTemplates,
-} from "@/queries/useAdminSettings";
-import type { EmailTemplateAPI } from "@/types/admin/settings";
+import type { EmailTemplateAPI } from '@/types/admin/settings';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Mail, Save } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Mail } from "lucide-react";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  getAdminSettingsOptions,
+  useUpdateEmailTemplates,
+} from '@/queries/useAdminSettings';
 
 const PLACEHOLDERS: Record<string, string[]> = {
-  order_confirmation: ["{{buyer_name}}", "{{order_id}}", "{{order_total}}"],
-  shipping_notification: ["{{buyer_name}}", "{{order_id}}", "{{item_title}}"],
-  password_reset: ["{{reset_link}}"],
+  order_confirmation: ['{{buyer_name}}', '{{order_id}}', '{{order_total}}'],
+  password_reset: ['{{reset_link}}'],
+  shipping_notification: ['{{buyer_name}}', '{{order_id}}', '{{item_title}}'],
 };
 
-const EmailTemplates = () => {
+function EmailTemplates() {
   const { toast } = useToast();
 
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
@@ -48,25 +48,25 @@ const EmailTemplates = () => {
     field: keyof EmailTemplateAPI,
     value: string,
   ) => {
-    setLocalTemplates((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)),
+    setLocalTemplates(previous =>
+      previous.map(t => (t.id === id ? { ...t, [field]: value } : t)),
     );
   };
 
   const save = (tpl: EmailTemplateAPI) => {
     setSavingId(tpl.id);
-    const nextTemplates = templates.map((t) => (t.id === tpl.id ? tpl : t));
+    const nextTemplates = templates.map(t => (t.id === tpl.id ? tpl : t));
     updateTemplates.mutate(nextTemplates, {
-      onSuccess: () => {
-        toast({ title: "Template saved", description: `${tpl.key} updated.` });
+      onError: (error: any) => {
+        toast({
+          description: error.message,
+          title: 'Save failed',
+          variant: 'destructive',
+        });
         setSavingId(null);
       },
-      onError: (e: any) => {
-        toast({
-          title: "Save failed",
-          description: e.message,
-          variant: "destructive",
-        });
+      onSuccess: () => {
+        toast({ description: `${tpl.key} updated.`, title: 'Template saved' });
         setSavingId(null);
       },
     });
@@ -138,19 +138,17 @@ const EmailTemplates = () => {
                 <div className="space-y-2">
                   <Label>Subject</Label>
                   <Input
+                    onChange={event =>
+                      updateField(tpl.id, 'subject', event.target.value)}
                     value={tpl.subject}
-                    onChange={(e) =>
-                      updateField(tpl.id, "subject", e.target.value)
-                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Body</Label>
                   <Textarea
+                    onChange={event =>
+                      updateField(tpl.id, 'body', event.target.value)}
                     value={tpl.body}
-                    onChange={(e) =>
-                      updateField(tpl.id, "body", e.target.value)
-                    }
                     rows={10}
                     className="font-mono text-sm"
                   />
@@ -161,7 +159,7 @@ const EmailTemplates = () => {
                       Available placeholders:
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {placeholders.map((p) => (
+                      {placeholders.map(p => (
                         <code
                           key={p}
                           className="rounded bg-background px-2 py-0.5 text-xs text-primary"
@@ -174,11 +172,13 @@ const EmailTemplates = () => {
                 )}
                 <div className="flex justify-end">
                   <Button onClick={() => save(tpl)} disabled={isSaving}>
-                    {isSaving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
+                    {isSaving
+                      ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )
+                      : (
+                          <Save className="mr-2 h-4 w-4" />
+                        )}
                     Save Changes
                   </Button>
                 </div>
@@ -189,6 +189,6 @@ const EmailTemplates = () => {
       </div>
     </div>
   );
-};
+}
 
 export default EmailTemplates;

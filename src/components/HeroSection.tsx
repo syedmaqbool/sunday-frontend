@@ -1,58 +1,58 @@
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import heroFallback from "@/assets/hero-fashion.jpg";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import heroFallback from '@/assets/hero-fashion.jpg';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
 
-type HeroContent = {
-  url?: string;
-  mobile_url?: string;
+interface HeroContent {
   badge?: string;
-  title_line1?: string;
-  title_line2?: string;
-  subtitle?: string;
+  mobile_url?: string;
   primary_cta?: string;
   secondary_cta?: string;
-  title_line1_color?: string;
-  title_line2_color?: string;
+  subtitle?: string;
   subtitle_color?: string;
-};
+  title_line1?: string;
+  title_line1_color?: string;
+  title_line2?: string;
+  title_line2_color?: string;
+  url?: string;
+}
 
-const DEFAULTS: Required<Omit<HeroContent, "url" | "mobile_url">> = {
-  badge: "Pre-loved fashion",
-  title_line1: "Style doesn't",
-  title_line2: "expire.",
+const DEFAULTS: Required<Omit<HeroContent, 'mobile_url' | 'url'>> = {
+  badge: 'Pre-loved fashion',
+  primary_cta: 'Shop Now',
+  secondary_cta: 'Start Selling',
   subtitle:
-    "Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.",
-  primary_cta: "Shop Now",
-  secondary_cta: "Start Selling",
-  title_line1_color: "",
-  title_line2_color: "",
-  subtitle_color: "",
+    'Buy and sell authentic pre-owned fashion. From vintage luxury to modern streetwear — give every piece a second life.',
+  subtitle_color: '',
+  title_line1: 'Style doesn\'t',
+  title_line1_color: '',
+  title_line2: 'expire.',
+  title_line2_color: '',
 };
 
-const HeroSection = () => {
+function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { data } = useQuery({
-    queryKey: ["hero_image"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", "hero_image")
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'hero_image')
         .maybeSingle();
       return (data?.value as HeroContent | null) ?? null;
     },
+    queryKey: ['hero_image'],
     staleTime: 60_000,
   });
 
-  const heroImage =
-    (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
-  const c = { ...DEFAULTS, ...(data || {}) };
+  const heroImage
+    = (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
+  const c = { ...DEFAULTS, ...data };
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
@@ -66,15 +66,19 @@ const HeroSection = () => {
 
       <div className="container relative z-10">
         <motion.div
-          className="max-w-xl"
-          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 30 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          className="max-w-xl"
         >
           <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
             {c.badge}
           </span>
-          <h1 className="font-heading text-5xl font-bold leading-tight text-surface-dark-foreground md:text-7xl">
+          <h1 className="
+            font-heading text-5xl font-bold leading-tight text-surface-dark-foreground
+            md:text-7xl
+          "
+          >
             <span
               style={
                 c.title_line1_color ? { color: c.title_line1_color } : undefined
@@ -84,34 +88,37 @@ const HeroSection = () => {
             </span>
             <br />
             <span
-              className={c.title_line2_color ? "italic" : "italic text-gold"}
               style={
                 c.title_line2_color ? { color: c.title_line2_color } : undefined
               }
+              className={c.title_line2_color ? 'italic' : 'italic text-gold'}
             >
               {c.title_line2}
             </span>
           </h1>
           <p
-            className="mt-5 max-w-md text-base leading-relaxed text-surface-dark-foreground/80"
             style={c.subtitle_color ? { color: c.subtitle_color } : undefined}
+            className="mt-5 max-w-md text-base leading-relaxed text-surface-dark-foreground/80"
           >
             {c.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
+              onClick={() => navigate('/listings')}
               size="lg"
               className="gap-2"
-              onClick={() => navigate("/listings")}
             >
               {c.primary_cta}
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              onClick={() => navigate('/create-listing')}
               size="lg"
-              className="border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground hover:bg-surface-dark-foreground/10"
-              onClick={() => navigate("/create-listing")}
+              variant="outline"
+              className="
+                border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground
+                hover:bg-surface-dark-foreground/10
+              "
             >
               {c.secondary_cta}
             </Button>
@@ -120,6 +127,6 @@ const HeroSection = () => {
       </div>
     </section>
   );
-};
+}
 
 export default HeroSection;

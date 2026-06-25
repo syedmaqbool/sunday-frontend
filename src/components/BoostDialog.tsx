@@ -35,21 +35,21 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-
-  useBoostPackages,
-} from '@/hooks/useBoosts';
-import { supabase } from '@/integrations/supabase/client';
+import { useBoostPackages } from '@/hooks/useBoosts';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utilities';
+import {
+  boostWithCampaign,
+  boostWithPackage,
+} from '@/services/boost-client.service';
 
 const placementMeta: Record<
   BoostPlacement,
   { color: string; icon: any; label: string }
 > = {
-  for_you: { color: 'text-primary', icon: Sparkles, label: 'Picked for You' },
-  search: { color: 'text-blue-500', icon: Search, label: 'Search & Browse' },
-  trending: {
+  FOR_YOU: { color: 'text-primary', icon: Sparkles, label: 'Picked for You' },
+  SEARCH: { color: 'text-blue-500', icon: Search, label: 'Search & Browse' },
+  TRENDING: {
     color: 'text-orange-500',
     icon: TrendingUp,
     label: 'Trending Now',
@@ -57,11 +57,11 @@ const placementMeta: Record<
 };
 
 const SUGGESTED_DAILY_RATE: Record<
-  Exclude<BoostPlacement, 'trending'>,
+  Exclude<BoostPlacement, 'TRENDING'>,
   number
 > = {
-  for_you: 300,
-  search: 200,
+  FOR_YOU: 300,
+  SEARCH: 200,
 };
 
 // Mock estimation rates (per Rs 1 spend)
@@ -69,9 +69,9 @@ const RATE_PER_EURO: Record<
   BoostPlacement,
   { clicks: number; impressions: number }
 > = {
-  for_you: { clicks: 22, impressions: 380 },
-  search: { clicks: 14, impressions: 300 },
-  trending: { clicks: 18, impressions: 420 },
+  FOR_YOU: { clicks: 22, impressions: 380 },
+  SEARCH: { clicks: 14, impressions: 300 },
+  TRENDING: { clicks: 18, impressions: 420 },
 };
 
 interface Props {
@@ -90,11 +90,11 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const { data: packages = [], isLoading } = useBoostPackages();
 
   // Custom campaign tab state
-  const [placement, setPlacement] = useState<BoostPlacement>('for_you');
+  const [placement, setPlacement] = useState<BoostPlacement>('FOR_YOU');
   const [startDate, setStartDate] = useState<Date>(() => new Date());
   const [endDate, setEndDate] = useState<Date>(() => addDays(new Date(), 7));
   const dailyRate
-    = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, 'trending'>]
+    = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, 'TRENDING'>]
       ?? 200;
   const [goal, setGoal] = useState<'clicks' | 'impressions'>('impressions');
 
@@ -125,24 +125,10 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     mutationFn: async () => {
       if (!user)
         throw new Error('Not authenticated');
-      const chosen = packages.filter(p => selected.has(p.id));
-      const rows = chosen.map(p => ({
-        ends_at: new Date(
-          Date.now() + p.duration_days * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        listing_id: listingId,
-        package_id: p.id,
-        payment_status: 'mock',
-        placement: p.placement,
-        price_paid: p.price,
-        seller_id: user.id,
-        starts_at: new Date().toISOString(),
-      }));
-      const { error } = await supabase
-        .from('listing_boosts' as any)
-        .insert(rows);
-      if (error)
-        throw error;
+      await boostWithPackage(listingId, {
+        packageIds: [...selected],
+        paymentStatus: 'MOCK',
+      });
     },
     onError: (error: any) => toast.error(error.message ?? 'Failed to activate boost'),
     onSuccess: () => {
@@ -168,18 +154,12 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
         throw new Error('Budget must be greater than 0');
       if (endDate <= startDate)
         throw new Error('End date must be after start date');
-      const { error } = await supabase.from('listing_boosts' as any).insert({
-        ends_at: endDate.toISOString(),
-        listing_id: listingId,
-        package_id: null,
-        payment_status: 'mock',
-        placement,
-        price_paid: budget,
-        seller_id: user.id,
-        starts_at: startDate.toISOString(),
+      await boostWithCampaign(listingId, {
+        endsAt: endDate.toISOString(),
+        paymentStatus: 'MOCK',
+        placement: placement as 'FOR_YOU' | 'SEARCH',
+        startsAt: startDate.toISOString(),
       });
-      if (error)
-        throw error;
     },
     onError: (error: any) => toast.error(error.message ?? 'Failed to launch campaign'),
     onSuccess: () => {
@@ -199,9 +179,9 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
 
   const grouped = useMemo(() => {
     const g: Record<BoostPlacement, BoostPackage[]> = {
-      for_you: [],
-      search: [],
-      trending: [],
+      FOR_YOU: [],
+      SEARCH: [],
+      TRENDING: [],
     };
     for (const p of packages) g[p.placement].push(p);
     return g;
@@ -250,7 +230,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                 className="grid grid-cols-2 gap-2"
               >
                 {(Object.keys(placementMeta) as BoostPlacement[])
-                  .filter(p => p !== 'trending')
+                  .filter(p => p !== 'TRENDING')
                   .map((p) => {
                     const M = placementMeta[p];
                     const Icon = M.icon;
@@ -517,7 +497,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                 )
               : (
                   (Object.keys(grouped) as BoostPlacement[])
-                    .filter(p => p !== 'trending')
+                    .filter(p => p !== 'TRENDING')
                     .map((p) => {
                       const items = grouped[p];
                       if (items.length === 0)
@@ -556,7 +536,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                                         {package_.name}
                                       </p>
                                       <p className="mt-0.5 text-xs text-muted-foreground">
-                                        {package_.duration_days}
+                                        {package_.durationDays}
                                         {' '}
                                         days
                                       </p>

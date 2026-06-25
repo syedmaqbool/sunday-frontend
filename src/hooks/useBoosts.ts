@@ -1,10 +1,10 @@
+import type { BoostPlacement } from '@/queries/useBoosts';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getActiveBoostsOptions,
   getBoostPackagesOptions,
   getMyBoostsOptions,
-  type BoostPlacement,
 } from '@/queries/useBoosts';
 
 export type {
@@ -20,12 +20,12 @@ export function useActiveBoosts(placement?: BoostPlacement) {
   return useQuery(getActiveBoostsOptions(placement));
 }
 
-/** Map of listing_id -> boost score for a given placement. */
+/** Map of listingId -> boost score for a given placement. */
 export function useBoostScoreMap(placement: BoostPlacement) {
   const { data: boosts = [] } = useActiveBoosts(placement);
   const map = new Map<string, number>();
   for (const b of boosts)
-    map.set(b.listing_id, (map.get(b.listing_id) ?? 0) + 1);
+    map.set(b.listingId, (map.get(b.listingId) ?? 0) + 1);
   return map;
 }
 

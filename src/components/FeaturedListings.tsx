@@ -1,4 +1,3 @@
-import type { Listing } from '@/lib/constants';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -21,7 +20,7 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const { data: prefs } = useUserPreferences();
-  const boostMap = useBoostScoreMap('for_you');
+  const boostMap = useBoostScoreMap('FOR_YOU');
 
   const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());
 

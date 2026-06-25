@@ -52,13 +52,13 @@ export function useBoostWithPackage() {
   return useMutation({
     mutationFn: ({
       listingId,
-      packageId,
+      packageIds,
       paymentStatus,
     }: {
       listingId: string;
-      packageId: string;
+      packageIds: string[];
       paymentStatus?: 'MOCK' | 'PAID';
-    }) => boostWithPackage(listingId, { packageId, paymentStatus }),
+    }) => boostWithPackage(listingId, { packageIds, paymentStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-boosts'] });
     },

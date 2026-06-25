@@ -8,6 +8,12 @@ import type {
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
+export function listActiveBoosts(parameters: { placement?: string } = {}) {
+  return authInstance
+    .get('/api/v1/boosts/active', { searchParams: parameters })
+    .json<Response<ListingBoost[]>>();
+}
+
 export function listBoostPackages() {
   return authInstance
     .get('/api/v1/boost-packages')
@@ -34,7 +40,7 @@ export function boostWithPackage(
 ) {
   return authInstance
     .post(`/api/v1/me/listings/${listingId}/boosts/package`, { json: body })
-    .json<Response<ListingBoost>>();
+    .json<Response<ListingBoost[]>>();
 }
 
 export function boostWithCampaign(

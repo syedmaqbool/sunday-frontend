@@ -39,7 +39,7 @@ export interface BoostableListingItem {
 }
 
 export interface BoostWithPackagePayload {
-  packageId: string;
+  packageIds: string[];
   paymentStatus?: 'MOCK' | 'PAID';
 }
 

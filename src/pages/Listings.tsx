@@ -1,4 +1,3 @@
-import type { Listing } from '@/lib/constants';
 import { useQuery } from '@tanstack/react-query';
 import {
   Grid3X3,
@@ -60,7 +59,7 @@ function Listings() {
 
   const sellerIds = useMemo(() => listings.map(l => l.seller_id), [listings]);
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
-  const searchBoostMap = useBoostScoreMap('search');
+  const searchBoostMap = useBoostScoreMap('SEARCH');
 
   const filtered = useMemo(() => {
     let items = [...listings];

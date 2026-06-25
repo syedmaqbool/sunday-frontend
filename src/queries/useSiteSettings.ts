@@ -2,7 +2,6 @@ import type { HeroImageValue } from '@/types/admin/site-settings';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,8 +52,6 @@ export function getPublicHeroImageOptions() {
     staleTime: 60_000,
   });
 }
-
-export const useHeroImage = () => useQuery(getHeroImageQueryOptions());
 
 export function useUpdateHeroImage() {
   const queryClient = useQueryClient();

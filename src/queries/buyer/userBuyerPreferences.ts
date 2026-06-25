@@ -2,7 +2,6 @@ import type { PutPreferencesPayload } from '@/types/buyer-preferences';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -37,8 +36,6 @@ export function getPreferencesOptions() {
   });
 }
 
-export const useGetPreferences = () => useQuery(getPreferencesOptions());
-
 // ── 2. GET CATEGORIES QUERY ──────────────────────────────────────────────────
 export function getBackendCategoriesOptions() {
   return queryOptions({
@@ -49,10 +46,6 @@ export function getBackendCategoriesOptions() {
     queryKey: buyerPreferencesQueryKey.categories(),
     staleTime: 10 * 60 * 1000, // 10 mins tak cache fresh rahegi
   });
-}
-
-export function useBackendCategories() {
-  return useQuery(getBackendCategoriesOptions());
 }
 
 // ── 3. GET SUBCATEGORIES QUERY ───────────────────────────────────────────────
@@ -67,10 +60,6 @@ export function getBackendSubcategoriesOptions() {
   });
 }
 
-export function useBackendSubcategories() {
-  return useQuery(getBackendSubcategoriesOptions());
-}
-
 // ── 4. GET BRANDS QUERY (With Pagination & Aggregates Support) ───────────────
 export function getBackendBrandsOptions() {
   return queryOptions({
@@ -82,8 +71,6 @@ export function getBackendBrandsOptions() {
     staleTime: 10 * 60 * 1000,
   });
 }
-
-export const useBackendBrands = () => useQuery(getBackendBrandsOptions());
 
 // ── 5. PUT/SAVE PREFERENCES MUTATION ─────────────────────────────────────────
 export function useSavePreferences() {

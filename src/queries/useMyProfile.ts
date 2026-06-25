@@ -5,7 +5,6 @@ import type {
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -29,8 +28,6 @@ export function getMyProfileQueryOptions() {
     queryKey: myProfileQueryKey.details(),
   });
 }
-
-export const useMyProfile = () => useQuery(getMyProfileQueryOptions());
 
 export function useUpdateProfile() {
   const qc = useQueryClient();

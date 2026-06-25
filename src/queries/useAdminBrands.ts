@@ -2,7 +2,6 @@ import type { CreateBrandPayload, UpdateBrandPayload } from '@/types/brand';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -27,8 +26,6 @@ export function getBrandsQueryOptions() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-export const useBrands = () => useQuery(getBrandsQueryOptions());
 
 export function useCreateBrand() {
   const queryClient = useQueryClient();

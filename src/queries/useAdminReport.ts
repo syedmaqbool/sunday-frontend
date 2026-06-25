@@ -2,7 +2,6 @@ import type { ReportStatus } from '@/types/admin/report';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { listAdminReports, resolveReport } from '@/services/report.service';
@@ -24,10 +23,6 @@ export function getAdminReportsOptions(status?: 'all' | ReportStatus) {
     },
     queryKey: adminReportsQueryKey.list(status),
   });
-}
-
-export function useAdminReports(status?: 'all' | ReportStatus) {
-  return useQuery(getAdminReportsOptions(status));
 }
 
 export function useResolveReport() {

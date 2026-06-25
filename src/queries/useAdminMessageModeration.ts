@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -23,8 +22,6 @@ export function getFlaggedMessagesOptions() {
     queryKey: messageModerationQueryKey.flagged(),
   });
 }
-
-export const useFlaggedMessages = () => useQuery(getFlaggedMessagesOptions());
 
 export function useDismissFlag() {
   const qc = useQueryClient();

@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -22,8 +21,6 @@ export function getFlagKeywordsOptions() {
     queryKey: flagKeywordsQueryKey.all(),
   });
 }
-
-export const useFlagKeywords = () => useQuery(getFlagKeywordsOptions());
 
 export function useUpdateFlagKeywords() {
   const queryClient = useQueryClient();

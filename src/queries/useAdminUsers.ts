@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { listAdminUsers, updateUserRole } from '@/services/user.service';
@@ -27,10 +26,6 @@ export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
     },
     queryKey: adminUsersQueryKey.list(parameters),
   });
-}
-
-export function useAdminUsers(parameters: AdminUsersParams = {}) {
-  return useQuery(getAdminUsersQueryOptions(parameters));
 }
 
 export function useUpdateUserRole() {

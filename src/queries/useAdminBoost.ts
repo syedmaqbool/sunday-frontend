@@ -2,7 +2,6 @@ import type { BoostPackage } from '@/types/boost';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -31,8 +30,6 @@ export function getAdminBoostPackagesOptions() {
   });
 }
 
-export const useBoostPackages = () => useQuery(getAdminBoostPackagesOptions());
-
 export function useUpdateBoostPackages() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -53,8 +50,4 @@ export function getAdminBoostsOptions(parameters: AdminBoostsParams = {}) {
     queryFn: () => listBoosts(parameters),
     queryKey: adminBoostQueryKey.boosts(parameters),
   });
-}
-
-export function useAdminBoosts(parameters: AdminBoostsParams = {}) {
-  return useQuery(getAdminBoostsOptions(parameters));
 }

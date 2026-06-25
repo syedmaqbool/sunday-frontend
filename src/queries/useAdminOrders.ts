@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import {
   listAdminOrders,
   listReservedListings,
@@ -23,8 +23,6 @@ export function getAdminOrdersOptions() {
   });
 }
 
-export const useAdminOrders = () => useQuery(getAdminOrdersOptions());
-
 export function getAdminReservedListingsOptions(isEnabled: boolean) {
   return queryOptions({
     enabled: isEnabled,
@@ -34,8 +32,4 @@ export function getAdminReservedListingsOptions(isEnabled: boolean) {
     },
     queryKey: adminOrdersQueryKey.reservedListings(),
   });
-}
-
-export function useAdminReservedListings(isEnabled: boolean) {
-  return useQuery(getAdminReservedListingsOptions(isEnabled));
 }

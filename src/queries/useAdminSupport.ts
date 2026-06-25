@@ -2,7 +2,6 @@ import type { SupportTicketStatus } from '@/types/support';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -28,10 +27,6 @@ export function getAdminSupportTicketsOptions() {
   });
 }
 
-export function useAdminSupportTickets() {
-  return useQuery(getAdminSupportTicketsOptions());
-}
-
 export function getAdminSupportMessagesOptions(ticketId: string | null) {
   return queryOptions({
     enabled: !!ticketId,
@@ -42,10 +37,6 @@ export function getAdminSupportMessagesOptions(ticketId: string | null) {
     queryKey: adminSupportQueryKey.messages(ticketId ?? ''),
     refetchInterval: ticketId ? 3000 : false,
   });
-}
-
-export function useAdminSupportMessages(ticketId: string | null) {
-  return useQuery(getAdminSupportMessagesOptions(ticketId));
 }
 
 export function useReplyToSupportTicket() {

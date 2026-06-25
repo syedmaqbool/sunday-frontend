@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -35,10 +34,6 @@ export function getMySalesOptions() {
     queryKey: myOrdersQueryKey.sales(),
   });
 }
-
-export const useMyOrders = () => useQuery(getMyOrdersOptions());
-
-export const useMySales = () => useQuery(getMySalesOptions());
 
 export function useUpdateOrderItemStatus() {
   const qc = useQueryClient();

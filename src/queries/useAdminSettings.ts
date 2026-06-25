@@ -8,7 +8,6 @@ import type { BoostPackageAPI } from '@/types/boost';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -34,8 +33,6 @@ export function getAdminSettingsOptions() {
     queryKey: adminSettingsQueryKey.details(),
   });
 }
-
-export const useAdminSettings = () => useQuery(getAdminSettingsOptions());
 
 export function useUpdateBoostPackages() {
   const qc = useQueryClient();

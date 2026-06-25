@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -31,17 +30,11 @@ export function getBoostPackagesOptions() {
   });
 }
 
-export const useBoostPackages = () => useQuery(getBoostPackagesOptions());
-
 export function getMyBoostsOptions(parameters: BoostListParams = {}) {
   return queryOptions({
     queryFn: () => listMyBoosts({ ...parameters, size: parameters.size ?? 100 }),
     queryKey: clientBoostQueryKey.myBoosts(parameters),
   });
-}
-
-export function useMyBoosts(parameters: BoostListParams = {}) {
-  return useQuery(getMyBoostsOptions(parameters));
 }
 
 export function getBoostableListingsOptions(parameters: BoostListParams = {}) {
@@ -50,10 +43,6 @@ export function getBoostableListingsOptions(parameters: BoostListParams = {}) {
       listBoostableListings({ ...parameters, size: parameters.size ?? 100 }),
     queryKey: clientBoostQueryKey.boostableListings(parameters),
   });
-}
-
-export function useBoostableListings(parameters: BoostListParams = {}) {
-  return useQuery(getBoostableListingsOptions(parameters));
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────────────

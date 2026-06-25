@@ -2,7 +2,6 @@ import type { AdminComplaintStatus, ComplaintStatus } from '@/types/complaint';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -25,10 +24,6 @@ export function getAdminComplaintsOptions(status?: 'all' | ComplaintStatus) {
       }),
     queryKey: adminComplaintsQueryKey.list(status),
   });
-}
-
-export function useAdminComplaints(status?: 'all' | ComplaintStatus) {
-  return useQuery(getAdminComplaintsOptions(status));
 }
 
 export function useUpdateComplaintStatus() {

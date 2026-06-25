@@ -1,5 +1,5 @@
 import type { AdminMarketingLeadsParams } from '@/types/admin/analytics';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import {
   getAdminAnalytics,
   listAdminMarketingLeads,
@@ -23,10 +23,6 @@ export function getAdminAnalyticsQueryOptions() {
   });
 }
 
-export function useAdminAnalytics() {
-  return useQuery(getAdminAnalyticsQueryOptions());
-}
-
 export function getAdminMarketingLeadsQueryOptions(parameters: AdminMarketingLeadsParams = {}) {
   return queryOptions({
     queryFn: async () => {
@@ -35,8 +31,4 @@ export function getAdminMarketingLeadsQueryOptions(parameters: AdminMarketingLea
     queryKey: adminAnalyticsQueryKey.marketingLeads(parameters),
     retry: false,
   });
-}
-
-export function useAdminMarketingLeads(parameters: AdminMarketingLeadsParams = {}) {
-  return useQuery(getAdminMarketingLeadsQueryOptions(parameters));
 }

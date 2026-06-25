@@ -2,7 +2,6 @@ import type { ListingStatus } from '@/types/admin/listing';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { listAdminListings, moderateListing } from '@/services/listing.service';
@@ -24,10 +23,6 @@ export function getAdminListingsOptions(status?: 'all' | ListingStatus) {
     },
     queryKey: adminListingsQueryKey.list(status),
   });
-}
-
-export function useAdminListings(status?: 'all' | ListingStatus) {
-  return useQuery(getAdminListingsOptions(status));
 }
 
 export function useModerateListing() {

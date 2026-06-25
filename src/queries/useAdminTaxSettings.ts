@@ -5,7 +5,6 @@ import type {
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -30,8 +29,6 @@ export function getTaxSettingsOptions() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-export const useTaxSettings = () => useQuery(getTaxSettingsOptions());
 
 export function useCreateTaxSetting() {
   const queryClient = useQueryClient();

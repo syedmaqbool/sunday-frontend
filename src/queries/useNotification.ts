@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { tokenStorage } from '@/lib/tokenStorage';
@@ -25,8 +24,6 @@ export function getNotificationsOptions() {
     queryKey: notificationsQueryKey.all(),
   });
 }
-
-export const useNotifications = () => useQuery(getNotificationsOptions());
 
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();

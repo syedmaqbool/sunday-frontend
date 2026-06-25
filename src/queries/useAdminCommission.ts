@@ -2,7 +2,6 @@ import type { CommissionTierPayload } from '@/types/commission';
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -26,8 +25,6 @@ export function getCommissionTiersOptions() {
     queryKey: commissionQueryKey.list(),
   });
 }
-
-export const useCommissionTiers = () => useQuery(getCommissionTiersOptions());
 
 export function useCreateCommissionTier() {
   const queryClient = useQueryClient();

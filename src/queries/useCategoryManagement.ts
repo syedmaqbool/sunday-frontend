@@ -1,7 +1,6 @@
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -30,8 +29,6 @@ export function getAdminCategoriesOptions() {
     queryKey: categoryManagementQueryKey.categories(),
   });
 }
-
-export const useAdminCategories = () => useQuery(getAdminCategoriesOptions());
 
 export function useCreateCategory() {
   const qc = useQueryClient();
@@ -86,10 +83,6 @@ export function getAdminSubcategoriesOptions() {
     },
     queryKey: categoryManagementQueryKey.subcategories(),
   });
-}
-
-export function useAdminSubcategories() {
-  return useQuery(getAdminSubcategoriesOptions());
 }
 
 export function useCreateSubcategory() {

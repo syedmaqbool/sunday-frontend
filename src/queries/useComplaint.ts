@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   listComplaintsAgainstMe,
@@ -93,12 +93,4 @@ export function getOrderShipmentOptions(orderId: string, listingId: string) {
     },
     queryKey: complaintsQueryKey.orderShipment(orderId, listingId),
   });
-}
-
-export function useMyRefundComplaints() {
-  return useQuery(getMyRefundComplaintsOptions());
-}
-
-export function useComplaintsAgainstMe() {
-  return useQuery(getComplaintsAgainstMeOptions());
 }

@@ -5,7 +5,6 @@ import type {
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -55,8 +54,6 @@ export function getAdminSellerListingsOptions(
     queryKey: sellerCouponsQueryKey.sellerListings(sellerId),
   });
 }
-
-export const useSellerCoupons = () => useQuery(getSellerCouponsOptions());
 
 export function useCreateSellerCoupon() {
   const queryClient = useQueryClient();

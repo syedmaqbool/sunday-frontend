@@ -10,7 +10,6 @@ import type {
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {
@@ -51,10 +50,6 @@ export function getPayoutRunsOptions(parameters: PayoutRunListParams = {}) {
   });
 }
 
-export function usePayoutRuns(parameters: PayoutRunListParams = {}) {
-  return useQuery(getPayoutRunsOptions(parameters));
-}
-
 export function useCreatePayoutRun() {
   const queryClient = useQueryClient();
 
@@ -78,10 +73,6 @@ export function getPayoutRunItemsOptions(runId: string, parameters: PayoutRunIte
     },
     queryKey: payoutQueryKey.runItems(runId, parameters),
   });
-}
-
-export function usePayoutRunItems(runId: string, parameters: PayoutRunItemListParams = {}) {
-  return useQuery(getPayoutRunItemsOptions(runId, parameters));
 }
 
 export function useUpdatePayoutRunItemStatus() {
@@ -115,10 +106,6 @@ export function getAdminRefundReportOptions(parameters: AdminRefundReportParams 
   });
 }
 
-export function useAdminRefundReport(parameters: AdminRefundReportParams = {}) {
-  return useQuery(getAdminRefundReportOptions(parameters));
-}
-
 // ─── Seller Payouts (manual records) ─────────────────────────────────────────
 
 export function getAdminSellerPayoutsOptions(parameters: AdminSellerPayoutListParams = {}) {
@@ -129,10 +116,6 @@ export function getAdminSellerPayoutsOptions(parameters: AdminSellerPayoutListPa
     },
     queryKey: payoutQueryKey.sellerPayoutList(parameters),
   });
-}
-
-export function useAdminSellerPayouts(parameters: AdminSellerPayoutListParams = {}) {
-  return useQuery(getAdminSellerPayoutsOptions(parameters));
 }
 
 export function useCreateSellerPayout() {

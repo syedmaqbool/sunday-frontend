@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import heroFallback from '@/assets/hero-fashion.jpg';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
+import { getPublicHeroImageOptions } from '@/queries/useSiteSettings';
 
 interface HeroContent {
   badge?: string;
@@ -37,22 +37,14 @@ const DEFAULTS: Required<Omit<HeroContent, 'mobile_url' | 'url'>> = {
 function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { data } = useQuery({
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'hero_image')
-        .maybeSingle();
-      return (data?.value as HeroContent | null) ?? null;
-    },
-    queryKey: ['hero_image'],
-    staleTime: 60_000,
-  });
+  const { data } = useQuery(getPublicHeroImageOptions());
+  const heroContent = data as HeroContent | null | undefined;
 
   const heroImage
-    = (isMobile ? data?.mobile_url || data?.url : data?.url) || heroFallback;
-  const c = { ...DEFAULTS, ...data };
+    = (isMobile
+      ? heroContent?.mobile_url || heroContent?.url
+      : heroContent?.url) || heroFallback;
+  const c = { ...DEFAULTS, ...heroContent };
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">

@@ -3,67 +3,19 @@ import { format } from 'date-fns';
 import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { getUserReviewsOptions } from '@/queries/useReview';
 
 interface ReviewsListProps {
   userId: string;
   limit?: number;
 }
 
-interface Review {
-  id: string;
-  comment: string;
-  created_at: string;
-  image_urls: string[] | null;
-  listing: { title: string } | null;
-  rating: number;
-  reviewer_profile: { full_name: string | null } | null;
-  role: string;
-  video_url: string | null;
-}
-
 export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const { data: reviews = [], isLoading } = useQuery({
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('reviewed_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (error)
-        throw error;
-
-      const reviewerIds = [
-        ...new Set((data ?? []).map((r: any) => r.reviewer_id)),
-      ];
-      const listingIds = [
-        ...new Set((data ?? []).map((r: any) => r.listing_id)),
-      ];
-
-      const [profilesResponse, listingsResponse] = await Promise.all([
-        supabase.from('profiles').select('id, full_name').in('id', reviewerIds),
-        supabase.from('listings').select('id, title').in('id', listingIds),
-      ]);
-
-      const profileMap = new Map(
-        (profilesResponse.data ?? []).map(p => [p.id, p]),
-      );
-      const listingMap = new Map(
-        (listingsResponse.data ?? []).map(l => [l.id, l]),
-      );
-
-      return (data ?? []).map((r: any) => ({
-        ...r,
-        listing: listingMap.get(r.listing_id) ?? null,
-        reviewer_profile: profileMap.get(r.reviewer_id) ?? null,
-      })) as Review[];
-    },
-    queryKey: ['reviews', userId],
-  });
+  const { data: reviews = [], isLoading } = useQuery(
+    getUserReviewsOptions(userId, limit),
+  );
 
   if (isLoading)
     return null;

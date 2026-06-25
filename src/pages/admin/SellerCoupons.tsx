@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import {
+  getAdminSellerListingsOptions,
+  getAdminUsersListOptions,
   getSellerCouponsOptions,
   useCreateSellerCoupon,
   useDeleteSellerCoupon,
@@ -135,11 +137,7 @@ function SellerCoupons() {
     getSellerCouponsOptions(),
   );
 
-  const { data: sellersRaw } = useQuery({
-    queryFn: () =>
-      authInstance.get('/api/v1/admin/users?size=100').json<{ data: any[] }>(),
-    queryKey: ['admin-users-list'],
-  });
+  const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
 
   const sellers: SellerOption[] = useMemo(
     () =>
@@ -168,16 +166,12 @@ function SellerCoupons() {
   );
 
   // Listings for selected seller (item_based scope only)
-  const { data: listingsRaw } = useQuery({
-    enabled: !!form.seller_id && form.scope === 'item_based',
-    queryFn: () =>
-      authInstance
-        .get(
-          `/api/v1/listings?sellerId=${form.seller_id}&status=approved&size=100`,
-        )
-        .json<{ data: any[] }>(),
-    queryKey: ['seller-listings', form.seller_id],
-  });
+  const { data: listingsRaw } = useQuery(
+    getAdminSellerListingsOptions(
+      form.seller_id,
+      !!form.seller_id && form.scope === 'item_based',
+    ),
+  );
 
   const listings: ListingOption[] = useMemo(
     () =>

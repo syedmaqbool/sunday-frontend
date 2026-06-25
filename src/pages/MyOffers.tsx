@@ -11,28 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-//  Mock switcher config  import
 import { isMockDataEnabled } from '@/lib/mockConfig';
-
-interface OfferWithListing {
-  id: string;
-  amount: number;
-  buyer_id: string;
-  counter_amount: number | null;
-  created_at: string;
-  listing_id: string;
-  listings: {
-    brand: string;
-    images: string[];
-    price: number;
-    title: string;
-  } | null;
-  message: string;
-  seller_id: string;
-  seller_message: string;
-  status: string;
-  updated_at: string;
-}
+import {
+  getMyReviewedOfferIdsOptions,
+  getSentOffersOptions,
+} from '@/queries/useOffers';
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -57,85 +40,13 @@ function MyOffers() {
       navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
-  const { data: sent = [], isLoading: loadingSent } = useQuery({
-    enabled: !!user,
-    queryFn: async () => {
-      // 👇 Mock Offers System Setup
-      if (isMockDataEnabled) {
-        return [
-          {
-            id: 'mock-of-1',
-            amount: 25_000,
-            buyer_id: user?.id || 'mock-buyer',
-            counter_amount: 27_000,
-            created_at: new Date(Date.now() - 3_600_000 * 5).toISOString(),
-            listing_id: 'mock-1',
-            listings: {
-              brand: 'Chanel',
-              images: [
-                'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600',
-              ],
-              price: 28_500,
-              title: 'Bleu de Chanel Eau de Parfum',
-            },
-            message: 'I can do 25k right now if you ship today.',
-            seller_id: 'mock-seller-id',
-            seller_message: 'Meet me at 27k and it\'s yours.',
-            status: 'countered',
-            updated_at: new Date(Date.now() - 3_600_000 * 2).toISOString(),
-          },
-          {
-            id: 'mock-of-2',
-            amount: 31_000,
-            buyer_id: user?.id || 'mock-buyer',
-            counter_amount: null,
-            created_at: new Date(Date.now() - 86_400_000 * 2).toISOString(),
-            listing_id: 'mock-2',
-            listings: {
-              brand: 'Nike',
-              images: [
-                'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600',
-              ],
-              price: 35_000,
-              title: 'Classic White Sneakers',
-            },
-            message: 'Immediate pickup from Karachi.',
-            seller_id: 'mock-seller-id',
-            seller_message: '',
-            status: 'accepted',
-            updated_at: new Date(Date.now() - 86_400_000).toISOString(),
-          },
-        ] as OfferWithListing[];
-      }
+  const { data: sent = [], isLoading: loadingSent } = useQuery(
+    getSentOffersOptions(user?.id),
+  );
 
-      const { data, error } = await supabase
-        .from('offers')
-        .select('*, listings(title, price, images, brand)')
-        .eq('buyer_id', user!.id)
-        .order('created_at', { ascending: false });
-      if (error)
-        throw error;
-      return (data ?? []) as OfferWithListing[];
-    },
-    queryKey: ['offers-sent', user?.id],
-  });
-
-  const { data: myReviews = [] } = useQuery({
-    enabled: !!user,
-    queryFn: async () => {
-      if (isMockDataEnabled)
-        return ['mock-reviewed-id-completed']; // Mock protection
-
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('offer_id')
-        .eq('reviewer_id', user!.id);
-      if (error)
-        throw error;
-      return (data ?? []).map((r: any) => r.offer_id as string);
-    },
-    queryKey: ['reviews', 'mine', user?.id],
-  });
+  const { data: myReviews = [] } = useQuery(
+    getMyReviewedOfferIdsOptions(user?.id),
+  );
 
   useEffect(() => {
     if (!user || isMockDataEnabled)

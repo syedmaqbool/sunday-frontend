@@ -1,26 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { getActiveTaxOptions } from '@/queries/useActiveTax';
 
-export interface ActiveTax {
-  id: string;
-  name: string;
-  rate: number;
-}
+export type { ActiveTax } from '@/queries/useActiveTax';
 
 export function useActiveTax() {
-  return useQuery({
-    queryFn: async (): Promise<ActiveTax | null> => {
-      const { data, error } = await supabase
-        .from('tax_settings')
-        .select('id, name, rate')
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data ? { ...data, rate: Number(data.rate) } : null;
-    },
-    queryKey: ['active-tax'],
-  });
+  return useQuery(getActiveTaxOptions());
 }

@@ -40,58 +40,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
 //  Mock configuration data  import
-import { DUMMY_LISTINGS, isMockDataEnabled } from '@/lib/mockConfig';
-
-async function fetchListing(id: string): Promise<Listing | null> {
-  // Agar mock toggle active hai toh array me se product dhoond kar return karein
-  if (isMockDataEnabled) {
-    const matchedMock = DUMMY_LISTINGS.find(
-      item => String(item.id) === id,
-    );
-    if (matchedMock) {
-      return {
-        ...matchedMock,
-        created_at: new Date().toISOString(),
-        images: [matchedMock.image_url], // String image_url ko array me wrap kiya
-        seller_name: 'Mock Seller',
-        status: 'approved',
-      } as unknown as Listing;
-    }
-  }
-
-  // Real Supabase Database call (Agar mock config true hai aur ID match ho jaye toh skip ho jayega)
-  const { data, error } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error || !data)
-    return null;
-
-  return {
-    id: data.id,
-    admin_feedback: (data as any).admin_feedback,
-    brand: data.brand,
-    category: data.category,
-    condition: data.condition,
-    created_at: data.created_at,
-    description: data.description,
-    images: (data.images as string[])?.length
-      ? (data.images as string[])
-      : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600'],
-    price: data.price,
-    reserved_for: (data as any).reserved_for,
-    reserved_offer_id: (data as any).reserved_offer_id,
-    reserved_until: (data as any).reserved_until,
-    seller_id: data.seller_id,
-    seller_name: 'Seller',
-    size: data.size,
-    status: data.status as Listing['status'],
-    title: data.title,
-    weight: data.weight,
-  };
-}
+import { isMockDataEnabled } from '@/lib/mockConfig';
+import {
+  getMarketplaceListingOptions,
+  getReservedOfferAmountOptions,
+} from '@/queries/useMarketplace';
 
 function useCountdown(target?: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -256,11 +209,7 @@ function ListingDetail() {
   const queryClient = useQueryClient();
   const inCart = items.some(index => index.listing.id === id);
 
-  const { data: listing, isLoading } = useQuery({
-    enabled: !!id,
-    queryFn: () => fetchListing(id!),
-    queryKey: ['listing', id],
-  });
+  const { data: listing, isLoading } = useQuery(getMarketplaceListingOptions(id));
 
   useEffect(() => {
     if (listing) {
@@ -287,24 +236,12 @@ function ListingDetail() {
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
 
-  const { data: reservedOfferAmount } = useQuery({
-    enabled: !!(isReservedForMe && listing?.reserved_offer_id),
-    queryFn: async () => {
-      // 👇 Mocking scenario safety check
-      if (isMockDataEnabled)
-        return null;
-
-      const { data, error } = await supabase
-        .from('offers')
-        .select('amount')
-        .eq('id', listing!.reserved_offer_id!)
-        .maybeSingle();
-      if (error || !data)
-        return null;
-      return Number(data.amount);
-    },
-    queryKey: ['reserved-offer-amount', listing?.reserved_offer_id],
-  });
+  const { data: reservedOfferAmount } = useQuery(
+    getReservedOfferAmountOptions(
+      listing?.reserved_offer_id,
+      !!(isReservedForMe && listing?.reserved_offer_id),
+    ),
+  );
 
   const effectivePrice
     = isReservedForMe && reservedOfferAmount

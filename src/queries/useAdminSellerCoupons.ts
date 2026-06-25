@@ -14,10 +14,13 @@ import {
   listSellerCoupons,
   updateSellerCoupon,
 } from '@/services/sellerCoupon.service';
+import { authInstance } from '@/services/ky.instance';
 
 export const sellerCouponsQueryKey = {
   all: () => ['seller-coupons'] as const,
+  adminUsers: () => ['admin-users-list'] as const,
   list: () => [...sellerCouponsQueryKey.all(), 'list'] as const,
+  sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
 };
 
 export function getSellerCouponsOptions() {
@@ -28,6 +31,28 @@ export function getSellerCouponsOptions() {
     },
     queryKey: sellerCouponsQueryKey.list(),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function getAdminUsersListOptions() {
+  return queryOptions({
+    queryFn: () =>
+      authInstance.get('/api/v1/admin/users?size=100').json<{ data: any[] }>(),
+    queryKey: sellerCouponsQueryKey.adminUsers(),
+  });
+}
+
+export function getAdminSellerListingsOptions(
+  sellerId?: string,
+  enabled = false,
+) {
+  return queryOptions({
+    enabled,
+    queryFn: () =>
+      authInstance
+        .get(`/api/v1/listings?sellerId=${sellerId}&status=approved&size=100`)
+        .json<{ data: any[] }>(),
+    queryKey: sellerCouponsQueryKey.sellerListings(sellerId),
   });
 }
 

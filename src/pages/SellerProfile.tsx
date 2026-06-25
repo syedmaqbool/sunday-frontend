@@ -10,139 +10,23 @@ import { ReviewsList } from '@/components/ReviewsList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSellerRating } from '@/hooks/useSellerRating';
-import { supabase } from '@/integrations/supabase/client';
 // 👇 Mock switcher config  import karein
 import { isMockDataEnabled } from '@/lib/mockConfig';
+import {
+  getSellerListingsOptions,
+  getSellerProfileOptions,
+} from '@/queries/useMarketplace';
 
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    enabled: !!id,
-    queryFn: async () => {
-      // 👇 Mock Data Interception
-      if (isMockDataEnabled) {
-        return {
-          id: id || 'mock-seller-id',
-          avatar_url:
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          bio: 'Specializing in premium perfumes, authentic streetwear, and high-end tech accessories. Fast shipping across Pakistan!',
-          created_at: '2024-01-15T00:00:00.000Z',
-          full_name: 'Premium Seller Pro',
-          location: 'Karachi, Pakistan',
-          phone: '+92 300 1234567',
-        };
-      }
+  const { data: profile, isLoading: profileLoading } = useQuery(
+    getSellerProfileOptions(id),
+  );
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id!)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data;
-    },
-    queryKey: ['seller-profile', id],
-  });
-
-  const { data: listings = [], isLoading: listingsLoading } = useQuery({
-    enabled: !!id && !!profile,
-    queryFn: async (): Promise<Listing[]> => {
-      // 👇 Mock Listings Interception
-      if (isMockDataEnabled) {
-        return [
-          {
-            id: 'mock-list-1',
-            brand: 'Chanel',
-            category: 'perfumes',
-            condition: 'Like New',
-            created_at: new Date().toISOString(),
-            description:
-              'Partially used premium scent. 90ml remaining out of 100ml. Authentic box included.',
-            images: [
-              'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600',
-            ],
-            price: 28_500,
-            seller_id: id || 'mock-seller-id',
-            seller_name: 'Premium Seller Pro',
-            size: '90ml',
-            status: 'approved',
-            title: 'Bleu de Chanel Eau de Parfum',
-            weight: 0.3,
-          },
-          {
-            id: 'mock-list-2',
-            brand: 'Redragon',
-            category: 'electronics',
-            condition: 'Good',
-            created_at: new Date().toISOString(),
-            description:
-              'RGB backlit mechanical keyboard with red switches. Perfect condition.',
-            images: [
-              'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600',
-            ],
-            price: 8500,
-            seller_id: id || 'mock-seller-id',
-            seller_name: 'Premium Seller Pro',
-            size: 'Standard',
-            status: 'approved',
-            title: 'Mechanical Gaming Keyboard',
-            weight: 0.9,
-          },
-          {
-            id: 'mock-list-3',
-            brand: 'Outfitters',
-            category: 'clothing',
-            condition: 'Good',
-            created_at: new Date().toISOString(),
-            description:
-              'Comfortable drop-shoulder cotton t-shirt. Worn only twice.',
-            images: [
-              'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600',
-            ],
-            price: 2400,
-            seller_id: id || 'mock-seller-id',
-            seller_name: 'Premium Seller Pro',
-            size: 'XL',
-            status: 'sold', // Ek product ko sold state me rakha hai verification ke liye
-            title: 'Oversized Vintage Graphic Tee',
-            weight: 0.25,
-          },
-        ];
-      }
-
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('seller_id', id!)
-        .in('status', ['approved', 'sold'])
-        .order('created_at', { ascending: false });
-      if (error)
-        throw error;
-      return (data ?? []).map((row: any) => ({
-        id: row.id,
-        brand: row.brand,
-        category: row.category,
-        condition: row.condition,
-        created_at: row.created_at,
-        description: row.description,
-        images: row.images?.length
-          ? row.images
-          : [
-              'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600',
-            ],
-        price: row.price,
-        seller_id: row.seller_id,
-        seller_name: profile?.full_name || 'Seller',
-        size: row.size,
-        status: row.status,
-        title: row.title,
-        weight: row.weight,
-      }));
-    },
-    queryKey: ['seller-listings', id],
-  });
+  const { data: listings = [], isLoading: listingsLoading } = useQuery(
+    getSellerListingsOptions(id, profile?.full_name, !!id && !!profile),
+  );
 
   const { data: rating } = useSellerRating(id);
 

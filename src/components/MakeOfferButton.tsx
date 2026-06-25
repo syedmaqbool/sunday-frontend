@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 //  Mock config  import
 import { isMockDataEnabled } from '@/lib/mockConfig';
+import { getBuyerListingOffersOptions } from '@/queries/useOffers';
 
 interface Offer {
   id: string;
@@ -79,26 +80,9 @@ export function MakeOfferButton({
   ]);
 
   // Fetch existing offers from this buyer on this listing
-  const { data: existingOffers = [] } = useQuery({
-    enabled: !!user || isMockDataEnabled,
-    queryFn: async () => {
-      //  Mock Data Interception
-      if (isMockDataEnabled) {
-        return localMockOffers;
-      }
-
-      const { data, error } = await supabase
-        .from('offers')
-        .select('*')
-        .eq('listing_id', listingId)
-        .eq('buyer_id', user!.id)
-        .order('created_at', { ascending: false });
-      if (error)
-        throw error;
-      return (data ?? []) as Offer[];
-    },
-    queryKey: ['my-offers', listingId, user?.id],
-  });
+  const { data: existingOffers = [] } = useQuery(
+    getBuyerListingOffersOptions(listingId, user?.id, localMockOffers),
+  );
 
   const submitOffer = useMutation({
     mutationFn: async () => {

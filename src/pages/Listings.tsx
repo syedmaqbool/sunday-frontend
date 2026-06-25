@@ -28,65 +28,8 @@ import {
   personalizeListings,
   useUserPreferences,
 } from '@/hooks/useUserPreferences';
-import { supabase } from '@/integrations/supabase/client';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
-// Mock config  data  import
-import { DUMMY_LISTINGS, isMockDataEnabled } from '@/lib/mockConfig';
-
-async function fetchListings(): Promise<Listing[]> {
-  // Agar mock active hai toh database bypass karein
-  if (isMockDataEnabled) {
-    return DUMMY_LISTINGS.map((row: any) => ({
-      id: row.id,
-      brand: row.brand,
-      category: row.category,
-      condition: row.condition,
-      created_at: new Date().toISOString(),
-      description: row.description,
-      images: [row.image_url], // image_url string ko array me map kiya
-      price: row.price,
-      reserved_for: null,
-      reserved_until: null,
-      seller_id: row.seller_id || 'mock-seller-id',
-      seller_name: 'Mock Seller',
-      size: row.size,
-      status: row.status || 'approved',
-      title: row.title,
-    })) as unknown as Listing[];
-  }
-
-  //  Real Supabase Call (Mock true hone par skip ho jayegi)
-  const { data, error } = await supabase
-    .from('listings')
-    .select('*')
-    .in('status', ['approved', 'reserved'])
-    .order('created_at', { ascending: false });
-
-  if (error)
-    throw error;
-
-  const databaseListings: Listing[] = (data || []).map((row: any) => ({
-    id: row.id,
-    brand: row.brand,
-    category: row.category,
-    condition: row.condition,
-    created_at: row.created_at,
-    description: row.description,
-    images: row.images?.length
-      ? row.images
-      : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600'],
-    price: row.price,
-    reserved_for: row.reserved_for,
-    reserved_until: row.reserved_until,
-    seller_id: row.seller_id,
-    seller_name: 'Seller',
-    size: row.size,
-    status: row.status,
-    title: row.title,
-  }));
-
-  return databaseListings;
-}
+import { getMarketplaceListingsOptions } from '@/queries/useMarketplace';
 
 function Listings() {
   const [searchParameters] = useSearchParams();
@@ -111,10 +54,9 @@ function Listings() {
   const { data: parentCategories = [] } = useCategories();
   const { data: subCategoriesList = [] } = useSubcategories();
 
-  const { data: listings = [], isLoading } = useQuery({
-    queryFn: fetchListings,
-    queryKey: ['listings'],
-  });
+  const { data: listings = [], isLoading } = useQuery(
+    getMarketplaceListingsOptions(),
+  );
 
   const sellerIds = useMemo(() => listings.map(l => l.seller_id), [listings]);
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);

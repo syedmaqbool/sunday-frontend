@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   getHeroImage,
   updateHeroImage,
@@ -35,6 +36,21 @@ export function getHeroImageQueryOptions() {
       }
     },
     queryKey: siteSettingsQueryKey.heroImage(),
+  });
+}
+
+export function getPublicHeroImageOptions() {
+  return queryOptions({
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'hero_image')
+        .maybeSingle();
+      return (data?.value as unknown) ?? null;
+    },
+    queryKey: siteSettingsQueryKey.heroImage(),
+    staleTime: 60_000,
   });
 }
 

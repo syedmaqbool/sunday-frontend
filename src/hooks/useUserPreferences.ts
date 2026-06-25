@@ -1,37 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-
-export interface UserPreferences {
-  brands: string[] | null;
-  budget_max: number | null;
-  budget_min: number | null;
-  onboarding_completed: boolean | null;
-  preferred_fit: string | null;
-  styles: string[] | null;
-}
+import {
+  getUserPreferencesOptions,
+  type UserPreferences,
+} from '@/queries/useUserPreferences';
 
 export function useUserPreferences() {
   const { user } = useAuth();
-
-  return useQuery({
-    enabled: !!user,
-    queryFn: async (): Promise<UserPreferences | null> => {
-      if (!user)
-        return null;
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select(
-          'styles, brands, preferred_fit, budget_min, budget_max, onboarding_completed',
-        )
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data;
-    },
-    queryKey: ['user-preferences', user?.id],
-  });
+  return useQuery(getUserPreferencesOptions(user?.id));
 }
 
 /**

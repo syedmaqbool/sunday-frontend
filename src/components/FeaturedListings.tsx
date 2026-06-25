@@ -8,9 +8,7 @@ import {
   personalizeListings,
   useUserPreferences,
 } from '@/hooks/useUserPreferences';
-import { supabase } from '@/integrations/supabase/client';
-// 👇 Mock data configuration  import
-import { DUMMY_LISTINGS, isMockDataEnabled } from '@/lib/mockConfig';
+import { getFeaturedListingsOptions } from '@/queries/useMarketplace';
 import ListingCard from './ListingCard';
 
 interface FeaturedListingsProps {
@@ -25,40 +23,7 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const { data: prefs } = useUserPreferences();
   const boostMap = useBoostScoreMap('for_you');
 
-  const { data: databaseListings = [] } = useQuery({
-    queryFn: async (): Promise<Listing[]> => {
-      // Agar toggle true hai toh yahan se dummy data return ho jaye
-      if (isMockDataEnabled) {
-        return DUMMY_LISTINGS.map(item => ({
-          ...item,
-          created_at: new Date().toISOString(),
-          images: [item.image_url], // Component images array expect karta hai
-          seller_name: 'Mock Seller',
-          status: 'approved',
-        })) as unknown as Listing[];
-      }
-
-      // 🚫 Real Supabase calls (Mock active hone par skip ho jayengi)
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(12);
-      if (error)
-        throw error;
-      return (data || []).map((row: any) => ({
-        ...row,
-        images: row.images?.length
-          ? row.images
-          : [
-              'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600',
-            ],
-        seller_name: 'Seller',
-      }));
-    },
-    queryKey: ['featured-listings'],
-  });
+  const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());
 
   const isPersonalized
     = variant === 'personalized' && prefs?.onboarding_completed;

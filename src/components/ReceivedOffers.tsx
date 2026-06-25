@@ -30,27 +30,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-interface OfferWithListing {
-  id: string;
-  amount: number;
-  buyer_id: string;
-  buyer_profile?: { full_name: string | null } | null;
-  counter_amount: number | null;
-  created_at: string;
-  listing_id: string;
-  listings: {
-    brand: string;
-    images: string[];
-    price: number;
-    title: string;
-  } | null;
-  message: string;
-  seller_id: string;
-  seller_message: string;
-  status: string;
-  updated_at: string;
-}
+import {
+  getMyReviewedOfferIdsOptions,
+  getReceivedOffersOptions,
+} from '@/queries/useOffers';
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -73,54 +56,19 @@ type SortOption = 'newest' | 'price_desc';
 export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [counterDialog, setCounterDialog] = useState<OfferWithListing | null>(
-    null,
-  );
+  const [counterDialog, setCounterDialog] = useState<any | null>(null);
   const [counterAmount, setCounterAmount] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  const { data: received = [], isLoading } = useQuery({
-    enabled: !!user,
-    queryFn: async () => {
-      let query = supabase
-        .from('offers')
-        .select('*, listings(title, price, images, brand)')
-        .eq('seller_id', user!.id)
-        .order('created_at', { ascending: false });
-      if (listingId)
-        query = query.eq('listing_id', listingId);
-      const { data, error } = await query;
-      if (error)
-        throw error;
-      const buyerIds = [...new Set((data ?? []).map((o: any) => o.buyer_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', buyerIds);
-      const profileMap = new Map((profiles ?? []).map(p => [p.id, p]));
-      return (data ?? []).map((o: any) => ({
-        ...o,
-        buyer_profile: profileMap.get(o.buyer_id) ?? null,
-      })) as OfferWithListing[];
-    },
-    queryKey: ['offers-received', user?.id, listingId ?? 'all'],
-  });
+  const { data: received = [], isLoading } = useQuery(
+    getReceivedOffersOptions(user?.id, listingId),
+  );
 
-  const { data: myReviews = [] } = useQuery({
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('offer_id')
-        .eq('reviewer_id', user!.id);
-      if (error)
-        throw error;
-      return (data ?? []).map((r: any) => r.offer_id as string);
-    },
-    queryKey: ['reviews', 'mine', user?.id],
-  });
+  const { data: myReviews = [] } = useQuery(
+    getMyReviewedOfferIdsOptions(user?.id),
+  );
 
   useEffect(() => {
     if (!user)

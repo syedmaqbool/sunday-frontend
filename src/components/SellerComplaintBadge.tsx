@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { getComplaintDetailsOptions } from '@/queries/useComplaint';
 
 export function SellerComplaintBadge({
   listingId,
@@ -34,22 +35,9 @@ export function SellerComplaintBadge({
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: complaint, refetch } = useQuery({
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('complaints')
-        .select(
-          'id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, admin_notes, created_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes',
-        )
-        .eq('order_id', orderId)
-        .eq('listing_id', listingId)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data;
-    },
-    queryKey: ['complaint', orderId, listingId],
-  });
+  const { data: complaint, refetch } = useQuery(
+    getComplaintDetailsOptions(orderId, listingId),
+  );
 
   // Prefill form when dialog opens with any existing address values
   useEffect(() => {

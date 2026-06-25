@@ -40,6 +40,7 @@ import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 // Mock configuration configuration switcher  import
 import { isMockDataEnabled } from '@/lib/mockConfig';
+import { getEditListingOptions } from '@/queries/useMarketplace';
 
 const MAX_PHOTOS = 20;
 
@@ -100,39 +101,9 @@ function CreateListing() {
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   // Load existing listing if editing
-  const { data: existingListing, isLoading: loadingListing } = useQuery({
-    enabled: isEditing,
-    queryFn: async () => {
-      // 👇 Mocking existing items layer configuration safety override
-      if (isMockDataEnabled) {
-        return {
-          id,
-          brand: 'Zara',
-          category: 'women-clothing',
-          condition: 'like_new',
-          description: 'Stunning limited variant tailored jacket.',
-          images: [
-            'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600',
-          ],
-          price: 18_500,
-          seller_id: user?.id || 'mock-seller',
-          size: 'M',
-          title: 'Premium Designer Jacket',
-          weight: 0.5,
-        };
-      }
-
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('id', id!)
-        .single();
-      if (error)
-        throw error;
-      return data;
-    },
-    queryKey: ['edit-listing', id],
-  });
+  const { data: existingListing, isLoading: loadingListing } = useQuery(
+    getEditListingOptions(id, user?.id),
+  );
 
   useEffect(() => {
     if (!authLoading && !user && !isMockDataEnabled)

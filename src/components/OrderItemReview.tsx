@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getOrderItemReviewOptions } from '@/queries/useReview';
 
 interface OrderItemReviewProps {
   listingId: string;
@@ -37,22 +38,9 @@ export function OrderItemReview({
   const imageInputReference = useRef<HTMLInputElement>(null);
   const videoInputReference = useRef<HTMLInputElement>(null);
 
-  const { data: existing, isLoading } = useQuery({
-    enabled: !!user && !!sellerId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('id, rating')
-        .eq('reviewer_id', user!.id)
-        .eq('order_id', orderId)
-        .eq('listing_id', listingId)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return data;
-    },
-    queryKey: ['order-review', orderId, listingId, user?.id],
-  });
+  const { data: existing, isLoading } = useQuery(
+    getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId),
+  );
 
   const handleAddImages = (files: FileList | null) => {
     if (!files)

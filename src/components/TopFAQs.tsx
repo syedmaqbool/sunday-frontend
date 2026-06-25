@@ -2,67 +2,11 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { isMockDataEnabled } from '@/lib/mockConfig';
 import { cn } from '@/lib/utilities';
-
-interface Faq {
-  id: string;
-  answer: string;
-  question: string;
-}
-
-const MOCK_FAQS: Faq[] = [
-  {
-    id: 'faq-1',
-    answer:
-      'Click on \'Create Listing\' in the navbar, fill in your item details, upload photos, set a price, and hit publish. Your item will be live instantly.',
-    question: 'How do I create a listing?',
-  },
-  {
-    id: 'faq-2',
-    answer:
-      'We use secure payment processing. Buyers pay at checkout, and sellers receive their payout once the buyer confirms delivery.',
-    question: 'How does payment work?',
-  },
-  {
-    id: 'faq-3',
-    answer:
-      'Buyers have 12 hours after delivery to raise a quality concern. If the item doesn\'t match the listing, we\'ll help resolve it.',
-    question: 'What is your return policy?',
-  },
-  {
-    id: 'faq-4',
-    answer:
-      'Once your item sells, go to your profile under \'Sold\' and mark it as shipped with a tracking number. We support PostNet, Aramex, DHL, and more.',
-    question: 'How do I ship my sold item?',
-  },
-  {
-    id: 'faq-5',
-    answer:
-      'Yes! On any listing page, click \'Make Offer\' and enter your price. The seller will accept, decline, or counter your offer.',
-    question: 'Can I make an offer on a listing?',
-  },
-];
+import { getTopFaqsOptions } from '@/queries/useHelp';
 
 function TopFAQs() {
-  const { data: faqs = [] } = useQuery({
-    queryFn: async () => {
-      if (isMockDataEnabled)
-        return MOCK_FAQS;
-
-      const { data, error } = await supabase
-        .from('help_faqs')
-        .select('id, question, answer')
-        .eq('published', true)
-        .order('sort_order', { ascending: true })
-        .limit(5);
-      if (error)
-        throw error;
-      return data as Faq[];
-    },
-    queryKey: ['top-faqs'],
-  });
+  const { data: faqs = [] } = useQuery(getTopFaqsOptions());
 
   if (faqs.length === 0)
     return null;

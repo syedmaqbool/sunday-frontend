@@ -1,32 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  listConversationMessages,
-  listConversations,
+  conversationsQueryKey,
+  getConversationMessagesOptions,
+  getConversationsOptions,
+} from '@/queries/useConversation';
+import {
   markConversationRead,
   sendConversationMessage,
 } from '@/services/conversation.service';
 
-const CONVERSATIONS_KEY = ['conversations'];
-
 export function useConversations() {
-  return useQuery({
-    queryFn: async () => {
-      const response = await listConversations();
-      return response.data;
-    },
-    queryKey: CONVERSATIONS_KEY,
-  });
+  return useQuery(getConversationsOptions());
 }
 
 export function useConversationMessages(conversationId?: string) {
-  return useQuery({
-    enabled: !!conversationId,
-    queryFn: async () => {
-      const response = await listConversationMessages(conversationId!);
-      return response.data;
-    },
-    queryKey: ['messages', conversationId],
-  });
+  return useQuery(getConversationMessagesOptions(conversationId));
 }
 
 export function useSendMessage() {
@@ -43,11 +31,11 @@ export function useSendMessage() {
 
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
-        queryKey: ['messages', variables.conversationId],
+        queryKey: conversationsQueryKey.messages(variables.conversationId),
       });
 
       qc.invalidateQueries({
-        queryKey: CONVERSATIONS_KEY,
+        queryKey: conversationsQueryKey.list(),
       });
     },
   });
@@ -62,11 +50,11 @@ export function useMarkConversationRead() {
 
     onSuccess: (_, conversationId) => {
       qc.invalidateQueries({
-        queryKey: ['messages', conversationId],
+        queryKey: conversationsQueryKey.messages(conversationId),
       });
 
       qc.invalidateQueries({
-        queryKey: CONVERSATIONS_KEY,
+        queryKey: conversationsQueryKey.list(),
       });
     },
   });

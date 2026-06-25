@@ -43,6 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getWeightLabel } from '@/lib/constants';
 import { isMockDataEnabled } from '@/lib/mockConfig';
+import { getMyListingsOptions } from '@/queries/useMyListings';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -127,22 +128,9 @@ function MyListings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading } = useQuery({
-    enabled: !!user || isMockDataEnabled,
-    queryFn: async () => {
-      if (isMockDataEnabled)
-        return MOCK_LISTINGS;
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('seller_id', user!.id)
-        .order('created_at', { ascending: false });
-      if (error)
-        throw error;
-      return data ?? [];
-    },
-    queryKey: ['my-listings', user?.id],
-  });
+  const { data: listings = [], isLoading } = useQuery(
+    getMyListingsOptions(user?.id),
+  );
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {

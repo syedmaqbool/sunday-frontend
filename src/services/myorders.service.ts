@@ -12,6 +12,12 @@ export function listOrders() {
     .json<PaginatedResponse<Order>>();
 }
 
+export function getOrder(orderId: string) {
+  return authInstance
+    .get(`/api/v1/me/orders/${orderId}`)
+    .json<Response<Order>>();
+}
+
 export function listSales() {
   return authInstance
     .get('/api/v1/me/sales', { searchParams: { size: 100 } })

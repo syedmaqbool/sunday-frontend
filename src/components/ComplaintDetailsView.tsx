@@ -17,32 +17,30 @@ import {
 } from '@/components/ui/dialog';
 
 const STATUS_LABEL: Record<string, string> = {
-  raised: 'Complaint Raised',
-  refunded: 'Completed · Refunded',
-  rejected: 'Completed · Rejected',
-  return_address_provided: 'Return Address Provided',
-  return_approved: 'Return Approved',
-  return_in_transit: 'Return In Transit',
-  return_received: 'Return Received',
-  under_review: 'Under Review',
+  RAISED: 'Complaint Raised',
+  REFUNDED: 'Completed · Refunded',
+  REJECTED: 'Completed · Rejected',
+  RETURN_ADDRESS_PROVIDED: 'Return Address Provided',
+  RETURN_APPROVED: 'Return Approved',
+  RETURN_IN_TRANSIT: 'Return In Transit',
+  RETURN_RECEIVED: 'Return Received',
+  UNDER_REVIEW: 'Under Review',
 };
 
 export interface ComplaintDetailsData {
   id: string;
-  admin_notes?: string | null;
-  created_at?: string;
-  evidence_urls: string[];
+  adminNotes?: string | null;
+  evidenceUrls: string[];
   reason: string;
-  return_carrier?: string | null;
-  return_proof_urls?: string[] | null;
-  return_to_address?: string | null;
-  return_to_city?: string | null;
-  return_to_name?: string | null;
-  return_to_notes?: string | null;
-  return_to_phone?: string | null;
-  return_to_postal?: string | null;
-  return_tracking?: string | null;
+  returnAddress?: string | null;
+  returnAddressPhone?: string | null;
+  returnAddressRecipient?: string | null;
+  returnCarrier?: string | null;
+  returnInstructions?: string | null;
+  returnProofUrls?: string[] | null;
+  returnTracking?: string | null;
   status: string;
+  createdAt?: string;
 }
 
 export function ComplaintDetailsView({
@@ -57,13 +55,13 @@ export function ComplaintDetailsView({
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const isCompleted
-    = ['refunded', 'rejected'].includes(complaint.status);
+    = ['REFUNDED', 'REJECTED'].includes(complaint.status);
   const isReturn
     = [
-      'return_in_transit',
-      'return_received',
-      'return_address_provided',
-      'return_approved',
+      'RETURN_IN_TRANSIT',
+      'RETURN_RECEIVED',
+      'RETURN_ADDRESS_PROVIDED',
+      'RETURN_APPROVED',
     ].includes(complaint.status);
   const Icon = isCompleted
     ? CheckCircle2
@@ -71,10 +69,10 @@ export function ComplaintDetailsView({
         ? PackageCheck
         : AlertTriangle);
 
-  const evidence = complaint.evidence_urls ?? [];
-  const proofs = complaint.return_proof_urls ?? [];
+  const evidence = complaint.evidenceUrls ?? [];
+  const proofs = complaint.returnProofUrls ?? [];
   const hasReturnAddress = !!(
-    complaint.return_to_address || complaint.return_to_name
+    complaint.returnAddress || complaint.returnAddressRecipient
   );
 
   return (
@@ -106,11 +104,11 @@ export function ComplaintDetailsView({
               <Icon className="h-5 w-5" />
               {STATUS_LABEL[complaint.status] ?? complaint.status}
             </DialogTitle>
-            {complaint.created_at && (
+            {complaint.createdAt && (
               <DialogDescription>
                 Raised
                 {' '}
-                {format(new Date(complaint.created_at), 'PPp')}
+                {format(new Date(complaint.createdAt), 'PPp')}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -163,28 +161,20 @@ export function ComplaintDetailsView({
                   Ship return to
                 </p>
                 <div className="mt-1 space-y-0.5 text-sm text-foreground">
-                  {complaint.return_to_name && (
-                    <p className="font-medium">{complaint.return_to_name}</p>
+                  {complaint.returnAddressRecipient && (
+                    <p className="font-medium">{complaint.returnAddressRecipient}</p>
                   )}
-                  {complaint.return_to_address && (
-                    <p>{complaint.return_to_address}</p>
+                  {complaint.returnAddress && (
+                    <p>{complaint.returnAddress}</p>
                   )}
-                  {(complaint.return_to_city || complaint.return_to_postal) && (
+                  {complaint.returnAddressPhone && (
                     <p className="text-muted-foreground">
-                      {complaint.return_to_city}
-                      {complaint.return_to_postal
-                        ? `, ${complaint.return_to_postal}`
-                        : ''}
+                      {complaint.returnAddressPhone}
                     </p>
                   )}
-                  {complaint.return_to_phone && (
-                    <p className="text-muted-foreground">
-                      {complaint.return_to_phone}
-                    </p>
-                  )}
-                  {complaint.return_to_notes && (
+                  {complaint.returnInstructions && (
                     <p className="text-xs italic text-muted-foreground">
-                      {complaint.return_to_notes}
+                      {complaint.returnInstructions}
                     </p>
                   )}
                 </div>
@@ -200,11 +190,11 @@ export function ComplaintDetailsView({
                   {proofs.length}
                   )
                 </p>
-                {(complaint.return_carrier || complaint.return_tracking) && (
+                {(complaint.returnCarrier || complaint.returnTracking) && (
                   <p className="text-xs text-muted-foreground">
-                    {complaint.return_carrier ?? ''}
-                    {complaint.return_tracking
-                      ? ` · ${complaint.return_tracking}`
+                    {complaint.returnCarrier ?? ''}
+                    {complaint.returnTracking
+                      ? ` · ${complaint.returnTracking}`
                       : ''}
                   </p>
                 )}
@@ -227,13 +217,13 @@ export function ComplaintDetailsView({
               </div>
             )}
 
-            {isCompleted && complaint.admin_notes && (
+            {isCompleted && complaint.adminNotes && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Admin note
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {complaint.admin_notes}
+                  {complaint.adminNotes}
                 </p>
               </div>
             )}

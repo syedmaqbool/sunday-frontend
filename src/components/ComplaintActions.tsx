@@ -27,14 +27,14 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
-  type ComplaintDetails as Complaint,
 } from '@/queries/useComplaint';
+import { createComplaint } from '@/services/complaints.service';
 
 interface ComplaintActionsProps {
   buyerId: string;
   listingId: string;
   orderId: string;
-  sellerId: string;
+  orderItemId: string;
 }
 
 async function uploadFiles(files: File[], folder: string) {
@@ -57,7 +57,7 @@ export function ComplaintActions({
   buyerId,
   listingId,
   orderId,
-  sellerId,
+  orderItemId,
 }: ComplaintActionsProps) {
   const queryClient = useQueryClient();
   const [raiseOpen, setRaiseOpen] = useState(false);
@@ -73,11 +73,11 @@ export function ComplaintActions({
   const [expectedDate, setExpectedDate] = useState('');
 
   const { data: complaint, refetch } = useQuery(
-    getComplaintDetailsOptions(orderId, listingId),
+    getComplaintDetailsOptions(orderId, orderItemId),
   );
 
   const { data: originalShipment } = useQuery(
-    getOrderShipmentOptions(orderId, listingId),
+    getOrderShipmentOptions(orderId, orderItemId),
   );
 
   useEffect(() => {
@@ -115,17 +115,12 @@ export function ComplaintActions({
         evidenceFiles,
         `${buyerId}/complaints/${orderId}-${listingId}/evidence`,
       );
-      const { error } = await supabase.from('complaints').insert({
-        buyer_id: buyerId,
-        evidence_urls: urls,
-        listing_id: listingId,
-        order_id: orderId,
+      await createComplaint({
+        orderId,
+        orderItemId,
+        evidenceUrls: urls,
         reason: reason.trim(),
-        seller_id: sellerId,
-        status: 'raised',
       });
-      if (error)
-        throw error;
       toast.success('Return request submitted for admin review.');
       setRaiseOpen(false);
       await refetch();
@@ -169,7 +164,7 @@ export function ComplaintActions({
         .update({
           return_carrier: carrier.trim(),
           return_expected_date: new Date(expectedDate).toISOString(),
-          return_proof_urls: [...(complaint.return_proof_urls ?? []), ...urls],
+          return_proof_urls: [...(complaint.returnProofUrls ?? []), ...urls],
           return_tracking: tracking.trim(),
           status: 'return_in_transit',
         })
@@ -191,7 +186,7 @@ export function ComplaintActions({
 
   if (
     complaint
-    && ['refunded', 'rejected', 'return_received'].includes(complaint.status)
+    && ['REFUNDED', 'REJECTED', 'RETURN_RECEIVED'].includes(complaint.status)
   ) {
     return <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />;
   }
@@ -201,19 +196,19 @@ export function ComplaintActions({
       <>
         <ComplaintDetailsView complaint={complaint} viewerRole="buyer" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {['raised', 'under_review'].includes(complaint.status) && (
+          {['RAISED', 'UNDER_REVIEW'].includes(complaint.status) && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Awaiting admin review
             </span>
           )}
-          {complaint.status === 'return_approved' && (
+          {complaint.status === 'RETURN_APPROVED' && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Approved — waiting for seller's return address
             </span>
           )}
-          {complaint.status === 'return_address_provided' && (
+          {complaint.status === 'RETURN_ADDRESS_PROVIDED' && (
             <Button
               onClick={() => setReturnOpen(true)}
               size="sm"
@@ -224,11 +219,11 @@ export function ComplaintActions({
               Mark return as shipped
             </Button>
           )}
-          {complaint.status === 'return_in_transit' && (
+          {complaint.status === 'RETURN_IN_TRANSIT' && (
             <span className="text-xs text-muted-foreground">
               Awaiting seller / admin confirmation
-              {complaint.return_tracking
-                ? ` · Tracking ${complaint.return_tracking}`
+              {complaint.returnTracking
+                ? ` · Tracking ${complaint.returnTracking}`
                 : ''}
             </span>
           )}
@@ -248,13 +243,13 @@ export function ComplaintActions({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              {originalShipment?.expected_delivery && (
+              {originalShipment?.expectedDelivery && (
                 <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
                   Original shipment ETA was
                   {' '}
                   <span className="font-medium text-foreground">
                     {new Date(
-                      originalShipment.expected_delivery,
+                      originalShipment.expectedDelivery,
                     ).toLocaleDateString()}
                   </span>
                   . Please pick a realistic return delivery date.

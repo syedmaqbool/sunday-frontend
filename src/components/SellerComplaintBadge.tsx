@@ -19,11 +19,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { getComplaintDetailsOptions } from '@/queries/useComplaint';
 
 export function SellerComplaintBadge({
-  listingId,
   orderId,
+  orderItemId,
 }: {
-  listingId: string;
   orderId: string;
+  orderItemId: string;
 }) {
   const queryClient = useQueryClient();
   const [addressOpen, setAddressOpen] = useState(false);
@@ -36,7 +36,7 @@ export function SellerComplaintBadge({
   const [notes, setNotes] = useState('');
 
   const { data: complaint, refetch } = useQuery(
-    getComplaintDetailsOptions(orderId, listingId),
+    getComplaintDetailsOptions(orderId, orderItemId),
   );
 
   // Prefill form when dialog opens with any existing address values
@@ -45,12 +45,12 @@ export function SellerComplaintBadge({
       return;
     }
 
-    setName((complaint as any).return_to_name ?? '');
-    setAddress((complaint as any).return_to_address ?? '');
-    setCity((complaint as any).return_to_city ?? '');
-    setPostal((complaint as any).return_to_postal ?? '');
-    setPhone((complaint as any).return_to_phone ?? '');
-    setNotes((complaint as any).return_to_notes ?? '');
+    setName(complaint.returnAddressRecipient ?? '');
+    setAddress(complaint.returnAddress ?? '');
+    setCity('');
+    setPostal('');
+    setPhone(complaint.returnAddressPhone ?? '');
+    setNotes(complaint.returnInstructions ?? '');
   }, [addressOpen, complaint]);
 
   if (!complaint)
@@ -114,13 +114,13 @@ export function SellerComplaintBadge({
     }
   };
 
-  const status = (complaint as any).status as string;
+  const status = complaint.status;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ComplaintDetailsView complaint={complaint as any} viewerRole="seller" />
 
-      {status === 'return_approved' && (
+      {status === 'RETURN_APPROVED' && (
         <Button
           onClick={() => setAddressOpen(true)}
           size="sm"
@@ -132,7 +132,7 @@ export function SellerComplaintBadge({
         </Button>
       )}
 
-      {status === 'return_address_provided' && (
+      {status === 'RETURN_ADDRESS_PROVIDED' && (
         <Button
           onClick={() => setAddressOpen(true)}
           size="sm"
@@ -144,7 +144,7 @@ export function SellerComplaintBadge({
         </Button>
       )}
 
-      {status === 'return_in_transit' && (
+      {status === 'RETURN_IN_TRANSIT' && (
         <Button
           onClick={markReturnReceived}
           disabled={busy}

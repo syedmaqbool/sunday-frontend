@@ -1,42 +1,23 @@
 import { queryOptions } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import {
+  getOrderItemComplaint,
   listComplaintsAgainstMe,
   listMyRefundComplaints,
 } from '@/services/complaints.service';
+import { getOrder } from '@/services/myOrders.service';
 
 export const complaintsQueryKey = {
   againstMe: () => ['complaints-against-me'] as const,
-  detail: (orderId: string, listingId: string) =>
-    ['complaint', orderId, listingId] as const,
+  detail: (orderId: string, orderItemId: string) =>
+    ['complaint', orderId, orderItemId] as const,
   myRefunds: () => ['my-refund-complaints'] as const,
-  orderShipment: (orderId: string, listingId: string) =>
-    ['order-shipment', orderId, listingId] as const,
+  orderShipment: (orderId: string, orderItemId: string) =>
+    ['order-shipment', orderId, orderItemId] as const,
 };
 
-export interface ComplaintDetails {
-  id: string;
-  admin_notes: string;
-  created_at: string;
-  evidence_urls: string[];
-  reason: string;
-  return_carrier: string | null;
-  return_expected_date?: string | null;
-  return_proof_urls: string[];
-  return_to_address: string | null;
-  return_to_city: string | null;
-  return_to_name: string | null;
-  return_to_notes: string | null;
-  return_to_phone: string | null;
-  return_to_postal: string | null;
-  return_tracking: string | null;
-  status: string;
-  updated_at?: string;
-}
-
 export interface OrderShipmentInfo {
-  expected_delivery?: string;
-  shipped_at?: string;
+  expectedDelivery?: string | null;
+  shippedAt?: string | null;
 }
 
 export function getMyRefundComplaintsOptions() {
@@ -59,38 +40,34 @@ export function getComplaintsAgainstMeOptions() {
   });
 }
 
-export function getComplaintDetailsOptions(orderId: string, listingId: string) {
+export function getComplaintDetailsOptions(
+  orderId: string,
+  orderItemId: string,
+) {
   return queryOptions({
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('complaints')
-        .select(
-          'id, status, reason, evidence_urls, return_proof_urls, return_carrier, return_tracking, return_expected_date, admin_notes, created_at, updated_at, return_to_name, return_to_address, return_to_city, return_to_postal, return_to_phone, return_to_notes',
-        )
-        .eq('order_id', orderId)
-        .eq('listing_id', listingId)
-        .maybeSingle();
-      if (error)
-        throw error;
-      return (data as ComplaintDetails | null) ?? null;
+      const response = await getOrderItemComplaint(orderId, orderItemId);
+      return response?.data ?? null;
     },
-    queryKey: complaintsQueryKey.detail(orderId, listingId),
+    queryKey: complaintsQueryKey.detail(orderId, orderItemId),
   });
 }
 
-export function getOrderShipmentOptions(orderId: string, listingId: string) {
+export function getOrderShipmentOptions(orderId: string, orderItemId: string) {
   return queryOptions({
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('item_status')
-        .eq('id', orderId)
-        .maybeSingle();
-      if (error)
-        throw error;
-      const entry = (data?.item_status as any)?.[listingId] ?? null;
-      return entry as OrderShipmentInfo | null;
+      const response = await getOrder(orderId);
+      const item = response.data.items.find(item => item.id === orderItemId);
+
+      if (!item) {
+        return null;
+      }
+
+      return {
+        expectedDelivery: item.expectedDelivery,
+        shippedAt: item.shippedAt,
+      } satisfies OrderShipmentInfo;
     },
-    queryKey: complaintsQueryKey.orderShipment(orderId, listingId),
+    queryKey: complaintsQueryKey.orderShipment(orderId, orderItemId),
   });
 }

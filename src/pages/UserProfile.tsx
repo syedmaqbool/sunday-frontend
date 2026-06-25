@@ -79,7 +79,7 @@ import { getMyProfileQueryOptions } from '@/queries/useMyProfile';
 import {
   updateItemStatus,
   uploadShippingProof,
-} from '@/services/myorders.service';
+} from '@/services/myOrders.service';
 
 const SHIPPING_METHODS = [
   'PostNet',
@@ -662,7 +662,7 @@ function OrderCard({ order }: { order: Order }) {
                             buyerId={order.buyerId}
                             listingId={item.listingId}
                             orderId={order.id}
-                            sellerId={item.sellerId}
+                            orderItemId={item.id}
                           />
                         )}
                         {item.status === 'DELIVERED' && (
@@ -866,8 +866,8 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
               <Badge variant="secondary">Sold</Badge>
               {statusBadge(item.status, item.shippedAt)}
               <SellerComplaintBadge
-                listingId={item.listingId}
                 orderId={item.orderId}
+                orderItemId={item.id}
               />
             </div>
             <p className="text-sm text-muted-foreground">

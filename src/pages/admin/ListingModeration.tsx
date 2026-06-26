@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ListingFeedbackSection as FeedbackHistorySection } from '@/components/ListingFeedbackWidgets';
+import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/components/AdminListingFeedbackWidgets';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getWeightLabel } from '@/lib/constants';
 import {
   getAdminListingsOptions,
+  useCreateAdminListingFeedback,
   useModerateListing,
 } from '@/queries/useAdminListing';
 
@@ -150,6 +151,7 @@ function ListingModeration() {
   const { data: listings = [], isLoading } = useQuery(
     getAdminListingsOptions(filter),
   );
+  const createFeedback = useCreateAdminListingFeedback();
   const moderateListing = useModerateListing();
 
   const statusColor = (s: ListingStatus) => {
@@ -175,23 +177,30 @@ function ListingModeration() {
     setFeedback('');
   };
 
-  const handleModerate = (
+  const handleModerate = async (
     id: string,
     status: 'APPROVED' | 'REJECTED',
     feedbackText?: string,
   ) => {
-    moderateListing.mutate(
-      { listingId: id, feedback: feedbackText, status },
-      {
-        onError: (error: any) =>
-          toast.error(error.message ?? 'Failed to update listing'),
-        onSuccess: () => {
-          toast.success(`Listing ${status.toLowerCase()}`);
-          setReviewListing(null);
-          setFeedback('');
-        },
-      },
-    );
+    const normalizedFeedback = feedbackText?.trim();
+
+    try {
+      if (normalizedFeedback) {
+        await createFeedback.mutateAsync({
+          listingId: id,
+          feedback: normalizedFeedback,
+        });
+      }
+
+      await moderateListing.mutateAsync({ listingId: id, status });
+      toast.success(`Listing ${status.toLowerCase()}`);
+      setReviewListing(null);
+      setFeedback('');
+      goToNext();
+    }
+    catch (error: any) {
+      toast.error(error.message ?? 'Failed to update listing');
+    }
   };
 
   return (
@@ -290,7 +299,7 @@ function ListingModeration() {
                           {listing.status !== 'APPROVED' && (
                             <Button
                               onClick={() => handleModerate(listing.id, 'APPROVED')}
-                              disabled={moderateListing.isPending}
+                              disabled={moderateListing.isPending || createFeedback.isPending}
                               size="sm"
                               variant="outline"
                               className="gap-1 text-primary"
@@ -303,7 +312,7 @@ function ListingModeration() {
                           {listing.status !== 'REJECTED' && (
                             <Button
                               onClick={() => handleModerate(listing.id, 'REJECTED')}
-                              disabled={moderateListing.isPending}
+                              disabled={moderateListing.isPending || createFeedback.isPending}
                               size="sm"
                               variant="outline"
                               className="gap-1 text-destructive"
@@ -466,14 +475,13 @@ function ListingModeration() {
                     {reviewListing.status !== 'APPROVED' && (
                       <Button
                         onClick={() => {
-                          handleModerate(
+                          void handleModerate(
                             reviewListing.id,
                             'APPROVED',
                             feedback || undefined,
                           );
-                          goToNext();
                         }}
-                        disabled={moderateListing.isPending}
+                        disabled={moderateListing.isPending || createFeedback.isPending}
                         className="flex-1 gap-2"
                       >
                         <CheckCircle className="h-4 w-4" />
@@ -484,14 +492,13 @@ function ListingModeration() {
                     {reviewListing.status !== 'REJECTED' && (
                       <Button
                         onClick={() => {
-                          handleModerate(
+                          void handleModerate(
                             reviewListing.id,
                             'REJECTED',
                             feedback,
                           );
-                          goToNext();
                         }}
-                        disabled={moderateListing.isPending}
+                        disabled={moderateListing.isPending || createFeedback.isPending}
                         variant="destructive"
                         className="flex-1 gap-2"
                       >

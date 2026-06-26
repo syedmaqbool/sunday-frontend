@@ -17,8 +17,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import Footer from '@/components/Footer';
-import { ListingFeedbackSection } from '@/components/ListingFeedbackWidgets';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
+import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
 import Navbar from '@/components/Navbar';
 import { ReportDialog } from '@/components/ReportDialog';
 import { ReviewsList } from '@/components/ReviewsList';
@@ -405,7 +405,7 @@ function ListingDetail() {
               {listing.description}
             </p>
 
-            {isOwner && <ListingFeedbackSection listingId={listing.id} />}
+            {isOwner && <MyListingFeedbackSection listingId={listing.id} />}
 
             {listing.status === 'sold' && !isOwner && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">

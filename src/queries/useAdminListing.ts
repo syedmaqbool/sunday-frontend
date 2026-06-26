@@ -4,7 +4,13 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { listAdminListings, moderateListing } from '@/services/listing.service';
+import { adminListingFeedbackQueryKey } from '@/queries/useAdminListingFeedback';
+import { myListingFeedbackQueryKey } from '@/queries/useMyListingFeedback';
+import {
+  createAdminListingFeedback,
+  listAdminListings,
+  moderateListing,
+} from '@/services/listing.service';
 
 export const adminListingsQueryKey = {
   all: () => ['admin-listings'] as const,
@@ -30,16 +36,41 @@ export function useModerateListing() {
   return useMutation({
     mutationFn: ({
       listingId,
-      feedback,
       status,
     }: {
       listingId: string;
-      feedback?: string;
       status: 'APPROVED' | 'NEEDS_REVISION' | 'REJECTED';
-    }) => moderateListing(listingId, { feedback, status }),
+    }) => moderateListing(listingId, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: ['listing-feedback'] });
+      queryClient.invalidateQueries({
+        queryKey: adminListingFeedbackQueryKey.list(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: myListingFeedbackQueryKey.list(),
+      });
+    },
+  });
+}
+
+export function useCreateAdminListingFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      listingId,
+      feedback,
+    }: {
+      listingId: string;
+      feedback: string;
+    }) => createAdminListingFeedback(listingId, { feedback }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      queryClient.invalidateQueries({
+        queryKey: adminListingFeedbackQueryKey.list(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: myListingFeedbackQueryKey.list(),
+      });
     },
   });
 }

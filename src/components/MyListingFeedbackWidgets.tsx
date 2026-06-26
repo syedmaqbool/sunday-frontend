@@ -1,12 +1,12 @@
 import FeedbackHistory from '@/components/FeedbackHistory';
-import { useListingFeedback } from '@/hooks/useListingFeedback';
+import { useMyListingFeedback } from '@/hooks/useMyListingFeedback';
 
-export function ListingFeedbackSection({
+export function MyListingFeedbackSection({
   listingId,
 }: {
   listingId: string;
 }) {
-  const { data: feedbackList = [] } = useListingFeedback(listingId);
+  const { data: feedbackList = [] } = useMyListingFeedback(listingId);
   if (feedbackList.length === 0)
     return null;
   return (
@@ -16,8 +16,8 @@ export function ListingFeedbackSection({
   );
 }
 
-export function ListingFeedbackInline({ listingId }: { listingId: string }) {
-  const { data: feedbackList = [] } = useListingFeedback(listingId);
+export function MyListingFeedbackInline({ listingId }: { listingId: string }) {
+  const { data: feedbackList = [] } = useMyListingFeedback(listingId);
   if (feedbackList.length === 0)
     return null;
   return <FeedbackHistory compact feedbackList={feedbackList} />;

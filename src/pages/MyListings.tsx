@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
-import { ListingFeedbackInline } from '@/components/ListingFeedbackWidgets';
+import { MyListingFeedbackInline } from '@/components/MyListingFeedbackWidgets';
 import Navbar from '@/components/Navbar';
 import { ReceivedOffers } from '@/components/ReceivedOffers';
 import {
@@ -261,7 +261,7 @@ function MyListings() {
               {new Date(listing.reserved_until).toLocaleString()}
             </p>
           )}
-          <ListingFeedbackInline listingId={listing.id} />
+          <MyListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex shrink-0 gap-2">
           {['approved', 'sold', 'reserved'].includes(listing.status) && (

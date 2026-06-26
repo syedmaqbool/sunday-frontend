@@ -1,4 +1,4 @@
-import type { FeedbackEntry } from '@/hooks/useListingFeedback';
+import type { FeedbackEntry } from '@/hooks/useMyListingFeedback';
 import { format } from 'date-fns';
 import { Clock, MessageSquare } from 'lucide-react';
 
@@ -26,10 +26,10 @@ function FeedbackHistory({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="text-xs font-medium text-destructive">
-                  Admin Feedback
+                  {fb.adminFullName || 'Admin Feedback'}
                 </p>
                 <span className="text-[10px] text-muted-foreground">
-                  {format(new Date(fb.created_at), 'MMM d, yyyy')}
+                  {format(new Date(fb.createdAt), 'MMM d, yyyy')}
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -61,8 +61,13 @@ function FeedbackHistory({
           >
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {format(new Date(fb.created_at), 'MMM d, yyyy \'at\' h:mm a')}
+              {format(new Date(fb.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
             </div>
+            {fb.adminFullName && (
+              <p className="mt-1 text-xs font-medium text-muted-foreground">
+                {fb.adminFullName}
+              </p>
+            )}
             <p className="mt-1.5 text-sm text-foreground">{fb.feedback}</p>
           </div>
         ))}

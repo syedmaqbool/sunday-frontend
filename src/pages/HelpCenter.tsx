@@ -1,14 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowRight,
-  BookOpen,
-  LifeBuoy,
-  Loader2,
-  Mail,
-  Search,
-} from 'lucide-react';
-import { createElement, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BookOpen, LifeBuoy, Loader2, Mail, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import {
@@ -21,36 +13,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { getHelpIcon } from '@/lib/helpIcons';
 import {
   getHelpCategoriesOptions,
   getHelpFaqsOptions,
   getHelpTutorialsOptions,
-  type HelpCategory as Category,
-  type HelpFaq as Faq,
-  type HelpTutorial as Tutorial,
 } from '@/queries/useHelp';
-
-function HelpIcon({
-  className,
-  icon,
-}: {
-  className?: string;
-  icon: string;
-}) {
-  return createElement(getHelpIcon(icon), { className });
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function HelpCenter() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const activeCategoryKey
+    = activeCategory === 'all' ? undefined : activeCategory;
 
   const { data: categories = [] } = useQuery(getHelpCategoriesOptions());
 
   const { data: faqs = [], isLoading: loadingFaqs } = useQuery(
-    getHelpFaqsOptions(),
+    getHelpFaqsOptions(activeCategoryKey),
   );
 
   const { data: tutorials = [] } = useQuery(getHelpTutorialsOptions());
@@ -63,15 +43,13 @@ function HelpCenter() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return faqs.filter((f) => {
-      const isMatchCat
-        = activeCategory === 'all' || f.category_key === activeCategory;
       const matchQ
         = !q
           || f.question.toLowerCase().includes(q)
           || f.answer.toLowerCase().includes(q);
-      return isMatchCat && matchQ;
+      return matchQ;
     });
-  }, [query, activeCategory, faqs]);
+  }, [query, faqs]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,7 +104,7 @@ function HelpCenter() {
               const isActive = activeCategory === c.key;
               return (
                 <button
-                  key={c.id}
+                  key={c.key}
                   onClick={() => setActiveCategory(isActive ? 'all' : c.key)}
                   className={`
                     group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors
@@ -150,11 +128,13 @@ function HelpCenter() {
                 }
                     `}
                   >
-                    <HelpIcon icon={c.icon} className="h-5 w-5" />
+                    <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground">{c.label}</p>
-                    <p className="text-sm text-muted-foreground">{c.blurb}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Browse help articles in this category.
+                    </p>
                   </div>
                 </button>
               );
@@ -207,7 +187,7 @@ function HelpCenter() {
               : (
                   <Accordion collapsible type="single" className="space-y-2">
                     {filtered.map((f) => {
-                      const cat = categoryMap.get(f.category_key);
+                      const cat = categoryMap.get(f.categoryKey);
                       return (
                         <AccordionItem
                           key={f.id}
@@ -262,34 +242,20 @@ function HelpCenter() {
                   <Card key={t.id} className="flex flex-col">
                     <CardContent className="flex flex-1 flex-col gap-4 p-5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <HelpIcon icon={t.icon} className="h-5 w-5" />
+                        <BookOpen className="h-5 w-5" />
                       </div>
                       <h3 className="font-heading text-lg font-semibold text-foreground">
                         {t.title}
                       </h3>
-                      <ol className="flex-1 space-y-2 text-sm text-muted-foreground">
-                        {t.steps.map((step, index) => (
-                          <li key={step} className="flex gap-2.5">
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
-                              {index + 1}
-                            </span>
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      {t.cta_label && t.cta_to && (
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="mt-2 w-full gap-2"
-                        >
-                          <Link to={t.cta_to}>
-                            {t.cta_label}
-                            {' '}
-                            <ArrowRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                      {t.slug && (
+                        <p className="font-mono text-xs text-muted-foreground">
+                          /
+                          {t.slug}
+                        </p>
                       )}
+                      <p className="flex-1 whitespace-pre-line text-sm text-muted-foreground">
+                        {t.body}
+                      </p>
                     </CardContent>
                   </Card>
                 );
@@ -320,8 +286,6 @@ function HelpCenter() {
             <Button asChild className="gap-2">
               <a href="mailto:support@sunday.app">
                 Contact support
-                {' '}
-                <ArrowRight className="h-4 w-4" />
               </a>
             </Button>
           </CardContent>

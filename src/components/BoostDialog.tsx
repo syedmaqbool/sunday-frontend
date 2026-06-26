@@ -155,9 +155,9 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
       if (endDate <= startDate)
         throw new Error('End date must be after start date');
       await boostWithCampaign(listingId, {
-        endsAt: endDate.toISOString(),
         paymentStatus: 'MOCK',
         placement: placement as 'FOR_YOU' | 'SEARCH',
+        endsAt: endDate.toISOString(),
         startsAt: startDate.toISOString(),
       });
     },

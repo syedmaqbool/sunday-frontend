@@ -76,9 +76,9 @@ function DiscountCodes() {
         code: code.trim().toUpperCase(),
         discountType,
         discountValue: Number(discountValue),
-        expiresAt: expiresAt || null,
         maxUses: maxUses ? Number(maxUses) : null,
         minOrderAmount: minOrder ? Number(minOrder) : 0,
+        expiresAt: expiresAt || null,
       });
 
       toast({

@@ -2,6 +2,21 @@ import antfu from '@antfu/eslint-config';
 import eslintPluginBetterTailwindcss from 'eslint-plugin-better-tailwindcss';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 
+const customGroups
+  = [
+    { elementNamePattern: '^key$', groupName: 'key' },
+    { elementNamePattern: '^id$', groupName: 'id' },
+    { elementNamePattern: '^.+Id$', groupName: 'related-id' },
+    { elementNamePattern: '^path$', groupName: 'path' },
+    { elementNamePattern: '^index$', groupName: 'index' },
+    { elementNamePattern: '^element$', groupName: 'element' },
+    { elementNamePattern: '^created(?:At|By)$', groupName: 'created-audit' },
+    { elementNamePattern: '^updated(?:At|By)$', groupName: 'updated-audit' },
+    { elementNamePattern: '^deleted(?:At|By)$', groupName: 'deleted-audit' },
+    { elementNamePattern: '^.+(?:At|By)$', groupName: 'audit' },
+  ];
+const groups = ['key', 'id', 'related-id', 'path', 'index', 'element', 'unknown', 'audit', 'created-audit', 'updated-audit', 'deleted-audit'];
+
 export default antfu(
   {
     react: true,
@@ -41,56 +56,8 @@ export default antfu(
       'perfectionist/sort-interfaces': [
         'error',
         {
-          customGroups: [
-            {
-              elementNamePattern: '^key$',
-              groupName: 'key',
-            },
-            {
-              elementNamePattern: '^id$',
-              groupName: 'id',
-            },
-            {
-              elementNamePattern: '^.+Id$',
-              groupName: 'related-id',
-            },
-            {
-              elementNamePattern: '^path$',
-              groupName: 'path',
-            },
-            {
-              elementNamePattern: '^index$',
-              groupName: 'index',
-            },
-            {
-              elementNamePattern: '^element$',
-              groupName: 'element',
-            },
-            {
-              elementNamePattern: '^createdAt$',
-              groupName: 'timestamp-created',
-            },
-            {
-              elementNamePattern: '^updatedAt$',
-              groupName: 'timestamp-updated',
-            },
-            {
-              elementNamePattern: '^deletedAt$',
-              groupName: 'timestamp-deleted',
-            },
-          ],
-          groups: [
-            'key',
-            'id',
-            'related-id',
-            'path',
-            'index',
-            'element',
-            'unknown',
-            'timestamp-created',
-            'timestamp-updated',
-            'timestamp-deleted',
-          ],
+          customGroups,
+          groups,
           partitionByComment: true,
         },
         {
@@ -168,56 +135,8 @@ export default antfu(
       'perfectionist/sort-object-types': [
         'warn',
         {
-          customGroups: [
-            {
-              elementNamePattern: '^key$',
-              groupName: 'key',
-            },
-            {
-              elementNamePattern: '^id$',
-              groupName: 'id',
-            },
-            {
-              elementNamePattern: '^.+Id$',
-              groupName: 'related-id',
-            },
-            {
-              elementNamePattern: '^path$',
-              groupName: 'path',
-            },
-            {
-              elementNamePattern: '^index$',
-              groupName: 'index',
-            },
-            {
-              elementNamePattern: '^element$',
-              groupName: 'element',
-            },
-            {
-              elementNamePattern: '^createdAt$',
-              groupName: 'timestamp-created',
-            },
-            {
-              elementNamePattern: '^updatedAt$',
-              groupName: 'timestamp-updated',
-            },
-            {
-              elementNamePattern: '^deletedAt$',
-              groupName: 'timestamp-deleted',
-            },
-          ],
-          groups: [
-            'key',
-            'id',
-            'related-id',
-            'path',
-            'index',
-            'element',
-            'unknown',
-            'timestamp-created',
-            'timestamp-updated',
-            'timestamp-deleted',
-          ],
+          customGroups,
+          groups,
           partitionByComment: true,
         },
         {
@@ -227,56 +146,8 @@ export default antfu(
       'perfectionist/sort-objects': [
         'warn',
         {
-          customGroups: [
-            {
-              elementNamePattern: '^key$',
-              groupName: 'key',
-            },
-            {
-              elementNamePattern: '^id$',
-              groupName: 'id',
-            },
-            {
-              elementNamePattern: '^.+Id$',
-              groupName: 'related-id',
-            },
-            {
-              elementNamePattern: '^path$',
-              groupName: 'path',
-            },
-            {
-              elementNamePattern: '^index$',
-              groupName: 'index',
-            },
-            {
-              elementNamePattern: '^element$',
-              groupName: 'element',
-            },
-            {
-              elementNamePattern: '^createdAt$',
-              groupName: 'timestamp-created',
-            },
-            {
-              elementNamePattern: '^updatedAt$',
-              groupName: 'timestamp-updated',
-            },
-            {
-              elementNamePattern: '^deletedAt$',
-              groupName: 'timestamp-deleted',
-            },
-          ],
-          groups: [
-            'key',
-            'id',
-            'related-id',
-            'path',
-            'index',
-            'element',
-            'unknown',
-            'timestamp-created',
-            'timestamp-updated',
-            'timestamp-deleted',
-          ],
+          customGroups,
+          groups,
           partitionByComment: true,
         },
         {

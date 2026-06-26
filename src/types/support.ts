@@ -4,13 +4,13 @@ export interface SupportTicket {
   id: string;
   lastMessageSenderId: string | null;
   userId: string;
-  lastMessageAt: string;
   lastMessageContent: string | null;
   messageCount: number;
   status: SupportTicketStatus;
   subject: string;
   userEmail: string;
   userFullName: string;
+  lastMessageAt: string;
   createdAt: string;
   updatedAt: string;
 }

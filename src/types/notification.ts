@@ -6,9 +6,9 @@ export interface Notification {
   body: string;
   entityType: string | null;
   metadata: Record<string, unknown>;
-  readAt: string | null;
   title: string;
   type: string;
+  readAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

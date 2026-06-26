@@ -99,11 +99,11 @@ function formToPayload(form: typeof emptyForm) {
     code: form.code.trim().toUpperCase(),
     discountType: form.discount_type.toUpperCase(),
     discountValue: Number(form.discount_value),
-    expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     maxUses: form.max_uses ? Number(form.max_uses) : null,
     minOrderAmount: form.min_order_amount ? Number(form.min_order_amount) : 0,
     perUserLimit: form.per_user_limit ? Number(form.per_user_limit) : null,
     scope: form.scope.toUpperCase(),
+    expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     startsAt: form.starts_at ? new Date(form.starts_at).toISOString() : null,
   };
 }

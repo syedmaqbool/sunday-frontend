@@ -14,10 +14,10 @@ export interface AdminReport {
   reason: string;
   reportedUserFullName: string | null;
   reporterFullName: string;
-  resolvedAt: string | null;
-  resolvedBy: string | null;
   resolverFullName: string | null;
   status: ReportStatus;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utilities';
 import { getTopFaqsOptions } from '@/queries/useHelp';
 
-function TopFAQs() {
+export default function TopFAQs() {
   const { data: faqs = [] } = useQuery(getTopFaqsOptions());
 
   if (faqs.length === 0)
@@ -85,5 +85,3 @@ function TopFAQs() {
     </section>
   );
 }
-
-export default TopFAQs;

@@ -19,12 +19,12 @@ export interface ListingBoost {
   listingId: string;
   packageId: string | null;
   sellerId: string;
-  endsAt: string;
   isActive?: boolean;
   packageName: string | null;
   paymentStatus: BoostPaymentStatus;
   placement: BoostPlacement;
   pricePaid: number;
+  endsAt: string;
   startsAt: string;
   createdAt: string;
   updatedAt: string;
@@ -44,8 +44,8 @@ export interface BoostWithPackagePayload {
 }
 
 export interface BoostWithCampaignPayload {
-  endsAt: string;
   paymentStatus?: 'MOCK' | 'PAID';
   placement: 'FOR_YOU' | 'SEARCH';
+  endsAt: string;
   startsAt: string;
 }

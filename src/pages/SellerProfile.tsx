@@ -1,4 +1,3 @@
-import type { Listing } from '@/lib/constants';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MapPin, Package, Phone, Star } from 'lucide-react';
@@ -10,8 +9,6 @@ import { ReviewsList } from '@/components/ReviewsList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSellerRating } from '@/hooks/useSellerRating';
-// 👇 Mock switcher config  import karein
-import { isMockDataEnabled } from '@/lib/mockConfig';
 import {
   getSellerListingsOptions,
   getSellerProfileOptions,
@@ -25,15 +22,10 @@ function SellerProfile() {
   );
 
   const { data: listings = [], isLoading: listingsLoading } = useQuery(
-    getSellerListingsOptions(id, profile?.full_name, !!id && !!profile),
+    getSellerListingsOptions(id, profile?.fullName, !!id && !!profile),
   );
 
   const { data: rating } = useSellerRating(id);
-
-  // 👇 Reviews UI safety fix for mock environment
-  const mockRating = isMockDataEnabled
-    ? { avgRating: 4.8, totalReviews: 12 }
-    : rating;
 
   const isLoading = profileLoading || listingsLoading;
 
@@ -72,7 +64,7 @@ function SellerProfile() {
     );
   }
 
-  const initials = (profile.full_name || 'S')
+  const initials = (profile.fullName || 'S')
     .split(' ')
     .map((n: string) => n.at(0))
     .join('')
@@ -102,7 +94,7 @@ function SellerProfile() {
         "
         >
           <Avatar className="h-20 w-20 border-2 border-primary">
-            <AvatarImage src={profile.avatar_url || undefined} />
+            <AvatarImage src={profile.avatarUrl || undefined} />
             <AvatarFallback className="bg-primary/10 text-xl font-bold text-primary">
               {initials}
             </AvatarFallback>
@@ -113,19 +105,19 @@ function SellerProfile() {
           "
           >
             <h1 className="font-heading text-2xl font-bold text-card-foreground">
-              {profile.full_name || 'Seller'}
+              {profile.fullName || 'Seller'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Member since
               {' '}
-              {format(new Date(profile.created_at), 'MMMM yyyy')}
+              {format(new Date(profile.createdAt), 'MMMM yyyy')}
             </p>
             <div className="
               mt-2 flex items-center justify-center gap-3
               sm:justify-start
             "
             >
-              {mockRating && mockRating.totalReviews > 0 && (
+              {rating && rating.totalReviews > 0 && (
                 <div className="flex items-center gap-1.5">
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map(s => (
@@ -134,7 +126,7 @@ function SellerProfile() {
                         className={`
                           h-4 w-4
                           ${
-                      s <= Math.round(mockRating.avgRating)
+                      s <= Math.round(rating.avgRating)
                         ? 'fill-primary text-primary'
                         : 'text-muted-foreground/30'
                       }
@@ -143,14 +135,14 @@ function SellerProfile() {
                     ))}
                   </div>
                   <span className="text-sm font-medium text-card-foreground">
-                    {mockRating.avgRating.toFixed(1)}
+                    {rating.avgRating.toFixed(1)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     (
-                    {mockRating.totalReviews}
+                    {rating.totalReviews}
                     {' '}
                     review
-                    {mockRating.totalReviews === 1 ? '' : 's'}
+                    {rating.totalReviews === 1 ? '' : 's'}
                     )
                   </span>
                 </div>
@@ -203,7 +195,7 @@ function SellerProfile() {
             </TabsTrigger>
             <TabsTrigger value="reviews">
               Reviews (
-              {mockRating?.totalReviews ?? 0}
+              {rating?.totalReviews ?? 0}
               )
             </TabsTrigger>
           </TabsList>
@@ -230,21 +222,7 @@ function SellerProfile() {
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4">
-            {/* Mock condition blocks subcomponents crashing if needed */}
-            {isMockDataEnabled
-              ? (
-                  <div className="rounded-lg border bg-card py-8 text-center text-muted-foreground">
-                    <p className="mb-1 font-medium text-foreground">
-                      Reviews Panel (Mock Enabled)
-                    </p>
-                    <p className="text-sm">
-                      Sample reviews are hidden or loaded as static layout items.
-                    </p>
-                  </div>
-                )
-              : (
-                  <ReviewsList userId={id!} limit={20} />
-                )}
+            <ReviewsList userId={id!} limit={20} />
           </TabsContent>
         </Tabs>
       </main>

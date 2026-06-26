@@ -30,7 +30,7 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const listings = useMemo(() => {
     if (variant === 'personalized') {
       return applyBoostRanking(
-        personalizeListings([...databaseListings], prefs),
+        personalizeListings([...databaseListings], prefs, item => item.categoryValue),
         boostMap,
       );
     }

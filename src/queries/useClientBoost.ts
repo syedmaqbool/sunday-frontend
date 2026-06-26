@@ -70,21 +70,21 @@ export function useBoostWithCampaign() {
   return useMutation({
     mutationFn: ({
       listingId,
-      endsAt,
       paymentStatus,
       placement,
+      endsAt,
       startsAt,
     }: {
       listingId: string;
-      endsAt: string;
       paymentStatus?: 'MOCK' | 'PAID';
       placement: 'FOR_YOU' | 'SEARCH';
+      endsAt: string;
       startsAt: string;
     }) =>
       boostWithCampaign(listingId, {
-        endsAt,
         paymentStatus,
         placement,
+        endsAt,
         startsAt,
       }),
     onSuccess: () => {

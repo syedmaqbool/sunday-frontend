@@ -1,4 +1,4 @@
-import type { Listing } from '@/lib/constants';
+import type { MarketplaceListing } from '@/queries/useMarketplace';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'sonner';
 
+import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
 import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
@@ -39,11 +39,11 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
-//  Mock configuration data  import
-import { isMockDataEnabled } from '@/lib/mockConfig';
 import {
+  getListingMediaUrls,
   getMarketplaceListingOptions,
   getReservedOfferAmountOptions,
+
 } from '@/queries/useMarketplace';
 
 function useCountdown(target?: string | null) {
@@ -201,6 +201,25 @@ function ImageGallery({
   );
 }
 
+function toCartListing(listing: MarketplaceListing) {
+  return {
+    id: listing.id,
+    brand: listing.brand,
+    category: listing.categoryValue,
+    condition: listing.condition,
+    created_at: listing.createdAt,
+    description: listing.description,
+    images: getListingMediaUrls(listing),
+    price: listing.price,
+    seller_id: listing.sellerId,
+    seller_name: listing.seller?.fullName ?? 'Seller',
+    size: listing.size,
+    status: listing.status.toLowerCase() as 'approved' | 'needs_revision' | 'pending' | 'rejected' | 'reserved' | 'sold',
+    title: listing.title,
+    weight: listing.weight ?? null,
+  };
+}
+
 function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -218,7 +237,7 @@ function ListingDetail() {
         items: [
           {
             item_brand: listing.brand,
-            item_category: listing.category,
+            item_category: listing.categoryValue,
             item_id: listing.id,
             item_name: listing.title,
             price: listing.price,
@@ -227,19 +246,18 @@ function ListingDetail() {
         value: listing.price,
       });
     }
-  }, [listing, listing.id]);
+  }, [listing]);
 
-  const isOwner = listing && user && listing.seller_id === user.id;
-  const isReserved = listing?.status === 'reserved';
-  const isReservedForMe
-    = isReserved && !!user && listing?.reserved_for === user.id;
+  const isOwner = listing && user && listing.sellerId === user.id;
+  const isReserved = listing?.status === 'RESERVED';
+  const isReservedForMe = !!listing?.reservedForCurrentUser;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
-  const countdown = useCountdown(isReserved ? listing?.reserved_until : null);
+  const countdown = useCountdown(isReserved ? listing?.reservedUntil : null);
 
   const { data: reservedOfferAmount } = useQuery(
     getReservedOfferAmountOptions(
-      listing?.reserved_offer_id,
-      !!(isReservedForMe && listing?.reserved_offer_id),
+      listing?.reservedOfferId,
+      !!(isReservedForMe && listing?.reservedOfferId),
     ),
   );
 
@@ -336,8 +354,8 @@ function ListingDetail() {
         "
         >
           <ImageGallery
-            images={listing.images}
-            status={listing.status}
+            images={getListingMediaUrls(listing)}
+            status={listing.status.toLowerCase()}
             title={listing.title}
           />
 
@@ -390,7 +408,7 @@ function ListingDetail() {
                 {listing.condition.replace('_', ' ')}
               </span>
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
-                {listing.category}
+                {listing.categoryValue}
               </span>
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
@@ -407,7 +425,7 @@ function ListingDetail() {
 
             {isOwner && <MyListingFeedbackSection listingId={listing.id} />}
 
-            {listing.status === 'sold' && !isOwner && (
+            {listing.status === 'SOLD' && !isOwner && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
                 <p className="font-heading text-lg font-semibold text-foreground">
                   Sold
@@ -428,10 +446,7 @@ function ListingDetail() {
 
             {isReserved && (
               <div
-                className={`
-                  mt-6 rounded-lg border px-4 py-3 text-sm
-                  ${isReservedForMe ? 'border-primary/40 bg-primary/5 text-foreground' : 'border-border bg-muted text-muted-foreground'}
-                `}
+                className="mt-6 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground"
               >
                 {isReservedForMe
                   ? (
@@ -448,27 +463,27 @@ function ListingDetail() {
                         .
                       </p>
                     )
-                  : (isOwner
-                      ? (
-                          <p>
-                            Reserved for an approved buyer · expires in
-                            {' '}
-                            <span className="font-mono font-semibold text-foreground">
-                              {countdown}
-                            </span>
-                            .
-                          </p>
-                        )
-                      : (
-                          <p>
-                            Currently reserved for another buyer · available again in
-                            {' '}
-                            <span className="font-mono font-semibold text-foreground">
-                              {countdown}
-                            </span>
-                            .
-                          </p>
-                        ))}
+                  : isOwner
+                    ? (
+                        <p>
+                          Reserved for an approved buyer · expires in
+                          {' '}
+                          <span className="font-mono font-semibold text-foreground">
+                            {countdown}
+                          </span>
+                          .
+                        </p>
+                      )
+                    : (
+                        <p>
+                          Currently reserved for another buyer · available again in
+                          {' '}
+                          <span className="font-mono font-semibold text-foreground">
+                            {countdown}
+                          </span>
+                          .
+                        </p>
+                      )}
               </div>
             )}
 
@@ -533,14 +548,14 @@ function ListingDetail() {
                     </AlertDialog>
                   </div>
                 )
-              : (listing.status === 'sold'
+              : (listing.status === 'SOLD'
                   ? null
                   : (
                       <div className="mt-8 flex flex-wrap gap-3">
                         <Button
                           onClick={() =>
                             addItem(
-                              listing,
+                              toCartListing(listing),
                               isReservedForMe ? effectivePrice : undefined,
                             )}
                           disabled={inCart || isReservedForOther}
@@ -570,7 +585,7 @@ function ListingDetail() {
                         {!isReserved && (
                           <MakeOfferButton
                             listingId={listing.id}
-                            sellerId={listing.seller_id}
+                            sellerId={listing.sellerId}
                             listingPrice={listing.price}
                             listingTitle={listing.title}
                           />
@@ -585,9 +600,9 @@ function ListingDetail() {
                   label="Report listing"
                   targetType="listing"
                 />
-                {listing.seller_id && (
+                {listing.sellerId && (
                   <ReportDialog
-                    targetId={listing.seller_id}
+                    targetId={listing.sellerId}
                     label="Report seller"
                     targetType="user"
                   />
@@ -612,21 +627,21 @@ function ListingDetail() {
                 Sold by
                 {' '}
                 <Link
-                  to={`/seller/${listing?.seller_id || 'mock-seller-id'}`}
+                  to={`/seller/${listing.sellerId}`}
                   className="
                     font-medium text-primary transition-colors
                     hover:underline
                   "
                 >
-                  {listing?.seller_name || 'Mock Seller'}
+                  {listing.seller?.fullName || 'Seller'}
                 </Link>
               </p>
-              {listing.seller_id && !isMockDataEnabled && (
+              {listing.sellerId && (
                 <div className="mt-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Seller Reviews
                   </p>
-                  <ReviewsList userId={listing.seller_id} limit={5} />
+                  <ReviewsList userId={listing.sellerId} limit={5} />
                 </div>
               )}
             </div>

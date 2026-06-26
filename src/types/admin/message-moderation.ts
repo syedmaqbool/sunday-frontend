@@ -7,12 +7,12 @@ export interface FlaggedMessage {
   senderId: string;
   buyerFullName: string;
   content: string;
-  conversationCreatedAt: string;
   flagReasons: string[];
   isFlagged: boolean;
   listingTitle: string;
-  readAt: string | null;
   sellerFullName: string;
+  conversationCreatedAt: string;
+  readAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

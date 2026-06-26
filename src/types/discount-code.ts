@@ -5,9 +5,9 @@ export interface DiscountCode {
   currentUses: number;
   discountType: string;
   discountValue: number;
-  expiresAt: string | null;
   maxUses: number | null;
   minOrderAmount: number;
+  expiresAt: string | null;
   createdAt: string;
 }
 
@@ -16,9 +16,9 @@ export interface CreateDiscountCodePayload {
   code: string;
   discountType: string;
   discountValue: number;
-  expiresAt?: string | null;
   maxUses?: number | null;
   minOrderAmount?: number;
+  expiresAt?: string | null;
 }
 
 export interface UpdateDiscountCodePayload {
@@ -26,7 +26,7 @@ export interface UpdateDiscountCodePayload {
   code?: string;
   discountType?: string;
   discountValue?: number;
-  expiresAt?: string | null;
   maxUses?: number | null;
   minOrderAmount?: number;
+  expiresAt?: string | null;
 }

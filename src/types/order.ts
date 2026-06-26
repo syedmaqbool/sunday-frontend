@@ -19,10 +19,8 @@ export interface OrderItem {
   price: number;
   proofImageUrl: string | null;
   quantity: number;
-  receivedAt: string | null;
   reservedOfferPrice: number | null;
   sellerFullName: string;
-  shippedAt: string | null;
   shippingMethod: string | null;
   size: string;
   status: 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';
@@ -31,6 +29,8 @@ export interface OrderItem {
   title: string;
   total: number;
   trackingNumber: string | null;
+  receivedAt: string | null;
+  shippedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

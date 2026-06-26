@@ -14,8 +14,8 @@ export function getAdminOrdersOptions() {
     queryFn: async () => {
       const response = await listAdminOrders({
         size: 100,
-        sortBy: 'createdAt',
         sortOrder: 'desc',
+        sortBy: 'createdAt',
       });
       return response.data;
     },

@@ -1,11 +1,21 @@
-import type { Listing } from '@/lib/constants';
+import type { MarketplaceListing } from '@/queries/useMarketplace';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getListingMediaUrls } from '@/queries/useMarketplace';
 
 interface ListingCardProps {
   index?: number;
-  listing: Listing;
+  listing: MarketplaceListing | {
+    id: string;
+    brand: string;
+    condition: string;
+    images?: string[];
+    price: number;
+    size: string;
+    status: string;
+    title: string;
+  };
   sellerRating?: { avgRating: number; totalReviews: number } | null;
 }
 
@@ -14,6 +24,12 @@ function ListingCard({
   listing,
   sellerRating,
 }: ListingCardProps) {
+  const image = 'imageUrls' in listing || 'media' in listing || 'coverImageUrl' in listing
+    ? getListingMediaUrls(listing)[0]
+    : listing.images?.[0];
+  const status = listing.status.toLowerCase();
+  const previewImage = image || '/placeholder.svg';
+
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
@@ -23,27 +39,27 @@ function ListingCard({
       <Link to={`/listing/${listing.id}`} className="group block">
         <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-muted">
           <img
-            src={listing.images[0]}
+            src={previewImage}
             alt={listing.title}
             loading="lazy"
             className={`
               h-full w-full object-cover transition-transform duration-500
               group-hover:scale-105
               ${
-    listing.status === 'sold' || listing.status === 'reserved'
+    status === 'sold' || status === 'reserved'
       ? 'opacity-60 grayscale'
       : ''
     }
             `}
           />
-          {listing.status === 'sold' && (
+          {status === 'sold' && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="rounded-md bg-foreground/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-background backdrop-blur">
                 Sold
               </span>
             </div>
           )}
-          {listing.status === 'reserved' && (
+          {status === 'reserved' && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="rounded-md bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground backdrop-blur">
                 Reserved

@@ -2,7 +2,6 @@ export interface PayoutRun {
   id: string;
   buyerRefundAmount: number;
   buyerRefundItemCount: number;
-  generatedBy: string;
   generatedByFullName: string;
   itemCount: number;
   periodEnd: string;
@@ -10,6 +9,7 @@ export interface PayoutRun {
   sellerPayoutAmount: number;
   sellerPayoutItemCount: number;
   totalAmount: number;
+  generatedBy: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,7 +30,6 @@ export interface PayoutRunItem {
   bankName: string | null;
   bankSwift: string | null;
   itemType: 'BUYER_REFUND' | 'SELLER_PAYOUT';
-  paidAt: string | null;
   periodEnd: string;
   periodStart: string;
   sourceDate: string | null;
@@ -50,6 +49,7 @@ export interface PayoutRunItem {
   sourceType: string;
   status: 'PAID' | 'UNPAID';
   userFullName: string | null;
+  paidAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,17 +58,17 @@ export interface SellerPayout {
   id: string;
   sellerId: string;
   amount: number;
-  createdBy: string;
   createdByFullName: string;
   method: string;
   notes: string | null;
-  paidAt: string;
   periodEnd: string | null;
   periodStart: string | null;
   reference: string;
   sellerFullName: string;
   status: string;
+  paidAt: string;
   createdAt: string;
+  createdBy: string;
   updatedAt: string;
 }
 
@@ -82,16 +82,16 @@ export interface CreateSellerPayoutPayload {
   amount: number;
   method: string;
   notes?: string | null;
-  paidAt?: string;
   periodEnd: string;
   periodStart: string;
   reference: string;
   status?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING';
+  paidAt?: string;
 }
 
 export interface UpdatePayoutRunItemStatusPayload {
-  paidAt?: string;
   status: 'PAID' | 'UNPAID';
+  paidAt?: string;
 }
 
 export interface PayoutRunListParams {

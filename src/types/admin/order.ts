@@ -23,10 +23,8 @@ export interface AdminOrderItem {
   price: number;
   proofImageUrl: string | null;
   quantity: number;
-  receivedAt: string | null;
   reservedOfferPrice: number | null;
   sellerFullName: string;
-  shippedAt: string | null;
   shippingMethod: string | null;
   size: string;
   status: 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';
@@ -35,6 +33,8 @@ export interface AdminOrderItem {
   title: string;
   total: number;
   trackingNumber: string | null;
+  receivedAt: string | null;
+  shippedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,7 +79,7 @@ export interface ReservedListing {
   sellerId: string;
   buyerFullName: string;
   price: number;
-  reservationExpiresAt: string;
   sellerFullName: string;
   title: string;
+  reservationExpiresAt: string;
 }

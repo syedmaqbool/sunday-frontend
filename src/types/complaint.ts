@@ -27,8 +27,6 @@ export interface Complaint {
   expectedReturnDate: string | null;
   listingTitle: string;
   reason: string;
-  resolvedAt: string | null;
-  resolvedBy: string | null;
   resolverFullName: string | null;
   returnAddress: string | null;
   returnAddressPhone: string | null;
@@ -39,6 +37,8 @@ export interface Complaint {
   returnTracking: string | null;
   sellerFullName: string;
   status: ComplaintStatus;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
   createdAt: string;
   updatedAt: string;
 }

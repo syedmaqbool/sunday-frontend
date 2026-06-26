@@ -28,7 +28,10 @@ import {
   useUserPreferences,
 } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
-import { getMarketplaceListingsOptions } from '@/queries/useMarketplace';
+import {
+  getListingMediaUrls,
+  getMarketplaceListingsOptions,
+} from '@/queries/useMarketplace';
 
 function Listings() {
   const [searchParameters] = useSearchParams();
@@ -57,7 +60,7 @@ function Listings() {
     getMarketplaceListingsOptions(),
   );
 
-  const sellerIds = useMemo(() => listings.map(l => l.seller_id), [listings]);
+  const sellerIds = useMemo(() => listings.map(l => l.sellerId), [listings]);
   const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
   const searchBoostMap = useBoostScoreMap('SEARCH');
 
@@ -72,12 +75,12 @@ function Listings() {
     }
     if (parentCat !== 'all') {
       items = items.filter(
-        index => index.category.toLowerCase() === parentCat.toLowerCase(),
+        index => index.categoryValue.toLowerCase() === parentCat.toLowerCase(),
       );
     }
 
     if (subCat !== 'all') {
-      items = items.filter(index => index.category.endsWith(`-${subCat}`));
+      items = items.filter(index => index.categoryValue.endsWith(`-${subCat}`));
     }
     if (condition !== 'all')
       items = items.filter(index => index.condition === condition);
@@ -92,9 +95,9 @@ function Listings() {
     else {
       items.sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
-      items = personalizeListings(items, prefs);
+      items = personalizeListings(items, prefs, item => item.categoryValue);
     }
     // Boosted listings always surface first within the current sort
     items = applyBoostRanking(items, searchBoostMap);
@@ -294,47 +297,50 @@ function Listings() {
                                 key={l.id}
                                 index={index}
                                 listing={l}
-                                sellerRating={sellerRatingsMap?.get(l.seller_id)}
+                                sellerRating={sellerRatingsMap?.get(l.sellerId)}
                               />
                             ))}
                           </div>
                         )
                       : (
                           <div className="mt-4 space-y-4">
-                            {filtered.map(l => (
-                              <div
-                                key={l.id}
-                                className="flex gap-4 rounded-lg border border-border bg-card p-4"
-                              >
-                                <img
-                                  src={l.images[0]}
-                                  alt={l.title}
-                                  className="h-28 w-28 rounded-md object-cover"
-                                />
-                                <div className="flex-1">
-                                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    {l.brand}
-                                  </p>
-                                  <h3 className="text-sm font-semibold text-card-foreground">
-                                    {l.title}
-                                  </h3>
-                                  <p className="mt-1 text-sm font-bold text-card-foreground">
-                                    Rs
-                                    {' '}
-                                    {l.price.toLocaleString()}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Size
-                                    {' '}
-                                    {l.size}
-                                    {' '}
-                                    ·
-                                    {' '}
-                                    {l.condition.replace('_', ' ')}
-                                  </p>
+                            {filtered.map((l) => {
+                              const mediaUrls = getListingMediaUrls(l);
+                              return (
+                                <div
+                                  key={l.id}
+                                  className="flex gap-4 rounded-lg border border-border bg-card p-4"
+                                >
+                                  <img
+                                    src={mediaUrls[0]}
+                                    alt={l.title}
+                                    className="h-28 w-28 rounded-md object-cover"
+                                  />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                      {l.brand}
+                                    </p>
+                                    <h3 className="text-sm font-semibold text-card-foreground">
+                                      {l.title}
+                                    </h3>
+                                    <p className="mt-1 text-sm font-bold text-card-foreground">
+                                      Rs
+                                      {' '}
+                                      {l.price.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Size
+                                      {' '}
+                                      {l.size}
+                                      {' '}
+                                      ·
+                                      {' '}
+                                      {l.condition.replace('_', ' ')}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ))}
               </>

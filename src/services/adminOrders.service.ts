@@ -6,8 +6,8 @@ export function listAdminOrders(
   parameters: {
     page?: number;
     size?: number;
-    sortBy?: string;
     sortOrder?: string;
+    sortBy?: string;
   } = {},
 ) {
   return authInstance

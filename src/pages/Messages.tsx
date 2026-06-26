@@ -33,10 +33,10 @@ interface Conversation {
   sellerId: string;
   buyerFullName: string;
   lastMessageContent: string | null;
-  lastMessageCreatedAt: string | null;
   listingTitle: string;
   sellerFullName: string;
   unreadCount: number;
+  lastMessageCreatedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

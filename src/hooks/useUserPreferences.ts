@@ -1,8 +1,9 @@
+import type { UserPreferences } from '@/queries/useUserPreferences';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getUserPreferencesOptions,
-  type UserPreferences,
+
 } from '@/queries/useUserPreferences';
 
 export function useUserPreferences() {
@@ -16,21 +17,25 @@ export function useUserPreferences() {
  * Items within budget range get +1.
  */
 export function personalizeListings<
-  T extends { brand: string; category: string; price: number },
->(listings: T[], prefs: UserPreferences | null | undefined): T[] {
-  if (!prefs)
+  T extends { brand: string; price: number },
+>(
+  listings: T[],
+  preferences: UserPreferences | null | undefined,
+  getStyleValue: (item: T) => string = item => (item as T & { category: string }).category,
+): T[] {
+  if (!preferences)
     return listings;
 
-  const prefBrands = new Set((prefs.brands ?? []).map(b => b.toLowerCase()));
-  const prefStyles = new Set((prefs.styles ?? []).map(s => s.toLowerCase()));
+  const prefBrands = new Set((preferences.brands ?? []).map(b => b.toLowerCase()));
+  const prefStyles = new Set((preferences.styles ?? []).map(s => s.toLowerCase()));
 
   const scored = listings.map((item) => {
     let score = 0;
     if (prefBrands.has(item.brand.toLowerCase()))
       score += 2;
-    if (prefStyles.has(item.category.toLowerCase()))
+    if (prefStyles.has(getStyleValue(item).toLowerCase()))
       score += 1;
-    if (prefs.budget_min != null && prefs.budget_max != null && item.price >= prefs.budget_min && item.price <= prefs.budget_max)
+    if (preferences.budget_min != null && preferences.budget_max != null && item.price >= preferences.budget_min && item.price <= preferences.budget_max)
       score += 1;
     return { item, score };
   });

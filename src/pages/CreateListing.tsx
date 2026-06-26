@@ -38,9 +38,10 @@ import { useCategories, useSubcategories } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
-// Mock configuration configuration switcher  import
-import { isMockDataEnabled } from '@/lib/mockConfig';
-import { getEditListingOptions } from '@/queries/useMarketplace';
+import {
+  getEditListingOptions,
+  getListingMediaUrls,
+} from '@/queries/useMarketplace';
 
 const MAX_PHOTOS = 20;
 
@@ -106,7 +107,7 @@ function CreateListing() {
   );
 
   useEffect(() => {
-    if (!authLoading && !user && !isMockDataEnabled)
+    if (!authLoading && !user)
       navigate('/auth', { replace: true });
   }, [user, authLoading, navigate]);
 
@@ -116,13 +117,12 @@ function CreateListing() {
     }
 
     if (
-      existingListing.seller_id !== user?.id
-      && !isMockDataEnabled
+      existingListing.sellerId !== user?.id
     ) {
       navigate('/listings', { replace: true });
       return;
     }
-    const parts = (existingListing.category || '').split('-');
+    const parts = (existingListing.categoryValue || '').split('-');
     const closestWeight = (() => {
       if (!existingListing.weight)
         return '';
@@ -152,7 +152,7 @@ function CreateListing() {
       title: existingListing.title,
       weight: closestWeight,
     });
-    const media = existingListing.images || [];
+    const media = getListingMediaUrls(existingListing);
     setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
     const vid = media.find((u: string) => isVideoUrl(u));
     setExistingVideo(vid || null);
@@ -244,19 +244,6 @@ function CreateListing() {
 
   async function performSubmit() {
     setSubmitting(true);
-
-    if (isMockDataEnabled) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast({
-        description: isEditing
-          ? 'Your changes have been saved successfully (Mock Mode).'
-          : 'Your item has been submitted and is pending preview verification.',
-        title: isEditing ? 'Listing updated!' : 'Listing created!',
-      });
-      setSubmitting(false);
-      navigate('/listings');
-      return;
-    }
 
     if (!user)
       return;
@@ -361,11 +348,6 @@ function CreateListing() {
   const handleSubmit = async (event_: React.FormEvent) => {
     event_.preventDefault();
 
-    if (isMockDataEnabled) {
-      await performSubmit();
-      return;
-    }
-
     if (!user)
       return;
 
@@ -425,7 +407,7 @@ function CreateListing() {
     ? URL.createObjectURL(videoFile)
     : existingVideo, [existingVideo, videoFile]);
 
-  if ((authLoading || loadingListing) && !isMockDataEnabled) {
+  if (authLoading || loadingListing) {
     return null;
   }
 

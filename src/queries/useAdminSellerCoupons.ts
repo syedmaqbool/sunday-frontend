@@ -7,17 +7,17 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import { authInstance } from '@/services/ky.instance';
 import {
   createSellerCoupon,
   deleteSellerCoupon,
   listSellerCoupons,
   updateSellerCoupon,
 } from '@/services/sellerCoupon.service';
-import { authInstance } from '@/services/ky.instance';
 
 export const sellerCouponsQueryKey = {
-  all: () => ['seller-coupons'] as const,
   adminUsers: () => ['admin-users-list'] as const,
+  all: () => ['seller-coupons'] as const,
   list: () => [...sellerCouponsQueryKey.all(), 'list'] as const,
   sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
 };

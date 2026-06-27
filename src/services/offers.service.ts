@@ -1,5 +1,8 @@
 import type { PaginatedResponse, Response } from '@/types/response.type';
+import base, { API_BASE_URL } from '@/services/ky-base-instance';
 import { authInstance } from '@/services/ky.instance';
+
+const publicInstance = base.extend({ baseUrl: API_BASE_URL });
 
 export type OfferStatus =
   | 'ACCEPTED'
@@ -131,4 +134,18 @@ export function listMyReviews(
       },
     })
     .json<PaginatedResponse<Review>>();
+}
+
+export interface ReviewStat {
+  reviewedId: string;
+  avgRating: number;
+  totalReviews: number;
+}
+
+export function getReviewStats(reviewedIds: string[]) {
+  return publicInstance
+    .get('/api/v1/reviews/stats', {
+      searchParams: { reviewedIds: reviewedIds.join(',') },
+    })
+    .json<Response<ReviewStat[]>>();
 }

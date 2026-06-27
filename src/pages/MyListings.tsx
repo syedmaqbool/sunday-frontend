@@ -40,85 +40,25 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { getWeightLabel } from '@/lib/constants';
-import { isMockDataEnabled } from '@/lib/mockConfig';
-import { getMyListingsOptions } from '@/queries/useMyListings';
+import type { MyListing } from '@/queries/useMyListings';
+import { getMyListingsOptions, myListingsQueryKey } from '@/queries/useMyListings';
+import {
+  cancelMyListingReservation,
+  deleteMyListing,
+  resubmitMyListing,
+} from '@/services/listing.service';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_LISTINGS = [
-  {
-    id: 'mock-listing-1',
-    brand: 'Zara',
-    created_at: '2026-06-10T10:00:00.000Z',
-    images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600'],
-    price: 6500,
-    reserved_until: null,
-    status: 'approved',
-    title: 'Vintage Leather Jacket',
-    weight: 'medium',
-  },
-  {
-    id: 'mock-listing-2',
-    brand: 'Nike',
-    created_at: '2026-06-08T14:30:00.000Z',
-    images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600'],
-    price: 3500,
-    reserved_until: '2026-06-20T18:00:00.000Z',
-    status: 'reserved',
-    title: 'Classic White Sneakers',
-    weight: 'light',
-  },
-  {
-    id: 'mock-listing-3',
-    brand: 'Mango',
-    created_at: '2026-06-15T09:00:00.000Z',
-    images: [
-      'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600',
-    ],
-    price: 2800,
-    reserved_until: null,
-    status: 'pending',
-    title: 'Bohemian Summer Dress',
-    weight: 'light',
-  },
-  {
-    id: 'mock-listing-4',
-    brand: 'H&M',
-    created_at: '2026-06-05T11:15:00.000Z',
-    images: ['https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600'],
-    price: 2200,
-    reserved_until: null,
-    status: 'rejected',
-    title: 'Kids Denim Dungarees',
-    weight: 'light',
-  },
-  {
-    id: 'mock-listing-5',
-    brand: 'Uniqlo',
-    created_at: '2026-05-28T16:45:00.000Z',
-    images: [
-      'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600',
-    ],
-    price: 8900,
-    reserved_until: null,
-    status: 'sold',
-    title: 'Wool Winter Coat',
-    weight: 'heavy',
-  },
-];
-
-function getStatusColor(status: string) {
-  if (status === 'approved' || status === 'reserved')
+function getStatusColor(status: MyListing['status']) {
+  if (status === 'APPROVED' || status === 'RESERVED')
     return 'default';
-  if (status === 'rejected')
+  if (status === 'REJECTED')
     return 'destructive';
   return 'secondary';
 }
 
-function isReadOnlyStatus(status: string) {
-  return ['approved', 'reserved', 'sold'].includes(status);
+function isReadOnlyStatus(status: MyListing['status']) {
+  return ['APPROVED', 'RESERVED', 'SOLD'].includes(status);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -129,101 +69,58 @@ function MyListings() {
   const queryClient = useQueryClient();
 
   const { data: listings = [], isLoading } = useQuery(
-    getMyListingsOptions(user?.id),
+    getMyListingsOptions(!!user),
   );
 
+  const invalidateListings = () =>
+    queryClient.invalidateQueries({ queryKey: myListingsQueryKey.list() });
+
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      if (isMockDataEnabled)
-        return;
-      const { error } = await supabase.from('listings').delete().eq('id', id);
-      if (error)
-        throw error;
-    },
+    mutationFn: (id: string) => deleteMyListing(id),
     onError: () => toast.error('Failed to delete listing'),
-    onSuccess: (_data, id) => {
+    onSuccess: () => {
       toast.success('Listing deleted');
-      if (isMockDataEnabled) {
-        queryClient.setQueryData(['my-listings', user?.id], (old: any[] = []) =>
-          old.filter(l => l.id !== id));
-      }
-      else {
-        queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-      }
+      invalidateListings();
     },
   });
 
   const resubmitMutation = useMutation({
-    mutationFn: async (id: string) => {
-      if (isMockDataEnabled)
-        return;
-      const { error } = await supabase
-        .from('listings')
-        .update({ status: 'pending' } as any)
-        .eq('id', id);
-      if (error)
-        throw error;
-    },
+    mutationFn: (id: string) => resubmitMyListing(id),
     onError: () => toast.error('Failed to resubmit'),
-    onSuccess: (_data, id) => {
+    onSuccess: () => {
       toast.success('Listing resubmitted for review');
-      if (isMockDataEnabled) {
-        queryClient.setQueryData(['my-listings', user?.id], (old: any[] = []) =>
-          old.map(l => (l.id === id ? { ...l, status: 'pending' } : l)));
-      }
-      else {
-        queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-      }
+      invalidateListings();
     },
   });
 
   const cancelReservationMutation = useMutation({
-    mutationFn: async (id: string) => {
-      if (isMockDataEnabled)
-        return;
-      const { error } = await supabase.rpc('expire_listing_reservation', {
-        _force: true,
-        _listing_id: id,
-      });
-      if (error)
-        throw error;
-    },
+    mutationFn: (id: string) => cancelMyListingReservation(id),
     onError: (error: any) => toast.error(error.message ?? 'Failed'),
-    onSuccess: (_data, id) => {
+    onSuccess: () => {
       toast.success('Reservation cancelled');
-      if (isMockDataEnabled) {
-        queryClient.setQueryData(['my-listings', user?.id], (old: any[] = []) =>
-          old.map(l =>
-            l.id === id
-              ? { ...l, reserved_until: null, status: 'approved' }
-              : l,
-          ));
-      }
-      else {
-        queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-      }
+      invalidateListings();
     },
   });
 
   useEffect(() => {
-    if (!authLoading && !user && !isMockDataEnabled)
+    if (!authLoading && !user)
       navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
   if (authLoading)
     return null;
-  if (!user && !isMockDataEnabled)
+  if (!user)
     return null;
 
   const approvedListings = listings.filter(
-    (l: any) => l.status === 'approved' || l.status === 'reserved',
+    l => l.status === 'APPROVED' || l.status === 'RESERVED',
   );
-  const soldListings = listings.filter((l: any) => l.status === 'sold');
+  const soldListings = listings.filter(l => l.status === 'SOLD');
   const pendingListings = listings.filter(
-    (l: any) => !['approved', 'reserved', 'sold'].includes(l.status),
+    l => !['APPROVED', 'RESERVED', 'SOLD'].includes(l.status),
   );
 
-  const renderListingCard = (listing: any) => (
+  const renderListingCard = (listing: MyListing) => (
     <Card key={listing.id}>
       <CardContent className="
         flex flex-col gap-4 p-4
@@ -231,11 +128,11 @@ function MyListings() {
       "
       >
         <img
-          src={listing.images?.[0] || '/placeholder.svg'}
+          src={listing.coverImage?.url || '/placeholder.svg'}
           alt={listing.title}
           className={`
             h-20 w-20 rounded-md object-cover
-            ${listing.status === 'reserved' ? 'opacity-60 grayscale' : ''}
+            ${listing.status === 'RESERVED' ? 'opacity-60 grayscale' : ''}
           `}
         />
         <div className="min-w-0 flex-1">
@@ -244,7 +141,7 @@ function MyListings() {
               {listing.title}
             </h3>
             <Badge variant={getStatusColor(listing.status)}>
-              {listing.status}
+              {listing.status.toLowerCase()}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -254,17 +151,17 @@ function MyListings() {
             {listing.price.toLocaleString()}
             {listing.weight ? ` · ${getWeightLabel(listing.weight)}` : ''}
           </p>
-          {listing.status === 'reserved' && listing.reserved_until && (
+          {listing.status === 'RESERVED' && listing.reservedUntil && (
             <p className="mt-1 text-xs text-primary">
               Reserved · expires
               {' '}
-              {new Date(listing.reserved_until).toLocaleString()}
+              {new Date(listing.reservedUntil).toLocaleString()}
             </p>
           )}
           <MyListingFeedbackInline listingId={listing.id} />
         </div>
         <div className="flex shrink-0 gap-2">
-          {['approved', 'sold', 'reserved'].includes(listing.status) && (
+          {['APPROVED', 'SOLD', 'RESERVED'].includes(listing.status) && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="gap-1">
@@ -285,7 +182,7 @@ function MyListings() {
               </DialogContent>
             </Dialog>
           )}
-          {listing.status === 'reserved' && (
+          {listing.status === 'RESERVED' && (
             <Button
               onClick={() => cancelReservationMutation.mutate(listing.id)}
               disabled={cancelReservationMutation.isPending}
@@ -296,7 +193,7 @@ function MyListings() {
               Cancel reservation
             </Button>
           )}
-          {listing.status === 'approved' && (
+          {listing.status === 'APPROVED' && (
             <BoostDialog
               listingId={listing.id}
               listingTitle={listing.title}
@@ -325,7 +222,8 @@ function MyListings() {
               Edit
             </Button>
           )}
-          {listing.status === 'rejected' && (
+          {(listing.status === 'REJECTED'
+            || listing.status === 'NEEDS_REVISION') && (
             <Button
               onClick={() => resubmitMutation.mutate(listing.id)}
               disabled={resubmitMutation.isPending}

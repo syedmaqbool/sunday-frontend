@@ -38,6 +38,37 @@ export function moderateListing(
     .json<Response<AdminListing>>();
 }
 
+export function listMyListings(
+  parameters: { page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get('/api/v1/me/listings', {
+      searchParams: {
+        page: parameters.page ?? 1,
+        size: parameters.size ?? 100,
+      },
+    })
+    .json<PaginatedResponse<AdminListing>>();
+}
+
+export function deleteMyListing(listingId: string) {
+  return authInstance
+    .delete(`/api/v1/me/listings/${listingId}`)
+    .json<Response>();
+}
+
+export function resubmitMyListing(listingId: string) {
+  return authInstance
+    .post(`/api/v1/me/listings/${listingId}/resubmit`)
+    .json<Response<AdminListing>>();
+}
+
+export function cancelMyListingReservation(listingId: string) {
+  return authInstance
+    .post(`/api/v1/me/listings/${listingId}/cancel-reservation`)
+    .json<Response<AdminListing>>();
+}
+
 export function listMyListingFeedback(
   listingId: string,
   parameters: { page?: number; size?: number } = {},

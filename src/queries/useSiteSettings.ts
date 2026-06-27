@@ -4,9 +4,9 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import {
   getHeroImage,
+  getPublicHeroImage,
   updateHeroImage,
   uploadSiteAsset,
 } from '@/services/adminSiteSettings.service';
@@ -41,12 +41,13 @@ export function getHeroImageQueryOptions() {
 export function getPublicHeroImageOptions() {
   return queryOptions({
     queryFn: async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'hero_image')
-        .maybeSingle();
-      return (data?.value as unknown) ?? null;
+      try {
+        const response = await getPublicHeroImage();
+        return response.data.value;
+      }
+      catch {
+        return null;
+      }
     },
     queryKey: siteSettingsQueryKey.heroImage(),
     staleTime: 60_000,

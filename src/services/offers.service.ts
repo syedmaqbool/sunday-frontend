@@ -1,21 +1,21 @@
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export type OfferStatus =
-  | 'ACCEPTED'
-  | 'COUNTERED'
-  | 'EXPIRED'
-  | 'PENDING'
-  | 'REJECTED'
-  | 'WITHDRAWN';
+export type OfferStatus
+  = | 'ACCEPTED'
+    | 'COUNTERED'
+    | 'EXPIRED'
+    | 'PENDING'
+    | 'REJECTED'
+    | 'WITHDRAWN';
 
-export type OfferListingStatus =
-  | 'APPROVED'
-  | 'NEEDS_REVISION'
-  | 'PENDING'
-  | 'REJECTED'
-  | 'RESERVED'
-  | 'SOLD';
+export type OfferListingStatus
+  = | 'APPROVED'
+    | 'NEEDS_REVISION'
+    | 'PENDING'
+    | 'REJECTED'
+    | 'RESERVED'
+    | 'SOLD';
 
 export interface Offer {
   id: string;
@@ -121,16 +121,32 @@ export interface Review {
 }
 
 export function listMyReviews(
-  parameters: { page?: number; size?: number } = {},
+  parameters: { listingId?: string; orderId?: string; page?: number; size?: number } = {},
 ) {
   return authInstance
-    .get('/api/v1/me/reviews', {
-      searchParams: {
-        page: parameters.page ?? 1,
-        size: parameters.size ?? 100,
-      },
-    })
+    .get('/api/v1/me/reviews', { searchParams: parameters })
     .json<PaginatedResponse<Review>>();
+}
+
+export function listReviews(
+  parameters: { listingId?: string; reviewedId?: string; page?: number; size?: number } = {},
+) {
+  return authInstance
+    .get('/api/v1/reviews', { searchParams: parameters })
+    .json<PaginatedResponse<Review>>();
+}
+
+export function createReview(payload: {
+  orderId: string;
+  orderItemId: string;
+  comment?: string;
+  imageUrls?: string[];
+  rating: number;
+  videoUrl?: string;
+}) {
+  return authInstance
+    .post('/api/v1/reviews', { json: payload })
+    .json<Response<Review>>();
 }
 
 export interface ReviewStat {

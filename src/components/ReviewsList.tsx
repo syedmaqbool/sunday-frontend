@@ -79,7 +79,7 @@ export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
                   ))}
                 </div>
                 <span className="text-xs font-medium text-foreground">
-                  {review.reviewer_profile?.full_name || 'User'}
+                  {review.reviewerFullName || 'User'}
                 </span>
                 <span className="text-xs capitalize text-muted-foreground">
                   (
@@ -88,7 +88,7 @@ export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
                 </span>
               </div>
               <span className="text-xs text-muted-foreground">
-                {format(new Date(review.created_at), 'MMM d, yyyy')}
+                {format(new Date(review.createdAt), 'MMM d, yyyy')}
               </span>
             </div>
             {review.comment && (
@@ -97,13 +97,13 @@ export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
               </p>
             )}
 
-            {review.image_urls && review.image_urls.length > 0 && (
+            {review.imageUrls && review.imageUrls.length > 0 && (
               <div className="
                 mt-2 grid grid-cols-3 gap-1.5
                 sm:grid-cols-4
               "
               >
-                {review.image_urls.map(url => (
+                {review.imageUrls.map(url => (
                   <button
                     key={url}
                     onClick={() => setLightbox(url)}
@@ -124,19 +124,19 @@ export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
               </div>
             )}
 
-            {review.video_url && (
+            {review.videoUrl && (
               <video
-                src={review.video_url}
+                src={review.videoUrl}
                 controls
                 className="mt-2 max-h-[280px] w-full rounded-md border border-border bg-black"
               />
             )}
 
-            {review.listing && (
+            {review.listingTitle && (
               <p className="mt-1.5 text-xs text-muted-foreground/70">
                 Re:
                 {' '}
-                {review.listing.title}
+                {review.listingTitle}
               </p>
             )}
           </div>

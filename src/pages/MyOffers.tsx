@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, MessageSquare, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { isMockDataEnabled } from '@/lib/mockConfig';
 import {
   getMyReviewedOfferIdsOptions,
@@ -19,12 +18,12 @@ import {
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
-    accepted: 'default',
-    countered: 'secondary',
-    expired: 'destructive',
-    pending: 'secondary',
-    rejected: 'destructive',
-    withdrawn: 'destructive',
+    ACCEPTED: 'default',
+    COUNTERED: 'secondary',
+    EXPIRED: 'destructive',
+    PENDING: 'secondary',
+    REJECTED: 'destructive',
+    WITHDRAWN: 'destructive',
   };
   return map[s] ?? 'secondary';
 }
@@ -32,7 +31,6 @@ function statusBadge(s: string) {
 function MyOffers() {
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,24 +45,6 @@ function MyOffers() {
   const { data: myReviews = [] } = useQuery(
     getMyReviewedOfferIdsOptions(user?.id),
   );
-
-  useEffect(() => {
-    if (!user || isMockDataEnabled)
-      return; // Disable realtime listening in mock config
-    const channel = supabase
-      .channel('offers-sent-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'offers' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['offers-sent'] });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
 
   if (authLoading)
     return null;
@@ -127,8 +107,8 @@ function MyOffers() {
                           "
                           >
                             <img
-                              src={offer.listings?.images?.[0] || '/placeholder.svg'}
-                              onClick={() => navigate(`/listing/${offer.listing_id}`)}
+                              src="/placeholder.svg"
+                              onClick={() => navigate(`/listing/${offer.listingId}`)}
                               alt=""
                               className="h-16 w-16 cursor-pointer rounded-md bg-muted object-cover"
                             />
@@ -136,13 +116,13 @@ function MyOffers() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3
                                   onClick={() =>
-                                    navigate(`/listing/${offer.listing_id}`)}
+                                    navigate(`/listing/${offer.listingId}`)}
                                   className="
                                     cursor-pointer truncate text-sm font-semibold text-foreground
                                     hover:text-primary
                                   "
                                 >
-                                  {offer.listings?.title ?? 'Listing'}
+                                  {offer.listingTitle ?? 'Listing'}
                                 </h3>
                                 <Badge variant={statusBadge(offer.status)}>
                                   {offer.status}
@@ -151,11 +131,11 @@ function MyOffers() {
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 Listed Rs
                                 {' '}
-                                {offer.listings?.price?.toLocaleString()}
+                                {offer.listingPrice?.toLocaleString()}
                                 {' '}
                                 ·
                                 {' '}
-                                {format(new Date(offer.created_at), 'MMM d')}
+                                {format(new Date(offer.createdAt), 'MMM d')}
                               </p>
                               <p className="mt-1.5 text-sm font-semibold text-foreground">
                                 Your offer: Rs
@@ -163,24 +143,17 @@ function MyOffers() {
                                 {offer.amount.toLocaleString()}
                               </p>
 
-                              {offer.status === 'countered' && offer.counter_amount && (
+                              {offer.status === 'COUNTERED' && offer.counterAmount && (
                                 <div className="mt-2 max-w-md rounded border bg-muted/60 p-2">
                                   <p className="text-xs font-semibold text-foreground">
                                     Counter: Rs
                                     {' '}
-                                    {offer.counter_amount.toLocaleString()}
+                                    {offer.counterAmount.toLocaleString()}
                                   </p>
-                                  {offer.seller_message && (
-                                    <p className="mt-0.5 text-xs italic text-muted-foreground">
-                                      "
-                                      {offer.seller_message}
-                                      "
-                                    </p>
-                                  )}
                                 </div>
                               )}
 
-                              {offer.status === 'accepted'
+                              {offer.status === 'ACCEPTED'
                                 && !myReviews.includes(offer.id)
                                 && (reviewingOffer === offer.id
                                   ? (
@@ -207,9 +180,9 @@ function MyOffers() {
                                             )
                                           : (
                                               <ReviewForm
-                                                listingId={offer.listing_id}
+                                                listingId={offer.listingId}
                                                 offerId={offer.id}
-                                                reviewedId={offer.seller_id}
+                                                reviewedId={offer.sellerId}
                                                 onSuccess={() => setReviewingOffer(null)}
                                                 role="buyer"
                                               />
@@ -228,7 +201,7 @@ function MyOffers() {
                                         Leave Review
                                       </Button>
                                     ))}
-                              {offer.status === 'accepted'
+                              {offer.status === 'ACCEPTED'
                                 && myReviews.includes(offer.id) && (
                                 <span className="mt-2 inline-flex items-center rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600">
                                   ✓ Reviewed

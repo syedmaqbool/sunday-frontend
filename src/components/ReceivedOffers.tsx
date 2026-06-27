@@ -7,7 +7,7 @@ import {
   Star,
   XCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { ReviewForm } from '@/components/ReviewForm';
 import { Badge } from '@/components/ui/badge';
@@ -27,22 +27,26 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import {
   getMyReviewedOfferIdsOptions,
   getReceivedOffersOptions,
+  offersQueryKey,
 } from '@/queries/useOffers';
+import {
+  acceptOffer,
+  counterOffer,
+  rejectOffer,
+} from '@/services/offers.service';
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
-    accepted: 'default',
-    countered: 'secondary',
-    expired: 'destructive',
-    pending: 'secondary',
-    rejected: 'destructive',
-    withdrawn: 'destructive',
+    ACCEPTED: 'default',
+    COUNTERED: 'secondary',
+    EXPIRED: 'destructive',
+    PENDING: 'secondary',
+    REJECTED: 'destructive',
+    WITHDRAWN: 'destructive',
   };
   return map[s] ?? 'secondary';
 }
@@ -58,7 +62,6 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const queryClient = useQueryClient();
   const [counterDialog, setCounterDialog] = useState<any | null>(null);
   const [counterAmount, setCounterAmount] = useState('');
-  const [counterMessage, setCounterMessage] = useState('');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
@@ -70,75 +73,35 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
     getMyReviewedOfferIdsOptions(user?.id),
   );
 
-  useEffect(() => {
-    if (!user)
-      return;
-    const channel = supabase
-      .channel('offers-received-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'offers' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['offers-received'] });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
-
   const respondToOffer = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
-      counter_amount,
-      seller_message,
-      status,
+      counterAmount: counter,
+      action,
     }: {
       id: string;
-      counter_amount?: number;
-      seller_message?: string;
-      status: string;
+      counterAmount?: number;
+      action: 'accept' | 'counter' | 'reject';
     }) => {
-      const update: any = { status, updated_at: new Date().toISOString() };
-      if (counter_amount)
-        update.counter_amount = counter_amount;
-      if (seller_message)
-        update.seller_message = seller_message;
-      const { error } = await supabase
-        .from('offers')
-        .update(update)
-        .eq('id', id);
-      if (error)
-        throw error;
-
-      if (status === 'accepted') {
-        const offer = received.find(o => o.id === id);
-        if (offer) {
-          await supabase.from('conversations').insert({
-            buyer_id: offer.buyer_id,
-            listing_id: offer.listing_id,
-            offer_id: offer.id,
-            seller_id: offer.seller_id,
-          });
-          // Listing status -> 'reserved' is handled automatically by DB trigger.
-        }
-      }
+      if (action === 'accept')
+        return acceptOffer(id);
+      if (action === 'reject')
+        return rejectOffer(id);
+      return counterOffer(id, { counterAmount: counter! });
     },
     onError: () => toast.error('Failed to update offer'),
-    onSuccess: (_, { status }) => {
-      toast.success(`Offer ${status}`);
-      if (status === 'accepted') {
+    onSuccess: (_, { action }) => {
+      toast.success(`Offer ${action}ed`);
+      if (action === 'accept') {
         toast.info(
           'Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.',
         );
       }
-      queryClient.invalidateQueries({ queryKey: ['offers-received'] });
+      queryClient.invalidateQueries({ queryKey: offersQueryKey.received(user?.id, listingId) });
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       setCounterDialog(null);
       setCounterAmount('');
-      setCounterMessage('');
     },
   });
 
@@ -161,7 +124,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const sortedOffers = received.toSorted((a, b) => {
     if (sortBy === 'price_desc')
       return b.amount - a.amount;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const sortLabel: Record<SortOption, string> = {
@@ -198,14 +161,14 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
             "
             >
               <img
-                src={offer.listings?.images?.[0] || '/placeholder.svg'}
+                src="/placeholder.svg"
                 alt=""
                 className="h-16 w-16 rounded-md object-cover"
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="truncate text-sm font-semibold text-foreground">
-                    {offer.listings?.title ?? 'Listing'}
+                    {offer.listingTitle ?? 'Listing'}
                   </h3>
                   <Badge variant={statusBadge(offer.status)}>
                     {offer.status}
@@ -214,39 +177,32 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 <p className="text-xs text-muted-foreground">
                   From
                   {' '}
-                  {offer.buyer_profile?.full_name || 'Buyer'}
+                  {offer.buyerFullName || 'Buyer'}
                   {' '}
                   · Listed R
                   {' '}
-                  {offer.listings?.price?.toLocaleString()}
+                  {offer.listingPrice?.toLocaleString()}
                 </p>
                 <p className="mt-1 text-lg font-bold text-foreground">
                   Offer: R
                   {' '}
                   {offer.amount.toLocaleString()}
                 </p>
-                {offer.message && (
-                  <p className="mt-0.5 text-xs italic text-muted-foreground">
-                    "
-                    {offer.message}
-                    "
-                  </p>
-                )}
-                {offer.counter_amount && (
+                {offer.counterAmount && (
                   <p className="text-xs text-muted-foreground">
                     Your counter: R
                     {' '}
-                    {offer.counter_amount.toLocaleString()}
+                    {offer.counterAmount.toLocaleString()}
                   </p>
                 )}
               </div>
-              {offer.status === 'pending' && (
+              {offer.status === 'PENDING' && (
                 <div className="flex shrink-0 gap-2">
                   <Button
                     onClick={() =>
                       respondToOffer.mutate({
                         id: offer.id,
-                        status: 'accepted',
+                        action: 'accept',
                       })}
                     disabled={respondToOffer.isPending}
                     size="sm"
@@ -270,7 +226,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                     onClick={() =>
                       respondToOffer.mutate({
                         id: offer.id,
-                        status: 'rejected',
+                        action: 'reject',
                       })}
                     disabled={respondToOffer.isPending}
                     size="sm"
@@ -283,7 +239,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                   </Button>
                 </div>
               )}
-              {offer.status === 'accepted'
+              {offer.status === 'ACCEPTED'
                 && !myReviews.includes(offer.id)
                 && (reviewingOffer === offer.id
                   ? (
@@ -292,9 +248,9 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                           Rate this buyer
                         </p>
                         <ReviewForm
-                          listingId={offer.listing_id}
+                          listingId={offer.listingId}
                           offerId={offer.id}
-                          reviewedId={offer.buyer_id}
+                          reviewedId={offer.buyerId}
                           onSuccess={() => setReviewingOffer(null)}
                           role="seller"
                         />
@@ -312,7 +268,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                         Leave Review
                       </Button>
                     ))}
-              {offer.status === 'accepted' && myReviews.includes(offer.id) && (
+              {offer.status === 'ACCEPTED' && myReviews.includes(offer.id) && (
                 <span className="text-xs italic text-muted-foreground">
                   ✓ Reviewed
                 </span>
@@ -330,7 +286,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
           <DialogHeader>
             <DialogTitle className="font-heading">Counter Offer</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {counterDialog?.listings?.title}
+              {counterDialog?.listingTitle}
               {' '}
               · Offered R
               {' '}
@@ -344,19 +300,9 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 onChange={event => setCounterAmount(event.target.value)}
                 value={counterAmount}
                 min="1"
-                placeholder={`e.g. ${counterDialog?.listings?.price}`}
+                placeholder={`e.g. ${counterDialog?.listingPrice}`}
                 step="0.01"
                 type="number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Message (optional)</Label>
-              <Textarea
-                onChange={event => setCounterMessage(event.target.value)}
-                value={counterMessage}
-                maxLength={500}
-                placeholder="e.g. I can do this price if you're still interested"
-                rows={2}
               />
             </div>
             <Button
@@ -364,9 +310,8 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 counterDialog
                 && respondToOffer.mutate({
                   id: counterDialog.id,
-                  counter_amount: Number(counterAmount),
-                  seller_message: counterMessage,
-                  status: 'countered',
+                  counterAmount: Number(counterAmount),
+                  action: 'counter',
                 })}
               disabled={
                 !counterAmount

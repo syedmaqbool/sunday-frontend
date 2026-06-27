@@ -35,7 +35,7 @@ export function personalizeListings<
       score += 2;
     if (prefStyles.has(getStyleValue(item).toLowerCase()))
       score += 1;
-    if (preferences.budget_min != null && preferences.budget_max != null && item.price >= preferences.budget_min && item.price <= preferences.budget_max)
+    if (preferences.budgetMin != null && preferences.budgetMax != null && item.price >= preferences.budgetMin && item.price <= preferences.budgetMax)
       score += 1;
     return { item, score };
   });

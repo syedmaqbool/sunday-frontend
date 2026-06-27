@@ -19,23 +19,23 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const { data: prefs } = useUserPreferences();
+  const { data: preferences } = useUserPreferences();
   const boostMap = useBoostScoreMap('FOR_YOU');
 
   const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());
 
   const isPersonalized
-    = variant === 'personalized' && prefs?.onboarding_completed;
+    = variant === 'personalized' && preferences?.onboardingCompleted;
 
   const listings = useMemo(() => {
     if (variant === 'personalized') {
       return applyBoostRanking(
-        personalizeListings([...databaseListings], prefs, item => item.categoryValue),
+        personalizeListings([...databaseListings], preferences, item => item.categoryValue),
         boostMap,
       );
     }
     return databaseListings;
-  }, [databaseListings, prefs, boostMap, variant]);
+  }, [databaseListings, preferences, boostMap, variant]);
 
   const checkScroll = useCallback(() => {
     const element = scrollReference.current;

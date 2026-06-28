@@ -91,13 +91,11 @@ function Auth() {
           method: 'email',
         });
 
-        // Backend OTP email bhejta hai — Supabase wala redirect nahi
         toast({
           description: 'Please check your email for a verification code.',
           title: 'Account created!',
         });
 
-        // Register ke baad seedha preferences onboarding pe
         navigate('/preferences');
       }
       else {
@@ -106,8 +104,6 @@ function Auth() {
 
         trackEvent('login', { method: 'email' });
 
-        // Onboarding check — preferences ab login response mein hi aata hai,
-        // alag Supabase query ki zaroorat nahi
         const onboardingDone = (data.preferences as any)?.onboarding_completed;
 
         if (onboardingDone) {

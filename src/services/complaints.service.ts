@@ -45,3 +45,27 @@ export async function getOrderItemComplaint(
     throw error;
   }
 }
+
+export interface ProvideReturnAddressPayload {
+  returnAddress: string;
+  returnAddressCity?: string;
+  returnAddressPhone?: string;
+  returnAddressPostal?: string;
+  returnAddressRecipient?: string;
+  returnInstructions?: string;
+}
+
+export function provideReturnAddress(
+  complaintId: string,
+  payload: ProvideReturnAddressPayload,
+) {
+  return authInstance
+    .post(`/api/v1/complaints/${complaintId}/return-address`, { json: payload })
+    .json<Response<Complaint>>();
+}
+
+export function markComplaintReturnReceived(complaintId: string) {
+  return authInstance
+    .post(`/api/v1/complaints/${complaintId}/return-received`)
+    .json<Response<Complaint>>();
+}

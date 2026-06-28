@@ -29,7 +29,9 @@ export interface Complaint {
   reason: string;
   resolverFullName: string | null;
   returnAddress: string | null;
+  returnAddressCity: string | null;
   returnAddressPhone: string | null;
+  returnAddressPostal: string | null;
   returnAddressRecipient: string | null;
   returnCarrier: string | null;
   returnInstructions: string | null;

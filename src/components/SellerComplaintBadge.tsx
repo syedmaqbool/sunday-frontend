@@ -15,8 +15,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { getComplaintDetailsOptions } from '@/queries/useComplaint';
+import {
+  markComplaintReturnReceived,
+  provideReturnAddress,
+} from '@/services/complaints.service';
 
 export function SellerComplaintBadge({
   orderId,
@@ -47,8 +50,8 @@ export function SellerComplaintBadge({
 
     setName(complaint.returnAddressRecipient ?? '');
     setAddress(complaint.returnAddress ?? '');
-    setCity('');
-    setPostal('');
+    setCity(complaint.returnAddressCity ?? '');
+    setPostal(complaint.returnAddressPostal ?? '');
     setPhone(complaint.returnAddressPhone ?? '');
     setNotes(complaint.returnInstructions ?? '');
   }, [addressOpen, complaint]);
@@ -63,21 +66,14 @@ export function SellerComplaintBadge({
     }
     setBusy(true);
     try {
-      const { error } = await supabase
-        .from('complaints')
-        .update({
-          return_address_provided_at: new Date().toISOString(),
-          return_to_address: address.trim(),
-          return_to_city: city.trim(),
-          return_to_name: name.trim(),
-          return_to_notes: notes.trim() || null,
-          return_to_phone: phone.trim() || null,
-          return_to_postal: postal.trim() || null,
-          status: 'return_address_provided',
-        })
-        .eq('id', (complaint as any).id);
-      if (error)
-        throw error;
+      await provideReturnAddress(complaint.id, {
+        returnAddress: address.trim(),
+        returnAddressCity: city.trim() || undefined,
+        returnAddressPhone: phone.trim() || undefined,
+        returnAddressPostal: postal.trim() || undefined,
+        returnAddressRecipient: name.trim(),
+        returnInstructions: notes.trim() || undefined,
+      });
       toast.success('Return address shared with the buyer.');
       setAddressOpen(false);
       await refetch();
@@ -94,12 +90,7 @@ export function SellerComplaintBadge({
   const markReturnReceived = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase
-        .from('complaints')
-        .update({ status: 'return_received' })
-        .eq('id', (complaint as any).id);
-      if (error)
-        throw error;
+      await markComplaintReturnReceived(complaint.id);
       toast.success(
         'Marked return as received. Admin will finalize the refund.',
       );

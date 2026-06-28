@@ -1,14 +1,11 @@
-import ky from 'ky';
+import type { Response } from '@/types/response.type';
 import { CheckCircle2, Loader2, MailX, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+import { authInstance } from '@/services/ky.instance';
 
 type State
   = | { kind: 'already' }
@@ -31,27 +28,21 @@ function Unsubscribe() {
     }
     (async () => {
       try {
-        const data = await ky
-          .get(`${SUPABASE_URL}/functions/v1/handle-email-unsubscribe`, {
-            headers: { apikey: SUPABASE_ANON_KEY },
-            searchParams: { token },
-          })
-          .json<any>();
-        if (data?.valid) {
+        const { data } = await authInstance
+          .get('api/v1/emails/unsubscribe', { searchParams: { token } })
+          .json<Response<{ reason?: string; valid: boolean }>>();
+        if (data.valid) {
           setState({ kind: 'valid' });
         }
-        else if (data?.reason === 'already_unsubscribed') {
+        else if (data.reason === 'already_unsubscribed') {
           setState({ kind: 'already' });
         }
         else {
-          setState({
-            kind: 'invalid',
-            message: data?.error ?? 'Invalid token.',
-          });
+          setState({ kind: 'invalid', message: 'Invalid token.' });
         }
       }
-      catch {
-        setState({ kind: 'invalid', message: 'Could not validate token.' });
+      catch (error: any) {
+        setState({ kind: 'invalid', message: error?.message ?? 'Could not validate token.' });
       }
     })();
   }, [token]);
@@ -61,26 +52,10 @@ function Unsubscribe() {
       return;
     setState({ kind: 'submitting' });
     try {
-      const { data, error } = await supabase.functions.invoke(
-        'handle-email-unsubscribe',
-        {
-          body: { token },
-        },
-      );
-      if (error)
-        throw error;
-      if (data?.success) {
-        setState({ kind: 'success' });
-      }
-      else if (data?.reason === 'already_unsubscribed') {
-        setState({ kind: 'already' });
-      }
-      else {
-        setState({
-          kind: 'error',
-          message: data?.error ?? 'Failed to unsubscribe.',
-        });
-      }
+      await authInstance
+        .post('api/v1/emails/unsubscribe', { json: { token } })
+        .json();
+      setState({ kind: 'success' });
     }
     catch (error: any) {
       setState({
@@ -153,7 +128,7 @@ function Unsubscribe() {
                 Something went wrong
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                {staterror.message}
+                {state.message}
               </p>
             </>
           )}

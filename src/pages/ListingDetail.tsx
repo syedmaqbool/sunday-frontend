@@ -36,15 +36,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
 import {
   getListingMediaUrls,
   getMarketplaceListingOptions,
   getReservedOfferAmountOptions,
-
 } from '@/queries/useMarketplace';
+import { cancelMyListingReservation, deleteMyListing } from '@/services/listing.service';
 
 function useCountdown(target?: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -267,14 +266,7 @@ function ListingDetail() {
       : (listing?.price ?? 0);
 
   const cancelReservation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc('expire_listing_reservation', {
-        _force: true,
-        _listing_id: listing!.id,
-      });
-      if (error)
-        throw error;
-    },
+    mutationFn: () => cancelMyListingReservation(listing!.id),
     onError: (error: any) => toast.error(error.message ?? 'Failed to cancel'),
     onSuccess: () => {
       toast.success('Reservation cancelled');
@@ -284,11 +276,7 @@ function ListingDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('listings').delete().eq('id', id!);
-      if (error)
-        throw error;
-    },
+    mutationFn: () => deleteMyListing(id!),
     onError: () => toast.error('Failed to delete'),
     onSuccess: () => {
       toast.success('Listing deleted');

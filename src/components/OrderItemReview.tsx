@@ -5,12 +5,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { getOrderItemReviewOptions } from '@/queries/useReview';
+import {
+  createReview,
+  uploadReviewMedia,
+} from '@/services/offers.service';
 
 interface OrderItemReviewProps {
   listingId: string;
   orderId: string;
+  orderItemId: string;
   sellerId: string;
   sellerName?: string;
 }
@@ -24,6 +28,7 @@ const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 export function OrderItemReview({
   listingId,
   orderId,
+  orderItemId,
   sellerId,
   sellerName,
 }: OrderItemReviewProps) {
@@ -88,65 +93,27 @@ export function OrderItemReview({
 
   const submit = useMutation({
     mutationFn: async () => {
-      if (!user)
-        throw new Error('Not signed in');
-      const folder = `${user.id}/${orderId}-${listingId}-${Date.now()}`;
-      const uploadedPaths: string[] = [];
       const imageUrls: string[] = [];
-      let videoUrl: string | null = null;
+      let videoUrl: string | undefined;
 
-      try {
-        for (const [index, file] of images.entries()) {
-          const extension = file.name.split('.').pop() || 'jpg';
-          const path = `${folder}/img-${index}-${crypto.randomUUID()}.${extension}`;
-          const { error: upError } = await supabase.storage
-            .from('review-media')
-            .upload(path, file, { contentType: file.type, upsert: false });
-          if (upError)
-            throw upError;
-          uploadedPaths.push(path);
-          const { data: pub } = supabase.storage
-            .from('review-media')
-            .getPublicUrl(path);
-          imageUrls.push(pub.publicUrl);
-        }
-
-        if (video) {
-          const extension = video.name.split('.').pop() || 'mp4';
-          const path = `${folder}/video-${crypto.randomUUID()}.${extension}`;
-          const { error: upError } = await supabase.storage
-            .from('review-media')
-            .upload(path, video, { contentType: video.type, upsert: false });
-          if (upError)
-            throw upError;
-          uploadedPaths.push(path);
-          const { data: pub } = supabase.storage
-            .from('review-media')
-            .getPublicUrl(path);
-          videoUrl = pub.publicUrl;
-        }
-
-        const { error } = await supabase.from('reviews').insert({
-          comment,
-          image_urls: imageUrls,
-          listing_id: listingId,
-          order_id: orderId,
-          rating,
-          reviewed_id: sellerId,
-          reviewer_id: user.id,
-          role: 'buyer',
-          video_url: videoUrl,
-        });
-        if (error)
-          throw error;
+      for (const file of images) {
+        const { data } = await uploadReviewMedia(file);
+        imageUrls.push(data.url);
       }
-      catch (error) {
-        // Rollback uploads
-        if (uploadedPaths.length > 0) {
-          await supabase.storage.from('review-media').remove(uploadedPaths);
-        }
-        throw error;
+
+      if (video) {
+        const { data } = await uploadReviewMedia(video);
+        videoUrl = data.url;
       }
+
+      await createReview({
+        orderId,
+        orderItemId,
+        comment: comment || undefined,
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+        rating,
+        videoUrl,
+      });
     },
     onError: (error: any) => {
       toast.error(

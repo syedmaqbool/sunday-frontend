@@ -4,16 +4,15 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
+import { createOfferReview } from '@/services/offers.service';
 
 interface ReviewFormProps {
   listingId: string;
   offerId: string;
   reviewedId: string;
   onSuccess?: () => void;
-  role: 'buyer' | 'seller';
+  role: 'BUYER' | 'SELLER';
 }
 
 export function ReviewForm({
@@ -23,7 +22,6 @@ export function ReviewForm({
   onSuccess,
   role,
 }: ReviewFormProps) {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
@@ -31,26 +29,21 @@ export function ReviewForm({
 
   const submitReview = useMutation({
     mutationFn: async () => {
-      if (!user)
-        throw new Error('Must be logged in');
-      const { error } = await supabase.from('reviews').insert({
-        comment,
-        listing_id: listingId,
-        offer_id: offerId,
+      await createOfferReview({
+        listingId,
+        offerId,
+        reviewedId,
+        comment: comment || undefined,
         rating,
-        reviewed_id: reviewedId,
-        reviewer_id: user.id,
         role,
       });
-      if (error)
-        throw error;
     },
     onError: (error: any) => {
       if (error.message?.includes('duplicate')) {
         toast.error('You\'ve already reviewed this transaction');
       }
       else {
-        toast.error('Failed to submit review');
+        toast.error(error.message ?? 'Failed to submit review');
       }
     },
     onSuccess: () => {

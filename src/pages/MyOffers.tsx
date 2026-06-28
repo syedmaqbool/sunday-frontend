@@ -165,7 +165,7 @@ function MyOffers() {
                                           offerId={offer.id}
                                           reviewedId={offer.sellerId}
                                           onSuccess={() => setReviewingOffer(null)}
-                                          role="buyer"
+                                          role="BUYER"
                                         />
                                       </div>
                                     )

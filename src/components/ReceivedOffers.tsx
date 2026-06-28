@@ -76,12 +76,12 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const respondToOffer = useMutation({
     mutationFn: ({
       id,
-      counterAmount: counter,
       action,
+      counterAmount: counter,
     }: {
       id: string;
-      counterAmount?: number;
       action: 'accept' | 'counter' | 'reject';
+      counterAmount?: number;
     }) => {
       if (action === 'accept')
         return acceptOffer(id);
@@ -252,7 +252,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                           offerId={offer.id}
                           reviewedId={offer.buyerId}
                           onSuccess={() => setReviewingOffer(null)}
-                          role="seller"
+                          role="SELLER"
                         />
                       </div>
                     )
@@ -310,8 +310,8 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 counterDialog
                 && respondToOffer.mutate({
                   id: counterDialog.id,
-                  counterAmount: Number(counterAmount),
                   action: 'counter',
+                  counterAmount: Number(counterAmount),
                 })}
               disabled={
                 !counterAmount

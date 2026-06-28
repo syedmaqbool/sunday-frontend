@@ -667,6 +667,7 @@ function OrderCard({ order }: { order: Order }) {
                           <OrderItemReview
                             listingId={item.listingId}
                             orderId={order.id}
+                            orderItemId={item.id}
                             sellerId={item.sellerId}
                             sellerName={item.sellerFullName}
                           />

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { createReport } from '@/services/report.service';
 
 export type ReportTargetType = 'listing' | 'message' | 'user';
 
@@ -89,22 +89,29 @@ export function ReportDialog({
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from('reports').insert({
-      details: parsed.data.details,
-      reason: parsed.data.reason,
-      reporter_id: user.id,
-      target_id: targetId,
-      target_type: targetType,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error('Could not submit report');
-      return;
+    try {
+      const targetField
+        = targetType === 'listing'
+          ? { listingId: targetId }
+          : targetType === 'message'
+            ? { messageId: targetId }
+            : { reportedUserId: targetId };
+      await createReport({
+        details: parsed.data.details || undefined,
+        reason: parsed.data.reason,
+        ...targetField,
+      });
+      toast.success('Report submitted. Our team will review it shortly.');
+      setReason('');
+      setDetails('');
+      setOpen(false);
     }
-    toast.success('Report submitted. Our team will review it shortly.');
-    setReason('');
-    setDetails('');
-    setOpen(false);
+    catch (error: any) {
+      toast.error(error.message ?? 'Could not submit report');
+    }
+    finally {
+      setSubmitting(false);
+    }
   };
 
   return (

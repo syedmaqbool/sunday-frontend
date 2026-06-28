@@ -149,6 +149,35 @@ export function createReview(payload: {
     .json<Response<Review>>();
 }
 
+export function createOfferReview(payload: {
+  listingId: string;
+  offerId: string;
+  reviewedId: string;
+  comment?: string;
+  rating: number;
+  role: 'BUYER' | 'SELLER';
+}) {
+  return authInstance
+    .post('/api/v1/reviews/offer', { json: payload })
+    .json<Response<Review>>();
+}
+
+export interface ReviewMedia {
+  id: string;
+  filename: string;
+  mimetype: string;
+  size: number | string;
+  url: string;
+}
+
+export function uploadReviewMedia(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return authInstance
+    .post('/api/v1/reviews/media', { body: form })
+    .json<Response<ReviewMedia>>();
+}
+
 export interface ReviewStat {
   reviewedId: string;
   avgRating: number;

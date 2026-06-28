@@ -21,20 +21,19 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 import { useActiveTax } from '@/hooks/useActiveTax';
 import { useCommissionTiers } from '@/hooks/useCommissionTiers';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
-// Mock switcher config  import
-import { isMockDataEnabled } from '@/lib/mockConfig';
+import {
+  createOrder,
+  validateDiscount,
+  validateSellerCoupon,
+} from '@/services/checkout.service';
 
 interface AppliedDiscount {
-  id: string;
-  applicable_listing_ids?: string[]; // undefined = all eligible items in scope
   code: string;
-  discount_type: string;
-  discount_value: number;
-  min_order_amount: number;
-  seller_id?: string;
+  discountAmount: number;
+  discountType: 'FIXED' | 'PERCENTAGE';
+  discountValue: number;
   source: 'platform' | 'seller';
 }
 
@@ -86,35 +85,7 @@ function Checkout() {
   });
   const commissionTotal = itemCommissions.reduce((s, index) => s + index.amount, 0);
 
-  // Compute the subtotal eligible for the applied discount.
-  const eligibleSubtotalFor = (
-    cartItems: typeof items,
-    d: AppliedDiscount | null,
-  ) => {
-    if (!d)
-      return 0;
-    return cartItems.reduce((sum, { listing, quantity }) => {
-      if (d.source === 'seller') {
-        if (d.seller_id && listing.seller_id !== d.seller_id)
-          return sum;
-        if (
-          d.applicable_listing_ids
-          && !d.applicable_listing_ids.includes(listing.id)
-        ) {
-          return sum;
-        }
-      }
-      return sum + listing.price * quantity;
-    }, 0);
-  };
-
-  const eligibleSubtotal = eligibleSubtotalFor(items, appliedDiscount);
-  const discountAmount = appliedDiscount
-    ? (appliedDiscount.discount_type === 'percentage'
-        ? Math.round((eligibleSubtotal * appliedDiscount.discount_value) / 100)
-        : Math.min(appliedDiscount.discount_value, eligibleSubtotal))
-    : 0;
-
+  const discountAmount = appliedDiscount?.discountAmount ?? 0;
   const taxableAmount = totalPrice - discountAmount;
   const taxRate = activeTax?.rate ?? 0;
   const taxAmount = Math.round(taxableAmount * taxRate) / 100;
@@ -127,184 +98,49 @@ function Checkout() {
 
     setApplyingCode(true);
 
-    // Mock Code Interception
-    if (isMockDataEnabled) {
-      setTimeout(() => {
-        setAppliedDiscount({
-          id: 'mock-coupon-id',
-          code,
-          discount_type: 'percentage',
-          discount_value: 10, // 10% Flat Mock discount
-          min_order_amount: 0,
-          source: 'platform',
-        });
-        setDiscountCode('');
-        setApplyingCode(false);
-        toast({
-          description: `Promo code "${code}" (10% off) applied successfully.`,
-          title: 'Mock Discount applied!',
-        });
-      }, 600);
-      return;
-    }
+    const listingIds = items.map(index => index.listing.id);
 
     try {
-      // 1) Try platform-wide discount_codes first
-      const { data: platform } = await supabase
-        .from('discount_codes')
-        .select('*')
-        .eq('code', code)
-        .eq('active', true)
-        .maybeSingle();
-
-      if (platform) {
-        if (platform.expires_at && new Date(platform.expires_at) < new Date()) {
-          toast({ title: 'Code expired', variant: 'destructive' });
-          return;
-        }
-        if (
-          platform.max_uses !== null
-          && platform.current_uses >= platform.max_uses
-        ) {
-          toast({ title: 'Code exhausted', variant: 'destructive' });
-          return;
-        }
-        if (totalPrice < (platform.min_order_amount || 0)) {
-          toast({
-            description: `Order must be at least Rs ${platform.min_order_amount} to use this code.`,
-            title: 'Minimum not met',
-            variant: 'destructive',
-          });
-          return;
-        }
+      // 1) Try platform-wide discount first
+      try {
+        const { data } = await validateDiscount({ code, listingIds });
         setAppliedDiscount({
-          id: platform.id,
-          code: platform.code,
-          discount_type: platform.discount_type,
-          discount_value: Number(platform.discount_value),
-          min_order_amount: Number(platform.min_order_amount || 0),
+          code: data.code,
+          discountAmount: data.discountAmount,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
           source: 'platform',
         });
         setDiscountCode('');
         toast({
-          description: `Code "${platform.code}" has been applied.`,
+          description: `Code "${data.code}" has been applied.`,
           title: 'Discount applied!',
         });
         return;
       }
-
-      // 2) Try seller coupons
-      const { data: sc } = await supabase
-        .from('seller_coupons' as any)
-        .select('*')
-        .eq('code', code)
-        .eq('active', true)
-        .maybeSingle();
-
-      if (!sc) {
-        toast({
-          description: 'This code is not valid.',
-          title: 'Invalid code',
-          variant: 'destructive',
-        });
-        return;
-      }
-      const sCoupon: any = sc;
-      const now = new Date();
-      if (sCoupon.starts_at && new Date(sCoupon.starts_at) > now) {
-        toast({
-          description: 'This coupon isn\'t active yet.',
-          title: 'Not yet active',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (sCoupon.expires_at && new Date(sCoupon.expires_at) < now) {
-        toast({ title: 'Code expired', variant: 'destructive' });
-        return;
-      }
-      if (
-        sCoupon.max_uses !== null
-        && sCoupon.current_uses >= sCoupon.max_uses
-      ) {
-        toast({ title: 'Code exhausted', variant: 'destructive' });
-        return;
+      catch {
+        // not a platform code — try seller coupon
       }
 
-      // Per-user limit
-      if (sCoupon.per_user_limit && user) {
-        const { count } = await supabase
-          .from('seller_coupon_redemptions' as any)
-          .select('id', { count: 'exact', head: true })
-          .eq('coupon_id', sCoupon.id)
-          .eq('user_id', user.id);
-        if ((count ?? 0) >= sCoupon.per_user_limit) {
-          toast({
-            description: 'You\'ve already used this coupon.',
-            title: 'Limit reached',
-            variant: 'destructive',
-          });
-          return;
-        }
-      }
-
-      // Load listing ids for item-based
-      let applicableIds: string[] | undefined;
-      if (sCoupon.scope === 'item_based') {
-        const { data: links } = await supabase
-          .from('seller_coupon_listings' as any)
-          .select('listing_id')
-          .eq('coupon_id', sCoupon.id);
-        applicableIds = ((links ?? []) as any[]).map(l => l.listing_id);
-      }
-
-      // Confirm the cart contains qualifying items
-      const cartHasMatch = items.some((index) => {
-        if (index.listing.seller_id !== sCoupon.seller_id)
-          return false;
-        return !(applicableIds && !applicableIds.includes(index.listing.id));
-      });
-      if (!cartHasMatch) {
-        toast({
-          description: 'Your cart has no items eligible for this coupon.',
-          title: 'Not applicable',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const candidate: AppliedDiscount = {
-        id: sCoupon.id,
-        applicable_listing_ids: applicableIds,
-        code: sCoupon.code,
-        discount_type: sCoupon.discount_type,
-        discount_value: Number(sCoupon.discount_value),
-        min_order_amount: Number(sCoupon.min_order_amount || 0),
-        seller_id: sCoupon.seller_id,
+      // 2) Try seller coupon
+      const { data } = await validateSellerCoupon({ code, listingIds });
+      setAppliedDiscount({
+        code: data.code,
+        discountAmount: data.discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
         source: 'seller',
-      };
-
-      const eligible = eligibleSubtotalFor(items, candidate);
-      if (eligible < (sCoupon.min_order_amount || 0)) {
-        toast({
-          description: `Eligible items must total at least Rs ${sCoupon.min_order_amount}.`,
-          title: 'Minimum not met',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setAppliedDiscount(candidate);
+      });
       setDiscountCode('');
       toast({
-        description: `"${sCoupon.code}" applied to eligible items.`,
+        description: `"${data.code}" applied to eligible items.`,
         title: 'Coupon applied!',
       });
     }
-    catch {
+    catch (error: any) {
       toast({
-        description: 'Could not validate code.',
-        title: 'Error',
+        description: error?.message ?? 'This code is not valid.',
+        title: 'Invalid code',
         variant: 'destructive',
       });
     }
@@ -318,8 +154,7 @@ function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
-    // Basic Auth Check Override for testing
-    if (!user && !isMockDataEnabled) {
+    if (!user) {
       navigate('/auth');
       return;
     }
@@ -348,283 +183,33 @@ function Checkout() {
 
     setPlacing(true);
 
-    // Mock Place Order Flow
-    if (isMockDataEnabled) {
-      setTimeout(() => {
-        setPlaced(true);
-        clearCart();
-        setPlacing(false);
-        toast({
-          description: 'Your demo order has been confirmed successfully.',
-          title: 'Mock Order placed!',
-        });
-      }, 1500);
-      return;
-    }
-
     try {
-      // Re-validate listings server-side: block if any item is reserved for another buyer.
-      const listingIds = items.map(index => index.listing.id);
-      const { data: freshListings, error: freshError } = await supabase
-        .from('listings')
-        .select(
-          'id, title, status, reserved_for, reserved_until, reserved_offer_id, price',
-        )
-        .in('id', listingIds);
-      if (freshError) {
-        toast({
-          description: freshError.message,
-          title: 'Validation failed',
-          variant: 'destructive',
-        });
-        setPlacing(false);
-        return;
-      }
-      const blocked = (freshListings ?? []).find((l: any) => {
-        if (l.status === 'sold')
-          return true;
-        if (l.status === 'reserved') {
-          const stillValid
-            = l.reserved_until && new Date(l.reserved_until) > new Date();
-          return stillValid && l.reserved_for !== user?.id;
-        }
-        return false;
+      const { data: order } = await createOrder({
+        listingIds: items.map(index => index.listing.id),
+        shippingAddress: shipping.address,
+        shippingCity: shipping.city,
+        shippingFirstName: shipping.firstName,
+        shippingLastName: shipping.lastName,
+        shippingPhone: shipping.phone,
+        shippingPostal: shipping.postal,
+        ...(appliedDiscount?.source === 'platform' && { discountCode: appliedDiscount.code }),
+        ...(appliedDiscount?.source === 'seller' && { sellerCouponCode: appliedDiscount.code }),
       });
-      if (blocked) {
-        toast({
-          description: `"${blocked.title}" is reserved for another buyer or already sold.`,
-          title: 'Item unavailable',
-          variant: 'destructive',
-        });
-        setPlacing(false);
-        return;
-      }
-
-      // Authoritative price: when listing is reserved for this buyer, use the accepted offer amount.
-      const reservedOfferIds = (freshListings ?? [])
-        .filter(
-          (l: any) =>
-            l.status === 'reserved'
-            && l.reserved_for === user?.id
-            && l.reserved_offer_id,
-        )
-        .map((l: any) => l.reserved_offer_id as string);
-      const offerAmountByListing = new Map<string, number>();
-      if (reservedOfferIds.length > 0) {
-        const { data: acceptedOffers } = await supabase
-          .from('offers')
-          .select('id, listing_id, amount, status, buyer_id')
-          .in('id', reservedOfferIds);
-        for (const offer of acceptedOffers) {
-          if (offer.status === 'accepted' && offer.buyer_id === user?.id) {
-            offerAmountByListing.set(offer.listing_id as string, Number(offer.amount));
-          }
-        }
-      }
-
-      // Snapshot items for the order record (apply authoritative reserved price)
-      const itemsSnapshot = items.map(({ listing, quantity }) => {
-        const overridePrice = offerAmountByListing.get(listing.id);
-        const price
-          = typeof overridePrice === 'number' ? overridePrice : listing.price;
-        const c = calcCommission(
-          commissionTiers,
-          (listing as any).category,
-          price,
-          quantity,
-        );
-        return {
-          brand: listing.brand,
-          category: (listing as any).category ?? null,
-          commission_amount: c.amount,
-          commission_rate: c.rate,
-          commission_tier_id: c.tier?.id ?? null,
-          commission_tier_name: c.tier?.name ?? null,
-          image: listing.images?.[0] ?? null,
-          listing_id: listing.id,
-          price,
-          quantity,
-          seller_id: listing.seller_id,
-          seller_name: listing.seller_name,
-          title: listing.title,
-          ...((typeof overridePrice === 'number') && { reserved_offer_price: true }),
-        };
-      });
-
-      // Recompute monetary totals from the authoritative snapshot
-      const authoritativeSubtotal = itemsSnapshot.reduce(
-        (s, index) => s + index.price * index.quantity,
-        0,
-      );
-      const authoritativeCommission = itemsSnapshot.reduce(
-        (s, index) => s + Number(index.commission_amount || 0),
-        0,
-      );
-      const authoritativeEligible = appliedDiscount
-        ? itemsSnapshot.reduce((sum, index) => {
-            if (appliedDiscount.source === 'seller') {
-              if (
-                appliedDiscount.seller_id
-                && index.seller_id !== appliedDiscount.seller_id
-              ) {
-                return sum;
-              }
-              if (
-                appliedDiscount.applicable_listing_ids
-                && !appliedDiscount.applicable_listing_ids.includes(index.listing_id)
-              ) {
-                return sum;
-              }
-            }
-            return sum + index.price * index.quantity;
-          }, 0)
-        : 0;
-      const authoritativeDiscount = appliedDiscount
-        ? (appliedDiscount.discount_type === 'percentage'
-            ? Math.round(
-                (authoritativeEligible * appliedDiscount.discount_value) / 100,
-              )
-            : Math.min(appliedDiscount.discount_value, authoritativeEligible))
-        : 0;
-      const authoritativeTaxable
-        = authoritativeSubtotal - authoritativeDiscount;
-      const authoritativeTax = Math.round(authoritativeTaxable * taxRate) / 100;
-      const authoritativeTotal
-        = authoritativeTaxable + authoritativeTax + authoritativeCommission;
-      const { data: orderRow, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          buyer_id: user?.id,
-          commission_amount: authoritativeCommission,
-          discount_amount: authoritativeDiscount,
-          discount_code: appliedDiscount?.code ?? null,
-          items: itemsSnapshot,
-          shipping_address: shipping.address,
-          shipping_city: shipping.city,
-          shipping_first_name: shipping.firstName,
-          shipping_last_name: shipping.lastName,
-          shipping_phone: shipping.phone,
-          shipping_postal: shipping.postal,
-          status: 'confirmed',
-          subtotal: authoritativeSubtotal,
-          tax_amount: authoritativeTax,
-          tax_rate: taxRate,
-          total: authoritativeTotal,
-        } as any)
-        .select('id')
-        .single();
-
-      if (orderError || !orderRow) {
-        toast({
-          description: orderError?.message ?? 'Unknown error',
-          title: 'Order failed',
-          variant: 'destructive',
-        });
-        setPlacing(false);
-        return;
-      }
 
       trackEvent('purchase', {
         coupon: appliedDiscount?.code ?? undefined,
         currency: 'PKR',
-        items: itemsSnapshot.map(index => ({
-          item_brand: index.brand,
-          item_id: index.listing_id,
-          item_name: index.title,
-          price: index.price,
-          quantity: index.quantity,
+        items: items.map(({ listing, quantity }) => ({
+          item_brand: (listing as any).brand,
+          item_id: listing.id,
+          item_name: listing.title,
+          price: listing.price,
+          quantity,
         })),
-        tax: authoritativeTax,
-        transaction_id: orderRow.id,
-        value: authoritativeTotal,
+        tax: order.taxAmount,
+        transaction_id: order.id,
+        value: order.total,
       });
-
-      // Send invoice email (fire-and-forget — don't block the UI)
-      if (user?.email) {
-        try {
-          await supabase.functions.invoke('send-transactional-email', {
-            body: {
-              idempotencyKey: `order-invoice-${orderRow.id}`,
-              recipientEmail: user.email,
-              templateData: {
-                orderId: orderRow.id,
-                buyerName: shipping.firstName,
-                commissionAmount: authoritativeCommission,
-                discountAmount: authoritativeDiscount,
-                discountCode: appliedDiscount?.code ?? null,
-                items: itemsSnapshot.map(index => ({
-                  brand: index.brand,
-                  price: index.price,
-                  quantity: index.quantity,
-                  title: index.title,
-                })),
-                orderDate: new Date().toLocaleDateString('en-ZA', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                }),
-                shippingAddress: shipping.address,
-                shippingCity: shipping.city,
-                shippingName: `${shipping.firstName} ${shipping.lastName}`,
-                shippingPhone: shipping.phone,
-                shippingPostal: shipping.postal,
-                subtotal: authoritativeSubtotal,
-                taxAmount: authoritativeTax,
-                taxName: activeTax?.name,
-                taxRate,
-                total: authoritativeTotal,
-              },
-              templateName: 'order-invoice',
-            },
-          });
-        }
-        catch (error) {
-          console.error('Failed to enqueue invoice email', error);
-        }
-      }
-
-      // Mark purchased listings as sold so they disappear from browse
-      const soldIds = itemsSnapshot.map(index => index.listing_id).filter(Boolean);
-      if (soldIds.length > 0) {
-        await supabase.rpc('mark_listings_sold', { _listing_ids: soldIds });
-      }
-
-      // Increment coupon usage + record redemption
-      if (appliedDiscount) {
-        if (appliedDiscount.source === 'platform') {
-          const { data: codeData } = await supabase
-            .from('discount_codes')
-            .select('current_uses')
-            .eq('id', appliedDiscount.id)
-            .single();
-          if (codeData) {
-            await supabase
-              .from('discount_codes')
-              .update({ current_uses: codeData.current_uses + 1 })
-              .eq('id', appliedDiscount.id);
-          }
-        }
-        else {
-          const { data: cd } = await supabase
-            .from('seller_coupons' as any)
-            .select('current_uses')
-            .eq('id', appliedDiscount.id)
-            .single();
-          if (cd) {
-            await supabase
-              .from('seller_coupons' as any)
-              .update({ current_uses: ((cd as any).current_uses ?? 0) + 1 })
-              .eq('id', appliedDiscount.id);
-          }
-          await supabase.from('seller_coupon_redemptions' as any).insert({
-            coupon_id: appliedDiscount.id,
-            discount_amount: authoritativeDiscount,
-            order_id: orderRow.id,
-            seller_id: appliedDiscount.seller_id,
-            user_id: user?.id,
-          });
-        }
-      }
 
       setPlaced(true);
       clearCart();
@@ -635,6 +220,13 @@ function Checkout() {
       toast({
         description: 'Your order has been confirmed.',
         title: 'Order placed!',
+      });
+    }
+    catch (error: any) {
+      toast({
+        description: error?.message ?? 'Unknown error',
+        title: 'Order failed',
+        variant: 'destructive',
       });
     }
     finally {
@@ -903,9 +495,9 @@ function Checkout() {
                             {appliedDiscount.code}
                           </span>
                           <span className="text-xs text-primary">
-                            {appliedDiscount.discount_type === 'percentage'
-                              ? `−${appliedDiscount.discount_value}%`
-                              : `−Rs ${appliedDiscount.discount_value.toLocaleString()}`}
+                            {appliedDiscount.discountType === 'PERCENTAGE'
+                              ? `−${appliedDiscount.discountValue}%`
+                              : `−Rs ${appliedDiscount.discountValue.toLocaleString()}`}
                           </span>
                         </div>
                         <Button

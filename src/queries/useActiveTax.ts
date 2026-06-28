@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { listTaxSettings } from '@/services/taxSetting.service';
+import { getTaxSettings } from '@/services/taxSetting.service';
 
 export interface ActiveTax {
   id: string;
@@ -14,19 +14,9 @@ export const activeTaxQueryKey = {
 export function getActiveTaxOptions() {
   return queryOptions({
     queryFn: async (): Promise<ActiveTax | null> => {
-      const response = await listTaxSettings();
-      const activeTax = response.data
-        .filter(tax => tax.active)
-        .toSorted((a, b) => (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ))[0];
-
-      return activeTax
-        ? {
-            id: activeTax.id,
-            name: activeTax.name,
-            rate: Number(activeTax.rate),
-          }
+      const { data } = await getTaxSettings();
+      return data
+        ? { id: data.id, name: data.name, rate: Number(data.rate) }
         : null;
     },
     queryKey: activeTaxQueryKey.current(),

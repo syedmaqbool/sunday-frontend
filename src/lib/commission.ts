@@ -2,11 +2,11 @@ export interface CommissionTier {
   id: string;
   active: boolean;
   categories: string[];
-  max_price: number | null;
-  min_price: number;
+  maxPrice: number | null;
+  minPrice: number;
   name: string;
   rate: number;
-  sort_order: number;
+  sortOrder: number;
 }
 
 /**
@@ -36,8 +36,8 @@ export function resolveTier(
 
   const inRange = (t: CommissionTier) =>
     t.active
-    && price >= Number(t.min_price ?? 0)
-    && (t.max_price == null || price <= Number(t.max_price));
+    && price >= Number(t.minPrice ?? 0)
+    && (t.maxPrice == null || price <= Number(t.maxPrice));
 
   const matchesCategory = (t: CommissionTier) =>
     t.categories.length === 0
@@ -53,10 +53,10 @@ export function resolveTier(
   const pool = specific.length > 0 ? specific : (wildcard.length > 0 ? wildcard : inRangeTiers);
 
   return pool.toSorted((a, b) => {
-    const minDiff = Number(b.min_price) - Number(a.min_price);
+    const minDiff = Number(b.minPrice) - Number(a.minPrice);
     if (minDiff !== 0)
       return minDiff;
-    return b.sort_order - a.sort_order;
+    return b.sortOrder - a.sortOrder;
   })[0];
 }
 

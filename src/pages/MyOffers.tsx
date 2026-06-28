@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { isMockDataEnabled } from '@/lib/mockConfig';
 import {
   getMyReviewedOfferIdsOptions,
   getSentOffersOptions,
@@ -161,32 +160,13 @@ function MyOffers() {
                                         <p className="mb-2 text-xs font-medium text-foreground">
                                           Rate this seller
                                         </p>
-                                        {/* 👇 Mock conditional feedback interceptor for UI safety */}
-                                        {isMockDataEnabled
-
-                                          ? (
-                                              <div className="space-y-2">
-                                                <p className="text-xs italic text-muted-foreground">
-                                                  Mock Mode: Feedback Submission Simulated
-                                                  Successfully!
-                                                </p>
-                                                <Button
-                                                  onClick={() => setReviewingOffer(null)}
-                                                  size="sm"
-                                                >
-                                                  Close Panel
-                                                </Button>
-                                              </div>
-                                            )
-                                          : (
-                                              <ReviewForm
-                                                listingId={offer.listingId}
-                                                offerId={offer.id}
-                                                reviewedId={offer.sellerId}
-                                                onSuccess={() => setReviewingOffer(null)}
-                                                role="buyer"
-                                              />
-                                            )}
+                                        <ReviewForm
+                                          listingId={offer.listingId}
+                                          offerId={offer.id}
+                                          reviewedId={offer.sellerId}
+                                          onSuccess={() => setReviewingOffer(null)}
+                                          role="buyer"
+                                        />
                                       </div>
                                     )
                                   : (

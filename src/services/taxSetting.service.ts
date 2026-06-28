@@ -6,6 +6,12 @@ import type {
 } from '@/types/tax-setting';
 import { authInstance } from '@/services/ky.instance';
 
+export function getTaxSettings() {
+  return authInstance
+    .get('/api/v1/tax-settings')
+    .json<Response<TaxSetting>>();
+}
+
 export function listTaxSettings() {
   return authInstance
     .get('/api/v1/admin/settings/tax-settings')

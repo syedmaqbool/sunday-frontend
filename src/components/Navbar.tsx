@@ -29,8 +29,6 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { useCategories } from '@/hooks/useCategories';
-//  Mock config switcher  import
-import { isMockDataEnabled } from '@/lib/mockConfig';
 
 const sundayLogo = sundayLogoAsset.url;
 
@@ -43,11 +41,11 @@ export default function Navbar() {
 
   //  Clean click handler logic for both desktop & mobile navigation
   const handleSellClick = () => {
-    if (!user && !isMockDataEnabled) {
-      navigate('/auth');
+    if (user) {
+      navigate('/create-listing');
     }
     else {
-      navigate('/create-listing');
+      navigate('/auth');
     }
   };
 
@@ -103,7 +101,7 @@ export default function Navbar() {
             <Search className="h-5 w-5" />
           </Button>
           <CartDrawer />
-          {(user || isMockDataEnabled) && <NotificationBell />}
+          {user && <NotificationBell />}
 
           {/* Desktop Sell Button  */}
           <Button

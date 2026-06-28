@@ -69,3 +69,35 @@ export function markComplaintReturnReceived(complaintId: string) {
     .post(`/api/v1/complaints/${complaintId}/return-received`)
     .json<Response<Complaint>>();
 }
+
+export interface ComplaintMedia {
+  id: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  url: string;
+}
+
+export function uploadComplaintMedia(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return authInstance
+    .post('/api/v1/complaints/media', { body: form })
+    .json<Response<ComplaintMedia>>();
+}
+
+export interface SubmitReturnProofPayload {
+  expectedReturnDate: string;
+  returnCarrier: string;
+  returnProofUrls: string[];
+  returnTracking: string;
+}
+
+export function submitReturnProof(
+  complaintId: string,
+  payload: SubmitReturnProofPayload,
+) {
+  return authInstance
+    .post(`/api/v1/complaints/${complaintId}/return-proof`, { json: payload })
+    .json<Response<Complaint>>();
+}

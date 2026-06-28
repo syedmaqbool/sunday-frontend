@@ -23,39 +23,31 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
 } from '@/queries/useComplaint';
-import { createComplaint } from '@/services/complaints.service';
+import {
+  createComplaint,
+  submitReturnProof,
+  uploadComplaintMedia,
+} from '@/services/complaints.service';
 
 interface ComplaintActionsProps {
-  buyerId: string;
-  listingId: string;
   orderId: string;
   orderItemId: string;
 }
 
-async function uploadFiles(files: File[], folder: string) {
+async function uploadMediaFiles(files: File[]) {
   const urls: string[] = [];
   for (const file of files) {
-    const extension = file.name.split('.').pop() || 'jpg';
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
-    const { error } = await supabase.storage
-      .from('return-proofs')
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (error)
-      throw error;
-    const { data } = supabase.storage.from('return-proofs').getPublicUrl(path);
-    urls.push(data.publicUrl);
+    const { data } = await uploadComplaintMedia(file);
+    urls.push(data.url);
   }
   return urls;
 }
 
 export function ComplaintActions({
-  buyerId,
-  listingId,
   orderId,
   orderItemId,
 }: ComplaintActionsProps) {
@@ -111,10 +103,7 @@ export function ComplaintActions({
     }
     setBusy(true);
     try {
-      const urls = await uploadFiles(
-        evidenceFiles,
-        `${buyerId}/complaints/${orderId}-${listingId}/evidence`,
-      );
+      const urls = await uploadMediaFiles(evidenceFiles);
       await createComplaint({
         orderId,
         orderItemId,
@@ -155,22 +144,13 @@ export function ComplaintActions({
     }
     setBusy(true);
     try {
-      const urls = await uploadFiles(
-        proofFiles,
-        `${buyerId}/complaints/${orderId}-${listingId}/return`,
-      );
-      const { error } = await supabase
-        .from('complaints')
-        .update({
-          return_carrier: carrier.trim(),
-          return_expected_date: new Date(expectedDate).toISOString(),
-          return_proof_urls: [...(complaint.returnProofUrls ?? []), ...urls],
-          return_tracking: tracking.trim(),
-          status: 'return_in_transit',
-        })
-        .eq('id', complaint.id);
-      if (error)
-        throw error;
+      const urls = await uploadMediaFiles(proofFiles);
+      await submitReturnProof(complaint.id, {
+        expectedReturnDate: new Date(expectedDate).toISOString(),
+        returnCarrier: carrier.trim(),
+        returnProofUrls: urls,
+        returnTracking: tracking.trim(),
+      });
       toast.success('Return proof uploaded. Seller has been notified.');
       setReturnOpen(false);
       await refetch();

@@ -659,8 +659,6 @@ function OrderCard({ order }: { order: Order }) {
                         {/* Complaint + Review after delivered */}
                         {item.status === 'DELIVERED' && (
                           <ComplaintActions
-                            buyerId={order.buyerId}
-                            listingId={item.listingId}
                             orderId={order.id}
                             orderItemId={item.id}
                           />

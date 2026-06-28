@@ -35,15 +35,21 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories, useSubcategories } from '@/hooks/useCategories';
-import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 import {
   getEditListingOptions,
-  getListingMediaUrls,
 } from '@/queries/useMarketplace';
+import {
+  createListing,
+  updateMyListing,
+  uploadListingMedia,
+} from '@/services/listing.service';
+import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
+
+interface ExistingMediaItem { fileId: string; url: string }
 
 function isVideoUrl(url: string) {
   return /\.(?:mp4|webm|mov|m4v|ogg)(?:\?|$)/i.test(url);
@@ -76,7 +82,7 @@ function FieldTip({ tip }: { tip: string }) {
 
 function CreateListing() {
   const navigate = useNavigate();
-  const { id } = useParams(); // if editing
+  const { id } = useParams();
   const isEditing = !!id;
   const { toast } = useToast();
   const { loading: authLoading, user } = useAuth();
@@ -84,11 +90,13 @@ function CreateListing() {
   const { data: subCategories = [] } = useSubcategories();
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [existingVideo, setExistingVideo] = useState<ExistingMediaItem | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
   const [form, setForm] = useState({
+    categoryId: '',
+    subcategoryId: '',
     brand: '',
     condition: '',
     description: '',
@@ -101,7 +109,6 @@ function CreateListing() {
   });
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
-  // Load existing listing if editing
   const { data: existingListing, isLoading: loadingListing } = useQuery(
     getEditListingOptions(id, user?.id),
   );
@@ -112,24 +119,19 @@ function CreateListing() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (!existingListing) {
+    if (!existingListing)
       return;
-    }
 
-    if (
-      existingListing.sellerId !== user?.id
-    ) {
+    if (existingListing.sellerId !== user?.id) {
       navigate('/listings', { replace: true });
       return;
     }
+
     const parts = (existingListing.categoryValue || '').split('-');
     const closestWeight = (() => {
       if (!existingListing.weight)
         return '';
-      const options = WEIGHT_OPTIONS.map(o => ({
-        ...o,
-        num: Number(o.value),
-      }));
+      const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: Number(o.value) }));
       let closest = options[0];
       let minDistribution = Math.abs(options[0].num - existingListing.weight);
       for (let index = 1; index < options.length; index++) {
@@ -141,7 +143,10 @@ function CreateListing() {
       }
       return closest.value;
     })();
+
     setForm({
+      categoryId: existingListing.categoryId,
+      subcategoryId: existingListing.subcategoryId,
       brand: existingListing.brand || '',
       condition: existingListing.condition,
       description: existingListing.description || '',
@@ -152,41 +157,29 @@ function CreateListing() {
       title: existingListing.title,
       weight: closestWeight,
     });
-    const media = getListingMediaUrls(existingListing);
-    setExistingImages(media.filter((u: string) => !isVideoUrl(u)));
-    const vid = media.find((u: string) => isVideoUrl(u));
-    setExistingVideo(vid || null);
-  }, [existingListing, user, navigate]);
 
-  const uploadFiles = async (
-    listingId: string,
-    files: File[],
-  ): Promise<string[]> => {
-    const urls: string[] = [];
-    for (const file of files) {
-      const extension = file.name.split('.').pop();
-      const path = `${user?.id || 'mock'}/${listingId}/${crypto.randomUUID()}.${extension}`;
-      const { error } = await supabase.storage
-        .from('listing-images')
-        .upload(path, file, { upsert: true });
-      if (error)
-        throw error;
-      const { data: urlData } = supabase.storage
-        .from('listing-images')
-        .getPublicUrl(path);
-      urls.push(urlData.publicUrl);
-    }
-    return urls;
-  };
+    const sortedMedia = [...(existingListing.media ?? [])]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+    const images = sortedMedia
+      .filter(m => m.type === 'IMAGE')
+      .map(m => ({ fileId: m.file?.id ?? '', url: m.file?.url ?? '' }))
+      .filter(m => m.fileId && m.url);
+
+    const vid = sortedMedia.find(m => m.type === 'VIDEO');
+    setExistingImages(images);
+    setExistingVideo(
+      vid?.file?.id && vid?.file?.url
+        ? { fileId: vid.file.id, url: vid.file.url }
+        : null,
+    );
+  }, [existingListing, user, navigate]);
 
   const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>) => {
     const files = [...event_.target.files || []];
     const total = imageFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
-      toast({
-        title: `Max ${MAX_PHOTOS} photos allowed`,
-        variant: 'destructive',
-      });
+      toast({ title: `Max ${MAX_PHOTOS} photos allowed`, variant: 'destructive' });
       return;
     }
     setImageFiles(previous => [...previous, ...files]);
@@ -249,78 +242,77 @@ function CreateListing() {
       return;
 
     try {
+      const newImageItems = await Promise.all(
+        imageFiles.map(async (file, index) => {
+          const { data } = await uploadListingMedia(file);
+          return { fileId: data.id, sortOrder: index };
+        }),
+      );
+
+      let newVideoFileId: string | null = null;
+      if (videoFile) {
+        const { data } = await uploadListingMedia(videoFile);
+        newVideoFileId = data.id;
+      }
+
       if (isEditing) {
-        const newImageUrls
-          = imageFiles.length > 0 ? await uploadFiles(id!, imageFiles) : [];
-        const newVideoUrls = videoFile
-          ? await uploadFiles(id!, [videoFile])
-          : [];
-        const videoUrl = newVideoUrls[0] || existingVideo;
-        const allMedia = [
-          ...existingImages,
-          ...newImageUrls,
-          ...(videoUrl ? [videoUrl] : []),
+        const existingImageItems = existingImages.map((img, index) => ({
+          fileId: img.fileId,
+          sortOrder: index,
+        }));
+        const allImageItems = [
+          ...existingImageItems,
+          ...newImageItems.map((item, index) => ({
+            fileId: item.fileId,
+            sortOrder: existingImages.length + index,
+          })),
+        ];
+        const videoFileId = newVideoFileId ?? existingVideo?.fileId ?? null;
+        const media = [
+          ...allImageItems,
+          ...(videoFileId ? [{ fileId: videoFileId, sortOrder: allImageItems.length }] : []),
         ];
 
-        const { error } = await supabase
-          .from('listings')
-          .update({
-            brand: form.brand,
-            category: `${form.parentCategory}-${form.subCategory}`,
-            condition: form.condition,
-            description: form.description,
-            images: allMedia,
-            price: Number(form.price),
-            size: form.size,
-            title: form.title,
-            weight: form.weight ? Number(form.weight) : null,
-          })
-          .eq('id', id!)
-          .eq('seller_id', user.id);
-
-        if (error)
-          throw error;
-        toast({
-          description: 'Your changes have been saved.',
-          title: 'Listing updated!',
+        await updateMyListing(id!, {
+          categoryId: form.categoryId,
+          subcategoryId: form.subcategoryId,
+          brand: form.brand,
+          condition: form.condition,
+          description: form.description,
+          media,
+          price: Number(form.price),
+          size: form.size,
+          title: form.title,
+          weight: form.weight ? Number(form.weight) : null,
         });
+
+        toast({ description: 'Your changes have been saved.', title: 'Listing updated!' });
         navigate(`/listing/${id}`);
       }
       else {
-        const { data: newListing, error: insertError } = await supabase
-          .from('listings')
-          .insert({
-            brand: form.brand,
-            category: `${form.parentCategory}-${form.subCategory}`,
-            condition: form.condition,
-            description: form.description,
-            images: [],
-            price: Number(form.price),
-            seller_id: user.id,
-            size: form.size,
-            status: 'pending',
-            title: form.title,
-            weight: form.weight ? Number(form.weight) : null,
-          })
-          .select('id')
-          .single();
+        const allImageItems = newImageItems.map((item, index) => ({
+          fileId: item.fileId,
+          sortOrder: index,
+        }));
+        const media = [
+          ...allImageItems,
+          ...(newVideoFileId
+            ? [{ fileId: newVideoFileId, sortOrder: allImageItems.length }]
+            : []),
+        ];
 
-        if (insertError)
-          throw insertError;
-
-        const imageUrls
-          = imageFiles.length > 0
-            ? await uploadFiles(newListing.id, imageFiles)
-            : [];
-        const videoUrls = videoFile
-          ? await uploadFiles(newListing.id, [videoFile])
-          : [];
-        const allMedia = [...imageUrls, ...videoUrls];
-
-        await supabase
-          .from('listings')
-          .update({ images: allMedia })
-          .eq('id', newListing.id);
+        const { data: newListing } = await createListing({
+          categoryId: form.categoryId,
+          subcategoryId: form.subcategoryId,
+          brand: form.brand,
+          condition: form.condition,
+          description: form.description,
+          media,
+          price: Number(form.price),
+          size: form.size,
+          title: form.title,
+          weight: form.weight ? Number(form.weight) : null,
+        });
 
         trackEvent('listing_created', {
           brand: form.brand,
@@ -328,19 +320,12 @@ function CreateListing() {
           listing_id: newListing.id,
           price: Number(form.price),
         });
-        toast({
-          description: 'Your item is pending review.',
-          title: 'Listing created!',
-        });
+        toast({ description: 'Your item is pending review.', title: 'Listing created!' });
         navigate('/listings');
       }
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast({ description: error.message, title: 'Error', variant: 'destructive' });
     }
     setSubmitting(false);
   }
@@ -365,28 +350,19 @@ function CreateListing() {
     }
 
     if (!isEditing) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('bank_account_holder, bank_name, bank_account_number')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        toast({
-          description: profileError.message,
-          title: 'Error',
-          variant: 'destructive',
-        });
-        return;
+      try {
+        const { data: profile } = await getMyProfile();
+        const hasBankDetails
+          = !!profile.bankAccountHolder
+            && !!profile.bankName
+            && !!profile.bankAccountNumber;
+        if (!hasBankDetails) {
+          setBankModalOpen(true);
+          return;
+        }
       }
-
-      const hasBankDetails
-        = !!profile?.bank_account_holder
-          && !!profile?.bank_name
-          && !!profile?.bank_account_number;
-
-      if (!hasBankDetails) {
-        setBankModalOpen(true);
+      catch (error: any) {
+        toast({ description: error.message, title: 'Error', variant: 'destructive' });
         return;
       }
     }
@@ -395,7 +371,7 @@ function CreateListing() {
   };
 
   const allPreviews = [
-    ...existingImages.map(url => ({ type: 'existing' as const, url })),
+    ...existingImages.map(img => ({ type: 'existing' as const, url: img.url })),
     ...imageFiles.map((file, index) => ({
       index,
       type: 'new' as const,
@@ -403,13 +379,13 @@ function CreateListing() {
     })),
   ];
 
-  const videoPreviewUrl = useMemo(() => videoFile
-    ? URL.createObjectURL(videoFile)
-    : existingVideo, [existingVideo, videoFile]);
+  const videoPreviewUrl = useMemo(
+    () => videoFile ? URL.createObjectURL(videoFile) : (existingVideo?.url ?? null),
+    [existingVideo, videoFile],
+  );
 
-  if (authLoading || loadingListing) {
+  if (authLoading || loadingListing)
     return null;
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -462,7 +438,7 @@ function CreateListing() {
                     onClick={() =>
                       preview.type === 'existing'
                         ? removeExistingImage(
-                            existingImages.indexOf(preview.url),
+                            existingImages.findIndex(img => img.url === preview.url),
                           )
                         : removeNewImage(preview.index!)}
                     type="button"
@@ -655,8 +631,16 @@ function CreateListing() {
                 <FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." />
               </Label>
               <Select
-                onValueChange={v =>
-                  setForm(f => ({ ...f, parentCategory: v, subCategory: '' }))}
+                onValueChange={(v) => {
+                  const cat = parentCategories.find(c => c.value === v);
+                  setForm(f => ({
+                    ...f,
+                    categoryId: cat?.id ?? '',
+                    subcategoryId: '',
+                    parentCategory: v,
+                    subCategory: '',
+                  }));
+                }}
                 value={form.parentCategory}
               >
                 <SelectTrigger>
@@ -677,8 +661,15 @@ function CreateListing() {
                 <FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." />
               </Label>
               <Select
-                onValueChange={v =>
-                  setForm(f => ({ ...f, size: '', subCategory: v }))}
+                onValueChange={(v) => {
+                  const sub = subCategories.find(c => c.value === v);
+                  setForm(f => ({
+                    ...f,
+                    subcategoryId: sub?.id ?? '',
+                    size: '',
+                    subCategory: v,
+                  }));
+                }}
                 value={form.subCategory}
                 disabled={!form.parentCategory}
               >

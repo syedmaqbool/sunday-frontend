@@ -3,8 +3,26 @@ import type {
   ListingStatus,
   ModerateListingPayload,
 } from '@/types/admin/listing';
+import type { UploadedFile } from '@/types/profile';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
+
+export interface CreateListingPayload {
+  categoryId: string;
+  subcategoryId: string;
+  brand: string;
+  condition: string;
+  description: string;
+  media: Array<{ fileId: string; sortOrder?: number }>;
+  price: number;
+  size: string;
+  title: string;
+  weight: number | null;
+}
+
+export type UpdateListingPayload = Partial<Omit<CreateListingPayload, 'media'>> & {
+  media?: Array<{ fileId: string; sortOrder?: number }>;
+};
 
 export interface ListingFeedbackEntry {
   id: string;
@@ -13,6 +31,26 @@ export interface ListingFeedbackEntry {
   adminFullName: string | null;
   feedback: string;
   createdAt: string;
+}
+
+export function uploadListingMedia(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return authInstance
+    .post('/api/v1/listings/media', { body: formData })
+    .json<Response<UploadedFile>>();
+}
+
+export function createListing(payload: CreateListingPayload) {
+  return authInstance
+    .post('/api/v1/listings', { json: payload })
+    .json<Response<AdminListing>>();
+}
+
+export function updateMyListing(listingId: string, payload: UpdateListingPayload) {
+  return authInstance
+    .patch(`/api/v1/me/listings/${listingId}`, { json: payload })
+    .json<Response<AdminListing>>();
 }
 
 export function listAdminListings(

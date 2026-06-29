@@ -37,23 +37,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useCategories, useSubcategories } from '@/hooks/useCategories';
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
+import { uploadFile } from '@/lib/uploadFile';
 import {
   getEditListingOptions,
 } from '@/queries/useMarketplace';
 import {
   createListing,
   updateMyListing,
-  uploadListingMedia,
 } from '@/services/listing.service';
 import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
 
 interface ExistingMediaItem { fileId: string; url: string }
-
-function isVideoUrl(url: string) {
-  return /\.(?:mp4|webm|mov|m4v|ogg)(?:\?|$)/i.test(url);
-}
 
 function FieldTip({ tip }: { tip: string }) {
   return (
@@ -159,7 +155,7 @@ function CreateListing() {
     });
 
     const sortedMedia = [...(existingListing.media ?? [])]
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
     const images = sortedMedia
       .filter(m => m.type === 'IMAGE')
@@ -169,7 +165,7 @@ function CreateListing() {
     const vid = sortedMedia.find(m => m.type === 'VIDEO');
     setExistingImages(images);
     setExistingVideo(
-      vid?.file?.id && vid?.file?.url
+      vid?.file?.id && vid?.file.url
         ? { fileId: vid.file.id, url: vid.file.url }
         : null,
     );
@@ -244,14 +240,14 @@ function CreateListing() {
     try {
       const newImageItems = await Promise.all(
         imageFiles.map(async (file, index) => {
-          const { data } = await uploadListingMedia(file);
+          const { data } = await uploadFile(file);
           return { fileId: data.id, sortOrder: index };
         }),
       );
 
       let newVideoFileId: string | null = null;
       if (videoFile) {
-        const { data } = await uploadListingMedia(videoFile);
+        const { data } = await uploadFile(videoFile);
         newVideoFileId = data.id;
       }
 

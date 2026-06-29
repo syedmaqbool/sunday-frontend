@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   getHeroImageQueryOptions,
   useUpdateHeroImage,
-  useUploadSiteAsset,
+  useUploadFile,
 } from '@/queries/useSiteSettings';
 
 const DEFAULTS: HeroImageValue = {
@@ -156,7 +156,7 @@ function SiteSettings() {
 
   const { data, isLoading } = useQuery(getHeroImageQueryOptions());
   const updateHero = useUpdateHeroImage();
-  const uploadAsset = useUploadSiteAsset();
+  const uploadAsset = useUploadFile();
 
   useEffect(() => {
     setForm({ ...DEFAULTS, ...data });

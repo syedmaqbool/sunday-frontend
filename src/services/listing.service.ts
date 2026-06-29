@@ -33,14 +33,6 @@ export interface ListingFeedbackEntry {
   createdAt: string;
 }
 
-export function uploadListingMedia(file: File) {
-  const formData = new FormData();
-  formData.append('file', file);
-  return authInstance
-    .post('/api/v1/listings/media', { body: formData })
-    .json<Response<UploadedFile>>();
-}
-
 export function createListing(payload: CreateListingPayload) {
   return authInstance
     .post('/api/v1/listings', { json: payload })

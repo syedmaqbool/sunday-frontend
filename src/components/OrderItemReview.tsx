@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { uploadFile } from '@/lib/uploadFile';
 import { getOrderItemReviewOptions } from '@/queries/useReview';
 import {
   createReview,
-  uploadReviewMedia,
 } from '@/services/offers.service';
 
 interface OrderItemReviewProps {
@@ -97,12 +97,12 @@ export function OrderItemReview({
       let videoUrl: string | undefined;
 
       for (const file of images) {
-        const { data } = await uploadReviewMedia(file);
+        const { data } = await uploadFile(file);
         imageUrls.push(data.url);
       }
 
       if (video) {
-        const { data } = await uploadReviewMedia(video);
+        const { data } = await uploadFile(video);
         videoUrl = data.url;
       }
 

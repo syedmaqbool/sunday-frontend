@@ -27,11 +27,3 @@ export function updateHeroImage(value: Partial<HeroImageValue>) {
     })
     .json<Response<SiteSetting<HeroImageValue>>>();
 }
-
-export async function uploadSiteAsset(file: File) {
-  const formData = new FormData();
-  formData.append('file', file);
-  return await authInstance
-    .post('/api/v1/admin/settings/site-settings/assets', { body: formData })
-    .json<Response<UploadedAsset>>();
-}

@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { uploadFile } from '@/lib/uploadFile';
 import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
@@ -30,7 +31,6 @@ import {
 import {
   createComplaint,
   submitReturnProof,
-  uploadComplaintMedia,
 } from '@/services/complaints.service';
 
 interface ComplaintActionsProps {
@@ -41,7 +41,7 @@ interface ComplaintActionsProps {
 async function uploadMediaFiles(files: File[]) {
   const urls: string[] = [];
   for (const file of files) {
-    const { data } = await uploadComplaintMedia(file);
+    const { data } = await uploadFile(file);
     urls.push(data.url);
   }
   return urls;

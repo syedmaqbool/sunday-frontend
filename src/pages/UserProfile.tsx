@@ -820,7 +820,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
       });
 
       // 3. Upload shipping proof URL
-      await uploadShippingProof(item.orderId, item.id, uploaded.url);
+      await uploadShippingProof(item.orderId, item.id, uploaded.data.url);
 
       toast.success('Marked as shipped');
       setDialogOpen(false);

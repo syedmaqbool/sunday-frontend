@@ -1,3 +1,4 @@
+import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export interface UploadedFile {
@@ -8,12 +9,11 @@ export interface UploadedFile {
   url: string;
 }
 
-export async function uploadFile(file: File): Promise<UploadedFile> {
+export async function uploadFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const data = await authInstance
+  return authInstance
     .post('/api/upload-file', { body: formData })
-    .json<{ data: UploadedFile }>();
-  return data.data as UploadedFile;
+    .json<Response<UploadedFile>>();
 }

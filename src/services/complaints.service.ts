@@ -78,14 +78,6 @@ export interface ComplaintMedia {
   url: string;
 }
 
-export function uploadComplaintMedia(file: File) {
-  const form = new FormData();
-  form.append('file', file);
-  return authInstance
-    .post('/api/v1/complaints/media', { body: form })
-    .json<Response<ComplaintMedia>>();
-}
-
 export interface SubmitReturnProofPayload {
   expectedReturnDate: string;
   returnCarrier: string;

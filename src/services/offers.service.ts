@@ -170,14 +170,6 @@ export interface ReviewMedia {
   url: string;
 }
 
-export function uploadReviewMedia(file: File) {
-  const form = new FormData();
-  form.append('file', file);
-  return authInstance
-    .post('/api/v1/reviews/media', { body: form })
-    .json<Response<ReviewMedia>>();
-}
-
 export interface ReviewStat {
   reviewedId: string;
   avgRating: number;

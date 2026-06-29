@@ -4,11 +4,11 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import { uploadFile } from '@/lib/uploadFile';
 import {
   getHeroImage,
   getPublicHeroImage,
   updateHeroImage,
-  uploadSiteAsset,
 } from '@/services/adminSiteSettings.service';
 
 export const siteSettingsQueryKey = {
@@ -66,10 +66,10 @@ export function useUpdateHeroImage() {
   });
 }
 
-export function useUploadSiteAsset() {
+export function useUploadFile() {
   return useMutation({
     mutationFn: async (file: File) => {
-      const response = await uploadSiteAsset(file);
+      const response = await uploadFile(file);
       return response.data;
     },
   });

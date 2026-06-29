@@ -9,7 +9,14 @@ export interface Category {
   sortOrder: number;
   value: string;
 }
-export type Subcategory = Category;
+
+export interface Subcategory {
+  id:            string;
+  icon:          string;
+  label:         string;
+  sortOrder:     number;
+  value:         string;
+}
 
 export function useCategories() {
   return useQuery<Category[]>({
@@ -24,15 +31,22 @@ export function useCategories() {
   });
 }
 
-export function useSubcategories() {
+export function useSubcategories(categoryId?: string) {
   return useQuery<Subcategory[]>({
+    queryKey: ["subcategories", categoryId],
+    enabled: !!categoryId,
     queryFn: async () => {
       const response = await authInstance
-        .get('/api/v1/subcategories', { searchParams: { page: 1, size: 100 } })
+        .get("/api/v1/subcategories", {
+          searchParams: {
+            page: 1,
+            size: 100,
+            categoryId,
+          },
+        })
         .json<PaginatedResponse<Subcategory>>();
+
       return response.data;
     },
-    queryKey: ['subcategories'],
-    staleTime: 5 * 60 * 1000,
   });
 }

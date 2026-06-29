@@ -82,15 +82,7 @@ function CreateListing() {
   const isEditing = !!id;
   const { toast } = useToast();
   const { loading: authLoading, user } = useAuth();
-  const { data: parentCategories = [] } = useCategories();
-  const { data: subCategories = [] } = useSubcategories();
-  const [submitting, setSubmitting] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [existingVideo, setExistingVideo] = useState<ExistingMediaItem | null>(null);
-  const [videoMuted, setVideoMuted] = useState(true);
-  const [form, setForm] = useState({
+   const [form, setForm] = useState({
     categoryId: '',
     subcategoryId: '',
     brand: '',
@@ -103,6 +95,15 @@ function CreateListing() {
     title: '',
     weight: '',
   });
+  const { data: parentCategories = [] } = useCategories();
+  const { data: subCategories = [] } = useSubcategories(form.categoryId);
+  const [submitting, setSubmitting] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [existingVideo, setExistingVideo] = useState<ExistingMediaItem | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
+ 
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: existingListing, isLoading: loadingListing } = useQuery(
@@ -346,7 +347,9 @@ function CreateListing() {
     }
 
     if (!isEditing) {
+      
       try {
+      
         const { data: profile } = await getMyProfile();
         const hasBankDetails
           = !!profile.bankAccountHolder
@@ -379,6 +382,8 @@ function CreateListing() {
     () => videoFile ? URL.createObjectURL(videoFile) : (existingVideo?.url ?? null),
     [existingVideo, videoFile],
   );
+
+
 
   if (authLoading || loadingListing)
     return null;
@@ -680,10 +685,10 @@ function CreateListing() {
                 </SelectTrigger>
                 <SelectContent>
                   {subCategories.map(c => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+  <SelectItem key={c.id} value={c.value}>
+    {c.label}
+  </SelectItem>
+))}
                 </SelectContent>
               </Select>
             </div>

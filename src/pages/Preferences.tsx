@@ -568,18 +568,8 @@ function Preferences() {
   );
 }
 
+// Ab (sahi — sirf motion wrapper, loading check nahi):
 function StepWrapper({ children }: { children: React.ReactNode }) {
-  if (loadingPrefs || loadingCats || loadingBrands) {
-    return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-background">
-        <Sparkles className="h-8 w-8 animate-pulse text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">
-          Personalizing your profile experience...
-        </p>
-      </div>
-    );
-  }
-
   return (
     <motion.div
       animate={{ opacity: 1, x: 0 }}

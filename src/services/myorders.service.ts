@@ -29,10 +29,19 @@ export function updateItemStatus(
   orderItemId: string,
   payload: UpdateOrderItemStatusPayload,
 ) {
+  console.log(
+    'PATCH URL:',
+    `/api/v1/orders/${orderId}/items/${orderItemId}/status`,
+  );
+  
   return authInstance
-    .patch(`/api/v1/orders/${orderId}/items/${orderItemId}`, { json: payload })
-    .json<Response>();
+  .patch(`/api/v1/orders/${orderId}/items/${orderItemId}/status`, {
+    json: payload,
+  })
+  .json<Response>();
+    
 }
+
 
 export function uploadShippingProof(
   orderId: string,

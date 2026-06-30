@@ -47,5 +47,3 @@ export function getAdminBoostsOptions(parameters: AdminBoostsParams = {}) {
     queryKey: adminBoostQueryKey.boosts(parameters),
   });
 }
-
-

@@ -36,5 +36,3 @@ export function getUserReviewsOptions(userId: string, limit = 10) {
     queryKey: reviewQueryKey.userReviews(userId),
   });
 }
-
-

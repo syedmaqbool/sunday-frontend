@@ -49,4 +49,3 @@ export function useUploadProfileImageMutation() {
     mutationFn: (file: File) => uploadProfileFile(file),
   });
 }
-

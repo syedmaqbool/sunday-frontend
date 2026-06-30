@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { AdminReport, ReportStatus } from '@/types/adminReport.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Flag, Loader2 } from 'lucide-react';

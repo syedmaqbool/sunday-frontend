@@ -5,8 +5,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
 import {
-  personalizeListings,
   getUserPreferencesOptions,
+  personalizeListings,
 } from '@/hooks/useUserPreferences';
 import { getFeaturedListingsOptions } from '@/queries/marketplace.query';
 import ListingCard from './ListingCard';

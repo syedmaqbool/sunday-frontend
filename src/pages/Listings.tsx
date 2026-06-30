@@ -25,8 +25,8 @@ import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
 import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
 import { getSellerRatingsOptions } from '@/hooks/useSellerRating';
 import {
-  personalizeListings,
   getUserPreferencesOptions,
+  personalizeListings,
 } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
 import {

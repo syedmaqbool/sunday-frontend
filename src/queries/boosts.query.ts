@@ -53,6 +53,3 @@ export function getMyBoostsOptions(userId?: string) {
     queryKey: boostsQueryKey.my(userId),
   });
 }
-
-
-

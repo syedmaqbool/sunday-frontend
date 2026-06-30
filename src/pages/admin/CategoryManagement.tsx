@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { Category, Subcategory } from '@/types/adminCategory.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';

@@ -36,4 +36,3 @@ export function useDeleteMessageMutation() {
       qc.invalidateQueries({ queryKey: messageModerationQueryKey.flagged() }),
   });
 }
-

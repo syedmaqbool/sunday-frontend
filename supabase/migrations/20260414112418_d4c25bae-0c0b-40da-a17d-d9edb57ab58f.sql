@@ -1,1 +1,0 @@
-ALTER TABLE public.listings ADD COLUMN admin_feedback text DEFAULT NULL;

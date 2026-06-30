@@ -1,4 +1,4 @@
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, PackageCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

@@ -36,5 +36,3 @@ export function getSellerRatingsOptions(sellerIds: string[]) {
     staleTime: 60_000,
   });
 }
-
-

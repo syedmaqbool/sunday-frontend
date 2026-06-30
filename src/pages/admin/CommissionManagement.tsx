@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { CommissionTier } from '@/types/commission.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Pencil, Percent, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';

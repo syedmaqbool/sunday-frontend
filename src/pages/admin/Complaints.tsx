@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import type {
   AdminComplaintStatus,
   Complaint,
   ComplaintStatus,
 } from '@/types/complaint.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import {

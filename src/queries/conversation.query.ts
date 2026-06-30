@@ -29,5 +29,3 @@ export function getConversationMessagesOptions(conversationId?: string) {
     queryKey: conversationsQueryKey.messages(conversationId),
   });
 }
-
-

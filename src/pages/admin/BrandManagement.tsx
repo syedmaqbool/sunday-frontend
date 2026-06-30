@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { Brand } from '@/types/brand.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';

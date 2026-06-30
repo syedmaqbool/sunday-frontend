@@ -33,5 +33,3 @@ export function getAdminReservedListingsOptions(isEnabled: boolean) {
     queryKey: adminOrdersQueryKey.reservedListings(),
   });
 }
-
-

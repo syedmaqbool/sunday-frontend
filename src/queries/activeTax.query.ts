@@ -22,4 +22,3 @@ export function getActiveTaxOptions() {
     queryKey: activeTaxQueryKey.current(),
   });
 }
-

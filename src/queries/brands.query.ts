@@ -21,4 +21,3 @@ export function getBrandsOptions(isIncludingInactive = false) {
     queryKey: brandsQueryKey.list(isIncludingInactive),
   });
 }
-

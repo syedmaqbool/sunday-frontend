@@ -79,4 +79,3 @@ export function useUpdateEmailTemplatesMutation() {
       qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 }
-

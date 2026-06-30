@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { Notification } from '@/types/notification.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';

@@ -296,11 +296,3 @@ export function getListingMediaUrls(listing: {
     return [listing.coverImageUrl];
   return [];
 }
-
-
-
-
-
-
-
-

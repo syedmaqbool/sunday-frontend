@@ -1,19 +1,19 @@
 import type { CreateTicketPayload } from '@/types/support.type';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getSupportMessagesOptions,
   getSupportTicketsOptions,
   supportQueryKey,
 } from '@/queries/support.query';
+import {
+  createSupportTicket,
+  sendSupportMessage,
+} from '@/services/support.service';
 
 export {
   getSupportMessagesOptions,
   getSupportTicketsOptions,
 } from '@/queries/support.query';
-import {
-  createSupportTicket,
-  sendSupportMessage,
-} from '@/services/support.service';
 
 // Get tickets
 export function useSupportTicketsQuery() {

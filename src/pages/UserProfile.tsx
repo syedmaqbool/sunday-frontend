@@ -1,6 +1,6 @@
 import type { Complaint, ComplaintStatus } from '@/types/complaint.type';
 import type { Order, OrderItem } from '@/types/order.type';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   AlertTriangle,

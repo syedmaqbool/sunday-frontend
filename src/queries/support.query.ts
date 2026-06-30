@@ -29,5 +29,3 @@ export function getSupportMessagesOptions(ticketId?: string) {
     queryKey: supportQueryKey.messages(ticketId),
   });
 }
-
-

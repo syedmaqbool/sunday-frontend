@@ -23,4 +23,3 @@ export function getMyListingFeedbackOptions(listingId: string | undefined) {
     queryKey: myListingFeedbackQueryKey.list(listingId),
   });
 }
-

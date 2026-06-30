@@ -23,4 +23,3 @@ export function getUserPreferencesOptions(userId?: string) {
     queryKey: userPreferencesQueryKey.current(userId),
   });
 }
-

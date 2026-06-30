@@ -60,7 +60,3 @@ export function getMyReviewedOfferIdsOptions(userId?: string) {
     queryKey: offersQueryKey.reviewedIds(userId),
   });
 }
-
-
-
-

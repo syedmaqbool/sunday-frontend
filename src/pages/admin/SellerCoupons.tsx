@@ -166,9 +166,9 @@ function SellerCoupons() {
 
   // Listings for selected seller (item_based scope only)
   const { data: listingsRaw } = useQuery(getAdminSellerListingsOptions(
-      form.seller_id,
-      !!form.seller_id && form.scope === 'item_based',
-    ));
+    form.seller_id,
+    !!form.seller_id && form.scope === 'item_based',
+  ));
 
   const listings: ListingOption[] = useMemo(
     () =>

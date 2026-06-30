@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { BoostableListingItem, ListingBoost } from '@/types/boost.type';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   Loader2,

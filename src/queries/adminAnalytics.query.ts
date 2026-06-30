@@ -32,5 +32,3 @@ export function getAdminMarketingLeadsQueryOptions(parameters: AdminMarketingLea
     retry: false,
   });
 }
-
-

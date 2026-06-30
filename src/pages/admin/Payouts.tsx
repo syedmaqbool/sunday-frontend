@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import {
@@ -101,13 +101,13 @@ function Payouts() {
   const { data: runsData, isLoading: lruns } = useQuery(getPayoutRunsOptions());
   const { data: refundsData, isLoading: lrefunds } = useQuery(getAdminRefundReportOptions());
   const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(getAdminSellerPayoutsOptions(
-      sellerFilter === 'all' ? {} : { sellerId: sellerFilter },
-    ));
+    sellerFilter === 'all' ? {} : { sellerId: sellerFilter },
+  ));
   const { data: periodPayoutsData } = useQuery(getAdminSellerPayoutsOptions(
-      rangeStart && rangeEnd
-        ? { periodEnd: rangeEnd, periodStart: rangeStart }
-        : {},
-    ));
+    rangeStart && rangeEnd
+      ? { periodEnd: rangeEnd, periodStart: rangeStart }
+      : {},
+  ));
   // Refund report doesn't support period filtering directly — we derive period
   // refunds from all refund items and filter by sourceDate on the client side.
   const { data: allRefundsData } = useQuery(getAdminRefundReportOptions());
@@ -164,7 +164,7 @@ function Payouts() {
       s.balance = s.sales - s.paid;
     });
 
-    return Array.from(map.values()).toSorted((a, b) => b.balance - a.balance);
+    return [...map.values()].toSorted((a, b) => b.balance - a.balance);
   }, [sellerPayouts]);
 
   /** Global totals from payout runs */

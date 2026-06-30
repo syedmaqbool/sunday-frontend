@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { ChartConfig } from '@/components/ui/chart';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   DollarSign,

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import { useQuery } from '@tanstack/react-query';
 
 import { ArrowRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';

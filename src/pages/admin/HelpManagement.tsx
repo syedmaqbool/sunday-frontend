@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import type {
   HelpCategoryAPI,
   HelpFaqAPI,
   HelpTutorialAPI,
 } from '@/types/adminSettings.type';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   BookOpen,

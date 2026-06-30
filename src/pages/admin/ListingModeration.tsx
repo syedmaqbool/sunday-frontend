@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { AdminListing, ListingStatus } from '@/types/adminListing.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import {

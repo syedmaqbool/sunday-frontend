@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { EmailTemplateAPI } from '@/types/adminSettings.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Mail, Save } from 'lucide-react';
 import { useState } from 'react';

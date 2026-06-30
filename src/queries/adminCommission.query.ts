@@ -56,4 +56,3 @@ export function useDeleteCommissionTierMutation() {
       queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 }
-

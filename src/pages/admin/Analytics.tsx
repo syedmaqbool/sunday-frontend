@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import type { ChartConfig } from '@/components/ui/chart';
 import type { DimKey } from '@/types/adminAnalytics.type';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   CheckCircle2,
@@ -194,10 +194,10 @@ function Analytics() {
 
   const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
   const { data: leadsResult, isLoading: leadsLoading } = useQuery(getAdminMarketingLeadsQueryOptions({
-      leadStatus: leadStatusFilter || undefined,
-      search: leadSearch || undefined,
-      size: 50,
-    }));
+    leadStatus: leadStatusFilter || undefined,
+    search: leadSearch || undefined,
+    size: 50,
+  }));
 
   const leads = leadsResult?.data ?? [];
   const leadsTotal = leadsResult?.pagination?.total ?? 0;

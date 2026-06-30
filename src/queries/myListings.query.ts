@@ -20,4 +20,3 @@ export function getMyListingsOptions(enabled = true) {
     queryKey: myListingsQueryKey.list(),
   });
 }
-

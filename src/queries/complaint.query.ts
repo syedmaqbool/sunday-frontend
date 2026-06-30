@@ -71,7 +71,3 @@ export function getOrderShipmentOptions(orderId: string, orderItemId: string) {
     queryKey: complaintsQueryKey.orderShipment(orderId, orderItemId),
   });
 }
-
-
-
-

@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import type { MyListing } from '@/queries/myListings.query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox,
   Loader2,
@@ -41,7 +42,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
-import type { MyListing } from '@/queries/myListings.query';
 import { getMyListingsOptions, myListingsQueryKey } from '@/queries/myListings.query';
 import {
   cancelMyListingReservation,

@@ -11,4 +11,3 @@ export function getSellerAnalyticsOptions() {
     queryKey: sellerAnalyticsQueryKey.all(),
   });
 }
-

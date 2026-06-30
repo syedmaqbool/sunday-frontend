@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { BoostPlacement } from '@/queries/boosts.query';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '@/contexts/AuthContext';
 import {

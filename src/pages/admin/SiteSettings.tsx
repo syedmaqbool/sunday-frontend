@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { HeroImageValue } from '@/types/adminSiteSettings.type';
+import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';

@@ -1,11 +1,6 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   conversationsQueryKey,
-  getConversationMessagesOptions,
-  getConversationsOptions,
-} from '@/queries/conversation.query';
-
-export {
   getConversationMessagesOptions,
   getConversationsOptions,
 } from '@/queries/conversation.query';
@@ -13,6 +8,11 @@ import {
   markConversationRead,
   sendConversationMessage,
 } from '@/services/conversation.service';
+
+export {
+  getConversationMessagesOptions,
+  getConversationsOptions,
+} from '@/queries/conversation.query';
 
 export function useConversationsQuery() {
   return useQuery(getConversationsOptions());

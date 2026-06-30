@@ -1,5 +1,6 @@
-import type { EmailTemplateAPI } from '@/types/admin/settings';
 import { useQuery } from '@tanstack/react-query';
+import type { EmailTemplateAPI } from '@/types/adminSettings.type';
+
 import { Loader2, Mail, Save } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,8 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   getAdminSettingsOptions,
-  useUpdateEmailTemplates,
-} from '@/queries/useAdminSettings';
+  useUpdateEmailTemplatesMutation,
+} from '@/queries/adminSettings.query';
 
 const PLACEHOLDERS: Record<string, string[]> = {
   order_confirmation: ['{{buyer_name}}', '{{order_id}}', '{{order_total}}'],
@@ -29,7 +30,7 @@ function EmailTemplates() {
   const { toast } = useToast();
 
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
-  const updateTemplates = useUpdateEmailTemplates();
+  const updateTemplates = useUpdateEmailTemplatesMutation();
 
   const [localTemplates, setLocalTemplates] = useState<EmailTemplateAPI[]>([]);
   const [initialized, setInitialized] = useState(false);

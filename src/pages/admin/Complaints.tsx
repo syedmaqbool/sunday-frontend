@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import type {
   AdminComplaintStatus,
   Complaint,
   ComplaintStatus,
-} from '@/types/complaint';
-import { useQuery } from '@tanstack/react-query';
+} from '@/types/complaint.type';
+
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -40,8 +41,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   getAdminComplaintsOptions,
-  useUpdateComplaintStatus,
-} from '@/queries/useAdminComplaint';
+  useUpdateComplaintStatusMutation,
+} from '@/queries/adminComplaint.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ function AdminComplaints() {
   const [selected, setSelected] = useState<Complaint | null>(null);
 
   const { data, isLoading } = useQuery(getAdminComplaintsOptions(filter));
-  const updateStatus = useUpdateComplaintStatus();
+  const updateStatus = useUpdateComplaintStatusMutation();
 
   const complaints: Complaint[] = data?.data ?? [];
 

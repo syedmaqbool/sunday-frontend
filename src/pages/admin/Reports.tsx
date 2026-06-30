@@ -1,5 +1,6 @@
-import type { AdminReport, ReportStatus } from '@/types/admin/report';
 import { useQuery } from '@tanstack/react-query';
+import type { AdminReport, ReportStatus } from '@/types/adminReport.type';
+
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Flag, Loader2 } from 'lucide-react';
 import { useState } from 'react';
@@ -12,8 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   getAdminReportsOptions,
-  useResolveReport,
-} from '@/queries/useAdminReport';
+  useResolveReportMutation,
+} from '@/queries/adminReport.query';
 
 const STATUS_VARIANT: Record<
   ReportStatus,
@@ -48,10 +49,8 @@ function Reports() {
   const [filter, setFilter] = useState<'all' | ReportStatus>('OPEN');
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
 
-  const { data: reports = [], isLoading } = useQuery(
-    getAdminReportsOptions(filter),
-  );
-  const resolveReport = useResolveReport();
+  const { data: reports = [], isLoading } = useQuery(getAdminReportsOptions(filter));
+  const resolveReport = useResolveReportMutation();
 
   const handleUpdate = (
     id: string,

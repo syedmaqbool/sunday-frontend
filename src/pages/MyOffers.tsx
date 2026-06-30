@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { format } from 'date-fns';
 import { Loader2, MessageSquare, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -13,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getMyReviewedOfferIdsOptions,
   getSentOffersOptions,
-} from '@/queries/useOffers';
+} from '@/queries/offers.query';
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -37,13 +38,9 @@ function MyOffers() {
       navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
-  const { data: sent = [], isLoading: loadingSent } = useQuery(
-    getSentOffersOptions(user?.id),
-  );
+  const { data: sent = [], isLoading: loadingSent } = useQuery(getSentOffersOptions(user?.id));
 
-  const { data: myReviews = [] } = useQuery(
-    getMyReviewedOfferIdsOptions(user?.id),
-  );
+  const { data: myReviews = [] } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
 
   if (authLoading)
     return null;

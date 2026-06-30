@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadFile } from '@/lib/uploadFile';
-import { getOrderItemReviewOptions } from '@/queries/useReview';
+import { getOrderItemReviewOptions } from '@/queries/review.query';
 import {
   createReview,
 } from '@/services/offers.service';
@@ -43,9 +43,7 @@ export function OrderItemReview({
   const imageInputReference = useRef<HTMLInputElement>(null);
   const videoInputReference = useRef<HTMLInputElement>(null);
 
-  const { data: existing, isLoading } = useQuery(
-    getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId),
-  );
+  const { data: existing, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
 
   const handleAddImages = (files: FileList | null) => {
     if (!files)

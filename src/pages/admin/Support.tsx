@@ -1,5 +1,6 @@
-import type { SupportTicketStatus } from '@/types/support';
 import { useQuery } from '@tanstack/react-query';
+import type { SupportTicketStatus } from '@/types/support.type';
+
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -25,9 +26,9 @@ import { toast } from '@/hooks/use-toast';
 import {
   getAdminSupportMessagesOptions,
   getAdminSupportTicketsOptions,
-  useReplyToSupportTicket,
-  useUpdateSupportTicketStatus,
-} from '@/queries/useAdminSupport';
+  useReplyToSupportTicketMutation,
+  useUpdateSupportTicketStatusMutation,
+} from '@/queries/adminSupport.query';
 
 // ── Status display ───────────────────────────────────────────────────────────
 // Backend enum is OPEN | IN_PROGRESS | RESOLVED | CLOSED
@@ -71,15 +72,11 @@ function AdminSupport() {
   const [reply, setReply] = useState('');
   const messagesEndReference = useRef<HTMLDivElement>(null);
 
-  const { data: allTickets = [], isLoading: ticketsLoading } = useQuery(
-    getAdminSupportTicketsOptions(),
-  );
-  const { data: messages = [], isLoading: msgsLoading } = useQuery(
-    getAdminSupportMessagesOptions(activeTicket),
-  );
+  const { data: allTickets = [], isLoading: ticketsLoading } = useQuery(getAdminSupportTicketsOptions());
+  const { data: messages = [], isLoading: msgsLoading } = useQuery(getAdminSupportMessagesOptions(activeTicket));
 
-  const sendReply = useReplyToSupportTicket();
-  const updateStatus = useUpdateSupportTicketStatus();
+  const sendReply = useReplyToSupportTicketMutation();
+  const updateStatus = useUpdateSupportTicketStatusMutation();
 
   // Client-side status filter — backend list endpoint has no status query param
   const tickets

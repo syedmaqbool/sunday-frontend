@@ -1,4 +1,4 @@
-import type { Complaint } from '@/types/complaint';
+import type { Complaint } from '@/types/complaint.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { HTTPError } from 'ky';
 import { authInstance } from '@/services/ky.instance';

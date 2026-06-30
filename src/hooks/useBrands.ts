@@ -1,8 +1,2 @@
-import { useQuery } from '@tanstack/react-query';
-import { getBrandsOptions } from '@/queries/useBrands';
-
-export type { Brand } from '@/queries/useBrands';
-
-export function useBrands(isIncludingInactive = false) {
-  return useQuery(getBrandsOptions(isIncludingInactive));
-}
+export type { Brand } from '@/queries/brands.query';
+export { getBrandsOptions } from '@/queries/brands.query';

@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import type {
   HelpCategoryAPI,
   HelpFaqAPI,
   HelpTutorialAPI,
-} from '@/types/admin/settings';
-import { useQuery } from '@tanstack/react-query';
+} from '@/types/adminSettings.type';
+
 import {
   BookOpen,
   FileText,
@@ -39,10 +40,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   getAdminSettingsOptions,
-  useUpdateHelpCategories,
-  useUpdateHelpFaqs,
-  useUpdateHelpTutorials,
-} from '@/queries/useAdminSettings';
+  useUpdateHelpCategoriesMutation,
+  useUpdateHelpFaqsMutation,
+  useUpdateHelpTutorialsMutation,
+} from '@/queries/adminSettings.query';
 
 // ── Display types ────────────────────────────────────────────────────────────
 // Note: backend HelpCategorySchema has no `id`/`blurb`/`icon` — `key` is the
@@ -174,9 +175,9 @@ const tutorialSchema = z.object({
 
 function HelpManagement() {
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
-  const updateCategories = useUpdateHelpCategories();
-  const updateFaqs = useUpdateHelpFaqs();
-  const updateTutorials = useUpdateHelpTutorials();
+  const updateCategories = useUpdateHelpCategoriesMutation();
+  const updateFaqs = useUpdateHelpFaqsMutation();
+  const updateTutorials = useUpdateHelpTutorialsMutation();
 
   const categories: Category[] = (settings?.helpCategories ?? []).map(
     category => adaptCategory(category),

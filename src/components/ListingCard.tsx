@@ -1,8 +1,8 @@
-import type { MarketplaceListing } from '@/queries/useMarketplace';
+import type { MarketplaceListing } from '@/queries/marketplace.query';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getListingMediaUrls } from '@/queries/useMarketplace';
+import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 interface ListingCardProps {
   index?: number;
@@ -26,7 +26,7 @@ function ListingCard({
 }: ListingCardProps) {
   const image = 'imageUrls' in listing || 'media' in listing || 'coverImageUrl' in listing
     ? getListingMediaUrls(listing)[0]
-    : listing.images?.[0];
+    : listing.images?.find((value): value is string => typeof value === 'string');
   const status = listing.status.toLowerCase();
   const previewImage = image || '/placeholder.svg';
 

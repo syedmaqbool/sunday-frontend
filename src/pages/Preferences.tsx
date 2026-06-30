@@ -1,5 +1,6 @@
-import type { LucideIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import type { LucideIcon } from 'lucide-react';
+
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Check,
@@ -27,8 +28,8 @@ import {
   getBackendBrandsOptions,
   getBackendCategoriesOptions,
   getPreferencesOptions,
-  useSavePreferences,
-} from '@/queries/buyer/userBuyerPreferences';
+  useSavePreferencesMutation,
+} from '@/queries/buyerPreferences.query';
 
 // Static static styles config (as UI labels matching backend expectations)
 const STYLES: { id: string; desc: string; icon: LucideIcon; label: string }[]
@@ -88,19 +89,13 @@ function Preferences() {
 
   // ── 1. TANSTACK QUERIES CALLS ─────────────────────────────────────────────
   // Signup ke baad page load hote hi background mein saara data aik sath fetch hoga
-  const { data: savedPrefs, isLoading: loadingPrefs } = useQuery(
-    getPreferencesOptions(),
-  );
-  const { data: categories = [], isLoading: loadingCats } = useQuery(
-    getBackendCategoriesOptions(),
-  );
-  const { data: brands = [], isLoading: loadingBrands } = useQuery(
-    getBackendBrandsOptions(),
-  );
+  const { data: savedPrefs, isLoading: loadingPrefs } = useQuery(getPreferencesOptions());
+  const { data: categories = [], isLoading: loadingCats } = useQuery(getBackendCategoriesOptions());
+  const { data: brands = [], isLoading: loadingBrands } = useQuery(getBackendBrandsOptions());
   const isLoadingPreferences = loadingPrefs || loadingCats || loadingBrands;
 
   // Save preferences mutation hook
-  const { isPending: saving, mutate: savePreferences } = useSavePreferences();
+  const { isPending: saving, mutate: savePreferences } = useSavePreferencesMutation();
 
   // ── 2. PRE-FILL EFFECT FOR RETURNING USERS ─────────────────────────────────
   useEffect(() => {

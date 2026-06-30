@@ -1,5 +1,6 @@
-import type { BoostableListingItem, ListingBoost } from '@/types/boost';
 import { useQuery } from '@tanstack/react-query';
+import type { BoostableListingItem, ListingBoost } from '@/types/boost.type';
+
 import {
   Loader2,
   Package,
@@ -19,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   getBoostableListingsOptions,
   getMyBoostsOptions,
-} from '@/queries/useClientBoost';
+} from '@/queries/clientBoost.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -42,9 +43,7 @@ function Boost() {
 
   const { data: boostsResponse, isLoading: boostsLoading }
     = useQuery(getMyBoostsOptions());
-  const { data: listingsResponse, isLoading: listingsLoading } = useQuery(
-    getBoostableListingsOptions(),
-  );
+  const { data: listingsResponse, isLoading: listingsLoading } = useQuery(getBoostableListingsOptions());
 
   const allBoosts: ListingBoost[] = boostsResponse?.data ?? [];
   const listings: BoostableListingItem[] = listingsResponse?.data ?? [];

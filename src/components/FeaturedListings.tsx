@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
 import {
   personalizeListings,
-  useUserPreferences,
+  getUserPreferencesOptions,
 } from '@/hooks/useUserPreferences';
-import { getFeaturedListingsOptions } from '@/queries/useMarketplace';
+import { getFeaturedListingsOptions } from '@/queries/marketplace.query';
 import ListingCard from './ListingCard';
 
 interface FeaturedListingsProps {
@@ -19,7 +20,7 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const { data: preferences } = useUserPreferences();
+  const { data: preferences } = useQuery(getUserPreferencesOptions());
   const boostMap = useBoostScoreMap('FOR_YOU');
 
   const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());

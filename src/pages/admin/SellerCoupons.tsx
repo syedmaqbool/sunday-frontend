@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { BarChart3, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -32,10 +33,10 @@ import {
   getAdminSellerListingsOptions,
   getAdminUsersListOptions,
   getSellerCouponsOptions,
-  useCreateSellerCoupon,
-  useDeleteSellerCoupon,
-  useUpdateSellerCoupon,
-} from '@/queries/useAdminSellerCoupons';
+  useCreateSellerCouponMutation,
+  useDeleteSellerCouponMutation,
+  useUpdateSellerCouponMutation,
+} from '@/queries/adminSellerCoupons.query';
 import { authInstance } from '@/services/ky.instance';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -133,9 +134,7 @@ function SellerCoupons() {
   const [redemptions, setRedemptions] = useState<any[]>([]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  const { data: couponsRaw = [], isLoading } = useQuery(
-    getSellerCouponsOptions(),
-  );
+  const { data: couponsRaw = [], isLoading } = useQuery(getSellerCouponsOptions());
 
   const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
 
@@ -166,12 +165,10 @@ function SellerCoupons() {
   );
 
   // Listings for selected seller (item_based scope only)
-  const { data: listingsRaw } = useQuery(
-    getAdminSellerListingsOptions(
+  const { data: listingsRaw } = useQuery(getAdminSellerListingsOptions(
       form.seller_id,
       !!form.seller_id && form.scope === 'item_based',
-    ),
-  );
+    ));
 
   const listings: ListingOption[] = useMemo(
     () =>
@@ -180,9 +177,9 @@ function SellerCoupons() {
   );
 
   // ── Mutations ──────────────────────────────────────────────────────────────
-  const createCoupon = useCreateSellerCoupon();
-  const updateCoupon = useUpdateSellerCoupon();
-  const deleteCouponM = useDeleteSellerCoupon();
+  const createCoupon = useCreateSellerCouponMutation();
+  const updateCoupon = useUpdateSellerCouponMutation();
+  const deleteCouponM = useDeleteSellerCouponMutation();
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const resetForm = () => {

@@ -6,7 +6,7 @@ import type {
   AuthSessionData,
   AuthUser,
   RegisterData,
-} from '@/types/auth';
+} from '@/types/auth.type';
 import {
   createContext,
 

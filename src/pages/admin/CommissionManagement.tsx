@@ -1,5 +1,6 @@
-import type { CommissionTier } from '@/types/commission';
 import { useQuery } from '@tanstack/react-query';
+import type { CommissionTier } from '@/types/commission.type';
+
 import { Loader2, Pencil, Percent, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -26,10 +27,10 @@ import {
 import { toast } from '@/hooks/use-toast';
 import {
   getCommissionTiersOptions,
-  useCreateCommissionTier,
-  useDeleteCommissionTier,
-  useUpdateCommissionTier,
-} from '@/queries/useAdminCommission';
+  useCreateCommissionTierMutation,
+  useDeleteCommissionTierMutation,
+  useUpdateCommissionTierMutation,
+} from '@/queries/adminCommission.query';
 
 const blankForm = {
   active: true,
@@ -47,9 +48,9 @@ function fmtPrice(n: number | null) {
 
 function CommissionManagement() {
   const { data: tiers, isLoading } = useQuery(getCommissionTiersOptions());
-  const createTier = useCreateCommissionTier();
-  const updateTier = useUpdateCommissionTier();
-  const deleteTier = useDeleteCommissionTier();
+  const createTier = useCreateCommissionTierMutation();
+  const updateTier = useUpdateCommissionTierMutation();
+  const deleteTier = useDeleteCommissionTierMutation();
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CommissionTier | null>(null);

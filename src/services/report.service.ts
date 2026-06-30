@@ -2,7 +2,7 @@ import type {
   AdminReport,
   ReportStatus,
   ResolveReportPayload,
-} from '@/types/admin/report';
+} from '@/types/adminReport.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

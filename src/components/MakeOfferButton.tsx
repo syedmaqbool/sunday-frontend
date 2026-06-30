@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
@@ -17,8 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { trackEvent } from '@/lib/analytics';
-import { offersQueryKey } from '@/queries/useOffers';
-import { getBuyerListingOffersOptions } from '@/queries/useOffers';
+import { offersQueryKey } from '@/queries/offers.query';
+import { getBuyerListingOffersOptions } from '@/queries/offers.query';
 import {
   acceptCounterOffer,
   createOffer,
@@ -56,9 +56,7 @@ export function MakeOfferButton({
   const [amount, setAmount] = useState('');
 
   // Fetch existing offers from this buyer on this listing
-  const { data: existingOffers = [] } = useQuery(
-    getBuyerListingOffersOptions(listingId, user?.id),
-  );
+  const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
 
   const invalidateOffers = () =>
     queryClient.invalidateQueries({
@@ -120,7 +118,7 @@ export function MakeOfferButton({
   }
 
   const activeOffer = existingOffers.find(
-    o => o.status === 'pending' || o.status === 'countered',
+    o => o.status === 'PENDING' || o.status === 'COUNTERED',
   );
 
   return (

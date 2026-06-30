@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   Clock,
@@ -27,7 +27,7 @@ import { uploadFile } from '@/lib/uploadFile';
 import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
-} from '@/queries/useComplaint';
+} from '@/queries/complaint.query';
 import {
   createComplaint,
   submitReturnProof,
@@ -64,13 +64,9 @@ export function ComplaintActions({
   const [tracking, setTracking] = useState('');
   const [expectedDate, setExpectedDate] = useState('');
 
-  const { data: complaint, refetch } = useQuery(
-    getComplaintDetailsOptions(orderId, orderItemId),
-  );
+  const { data: complaint, refetch } = useQuery(getComplaintDetailsOptions(orderId, orderItemId));
 
-  const { data: originalShipment } = useQuery(
-    getOrderShipmentOptions(orderId, orderItemId),
-  );
+  const { data: originalShipment } = useQuery(getOrderShipmentOptions(orderId, orderItemId));
 
   useEffect(() => {
     if (raiseOpen) {

@@ -2,7 +2,7 @@ import type {
   Brand,
   CreateBrandPayload,
   UpdateBrandPayload,
-} from '@/types/brand';
+} from '@/types/brand.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

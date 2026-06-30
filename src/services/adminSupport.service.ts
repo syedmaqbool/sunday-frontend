@@ -3,7 +3,7 @@ import type {
   SupportTicket,
   SupportTicketMessage,
   SupportTicketStatus,
-} from '@/types/support';
+} from '@/types/support.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminSupportTickets(

@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import heroFallback from '@/assets/hero-fashion.jpg';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getPublicHeroImageOptions } from '@/queries/useSiteSettings';
+import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
 
 interface HeroContent {
   badge?: string;

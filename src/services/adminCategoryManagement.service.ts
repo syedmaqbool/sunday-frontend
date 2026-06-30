@@ -5,7 +5,7 @@ import type {
   Subcategory,
   UpdateCategoryPayload,
   UpdateSubcategoryPayload,
-} from '@/types/admin/category';
+} from '@/types/adminCategory.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

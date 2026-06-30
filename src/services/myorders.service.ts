@@ -2,7 +2,7 @@ import type {
   Order,
   OrderItem,
   UpdateOrderItemStatusPayload,
-} from '@/types/order';
+} from '@/types/order.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

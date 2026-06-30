@@ -1,10 +1,10 @@
 import type { CommissionTier } from '@/lib/commission';
 import type { PaginatedResponse } from '@/types/response.type';
-import { useQuery } from '@tanstack/react-query';
+
 import { authInstance } from '@/services/ky.instance';
 
-export function useCommissionTiers(options?: { onlyActive?: boolean }) {
-  return useQuery<CommissionTier[]>({
+export function getCommissionTiersOptions(options?: { onlyActive?: boolean }) {
+  return {
     queryFn: async () => {
       const response = await authInstance
         .get('/api/v1/commission-tiers', {
@@ -15,5 +15,5 @@ export function useCommissionTiers(options?: { onlyActive?: boolean }) {
     },
     queryKey: ['commission-tiers', options?.onlyActive ?? false],
     staleTime: 60_000,
-  });
+  };
 }

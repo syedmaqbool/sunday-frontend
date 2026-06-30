@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { Loader2, Plus, Tag, Trash2 } from 'lucide-react';
 
 import { useState } from 'react';
@@ -36,17 +37,17 @@ import {
 import { toast } from '@/hooks/use-toast';
 import {
   getDiscountCodesOptions,
-  useCreateDiscountCode,
-  useDeleteDiscountCode,
-  useUpdateDiscountCode,
-} from '@/queries/useAdminDiscountCodes';
+  useCreateDiscountCodeMutation,
+  useDeleteDiscountCodeMutation,
+  useUpdateDiscountCodeMutation,
+} from '@/queries/adminDiscountCodes.query';
 
 function DiscountCodes() {
   const { data: codes = [], isLoading } = useQuery(getDiscountCodesOptions());
 
-  const createMutation = useCreateDiscountCode();
-  const updateMutation = useUpdateDiscountCode();
-  const deleteMutation = useDeleteDiscountCode();
+  const createMutation = useCreateDiscountCodeMutation();
+  const updateMutation = useUpdateDiscountCodeMutation();
+  const deleteMutation = useDeleteDiscountCodeMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
 

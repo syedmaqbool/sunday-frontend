@@ -1,5 +1,6 @@
-import type { Category, Subcategory } from '@/types/admin/category';
 import { useQuery } from '@tanstack/react-query';
+import type { Category, Subcategory } from '@/types/adminCategory.type';
+
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,13 +24,13 @@ import { useToast } from '@/hooks/use-toast';
 import {
   getAdminCategoriesOptions,
   getAdminSubcategoriesOptions,
-  useCreateCategory,
-  useCreateSubcategory,
-  useDeleteCategory,
-  useDeleteSubcategory,
-  useUpdateCategory,
-  useUpdateSubcategory,
-} from '@/queries/useCategoryManagement';
+  useCreateCategoryMutation,
+  useCreateSubcategoryMutation,
+  useDeleteCategoryMutation,
+  useDeleteSubcategoryMutation,
+  useUpdateCategoryMutation,
+  useUpdateSubcategoryMutation,
+} from '@/queries/categoryManagement.query';
 
 // ── Form types ────────────────────────────────────────────────────────────────
 interface CatForm {
@@ -66,19 +67,15 @@ function autoSlug(label: string) {
 function CategoryManagement() {
   const { toast } = useToast();
 
-  const { data: categories = [], isLoading: loadingCats } = useQuery(
-    getAdminCategoriesOptions(),
-  );
-  const { data: subcategories = [], isLoading: loadingSubs } = useQuery(
-    getAdminSubcategoriesOptions(),
-  );
+  const { data: categories = [], isLoading: loadingCats } = useQuery(getAdminCategoriesOptions());
+  const { data: subcategories = [], isLoading: loadingSubs } = useQuery(getAdminSubcategoriesOptions());
 
-  const createCat = useCreateCategory();
-  const updateCat = useUpdateCategory();
-  const deleteCat = useDeleteCategory();
-  const createSub = useCreateSubcategory();
-  const updateSub = useUpdateSubcategory();
-  const deleteSub = useDeleteSubcategory();
+  const createCat = useCreateCategoryMutation();
+  const updateCat = useUpdateCategoryMutation();
+  const deleteCat = useDeleteCategoryMutation();
+  const createSub = useCreateSubcategoryMutation();
+  const updateSub = useUpdateSubcategoryMutation();
+  const deleteSub = useDeleteSubcategoryMutation();
 
   // ── Category dialog state ──────────────────────────────────────────────────
   const [catOpen, setCatOpen] = useState(false);

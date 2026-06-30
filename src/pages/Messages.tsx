@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -16,9 +16,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  useConversationMessages,
-  useConversations,
-  useSendMessage,
+  getConversationMessagesOptions,
+  getConversationsOptions,
+  useSendMessageMutation,
 } from '@/hooks/useConverstion';
 
 import { tokenStorage } from '@/lib/tokenStorage';
@@ -81,16 +81,16 @@ function Messages() {
   /* FETCH CONVERSATIONS */
 
   const { data: conversations = [], isLoading: convosLoading }
-    = useConversations();
+    = useQuery(getConversationsOptions());
 
   /* FETCH MESSAGES */
 
   const { data: messages = [], isLoading: msgsLoading }
-    = useConversationMessages(activeConvo || undefined);
+    = useQuery(getConversationMessagesOptions(activeConvo || undefined));
 
   /* SEND MESSAGE */
 
-  const sendMessage = useSendMessage();
+  const sendMessage = useSendMessageMutation();
 
   /* WEBSOCKET */
 

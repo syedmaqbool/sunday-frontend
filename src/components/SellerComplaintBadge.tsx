@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Loader2, MapPin, PackageCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getComplaintDetailsOptions } from '@/queries/useComplaint';
+import { getComplaintDetailsOptions } from '@/queries/complaint.query';
 import {
   markComplaintReturnReceived,
   provideReturnAddress,
@@ -38,9 +38,7 @@ export function SellerComplaintBadge({
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: complaint, refetch } = useQuery(
-    getComplaintDetailsOptions(orderId, orderItemId),
-  );
+  const { data: complaint, refetch } = useQuery(getComplaintDetailsOptions(orderId, orderItemId));
 
   // Prefill form when dialog opens with any existing address values
   useEffect(() => {

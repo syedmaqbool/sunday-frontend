@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { getUserReviewsOptions } from '@/queries/useReview';
+import { getUserReviewsOptions } from '@/queries/review.query';
 
 interface ReviewsListProps {
   userId: string;
@@ -13,9 +14,7 @@ interface ReviewsListProps {
 export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const { data: reviews = [], isLoading } = useQuery(
-    getUserReviewsOptions(userId, limit),
-  );
+  const { data: reviews = [], isLoading } = useQuery(getUserReviewsOptions(userId, limit));
 
   if (isLoading)
     return null;

@@ -1,5 +1,6 @@
-import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout';
 import { useQuery } from '@tanstack/react-query';
+import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
+
 import { format } from 'date-fns';
 import {
   ArrowDownRight,
@@ -48,8 +49,8 @@ import {
   getAdminSellerPayoutsOptions,
   getPayoutRunItemsOptions,
   getPayoutRunsOptions,
-  useCreateSellerPayout,
-} from '@/queries/usePayout';
+  useCreateSellerPayoutMutation,
+} from '@/queries/payout.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -98,29 +99,21 @@ function Payouts() {
   // ─── Queries ───────────────────────────────────────────────────────────────
 
   const { data: runsData, isLoading: lruns } = useQuery(getPayoutRunsOptions());
-  const { data: refundsData, isLoading: lrefunds } = useQuery(
-    getAdminRefundReportOptions(),
-  );
-  const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
-    getAdminSellerPayoutsOptions(
+  const { data: refundsData, isLoading: lrefunds } = useQuery(getAdminRefundReportOptions());
+  const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(getAdminSellerPayoutsOptions(
       sellerFilter === 'all' ? {} : { sellerId: sellerFilter },
-    ),
-  );
-  const { data: periodPayoutsData } = useQuery(
-    getAdminSellerPayoutsOptions(
+    ));
+  const { data: periodPayoutsData } = useQuery(getAdminSellerPayoutsOptions(
       rangeStart && rangeEnd
         ? { periodEnd: rangeEnd, periodStart: rangeStart }
         : {},
-    ),
-  );
+    ));
   // Refund report doesn't support period filtering directly — we derive period
   // refunds from all refund items and filter by sourceDate on the client side.
   const { data: allRefundsData } = useQuery(getAdminRefundReportOptions());
-  const { data: runItemsData } = useQuery(
-    getPayoutRunItemsOptions(detailRun?.id ?? '', {}),
-  );
+  const { data: runItemsData } = useQuery(getPayoutRunItemsOptions(detailRun?.id ?? '', {}));
 
-  const createSellerPayoutMutation = useCreateSellerPayout();
+  const createSellerPayoutMutation = useCreateSellerPayoutMutation();
 
   const loading = lruns || lrefunds || lpayouts;
 
@@ -171,7 +164,7 @@ function Payouts() {
       s.balance = s.sales - s.paid;
     });
 
-    return map.values().toArray().toSorted((a, b) => b.balance - a.balance);
+    return Array.from(map.values()).toSorted((a, b) => b.balance - a.balance);
   }, [sellerPayouts]);
 
   /** Global totals from payout runs */

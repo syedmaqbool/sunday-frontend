@@ -1,12 +1,15 @@
-import type { UserPreferences } from '@/queries/useUserPreferences';
 import { useQuery } from '@tanstack/react-query';
+import type { UserPreferences } from '@/queries/userPreferences.query';
+
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getUserPreferencesOptions,
 
-} from '@/queries/useUserPreferences';
+} from '@/queries/userPreferences.query';
 
-export function useUserPreferences() {
+export { getUserPreferencesOptions } from '@/queries/userPreferences.query';
+
+export function useUserPreferencesQuery() {
   const { user } = useAuth();
   return useQuery(getUserPreferencesOptions(user?.id));
 }

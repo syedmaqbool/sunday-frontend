@@ -1,4 +1,4 @@
-import type { AdminOrder, ReservedListing } from '@/types/admin/order';
+import type { AdminOrder, ReservedListing } from '@/types/adminOrder.type';
 import type { PaginatedResponse } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

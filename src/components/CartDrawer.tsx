@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,14 +14,14 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
-import { useCommissionTiers } from '@/hooks/useCommissionTiers';
+import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { calcCommission } from '@/lib/commission';
 
 function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice, updateQuantity }
     = useCart();
   const navigate = useNavigate();
-  const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
+  const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
 
   const itemFees = useMemo(
     () =>

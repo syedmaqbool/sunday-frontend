@@ -1,5 +1,5 @@
-import type { TaxSetting } from '@/types/tax-setting';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { TaxSetting } from '@/types/taxSetting.type';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -25,10 +25,10 @@ import {
 import { toast } from '@/hooks/use-toast';
 import {
   getTaxSettingsOptions,
-  useCreateTaxSetting,
-  useDeleteTaxSetting,
-  useUpdateTaxSetting,
-} from '@/queries/useAdminTaxSettings';
+  useCreateTaxSettingMutation,
+  useDeleteTaxSettingMutation,
+  useUpdateTaxSettingMutation,
+} from '@/queries/adminTaxSettings.query';
 
 function TaxSettings() {
   const qc = useQueryClient();
@@ -39,9 +39,9 @@ function TaxSettings() {
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const { data: taxes = [], isLoading } = useQuery(getTaxSettingsOptions());
-  const createTax = useCreateTaxSetting();
-  const updateTax = useUpdateTaxSetting();
-  const deleteTax = useDeleteTaxSetting();
+  const createTax = useCreateTaxSettingMutation();
+  const updateTax = useUpdateTaxSettingMutation();
+  const deleteTax = useDeleteTaxSettingMutation();
 
   // ── "Only one active" helper ───────────────────────────────────────────────
   const deactivateAll = async (exceptId?: string) => {

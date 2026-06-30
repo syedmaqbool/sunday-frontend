@@ -1,5 +1,6 @@
-import type { ChartConfig } from '@/components/ui/chart';
 import { useQuery } from '@tanstack/react-query';
+import type { ChartConfig } from '@/components/ui/chart';
+
 import {
   DollarSign,
   Loader2,
@@ -27,7 +28,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { getSellerAnalyticsOptions } from '@/queries/useSellerAnalytic';
+import { getSellerAnalyticsOptions } from '@/queries/sellerAnalytic.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

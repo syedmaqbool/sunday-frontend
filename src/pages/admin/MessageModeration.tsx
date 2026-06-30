@@ -1,5 +1,6 @@
-import type { FlaggedMessage } from '@/types/admin/message-moderation';
 import { useQuery } from '@tanstack/react-query';
+import type { FlaggedMessage } from '@/types/adminMessageModeration.type';
+
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -22,18 +23,16 @@ import {
 } from '@/components/ui/dialog';
 import {
   getFlaggedMessagesOptions,
-  useDeleteMessage,
-  useDismissFlag,
-} from '@/queries/useAdminMessageModeration';
+  useDeleteMessageMutation,
+  useDismissFlagMutation,
+} from '@/queries/adminMessageModeration.query';
 
 function MessageModeration() {
   const [selected, setSelected] = useState<FlaggedMessage | null>(null);
 
-  const { data: flaggedMessages = [], isLoading } = useQuery(
-    getFlaggedMessagesOptions(),
-  );
-  const dismissFlag = useDismissFlag();
-  const deleteMessage = useDeleteMessage();
+  const { data: flaggedMessages = [], isLoading } = useQuery(getFlaggedMessagesOptions());
+  const dismissFlag = useDismissFlagMutation();
+  const deleteMessage = useDeleteMessageMutation();
 
   const handleDismiss = (messageId: string) => {
     dismissFlag.mutate(messageId, {

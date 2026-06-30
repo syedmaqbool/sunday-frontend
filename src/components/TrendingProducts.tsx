@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
-import { getTrendingListingsOptions } from '@/queries/useMarketplace';
+import { getTrendingListingsOptions } from '@/queries/marketplace.query';
 import ListingCard from './ListingCard';
 
 export default function TrendingProducts() {

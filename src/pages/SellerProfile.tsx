@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MapPin, Package, Phone, Star } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
@@ -8,24 +9,20 @@ import Navbar from '@/components/Navbar';
 import { ReviewsList } from '@/components/ReviewsList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSellerRating } from '@/hooks/useSellerRating';
+import { getSellerRatingOptions } from '@/hooks/useSellerRating';
 import {
   getSellerListingsOptions,
   getSellerProfileOptions,
-} from '@/queries/useMarketplace';
+} from '@/queries/marketplace.query';
 
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: profile, isLoading: profileLoading } = useQuery(
-    getSellerProfileOptions(id),
-  );
+  const { data: profile, isLoading: profileLoading } = useQuery(getSellerProfileOptions(id));
 
-  const { data: listings = [], isLoading: listingsLoading } = useQuery(
-    getSellerListingsOptions(id, profile?.fullName, !!id && !!profile),
-  );
+  const { data: listings = [], isLoading: listingsLoading } = useQuery(getSellerListingsOptions(id, profile?.fullName, !!id && !!profile));
 
-  const { data: rating } = useSellerRating(id);
+  const { data: rating } = useQuery(getSellerRatingOptions(id));
 
   const isLoading = profileLoading || listingsLoading;
 

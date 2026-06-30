@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,12 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAdminUsersQueryOptions } from '@/queries/useAdminUsers';
+import { getAdminUsersQueryOptions } from '@/queries/adminUsers.query';
 
 export default function UserManagement() {
-  const { data: users = [], isLoading } = useQuery(
-    getAdminUsersQueryOptions({ size: 100 }),
-  );
+  const { data: users = [], isLoading } = useQuery(getAdminUsersQueryOptions({ size: 100 }));
 
   if (isLoading) {
     return (

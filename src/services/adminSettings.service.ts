@@ -4,8 +4,8 @@ import type {
   HelpCategoryAPI,
   HelpFaqAPI,
   HelpTutorialAPI,
-} from '@/types/admin/settings';
-import type { BoostPackageAPI } from '@/types/boost';
+} from '@/types/adminSettings.type';
+import type { BoostPackageAPI } from '@/types/boost.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

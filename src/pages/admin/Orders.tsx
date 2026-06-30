@@ -1,5 +1,6 @@
-import type { AdminOrder, AdminOrderItem } from '@/types/admin/order';
 import { useQuery } from '@tanstack/react-query';
+import type { AdminOrder, AdminOrderItem } from '@/types/adminOrder.type';
+
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { ExternalLink, Loader2, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -25,7 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   getAdminOrdersOptions,
   getAdminReservedListingsOptions,
-} from '@/queries/useAdminOrders';
+} from '@/queries/adminOrders.query';
 
 // ── Display types ─────────────────────────────────────────────────────────────
 type EffectiveStatus = 'delivered' | 'shipped' | 'sold';
@@ -69,9 +70,7 @@ function AdminOrders() {
   const [selected, setSelected] = useState<Row | null>(null);
 
   const { data: orders = [], isLoading } = useQuery(getAdminOrdersOptions());
-  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery(
-    getAdminReservedListingsOptions(statusFilter === 'reserved'),
-  );
+  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {

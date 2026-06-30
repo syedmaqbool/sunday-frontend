@@ -1,23 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   conversationsQueryKey,
   getConversationMessagesOptions,
   getConversationsOptions,
-} from '@/queries/useConversation';
+} from '@/queries/conversation.query';
+
+export {
+  getConversationMessagesOptions,
+  getConversationsOptions,
+} from '@/queries/conversation.query';
 import {
   markConversationRead,
   sendConversationMessage,
 } from '@/services/conversation.service';
 
-export function useConversations() {
+export function useConversationsQuery() {
   return useQuery(getConversationsOptions());
 }
 
-export function useConversationMessages(conversationId?: string) {
+export function useConversationMessagesQuery(conversationId?: string) {
   return useQuery(getConversationMessagesOptions(conversationId));
 }
 
-export function useSendMessage() {
+export function useSendMessageMutation() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -41,7 +46,7 @@ export function useSendMessage() {
   });
 }
 
-export function useMarkConversationRead() {
+export function useMarkConversationReadMutation() {
   const qc = useQueryClient();
 
   return useMutation({

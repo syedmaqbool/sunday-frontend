@@ -1,4 +1,4 @@
-import type { Conversation, Message } from '@/types/conversation';
+import type { Conversation, Message } from '@/types/conversation.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

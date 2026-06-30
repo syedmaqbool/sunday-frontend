@@ -1,10 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useCategories } from '@/hooks/useCategories';
+import { getCategoriesOptions } from '@/hooks/useCategories';
 
 export default function CategoryGrid() {
-  const { data: categories = [], isLoading } = useCategories();
+  const { data: categories = [], isLoading } = useQuery(getCategoriesOptions());
 
   if (isLoading) {
     return (

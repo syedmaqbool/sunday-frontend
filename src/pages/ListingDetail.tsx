@@ -1,5 +1,5 @@
-import type { MarketplaceListing } from '@/queries/useMarketplace';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { MarketplaceListing } from '@/queries/marketplace.query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Check,
@@ -42,7 +42,7 @@ import {
   getListingMediaUrls,
   getMarketplaceListingOptions,
   getReservedOfferAmountOptions,
-} from '@/queries/useMarketplace';
+} from '@/queries/marketplace.query';
 import { cancelMyListingReservation, deleteMyListing } from '@/services/listing.service';
 
 function useCountdown(target?: string | null) {
@@ -253,12 +253,10 @@ function ListingDetail() {
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reservedUntil : null);
 
-  const { data: reservedOfferAmount } = useQuery(
-    getReservedOfferAmountOptions(
+  const { data: reservedOfferAmount } = useQuery(getReservedOfferAmountOptions(
       listing?.reservedOfferId,
       !!(isReservedForMe && listing?.reservedOfferId),
-    ),
-  );
+  ));
 
   const effectivePrice
     = isReservedForMe && reservedOfferAmount

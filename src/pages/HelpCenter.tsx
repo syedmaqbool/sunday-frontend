@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { BookOpen, LifeBuoy, Loader2, Mail, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Footer from '@/components/Footer';
@@ -17,7 +18,7 @@ import {
   getHelpCategoriesOptions,
   getHelpFaqsOptions,
   getHelpTutorialsOptions,
-} from '@/queries/useHelp';
+} from '@/queries/help.query';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -29,9 +30,7 @@ function HelpCenter() {
 
   const { data: categories = [] } = useQuery(getHelpCategoriesOptions());
 
-  const { data: faqs = [], isLoading: loadingFaqs } = useQuery(
-    getHelpFaqsOptions(activeCategoryKey),
-  );
+  const { data: faqs = [], isLoading: loadingFaqs } = useQuery(getHelpFaqsOptions(activeCategoryKey));
 
   const { data: tutorials = [] } = useQuery(getHelpTutorialsOptions());
 

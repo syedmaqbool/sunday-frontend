@@ -1,5 +1,6 @@
-import type { HeroImageValue } from '@/types/admin/site-settings';
 import { useQuery } from '@tanstack/react-query';
+import type { HeroImageValue } from '@/types/adminSiteSettings.type';
+
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -22,9 +23,9 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import {
   getHeroImageQueryOptions,
-  useUpdateHeroImage,
-  useUploadFile,
-} from '@/queries/useSiteSettings';
+  useUpdateHeroImageMutation,
+  useUploadFileMutation,
+} from '@/queries/siteSettings.query';
 
 const DEFAULTS: HeroImageValue = {
   alt: '',
@@ -155,8 +156,8 @@ function SiteSettings() {
   const [form, setForm] = useState<HeroImageValue>({ ...DEFAULTS });
 
   const { data, isLoading } = useQuery(getHeroImageQueryOptions());
-  const updateHero = useUpdateHeroImage();
-  const uploadAsset = useUploadFile();
+  const updateHero = useUpdateHeroImageMutation();
+  const uploadAsset = useUploadFileMutation();
 
   useEffect(() => {
     setForm({ ...DEFAULTS, ...data });

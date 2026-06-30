@@ -1,5 +1,6 @@
-import type { BoostPackage, BoostPlacement, ListingBoost } from '@/types/boost';
 import { useQuery } from '@tanstack/react-query';
+import type { BoostPackage, BoostPlacement, ListingBoost } from '@/types/boost.type';
+
 import { format } from 'date-fns';
 import {
   Loader2,
@@ -47,8 +48,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   getAdminBoostPackagesOptions,
   getAdminBoostsOptions,
-  useUpdateBoostPackages,
-} from '@/queries/useAdminBoost';
+  useUpdateBoostPackagesMutation,
+} from '@/queries/adminBoost.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -244,14 +245,10 @@ function PackageDialog({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 function BoostManagement() {
-  const { data: packages = [], isLoading: packageLoading } = useQuery(
-    getAdminBoostPackagesOptions(),
-  );
-  const updatePackages = useUpdateBoostPackages();
+  const { data: packages = [], isLoading: packageLoading } = useQuery(getAdminBoostPackagesOptions());
+  const updatePackages = useUpdateBoostPackagesMutation();
 
-  const { data: boostsResponse, isLoading: boostLoading } = useQuery(
-    getAdminBoostsOptions({ size: 100 }),
-  );
+  const { data: boostsResponse, isLoading: boostLoading } = useQuery(getAdminBoostsOptions({ size: 100 }));
   const boosts: ListingBoost[] = boostsResponse?.data ?? [];
 
   const handleSavePackages = (updated: BoostPackage[]) => {

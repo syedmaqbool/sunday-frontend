@@ -4,7 +4,7 @@ import type {
   SendMessagePayload,
   SupportMessage,
   SupportTicket,
-} from '@/types/support';
+} from '@/types/support.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listSupportTickets() {

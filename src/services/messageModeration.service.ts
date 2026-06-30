@@ -1,4 +1,4 @@
-import type { FlaggedMessage } from '@/types/admin/message-moderation';
+import type { FlaggedMessage } from '@/types/adminMessageModeration.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

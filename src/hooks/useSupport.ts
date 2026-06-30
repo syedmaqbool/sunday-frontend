@@ -1,22 +1,27 @@
-import type { CreateTicketPayload } from '@/types/support';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CreateTicketPayload } from '@/types/support.type';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   getSupportMessagesOptions,
   getSupportTicketsOptions,
   supportQueryKey,
-} from '@/queries/useSupport';
+} from '@/queries/support.query';
+
+export {
+  getSupportMessagesOptions,
+  getSupportTicketsOptions,
+} from '@/queries/support.query';
 import {
   createSupportTicket,
   sendSupportMessage,
 } from '@/services/support.service';
 
 // Get tickets
-export function useSupportTickets() {
+export function useSupportTicketsQuery() {
   return useQuery(getSupportTicketsOptions());
 }
 
 // Create ticket
-export function useCreateSupportTicket() {
+export function useCreateSupportTicketMutation() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -31,12 +36,12 @@ export function useCreateSupportTicket() {
 }
 
 // Get messages
-export function useSupportMessages(ticketId?: string) {
+export function useSupportMessagesQuery(ticketId?: string) {
   return useQuery(getSupportMessagesOptions(ticketId));
 }
 
 // Send reply
-export function useSendSupportMessage() {
+export function useSendSupportMessageMutation() {
   const qc = useQueryClient();
 
   return useMutation({

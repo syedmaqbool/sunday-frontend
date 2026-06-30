@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import {
   AlertTriangle,
   Eye,
@@ -19,8 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   getFlagKeywordsOptions,
-  useUpdateFlagKeywords,
-} from '@/queries/useFlagKeyword';
+  useUpdateFlagKeywordsMutation,
+} from '@/queries/flagKeyword.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ function FlagKeywords() {
   const [draft, setDraft] = useState('');
 
   const { data: keywords = [], isLoading } = useQuery(getFlagKeywordsOptions());
-  const updateKeywords = useUpdateFlagKeywords();
+  const updateKeywords = useUpdateFlagKeywordsMutation();
 
   const handleAdd = () => {
     const parsed = keywordSchema.safeParse(draft);

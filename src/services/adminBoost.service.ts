@@ -1,5 +1,5 @@
-import type { AdminSettings } from '@/types/admin/settings';
-import type { BoostPackage, ListingBoost } from '@/types/boost';
+import type { AdminSettings } from '@/types/adminSettings.type';
+import type { BoostPackage, ListingBoost } from '@/types/boost.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

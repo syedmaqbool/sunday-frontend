@@ -1,5 +1,6 @@
-import type { AdminListing, ListingStatus } from '@/types/admin/listing';
 import { useQuery } from '@tanstack/react-query';
+import type { AdminListing, ListingStatus } from '@/types/adminListing.type';
+
 import { format } from 'date-fns';
 import {
   CheckCircle,
@@ -37,9 +38,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { getWeightLabel } from '@/lib/constants';
 import {
   getAdminListingsOptions,
-  useCreateAdminListingFeedback,
-  useModerateListing,
-} from '@/queries/useAdminListing';
+  useCreateAdminListingFeedbackMutation,
+  useModerateListingMutation,
+} from '@/queries/adminListing.query';
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -148,11 +149,9 @@ function ListingModeration() {
   const [reviewListing, setReviewListing] = useState<AdminListing | null>(null);
   const [feedback, setFeedback] = useState('');
 
-  const { data: listings = [], isLoading } = useQuery(
-    getAdminListingsOptions(filter),
-  );
-  const createFeedback = useCreateAdminListingFeedback();
-  const moderateListing = useModerateListing();
+  const { data: listings = [], isLoading } = useQuery(getAdminListingsOptions(filter));
+  const createFeedback = useCreateAdminListingFeedbackMutation();
+  const moderateListing = useModerateListingMutation();
 
   const statusColor = (s: ListingStatus) => {
     if (s === 'APPROVED')

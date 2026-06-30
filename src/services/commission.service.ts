@@ -1,4 +1,4 @@
-import type { CommissionTier, CommissionTierPayload } from '@/types/commission';
+import type { CommissionTier, CommissionTierPayload } from '@/types/commission.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

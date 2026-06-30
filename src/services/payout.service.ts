@@ -9,7 +9,7 @@ import type {
   PayoutRunListParams,
   SellerPayout,
   UpdatePayoutRunItemStatusPayload,
-} from '@/types/payout';
+} from '@/types/payout.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

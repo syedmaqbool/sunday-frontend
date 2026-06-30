@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
   LifeBuoy,
@@ -28,7 +29,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { useCategories } from '@/hooks/useCategories';
+import { getCategoriesOptions } from '@/hooks/useCategories';
 
 const sundayLogo = sundayLogoAsset.url;
 
@@ -37,7 +38,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useAdminCheck();
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [] } = useQuery(getCategoriesOptions());
 
   //  Clean click handler logic for both desktop & mobile navigation
   const handleSellClick = () => {

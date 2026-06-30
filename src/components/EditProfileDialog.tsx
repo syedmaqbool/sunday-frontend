@@ -1,4 +1,4 @@
-import type { Profile } from '@/types/profile';
+import type { Profile } from '@/types/profile.type';
 import { Loader2, Pencil, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { Textarea } from '@/components/ui/textarea';
-import { useUpdateProfile } from '@/queries/useMyProfile';
+import { useUpdateProfileMutation } from '@/queries/myProfile.query';
 import { uploadProfileFile } from '@/services/profile.service';
 
 const profileSchema = z.object({
@@ -51,7 +51,7 @@ export function EditProfileDialog({ profile }: Props) {
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [location, setLocation] = useState(profile?.location ?? '');
 
-  const updateProfile = useUpdateProfile();
+  const updateProfile = useUpdateProfileMutation();
 
   const initials = (fullName || 'U')
     .split(' ')

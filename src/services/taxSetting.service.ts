@@ -3,7 +3,7 @@ import type {
   CreateTaxSettingPayload,
   TaxSetting,
   UpdateTaxSettingPayload,
-} from '@/types/tax-setting';
+} from '@/types/taxSetting.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function getTaxSettings() {

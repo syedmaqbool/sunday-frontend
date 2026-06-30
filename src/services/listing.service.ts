@@ -2,8 +2,8 @@ import type {
   AdminListing,
   ListingStatus,
   ModerateListingPayload,
-} from '@/types/admin/listing';
-import type { UploadedFile } from '@/types/profile';
+} from '@/types/adminListing.type';
+import type { UploadedFile } from '@/types/profile.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

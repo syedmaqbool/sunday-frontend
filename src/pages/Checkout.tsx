@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -19,8 +19,8 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
-import { useActiveTax } from '@/hooks/useActiveTax';
-import { useCommissionTiers } from '@/hooks/useCommissionTiers';
+import { getActiveTaxOptions } from '@/hooks/useActiveTax';
+import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
 import {
@@ -42,8 +42,8 @@ function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: activeTax } = useActiveTax();
-  const { data: commissionTiers } = useCommissionTiers({ onlyActive: true });
+  const { data: activeTax } = useQuery(getActiveTaxOptions());
+  const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [discountCode, setDiscountCode] = useState('');

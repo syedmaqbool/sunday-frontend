@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUpdateBankDetails } from '@/queries/useMyProfile';
+import { useUpdateBankDetailsMutation } from '@/queries/myProfile.query';
 
 const bankSchema = z.object({
   bank_account_holder: z
@@ -87,7 +87,7 @@ function BankDetailsModal({
   onSaved,
   open,
 }: BankDetailsModalProps) {
-  const updateBankDetails = useUpdateBankDetails();
+  const updateBankDetails = useUpdateBankDetailsMutation();
 
   const isEditing = !!(
     initialValues

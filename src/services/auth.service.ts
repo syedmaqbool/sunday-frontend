@@ -2,7 +2,7 @@ import type {
   AuthMeResponse,
   AuthSessionResponse,
   RegisterData,
-} from '@/types/auth';
+} from '@/types/auth.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from './ky.instance';
 

@@ -1,5 +1,5 @@
 import type { BoostPackage, BoostPlacement } from '@/hooks/useBoosts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import {
   CalendarIcon,
@@ -35,13 +35,13 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBoostPackages } from '@/hooks/useBoosts';
+import { getBoostPackagesOptions } from '@/hooks/useBoosts';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utilities';
 import {
   boostWithCampaign,
   boostWithPackage,
-} from '@/services/boost-client.service';
+} from '@/services/clientBoost.service';
 
 const placementMeta: Record<
   BoostPlacement,
@@ -87,7 +87,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
 
   // Packages tab state
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const { data: packages = [], isLoading } = useBoostPackages();
+  const { data: packages = [], isLoading } = useQuery(getBoostPackagesOptions());
 
   // Custom campaign tab state
   const [placement, setPlacement] = useState<BoostPlacement>('FOR_YOU');

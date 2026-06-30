@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import {
   Grid3X3,
   List,
@@ -21,17 +22,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
-import { useCategories, useSubcategories } from '@/hooks/useCategories';
-import { useSellerRatings } from '@/hooks/useSellerRating';
+import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
+import { getSellerRatingsOptions } from '@/hooks/useSellerRating';
 import {
   personalizeListings,
-  useUserPreferences,
+  getUserPreferencesOptions,
 } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
 import {
   getListingMediaUrls,
   getMarketplaceListingsOptions,
-} from '@/queries/useMarketplace';
+} from '@/queries/marketplace.query';
 
 function Listings() {
   const [searchParameters] = useSearchParams();
@@ -52,16 +53,14 @@ function Listings() {
   const [sort, setSort] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const { data: prefs } = useUserPreferences();
-  const { data: parentCategories = [] } = useCategories();
-  const { data: subCategoriesList = [] } = useSubcategories();
+  const { data: prefs } = useQuery(getUserPreferencesOptions());
+  const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
+  const { data: subCategoriesList = [] } = useQuery(getSubcategoriesOptions());
 
-  const { data: listings = [], isLoading } = useQuery(
-    getMarketplaceListingsOptions(),
-  );
+  const { data: listings = [], isLoading } = useQuery(getMarketplaceListingsOptions());
 
   const sellerIds = useMemo(() => listings.map(l => l.sellerId), [listings]);
-  const { data: sellerRatingsMap } = useSellerRatings(sellerIds);
+  const { data: sellerRatingsMap } = useQuery(getSellerRatingsOptions(sellerIds));
   const searchBoostMap = useBoostScoreMap('SEARCH');
 
   const filtered = useMemo(() => {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   Inbox,
   Loader2,
@@ -41,8 +41,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
-import type { MyListing } from '@/queries/useMyListings';
-import { getMyListingsOptions, myListingsQueryKey } from '@/queries/useMyListings';
+import type { MyListing } from '@/queries/myListings.query';
+import { getMyListingsOptions, myListingsQueryKey } from '@/queries/myListings.query';
 import {
   cancelMyListingReservation,
   deleteMyListing,
@@ -68,9 +68,7 @@ function MyListings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading } = useQuery(
-    getMyListingsOptions(!!user),
-  );
+  const { data: listings = [], isLoading } = useQuery(getMyListingsOptions(!!user));
 
   const invalidateListings = () =>
     queryClient.invalidateQueries({ queryKey: myListingsQueryKey.list() });

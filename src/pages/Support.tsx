@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -44,10 +44,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 import {
-  useCreateSupportTicket,
-  useSendSupportMessage,
-  useSupportMessages,
-  useSupportTickets,
+  useCreateSupportTicketMutation,
+  useSendSupportMessageMutation,
+  getSupportMessagesOptions,
+  getSupportTicketsOptions,
 } from '@/hooks/useSupport';
 
 const ticketSchema = z.object({
@@ -118,13 +118,13 @@ function Support() {
 
   // GET tickets
   const { data: ticketsResponse, isLoading: ticketsLoading }
-    = useSupportTickets();
+    = useQuery(getSupportTicketsOptions());
 
   const tickets = ticketsResponse ?? [];
 
   // GET messages
   const { data: messagesResponse, isLoading: messagesLoading }
-    = useSupportMessages(activeTicket || '');
+    = useQuery(getSupportMessagesOptions(activeTicket || ''));
 
   const messages = useMemo(() => messagesResponse ?? [], [messagesResponse]);
 
@@ -135,7 +135,7 @@ function Support() {
   }, [messages]);
 
   // CREATE ticket
-  const createTicket = useCreateSupportTicket();
+  const createTicket = useCreateSupportTicketMutation();
 
   const handleCreateTicket = () => {
     const parsed = ticketSchema.safeParse({
@@ -196,7 +196,7 @@ function Support() {
   };
 
   // SEND reply
-  const sendReply = useSendSupportMessage();
+  const sendReply = useSendSupportMessageMutation();
 
   const handleSendReply = () => {
     if (!newMessage.trim())

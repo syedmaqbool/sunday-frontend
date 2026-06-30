@@ -1,4 +1,4 @@
-import type { AdminUser, AdminUserStatus } from '@/types/admin/user';
+import type { AdminUser, AdminUserStatus } from '@/types/adminUser.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

@@ -1,6 +1,6 @@
-import type { Complaint, ComplaintStatus } from '@/types/complaint';
-import type { Order, OrderItem } from '@/types/order';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Complaint, ComplaintStatus } from '@/types/complaint.type';
+import type { Order, OrderItem } from '@/types/order.type';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -63,19 +63,19 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSellerRating } from '@/hooks/useSellerRating';
+import { getSellerRatingOptions } from '@/hooks/useSellerRating';
 import { uploadFile } from '@/lib/uploadFile';
 import { cn } from '@/lib/utilities';
 import {
   getComplaintsAgainstMeOptions,
   getMyRefundComplaintsOptions,
-} from '@/queries/useComplaint';
+} from '@/queries/complaint.query';
 import {
   getMyOrdersOptions,
   getMySalesOptions,
-  useUpdateOrderItemStatus,
-} from '@/queries/useMyOrders';
-import { getMyProfileQueryOptions } from '@/queries/useMyProfile';
+  useUpdateOrderItemStatusMutation,
+} from '@/queries/myOrders.query';
+import { getMyProfileQueryOptions } from '@/queries/myProfile.query';
 import {
   updateItemStatus,
   uploadShippingProof,
@@ -140,14 +140,12 @@ function UserProfile() {
   const queryClient = useQueryClient();
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
-  const { data: profile, isLoading: profileLoading } = useQuery(
-    getMyProfileQueryOptions(),
-  );
+  const { data: profile, isLoading: profileLoading } = useQuery(getMyProfileQueryOptions());
   const { data: orders = [], isLoading: ordersLoading }
     = useQuery(getMyOrdersOptions());
   const { data: sales = [], isLoading: salesLoading }
     = useQuery(getMySalesOptions());
-  const { data: rating } = useSellerRating(user?.id);
+  const { data: rating } = useQuery(getSellerRatingOptions(user?.id));
 
   useEffect(() => {
     if (!authLoading && !user)
@@ -769,7 +767,7 @@ function OrderCard({ order }: { order: Order }) {
 // ── SoldOrderCard (seller view) ────────────────────────────────────────────────
 function SoldOrderCard({ item }: { item: OrderItem }) {
   const queryClient = useQueryClient();
-  // const updateStatus = useUpdateOrderItemStatus();
+  // const updateStatus = useUpdateOrderItemStatusMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [method, setMethod] = useState('');
@@ -1104,7 +1102,7 @@ function BuyerReceiptActions({
   orderItemId: string;
   onChanged: () => void;
 }) {
-  const updateStatus = useUpdateOrderItemStatus();
+  const updateStatus = useUpdateOrderItemStatusMutation();
 
   const markReceived = () => {
     updateStatus.mutate(
@@ -1227,12 +1225,8 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
 }
 
 function ReturnsTab() {
-  const { data: myReturns = [], isLoading: loadingMine } = useQuery(
-    getMyRefundComplaintsOptions(),
-  );
-  const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery(
-    getComplaintsAgainstMeOptions(),
-  );
+  const { data: myReturns = [], isLoading: loadingMine } = useQuery(getMyRefundComplaintsOptions());
+  const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery(getComplaintsAgainstMeOptions());
 
   if (loadingMine || loadingSeller) {
     return (

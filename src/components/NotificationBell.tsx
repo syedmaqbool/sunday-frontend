@@ -1,5 +1,6 @@
-import type { Notification } from '@/types/notification';
 import { useQuery } from '@tanstack/react-query';
+import type { Notification } from '@/types/notification.type';
+
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 
@@ -16,9 +17,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utilities';
 import {
   getNotificationsOptions,
-  useMarkAllNotificationsRead,
-  useMarkNotificationRead,
-} from '@/queries/useNotification';
+  useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+} from '@/queries/notification.query';
 
 interface NotificationBellProps {
   audience?: 'admin' | 'user';
@@ -30,8 +31,8 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
 
   const { data, isLoading } = useQuery(getNotificationsOptions());
 
-  const markReadMutation = useMarkNotificationRead();
-  const markAllMutation = useMarkAllNotificationsRead();
+  const markReadMutation = useMarkNotificationReadMutation();
+  const markAllMutation = useMarkAllNotificationsReadMutation();
 
   const items: Notification[] = (data?.data ?? []).filter(
     notification =>

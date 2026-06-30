@@ -3,7 +3,7 @@ import type {
   CreateSellerCouponPayload,
   SellerCoupon,
   UpdateSellerCouponPayload,
-} from '@/types/seller-coupon';
+} from '@/types/sellerCoupon.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listSellerCoupons() {

@@ -1,4 +1,4 @@
-import type { Notification } from '@/types/notification';
+import type { Notification } from '@/types/notification.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

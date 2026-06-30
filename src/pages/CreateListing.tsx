@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import {
   Camera,
   Info,
@@ -34,13 +35,13 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useCategories, useSubcategories } from '@/hooks/useCategories';
+import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 import { uploadFile } from '@/lib/uploadFile';
 import {
   getEditListingOptions,
-} from '@/queries/useMarketplace';
+} from '@/queries/marketplace.query';
 import {
   createListing,
   updateMyListing,
@@ -95,8 +96,8 @@ function CreateListing() {
     title: '',
     weight: '',
   });
-  const { data: parentCategories = [] } = useCategories();
-  const { data: subCategories = [] } = useSubcategories(form.categoryId);
+  const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
+  const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(form.categoryId));
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
@@ -106,9 +107,7 @@ function CreateListing() {
  
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
-  const { data: existingListing, isLoading: loadingListing } = useQuery(
-    getEditListingOptions(id, user?.id),
-  );
+  const { data: existingListing, isLoading: loadingListing } = useQuery(getEditListingOptions(id, user?.id));
 
   useEffect(() => {
     if (!authLoading && !user)

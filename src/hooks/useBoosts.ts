@@ -1,28 +1,35 @@
-import type { BoostPlacement } from '@/queries/useBoosts';
 import { useQuery } from '@tanstack/react-query';
+import type { BoostPlacement } from '@/queries/boosts.query';
+
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getActiveBoostsOptions,
   getBoostPackagesOptions,
   getMyBoostsOptions,
-} from '@/queries/useBoosts';
+} from '@/queries/boosts.query';
 
 export type {
   BoostPackage,
   BoostPlacement,
   ListingBoost,
-} from '@/queries/useBoosts';
+} from '@/queries/boosts.query';
+
+export {
+  getActiveBoostsOptions,
+  getBoostPackagesOptions,
+  getMyBoostsOptions,
+} from '@/queries/boosts.query';
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 /** All active boosts across the marketplace, used to rank listings. */
-export function useActiveBoosts(placement?: BoostPlacement) {
+export function useActiveBoostsQuery(placement?: BoostPlacement) {
   return useQuery(getActiveBoostsOptions(placement));
 }
 
 /** Map of listingId -> boost score for a given placement. */
 export function useBoostScoreMap(placement: BoostPlacement) {
-  const { data: boosts = [] } = useActiveBoosts(placement);
+  const { data: boosts = [] } = useQuery(getActiveBoostsOptions(placement));
   const map = new Map<string, number>();
   for (const b of boosts)
     map.set(b.listingId, (map.get(b.listingId) ?? 0) + 1);
@@ -36,11 +43,11 @@ export function applyBoostRanking<T extends { id: string }>(listings: T[], boost
   );
 }
 
-export function useBoostPackages() {
+export function useBoostPackagesQuery() {
   return useQuery(getBoostPackagesOptions());
 }
 
-export function useMyBoosts() {
+export function useMyBoostsQuery() {
   const { user } = useAuth();
   return useQuery(getMyBoostsOptions(user?.id));
 }

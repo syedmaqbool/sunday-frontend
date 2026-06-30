@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import {
   AlertTriangle,
   CheckCircle,
@@ -9,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utilities';
-import { getAdminAnalyticsQueryOptions } from '@/queries/useAdminAnalytics';
+import { getAdminAnalyticsQueryOptions } from '@/queries/adminAnalytics.query';
 
 export default function Overview() {
   const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());

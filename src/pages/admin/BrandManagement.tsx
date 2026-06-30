@@ -1,5 +1,6 @@
-import type { Brand } from '@/types/brand';
 import { useQuery } from '@tanstack/react-query';
+import type { Brand } from '@/types/brand.type';
+
 import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -18,10 +19,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import {
   getBrandsQueryOptions,
-  useCreateBrand,
-  useDeleteBrand,
-  useUpdateBrand,
-} from '@/queries/useAdminBrands';
+  useCreateBrandMutation,
+  useDeleteBrandMutation,
+  useUpdateBrandMutation,
+} from '@/queries/adminBrands.query';
 
 interface BrandForm {
   active: boolean;
@@ -38,9 +39,9 @@ const emptyForm: BrandForm = {
 function BrandManagement() {
   const { data: brands = [], isLoading } = useQuery(getBrandsQueryOptions());
 
-  const createBrand = useCreateBrand();
-  const updateBrand = useUpdateBrand();
-  const deleteBrand = useDeleteBrand();
+  const createBrand = useCreateBrandMutation();
+  const updateBrand = useUpdateBrandMutation();
+  const deleteBrand = useDeleteBrandMutation();
 
   const { toast } = useToast();
 

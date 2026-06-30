@@ -1,5 +1,5 @@
 import type { Response } from '@/types/response.type';
-import type { SellerAnalytics } from '@/types/seller-analytics';
+import type { SellerAnalytics } from '@/types/sellerAnalytics.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function getSellerAnalytics() {

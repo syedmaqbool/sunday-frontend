@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   ArrowRightLeft,
   ArrowUpDown,
@@ -32,7 +32,7 @@ import {
   getMyReviewedOfferIdsOptions,
   getReceivedOffersOptions,
   offersQueryKey,
-} from '@/queries/useOffers';
+} from '@/queries/offers.query';
 import {
   acceptOffer,
   counterOffer,
@@ -65,13 +65,9 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  const { data: received = [], isLoading } = useQuery(
-    getReceivedOffersOptions(user?.id, listingId),
-  );
+  const { data: received = [], isLoading } = useQuery(getReceivedOffersOptions(user?.id, listingId));
 
-  const { data: myReviews = [] } = useQuery(
-    getMyReviewedOfferIdsOptions(user?.id),
-  );
+  const { data: myReviews = [] } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
 
   const respondToOffer = useMutation({
     mutationFn: ({

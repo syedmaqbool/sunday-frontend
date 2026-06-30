@@ -2,7 +2,7 @@ import type {
   CreateDiscountCodePayload,
   DiscountCode,
   UpdateDiscountCodePayload,
-} from '@/types/discount-code';
+} from '@/types/discountCode.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 

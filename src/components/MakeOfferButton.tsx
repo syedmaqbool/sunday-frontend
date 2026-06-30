@@ -1,9 +1,13 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,8 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { trackEvent } from '@/lib/analytics';
-import { offersQueryKey } from '@/queries/offers.query';
-import { getBuyerListingOffersOptions } from '@/queries/offers.query';
+import { getBuyerListingOffersOptions, offersQueryKey } from '@/queries/offers.query';
+
 import {
   acceptCounterOffer,
   createOffer,
@@ -31,6 +35,12 @@ interface MakeOfferProps {
   listingPrice: number;
   listingTitle: string;
 }
+
+const offerSchema = z.object({
+  amount: z.string().refine(value => Number(value) > 0, 'Offer must be greater than 0.'),
+});
+
+type OfferFormValues = z.infer<typeof offerSchema>;
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -45,7 +55,7 @@ function statusBadge(s: string) {
 
 export function MakeOfferButton({
   listingId,
-  sellerId,
+  sellerId: _sellerId,
   listingPrice,
   listingTitle,
 }: MakeOfferProps) {
@@ -53,7 +63,13 @@ export function MakeOfferButton({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState('');
+  const form = useForm<OfferFormValues>({
+    defaultValues: { amount: '' },
+    mode: 'all',
+    resolver: zodResolver(offerSchema),
+  });
+  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const amount = watch('amount');
 
   // Fetch existing offers from this buyer on this listing
   const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
@@ -64,7 +80,8 @@ export function MakeOfferButton({
     });
 
   const submitOffer = useMutation({
-    mutationFn: () => createOffer(listingId, { amount: Number(amount) }),
+    mutationFn: (values: OfferFormValues) =>
+      createOffer(listingId, { amount: Number(values.amount) }),
     onError: (error: any) => toast.error(error.message),
     onSuccess: () => {
       trackEvent('make_offer', {
@@ -75,9 +92,12 @@ export function MakeOfferButton({
       });
       toast.success('Offer sent!');
       invalidateOffers();
-      setAmount('');
+      reset();
     },
   });
+
+  const onSubmit: SubmitHandler<OfferFormValues> = values =>
+    submitOffer.mutate(values);
 
   const acceptCounter = useMutation({
     mutationFn: (offerId: string) => acceptCounterOffer(offerId),
@@ -225,17 +245,23 @@ export function MakeOfferButton({
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="offer-amount">Your offer (PKR)</Label>
-              <Input
-                id="offer-amount"
-                onChange={event => setAmount(event.target.value)}
-                value={amount}
-                min="1"
-                placeholder={`e.g. ${Math.round(listingPrice * 0.8)}`}
-                type="number"
+              <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="offer-amount"
+                    min="1"
+                    placeholder={`e.g. ${Math.round(listingPrice * 0.8)}`}
+                    type="number"
+                    {...field}
+                  />
+                )}
               />
+              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
             </div>
             <Button
-              onClick={() => submitOffer.mutate()}
+              onClick={handleSubmit(onSubmit)}
               disabled={
                 !amount || Number(amount) <= 0 || submitOffer.isPending
               }

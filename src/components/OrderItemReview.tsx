@@ -1,7 +1,11 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +29,13 @@ const MAX_VIDEO_SIZE = 30 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
+const orderReviewSchema = z.object({
+  comment: z.string().max(500).optional(),
+  rating: z.number().min(1).max(5),
+});
+
+type OrderReviewFormValues = z.infer<typeof orderReviewSchema>;
+
 export function OrderItemReview({
   listingId,
   orderId,
@@ -35,13 +46,21 @@ export function OrderItemReview({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
   const imageInputReference = useRef<HTMLInputElement>(null);
   const videoInputReference = useRef<HTMLInputElement>(null);
+  const form = useForm<OrderReviewFormValues>({
+    defaultValues: {
+      comment: '',
+      rating: 0,
+    },
+    mode: 'all',
+    resolver: zodResolver(orderReviewSchema),
+  });
+  const { control, handleSubmit, reset, watch } = form;
+  const rating = watch('rating');
 
   const { data: existing, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
 
@@ -90,7 +109,7 @@ export function OrderItemReview({
   };
 
   const submit = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (values: OrderReviewFormValues) => {
       const imageUrls: string[] = [];
       let videoUrl: string | undefined;
 
@@ -107,9 +126,9 @@ export function OrderItemReview({
       await createReview({
         orderId,
         orderItemId,
-        comment: comment || undefined,
+        comment: values.comment || undefined,
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-        rating,
+        rating: values.rating,
         videoUrl,
       });
     },
@@ -130,10 +149,12 @@ export function OrderItemReview({
       setOpen(false);
       setImages([]);
       setVideo(null);
-      setComment('');
-      setRating(0);
+      reset();
     },
   });
+
+  const onSubmit: SubmitHandler<OrderReviewFormValues> = values =>
+    submit.mutate(values);
 
   if (!sellerId || isLoading)
     return null;
@@ -184,45 +205,56 @@ export function OrderItemReview({
 
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border bg-secondary/50 p-2">
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map(star => (
-          <button
-            key={star}
-            onClick={() => setRating(star)}
-            onMouseEnter={() => setHovered(star)}
-            onMouseLeave={() => setHovered(0)}
-            type="button"
-            className="
-              transition-transform
-              hover:scale-110
-            "
-          >
-            <Star
-              className={`
-                h-5 w-5 transition-colors
-                ${
-          star <= display
-            ? 'fill-primary text-primary'
-            : 'text-muted-foreground/30'
-          }
-              `}
-            />
-          </button>
-        ))}
-        {rating > 0 && (
-          <span className="ml-1 text-xs text-muted-foreground">
-            {rating}
-            /5
-          </span>
+      <Controller
+        name="rating"
+        control={control}
+        render={({ field }) => (
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                onClick={() => field.onChange(star)}
+                onMouseEnter={() => setHovered(star)}
+                onMouseLeave={() => setHovered(0)}
+                type="button"
+                className="
+                  transition-transform
+                  hover:scale-110
+                "
+              >
+                <Star
+                  className={`
+                    h-5 w-5 transition-colors
+                    ${
+              star <= display
+                ? 'fill-primary text-primary'
+                : 'text-muted-foreground/30'
+              }
+                  `}
+                />
+              </button>
+            ))}
+            {rating > 0 && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                {rating}
+                /5
+              </span>
+            )}
+          </div>
         )}
-      </div>
-      <Textarea
-        onChange={event => setComment(event.target.value)}
-        value={comment}
-        maxLength={500}
-        placeholder="Share your experience (optional)"
-        rows={2}
-        className="text-sm"
+      />
+      <Controller
+        name="comment"
+        control={control}
+        render={({ field }) => (
+          <Textarea
+            maxLength={500}
+            placeholder="Share your experience (optional)"
+            rows={2}
+            className="text-sm"
+            {...field}
+          />
+        )}
       />
 
       {/* Image previews */}
@@ -320,7 +352,7 @@ export function OrderItemReview({
 
       <div className="flex gap-2">
         <Button
-          onClick={() => submit.mutate()}
+          onClick={handleSubmit(onSubmit)}
           disabled={rating === 0 || uploading}
           size="sm"
           className="gap-1.5"

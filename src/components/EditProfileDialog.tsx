@@ -1,6 +1,9 @@
+import type { SubmitHandler } from 'react-hook-form';
 import type { Profile } from '@/types/profile.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Pencil, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
 import { toast } from 'sonner';
 
@@ -31,6 +34,8 @@ const profileSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal('')),
 });
 
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
 interface Props {
   profile: Profile | null;
 }
@@ -46,12 +51,35 @@ export function EditProfileDialog({ profile }: Props) {
     profile?.image?.id ?? null,
   );
 
-  const [fullName, setFullName] = useState(profile?.fullName ?? '');
-  const [bio, setBio] = useState(profile?.bio ?? '');
-  const [phone, setPhone] = useState(profile?.phone ?? '');
-  const [location, setLocation] = useState(profile?.location ?? '');
+  const form = useForm<ProfileFormValues>({
+    defaultValues: {
+      bio: profile?.bio ?? '',
+      fullName: profile?.fullName ?? '',
+      location: profile?.location ?? '',
+      phone: profile?.phone ?? '',
+    },
+    mode: 'all',
+    resolver: zodResolver(profileSchema),
+  });
+  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const fullName = watch('fullName') ?? '';
+  const bio = watch('bio') ?? '';
 
   const updateProfile = useUpdateProfileMutation();
+
+  useEffect(() => {
+    if (!open)
+      return;
+
+    reset({
+      bio: profile?.bio ?? '',
+      fullName: profile?.fullName ?? '',
+      location: profile?.location ?? '',
+      phone: profile?.phone ?? '',
+    });
+    setAvatarUrl(profile?.image?.url ?? '');
+    setImageId(profile?.image?.id ?? null);
+  }, [open, profile, reset]);
 
   const initials = (fullName || 'U')
     .split(' ')
@@ -89,26 +117,14 @@ export function EditProfileDialog({ profile }: Props) {
     }
   };
 
-  const save = () => {
-    const parsed = profileSchema.safeParse({
-      bio,
-      fullName,
-      location,
-      phone,
-    });
-
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-
+  const save: SubmitHandler<ProfileFormValues> = (values) => {
     updateProfile.mutate(
       {
-        bio,
-        fullName,
+        bio: values.bio,
+        fullName: values.fullName,
         image: imageId,
-        location,
-        phone,
+        location: values.location,
+        phone: values.phone,
       },
       {
         onError: (error: any) => {
@@ -199,52 +215,76 @@ export function EditProfileDialog({ profile }: Props) {
 
           <div>
             <Label htmlFor="fullName">Full name</Label>
-            <Input
-              id="fullName"
-              onChange={event => setFullName(event.target.value)}
-              value={fullName}
-              maxLength={80}
-              placeholder="Your name"
+            <Controller
+              name="fullName"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  id="fullName"
+                  maxLength={80}
+                  placeholder="Your name"
+                  {...field}
+                />
+              )}
             />
+            {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              onChange={event => setBio(event.target.value)}
-              value={bio}
-              maxLength={280}
-              placeholder="Tell others a bit about yourself..."
-              rows={3}
+            <Controller
+              name="bio"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  id="bio"
+                  maxLength={280}
+                  placeholder="Tell others a bit about yourself..."
+                  rows={3}
+                  {...field}
+                />
+              )}
             />
             <p className="mt-1 text-right text-xs text-muted-foreground">
               {bio.length}
               /280
             </p>
+            {errors.bio && <p className="text-xs text-destructive">{errors.bio.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                onChange={event => setPhone(event.target.value)}
-                value={phone}
-                maxLength={30}
-                placeholder="+92..."
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="phone"
+                    maxLength={30}
+                    placeholder="+92..."
+                    {...field}
+                  />
+                )}
               />
+              {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
             </div>
 
             <div>
               <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                onChange={event => setLocation(event.target.value)}
-                value={location}
-                maxLength={80}
-                placeholder="Karachi, PK"
+              <Controller
+                name="location"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="location"
+                    maxLength={80}
+                    placeholder="Karachi, PK"
+                    {...field}
+                  />
+                )}
               />
+              {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
             </div>
           </div>
         </div>
@@ -255,7 +295,7 @@ export function EditProfileDialog({ profile }: Props) {
           </Button>
 
           <Button
-            onClick={save}
+            onClick={handleSubmit(save, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))}
             disabled={updateProfile.isPending || uploading}
           >
             {updateProfile.isPending

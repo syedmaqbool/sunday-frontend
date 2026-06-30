@@ -1,5 +1,8 @@
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Flag, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -57,6 +60,8 @@ const reportSchema = z.object({
   reason: z.string().trim().min(1, 'Please choose a reason'),
 });
 
+type ReportFormValues = z.infer<typeof reportSchema>;
+
 interface ReportDialogProps {
   targetId: string;
   label?: string;
@@ -73,19 +78,23 @@ export function ReportDialog({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState('');
-  const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const form = useForm<ReportFormValues>({
+    defaultValues: {
+      details: '',
+      reason: '',
+    },
+    mode: 'all',
+    resolver: zodResolver(reportSchema),
+  });
+  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const reason = watch('reason');
+  const details = watch('details');
 
-  const handleSubmit = async () => {
+  const onSubmit: SubmitHandler<ReportFormValues> = async (values) => {
     if (!user) {
       toast.error('Please sign in to report');
       navigate('/auth');
-      return;
-    }
-    const parsed = reportSchema.safeParse({ details, reason });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
       return;
     }
     setSubmitting(true);
@@ -97,13 +106,12 @@ export function ReportDialog({
             ? { messageId: targetId }
             : { reportedUserId: targetId };
       await createReport({
-        details: parsed.data.details || undefined,
-        reason: parsed.data.reason,
+        details: values.details || undefined,
+        reason: values.reason,
         ...targetField,
       });
       toast.success('Report submitted. Our team will review it shortly.');
-      setReason('');
-      setDetails('');
+      reset();
       setOpen(false);
     }
     catch (error: any) {
@@ -146,32 +154,45 @@ export function ReportDialog({
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Reason</Label>
-            <Select onValueChange={setReason} value={reason}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                {REASONS[targetType].map(r => (
-                  <SelectItem key={r.value} value={r.value}>
-                    {r.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="reason"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REASONS[targetType].map(r => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.reason && <p className="text-xs text-destructive">{errors.reason.message}</p>}
           </div>
           <div className="space-y-2">
             <Label>Additional details (optional)</Label>
-            <Textarea
-              onChange={event => setDetails(event.target.value)}
-              value={details}
-              maxLength={1000}
-              placeholder="Anything else our team should know..."
-              rows={4}
+            <Controller
+              name="details"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  maxLength={1000}
+                  placeholder="Anything else our team should know..."
+                  rows={4}
+                  {...field}
+                />
+              )}
             />
             <p className="text-xs text-muted-foreground">
               {details.length}
               /1000
             </p>
+            {errors.details && <p className="text-xs text-destructive">{errors.details.message}</p>}
           </div>
         </div>
         <DialogFooter>
@@ -182,7 +203,7 @@ export function ReportDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !reason}>
+          <Button onClick={handleSubmit(onSubmit, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))} disabled={submitting || !reason}>
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Submit report
           </Button>

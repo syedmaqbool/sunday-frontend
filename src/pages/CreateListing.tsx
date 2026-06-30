@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   Camera,
   Info,
@@ -12,7 +14,9 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
+import { z } from 'zod';
 import BankDetailsModal from '@/components/BankDetailsModal';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
@@ -52,6 +56,36 @@ const MAX_PHOTOS = 20;
 
 interface ExistingMediaItem { fileId: string; url: string }
 
+const listingSchema = z.object({
+  categoryId: z.string().min(1, 'Category is required.'),
+  subcategoryId: z.string().min(1, 'Subcategory is required.'),
+  brand: z.string().trim().min(1, 'Brand is required.'),
+  condition: z.string().min(1, 'Condition is required.'),
+  description: z.string().trim().min(1, 'Description is required.'),
+  parentCategory: z.string().min(1, 'Category is required.'),
+  price: z.string().refine(value => Number(value) > 0, 'Price must be greater than 0.'),
+  size: z.string().min(1, 'Size is required.'),
+  subCategory: z.string().min(1, 'Subcategory is required.'),
+  title: z.string().trim().min(1, 'Title is required.'),
+  weight: z.string().optional(),
+});
+
+type ListingFormValues = z.infer<typeof listingSchema>;
+
+const defaultListingValues: ListingFormValues = {
+  categoryId: '',
+  subcategoryId: '',
+  brand: '',
+  condition: '',
+  description: '',
+  parentCategory: '',
+  price: '',
+  size: '',
+  subCategory: '',
+  title: '',
+  weight: '',
+};
+
 function FieldTip({ tip }: { tip: string }) {
   return (
     <TooltipProvider delayDuration={150}>
@@ -83,28 +117,31 @@ function CreateListing() {
   const isEditing = !!id;
   const { toast } = useToast();
   const { loading: authLoading, user } = useAuth();
-   const [form, setForm] = useState({
-    categoryId: '',
-    subcategoryId: '',
-    brand: '',
-    condition: '',
-    description: '',
-    parentCategory: '',
-    price: '',
-    size: '',
-    subCategory: '',
-    title: '',
-    weight: '',
+  const listingForm = useForm<ListingFormValues>({
+    defaultValues: defaultListingValues,
+    mode: 'all',
+    resolver: zodResolver(listingSchema),
   });
+  const {
+    control,
+    formState: { errors },
+    getValues,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+  } = listingForm;
+  const formValues = watch();
+  const sizeFieldError = errors.size;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
-  const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(form.categoryId));
+  const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));
   const [submitting, setSubmitting] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [existingVideo, setExistingVideo] = useState<ExistingMediaItem | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
- 
+
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: existingListing, isLoading: loadingListing } = useQuery(getEditListingOptions(id, user?.id));
@@ -140,7 +177,7 @@ function CreateListing() {
       return closest.value;
     })();
 
-    setForm({
+    reset({
       categoryId: existingListing.categoryId,
       subcategoryId: existingListing.subcategoryId,
       brand: existingListing.brand || '',
@@ -169,7 +206,7 @@ function CreateListing() {
         ? { fileId: vid.file.id, url: vid.file.url }
         : null,
     );
-  }, [existingListing, user, navigate]);
+  }, [existingListing, user, navigate, reset]);
 
   const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>) => {
     const files = [...event_.target.files || []];
@@ -231,11 +268,13 @@ function CreateListing() {
   const totalPhotos = imageFiles.length + existingImages.length;
   const hasVideo = !!videoFile || !!existingVideo;
 
-  async function performSubmit() {
+  async function performSubmit(values: ListingFormValues) {
     setSubmitting(true);
 
-    if (!user)
+    if (!user) {
+      setSubmitting(false);
       return;
+    }
 
     try {
       const newImageItems = await Promise.all(
@@ -270,16 +309,16 @@ function CreateListing() {
         ];
 
         await updateMyListing(id!, {
-          categoryId: form.categoryId,
-          subcategoryId: form.subcategoryId,
-          brand: form.brand,
-          condition: form.condition,
-          description: form.description,
+          categoryId: values.categoryId,
+          subcategoryId: values.subcategoryId,
+          brand: values.brand,
+          condition: values.condition,
+          description: values.description,
           media,
-          price: Number(form.price),
-          size: form.size,
-          title: form.title,
-          weight: form.weight ? Number(form.weight) : null,
+          price: Number(values.price),
+          size: values.size,
+          title: values.title,
+          weight: values.weight ? Number(values.weight) : null,
         });
 
         toast({ description: 'Your changes have been saved.', title: 'Listing updated!' });
@@ -298,23 +337,23 @@ function CreateListing() {
         ];
 
         const { data: newListing } = await createListing({
-          categoryId: form.categoryId,
-          subcategoryId: form.subcategoryId,
-          brand: form.brand,
-          condition: form.condition,
-          description: form.description,
+          categoryId: values.categoryId,
+          subcategoryId: values.subcategoryId,
+          brand: values.brand,
+          condition: values.condition,
+          description: values.description,
           media,
-          price: Number(form.price),
-          size: form.size,
-          title: form.title,
-          weight: form.weight ? Number(form.weight) : null,
+          price: Number(values.price),
+          size: values.size,
+          title: values.title,
+          weight: values.weight ? Number(values.weight) : null,
         });
 
         trackEvent('listing_created', {
-          brand: form.brand,
-          category: `${form.parentCategory}-${form.subCategory}`,
+          brand: values.brand,
+          category: `${values.parentCategory}-${values.subCategory}`,
           listing_id: newListing.id,
-          price: Number(form.price),
+          price: Number(values.price),
         });
         toast({ description: 'Your item is pending review.', title: 'Listing created!' });
         navigate('/listings');
@@ -323,12 +362,12 @@ function CreateListing() {
     catch (error: any) {
       toast({ description: error.message, title: 'Error', variant: 'destructive' });
     }
-    setSubmitting(false);
+    finally {
+      setSubmitting(false);
+    }
   }
 
-  const handleSubmit = async (event_: React.FormEvent) => {
-    event_.preventDefault();
-
+  const onSubmit: SubmitHandler<ListingFormValues> = async (values) => {
     if (!user)
       return;
 
@@ -346,9 +385,7 @@ function CreateListing() {
     }
 
     if (!isEditing) {
-      
       try {
-      
         const { data: profile } = await getMyProfile();
         const hasBankDetails
           = !!profile.bankAccountHolder
@@ -365,7 +402,7 @@ function CreateListing() {
       }
     }
 
-    await performSubmit();
+    await performSubmit(values);
   };
 
   const allPreviews = [
@@ -381,8 +418,6 @@ function CreateListing() {
     () => videoFile ? URL.createObjectURL(videoFile) : (existingVideo?.url ?? null),
     [existingVideo, videoFile],
   );
-
-
 
   if (authLoading || loadingListing)
     return null;
@@ -400,7 +435,7 @@ function CreateListing() {
             : 'List your pre-loved fashion for sale'}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
             <Label>
@@ -486,12 +521,12 @@ function CreateListing() {
                     type="file"
                     className="hidden"
                   />
-                  {allPreviews.length === 0
+                  {allPreviews.length > 0
                     ? (
-                        <Camera className="h-5 w-5" />
+                        <Upload className="h-4 w-4" />
                       )
                     : (
-                        <Upload className="h-4 w-4" />
+                        <Camera className="h-5 w-5" />
                       )}
                   <span className="mt-1 text-[10px]">Add photo</span>
                 </label>
@@ -579,28 +614,36 @@ function CreateListing() {
                 Title
                 <FieldTip tip="A concise, descriptive title shoppers can search for. Include brand, item type, and a key detail (e.g. 'Vintage Levi's 501 high-waist jeans')." />
               </Label>
-              <Input
-                id="title"
-                onChange={event =>
-                  setForm(f => ({ ...f, title: event.target.value }))}
-                value={form.title}
-                placeholder="e.g. Vintage Levi's 501 Jeans"
-                required
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="title"
+                    placeholder="e.g. Vintage Levi's 501 Jeans"
+                    {...field}
+                  />
+                )}
               />
+              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="brand">
                 Brand
                 <FieldTip tip="The original maker of the item. Use the official brand name as it appears on the label (e.g. Nike, Zara, Gucci)." />
               </Label>
-              <Input
-                id="brand"
-                onChange={event =>
-                  setForm(f => ({ ...f, brand: event.target.value }))}
-                value={form.brand}
-                placeholder="e.g. Levi's"
-                required
+              <Controller
+                name="brand"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="brand"
+                    placeholder="e.g. Levi's"
+                    {...field}
+                  />
+                )}
               />
+              {errors.brand && <p className="text-sm text-destructive">{errors.brand.message}</p>}
             </div>
           </div>
 
@@ -609,15 +652,19 @@ function CreateListing() {
               Description
               <FieldTip tip="Describe size fit, materials, measurements, condition, and any flaws or signs of wear. Honest detailed descriptions reduce returns and complaints." />
             </Label>
-            <Textarea
-              id="description"
-              onChange={event =>
-                setForm(f => ({ ...f, description: event.target.value }))}
-              value={form.description}
-              placeholder="Describe the item, its condition, and any flaws..."
-              required
-              rows={4}
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  id="description"
+                  placeholder="Describe the item, its condition, and any flaws..."
+                  rows={4}
+                  {...field}
+                />
+              )}
             />
+            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
           </div>
 
           <div className="
@@ -630,66 +677,75 @@ function CreateListing() {
                 Category
                 <FieldTip tip="Pick the broad category that best matches your item (e.g. Women, Men, Kids, Accessories). Choosing the right one helps the right buyers find it." />
               </Label>
-              <Select
-                onValueChange={(v) => {
-                  const cat = parentCategories.find(c => c.value === v);
-                  setForm(f => ({
-                    ...f,
-                    categoryId: cat?.id ?? '',
-                    subcategoryId: '',
-                    parentCategory: v,
-                    subCategory: '',
-                  }));
-                }}
-                value={form.parentCategory}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {parentCategories.map(c => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="parentCategory"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(v) => {
+                      const cat = parentCategories.find(c => c.value === v);
+                      field.onChange(v);
+                      setValue('categoryId', cat?.id ?? '', { shouldDirty: true, shouldValidate: true });
+                      setValue('subcategoryId', '', { shouldDirty: true, shouldValidate: true });
+                      setValue('subCategory', '', { shouldDirty: true, shouldValidate: true });
+                      setValue('size', '', { shouldDirty: true, shouldValidate: true });
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parentCategories.map(c => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.parentCategory && <p className="text-sm text-destructive">{errors.parentCategory.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>
                 Subcategory
                 <FieldTip tip="Refines your category — e.g. under Women → Dresses, Tops, Shoes. Pick the closest match so your item appears in the correct browse filters." />
               </Label>
-              <Select
-                onValueChange={(v) => {
-                  const sub = subCategories.find(c => c.value === v);
-                  setForm(f => ({
-                    ...f,
-                    subcategoryId: sub?.id ?? '',
-                    size: '',
-                    subCategory: v,
-                  }));
-                }}
-                value={form.subCategory}
-                disabled={!form.parentCategory}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      form.parentCategory
-                        ? 'Select type'
-                        : 'Choose category first'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {subCategories.map(c => (
-  <SelectItem key={c.id} value={c.value}>
-    {c.label}
-  </SelectItem>
-))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="subCategory"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(v) => {
+                      const sub = subCategories.find(c => c.value === v);
+                      field.onChange(v);
+                      setValue('subcategoryId', sub?.id ?? '', { shouldDirty: true, shouldValidate: true });
+                      setValue('size', '', { shouldDirty: true, shouldValidate: true });
+                    }}
+                    value={field.value}
+                    disabled={!formValues.parentCategory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          formValues.parentCategory
+                            ? 'Select type'
+                            : 'Choose category first'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subCategories.map(c => (
+                        <SelectItem key={c.id} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.subCategory && <p className="text-sm text-destructive">{errors.subCategory.message}</p>}
             </div>
           </div>
 
@@ -704,59 +760,70 @@ function CreateListing() {
                 Price (PKR)
                 <FieldTip tip="Set a fair selling price in Pakistani Rupees. Buyers can still negotiate via offers — pick a price that leaves a little room to bargain." />
               </Label>
-              <Input
-                id="price"
-                onChange={event =>
-                  setForm(f => ({ ...f, price: event.target.value }))}
-                value={form.price}
-                min="1"
-                placeholder="0"
-                required
-                step="0.01"
-                type="number"
+              <Controller
+                name="price"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="price"
+                    min="1"
+                    placeholder="0"
+                    step="0.01"
+                    type="number"
+                    {...field}
+                  />
+                )}
               />
+              {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>
                 Weight
                 <FieldTip tip="Approximate packed weight range. Used to estimate shipping cost. Pick the range that best matches your item in its packaging." />
               </Label>
-              <Select
-                onValueChange={v => setForm(f => ({ ...f, weight: v }))}
-                value={form.weight}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select weight" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WEIGHT_OPTIONS.map(w => (
-                    <SelectItem key={w.value} value={w.value}>
-                      {w.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="weight"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select weight" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WEIGHT_OPTIONS.map(w => (
+                        <SelectItem key={w.value} value={w.value}>
+                          {w.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label>
                 Condition
                 <FieldTip tip="Honest condition rating: New with tags, Like new, Good (light wear), or Fair (visible wear). Be accurate — buyers can report mismatched listings." />
               </Label>
-              <Select
-                onValueChange={v => setForm(f => ({ ...f, condition: v }))}
-                value={form.condition}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONDITIONS.map(c => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="condition"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONDITIONS.map(c => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.condition && <p className="text-sm text-destructive">{errors.condition.message}</p>}
             </div>
           </div>
 
@@ -765,40 +832,47 @@ function CreateListing() {
               Size
               <FieldTip
                 tip={
-                  form.subCategory === 'shoes'
+                  formValues.subCategory === 'shoes'
                     ? 'Select the European shoe size (EU).'
                     : 'Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. \'M but fits like S\').'
                 }
               />
             </Label>
-            <Select
-              onValueChange={v => setForm(f => ({ ...f, size: v }))}
-              value={form.size}
-              disabled={!form.subCategory}
-            >
-              <SelectTrigger className="
-                w-full
-                sm:w-[200px]
-              "
-              >
-                <SelectValue
-                  placeholder={
-                    form.subCategory
-                      ? 'Select size'
-                      : 'Choose subcategory first'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {(form.subCategory === 'shoes' ? SHOE_SIZES : SIZES).map(
-                  s => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="size"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={!formValues.subCategory}
+                >
+                  <SelectTrigger className="
+                    w-full
+                    sm:w-[200px]
+                  "
+                  >
+                    <SelectValue
+                      placeholder={
+                        formValues.subCategory
+                          ? 'Select size'
+                          : 'Choose subcategory first'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(formValues.subCategory === 'shoes' ? SHOE_SIZES : SIZES).map(
+                      s => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {sizeFieldError && <p className="text-sm text-destructive">{sizeFieldError.message}</p>}
           </div>
 
           <Button
@@ -818,7 +892,7 @@ function CreateListing() {
         onCancel={() => setBankModalOpen(false)}
         onSaved={async () => {
           setBankModalOpen(false);
-          await performSubmit();
+          await performSubmit(getValues());
         }}
         open={bankModalOpen}
       />

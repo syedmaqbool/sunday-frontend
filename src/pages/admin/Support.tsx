@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
 import type { SupportTicketStatus } from '@/types/support.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -10,6 +12,8 @@ import {
   Send,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -66,11 +70,22 @@ const STATUSES: SupportTicketStatus[] = [
 
 type StatusFilter = 'all' | SupportTicketStatus;
 
+const replySchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+});
+
+type ReplyFormValues = z.infer<typeof replySchema>;
+
 function AdminSupport() {
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [reply, setReply] = useState('');
   const messagesEndReference = useRef<HTMLDivElement>(null);
+  const replyForm = useForm<ReplyFormValues>({
+    defaultValues: { content: '' },
+    mode: 'all',
+    resolver: zodResolver(replySchema),
+  });
+  const replyContent = replyForm.watch('content');
 
   const { data: allTickets = [], isLoading: ticketsLoading } = useQuery(getAdminSupportTicketsOptions());
   const { data: messages = [], isLoading: msgsLoading } = useQuery(getAdminSupportMessagesOptions(activeTicket));
@@ -90,12 +105,11 @@ function AdminSupport() {
 
   const activeTicketData = allTickets.find(t => t.id === activeTicket);
 
-  const handleSend = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!reply.trim() || !activeTicket)
+  const handleSend: SubmitHandler<ReplyFormValues> = (values) => {
+    if (!activeTicket)
       return;
     sendReply.mutate(
-      { ticketId: activeTicket, content: reply.trim() },
+      { ticketId: activeTicket, content: values.content.trim() },
       {
         onError: (error: any) =>
           toast({
@@ -103,7 +117,7 @@ function AdminSupport() {
             title: 'Couldn\'t send',
             variant: 'destructive',
           }),
-        onSuccess: () => setReply(''),
+        onSuccess: () => replyForm.reset(),
       },
     );
   };
@@ -336,16 +350,21 @@ function AdminSupport() {
                   </ScrollArea>
 
                   <div className="border-t border-border p-3">
-                    <form onSubmit={handleSend} className="flex gap-2">
-                      <Input
-                        onChange={event => setReply(event.target.value)}
-                        value={reply}
-                        maxLength={2000}
-                        placeholder="Reply to customer…"
-                        className="flex-1"
+                    <form onSubmit={replyForm.handleSubmit(handleSend)} className="flex gap-2">
+                      <Controller
+                        name="content"
+                        control={replyForm.control}
+                        render={({ field }) => (
+                          <Input
+                            maxLength={2000}
+                            placeholder="Reply to customer…"
+                            className="flex-1"
+                            {...field}
+                          />
+                        )}
                       />
                       <Button
-                        disabled={!reply.trim() || sendReply.isPending}
+                        disabled={!replyContent.trim() || sendReply.isPending}
                         size="icon"
                         type="submit"
                       >

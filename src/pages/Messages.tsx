@@ -1,9 +1,13 @@
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 import Footer from '@/components/Footer';
 
 import Navbar from '@/components/Navbar';
@@ -53,6 +57,12 @@ interface Message {
   updatedAt: string;
 }
 
+const messageSchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+});
+
+type MessageFormValues = z.infer<typeof messageSchema>;
+
 /* COMPONENT */
 
 function Messages() {
@@ -66,9 +76,13 @@ function Messages() {
     searchParameters.get('conversation'),
   );
 
-  const [newMessage, setNewMessage] = useState('');
-
   const messagesEndReference = useRef<HTMLDivElement>(null);
+  const messageForm = useForm<MessageFormValues>({
+    defaultValues: { content: '' },
+    mode: 'all',
+    resolver: zodResolver(messageSchema),
+  });
+  const messageContent = messageForm.watch('content');
 
   /* AUTH */
 
@@ -91,6 +105,23 @@ function Messages() {
   /* SEND MESSAGE */
 
   const sendMessage = useSendMessageMutation();
+
+  const handleSendMessage: SubmitHandler<MessageFormValues> = (values) => {
+    if (!activeConvo)
+      return;
+
+    sendMessage.mutate(
+      {
+        conversationId: activeConvo,
+        content: values.content,
+      },
+      {
+        onSuccess: () => {
+          messageForm.reset();
+        },
+      },
+    );
+  };
 
   /* WEBSOCKET */
 
@@ -376,35 +407,23 @@ function Messages() {
 
                     <div className="border-t p-3">
                       <form
-                        onSubmit={(event) => {
-                          event.preventDefault();
-
-                          if (!activeConvo || !newMessage.trim())
-                            return;
-
-                          sendMessage.mutate(
-                            {
-                              conversationId: activeConvo,
-                              content: newMessage,
-                            },
-                            {
-                              onSuccess: () => {
-                                setNewMessage('');
-                              },
-                            },
-                          );
-                        }}
+                        onSubmit={messageForm.handleSubmit(handleSendMessage)}
                         className="flex gap-2"
                       >
-                        <Input
-                          onChange={event => setNewMessage(event.target.value)}
-                          value={newMessage}
-                          placeholder="Type message..."
-                          className="flex-1"
+                        <Controller
+                          name="content"
+                          control={messageForm.control}
+                          render={({ field }) => (
+                            <Input
+                              placeholder="Type message..."
+                              className="flex-1"
+                              {...field}
+                            />
+                          )}
                         />
 
                         <Button
-                          disabled={!newMessage.trim() || sendMessage.isPending}
+                          disabled={!messageContent.trim() || sendMessage.isPending}
                           size="icon"
                           type="submit"
                         >

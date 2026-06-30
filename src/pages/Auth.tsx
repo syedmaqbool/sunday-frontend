@@ -1,6 +1,10 @@
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -11,19 +15,92 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
 
+const authBaseSchema = z.object({
+  dob: z.string(),
+  email: z.string().trim().email('Please enter a valid email address.'),
+  marketingConsent: z.boolean(),
+  name: z.string(),
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
+  phone: z.string(),
+  termsAccepted: z.boolean(),
+});
+
+const authSchema = authBaseSchema.superRefine((data, context) => {
+  if (!data.name.trim()) {
+    context.addIssue({
+      path: ['name'],
+      code: z.ZodIssueCode.custom,
+      message: 'Full name is required.',
+    });
+  }
+
+  if (!/^\+?[\d\s\-().]{7,20}$/.test(data.phone.trim())) {
+    context.addIssue({
+      path: ['phone'],
+      code: z.ZodIssueCode.custom,
+      message: 'Please enter a valid phone number.',
+    });
+  }
+
+  const dobDate = new Date(data.dob);
+  if (Number.isNaN(dobDate.getTime()) || dobDate >= new Date()) {
+    context.addIssue({
+      path: ['dob'],
+      code: z.ZodIssueCode.custom,
+      message: 'Please enter a valid date.',
+    });
+  }
+  else {
+    const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    if (age < 13) {
+      context.addIssue({
+        path: ['dob'],
+        code: z.ZodIssueCode.custom,
+        message: 'You must be at least 13 years old.',
+      });
+    }
+  }
+
+  if (!data.termsAccepted) {
+    context.addIssue({
+      path: ['termsAccepted'],
+      code: z.ZodIssueCode.custom,
+      message: 'Please accept the Terms & Conditions to continue.',
+    });
+  }
+});
+
+const loginSchema = authBaseSchema.pick({
+  email: true,
+  password: true,
+});
+
+type AuthFormValues = z.infer<typeof authSchema>;
+
 function Auth() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dob, setDob] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
+  const form = useForm<AuthFormValues>({
+    defaultValues: {
+      dob: '',
+      email: '',
+      marketingConsent: false,
+      name: '',
+      password: '',
+      phone: '',
+      termsAccepted: false,
+    },
+    mode: 'all',
+    resolver: zodResolver(mode === 'register' ? authSchema : loginSchema),
+  });
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+  } = form;
 
   // Already logged in → home
   useEffect(() => {
@@ -31,63 +108,23 @@ function Auth() {
       navigate('/', { replace: true });
   }, [user, navigate]);
 
-  const handleSubmit = async (event_: React.FormEvent) => {
-    event_.preventDefault();
+  const onSubmit: SubmitHandler<AuthFormValues> = async (values) => {
     setLoading(true);
 
     try {
       if (mode === 'register') {
-        // ── Client-side validation (same as before) ──────────────────────
-        if (!termsAccepted) {
-          toast({
-            description: 'Please accept the Terms & Conditions to continue.',
-            title: 'Terms required',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        const dobDate = new Date(dob);
-        if (Number.isNaN(dobDate.getTime()) || dobDate >= new Date()) {
-          toast({
-            description: 'Please enter a valid date.',
-            title: 'Invalid date of birth',
-            variant: 'destructive',
-          });
-          return;
-        }
-        const age
-          = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-        if (age < 13) {
-          toast({
-            description: 'You must be at least 13 years old.',
-            title: 'Age requirement',
-            variant: 'destructive',
-          });
-          return;
-        }
-        if (!/^\+?[\d\s\-().]{7,20}$/.test(phone.trim())) {
-          toast({
-            description: 'Please enter a valid phone number.',
-            title: 'Invalid phone',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        // ── Register API call ─────────────────────────────────────────────
         await signUp({
-          dateOfBirth: dob,
-          email,
-          fullName: name,
-          marketingEmailConsent: marketingConsent,
-          password,
-          phone: phone.trim(),
+          dateOfBirth: values.dob,
+          email: values.email,
+          fullName: values.name,
+          marketingEmailConsent: values.marketingConsent,
+          password: values.password,
+          phone: values.phone.trim(),
           termsAccepted: true,
         });
 
         trackEvent('sign_up', {
-          marketing_consent: marketingConsent,
+          marketing_consent: values.marketingConsent,
           method: 'email',
         });
 
@@ -99,8 +136,7 @@ function Auth() {
         navigate('/preferences');
       }
       else {
-        // ── Login API call ────────────────────────────────────────────────
-        const data = await signIn(email, password);
+        const data = await signIn(values.email, values.password);
 
         trackEvent('login', { method: 'email' });
 
@@ -128,6 +164,18 @@ function Auth() {
     }
   };
 
+  const onInvalid = () => {
+    const firstError = Object.values(errors)[0]?.message;
+    if (!firstError)
+      return;
+
+    toast({
+      description: String(firstError),
+      title: 'Validation error',
+      variant: 'destructive',
+    });
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -148,77 +196,106 @@ function Auth() {
                 : 'Join the fashion marketplace'}
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-6 space-y-4">
               {mode === 'register' && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      onChange={event => setName(event.target.value)}
-                      value={name}
-                      placeholder="Your name"
-                      required
+                    <Controller
+                      name="name"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          id="name"
+                          placeholder="Your name"
+                          {...field}
+                        />
+                      )}
                     />
+                    {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      onChange={event => setPhone(event.target.value)}
-                      value={phone}
-                      maxLength={20}
-                      placeholder="+92 ..."
-                      required
-                      type="tel"
+                    <Controller
+                      name="phone"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          id="phone"
+                          maxLength={20}
+                          placeholder="+92 ..."
+                          type="tel"
+                          {...field}
+                        />
+                      )}
                     />
+                    {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dob">Date of Birth</Label>
-                    <Input
-                      id="dob"
-                      onChange={event => setDob(event.target.value)}
-                      value={dob}
-                      max={new Date().toISOString().split('T', 1)[0]}
-                      required
-                      type="date"
+                    <Controller
+                      name="dob"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          id="dob"
+                          max={new Date().toISOString().split('T', 1)[0]}
+                          type="date"
+                          {...field}
+                        />
+                      )}
                     />
+                    {errors.dob && <p className="text-sm text-destructive">{errors.dob.message}</p>}
                   </div>
                 </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  onChange={event => setEmail(event.target.value)}
-                  value={email}
-                  placeholder="you@example.com"
-                  required
-                  type="email"
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="email"
+                      placeholder="you@example.com"
+                      type="email"
+                      {...field}
+                    />
+                  )}
                 />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  onChange={event => setPassword(event.target.value)}
-                  value={password}
-                  minLength={8}
-                  placeholder="••••••••"
-                  required
-                  type="password"
+                <Controller
+                  name="password"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="password"
+                      minLength={8}
+                      placeholder="••••••••"
+                      type="password"
+                      {...field}
+                    />
+                  )}
                 />
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
 
               {mode === 'register' && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="terms"
-                      onCheckedChange={checked =>
-                        setTermsAccepted(checked === true)}
-                      checked={termsAccepted}
-                      required
+                    <Controller
+                      name="termsAccepted"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          id="terms"
+                          onCheckedChange={checked => field.onChange(checked === true)}
+                          checked={field.value}
+                        />
+                      )}
                     />
                     <Label
                       htmlFor="terms"
@@ -241,12 +318,18 @@ function Auth() {
                       violate them.
                     </Label>
                   </div>
+                  {errors.termsAccepted && <p className="text-sm text-destructive">{errors.termsAccepted.message}</p>}
                   <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="marketing"
-                      onCheckedChange={checked =>
-                        setMarketingConsent(checked === true)}
-                      checked={marketingConsent}
+                    <Controller
+                      name="marketingConsent"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          id="marketing"
+                          onCheckedChange={checked => field.onChange(checked === true)}
+                          checked={field.value}
+                        />
+                      )}
                     />
                     <Label
                       htmlFor="marketing"

@@ -1,5 +1,8 @@
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, Landmark, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -58,13 +61,8 @@ const bankSchema = z.object({
     .optional(),
 });
 
-export interface BankFormValues {
-  bank_account_holder: string;
-  bank_account_number: string;
-  bank_iban: string;
-  bank_name: string;
-  bank_swift: string;
-}
+export type BankFormValues = z.input<typeof bankSchema>;
+type ParsedBankFormValues = z.output<typeof bankSchema>;
 
 interface BankDetailsModalProps {
   initialValues?: Partial<BankFormValues>;
@@ -94,50 +92,33 @@ function BankDetailsModal({
     && (initialValues.bank_iban || initialValues.bank_account_number)
   );
 
-  const [form, setForm] = useState<BankFormValues>({
-    ...empty,
-    ...initialValues,
+  const form = useForm<BankFormValues>({
+    defaultValues: {
+      ...empty,
+      ...initialValues,
+    },
+    mode: 'all',
+    resolver: zodResolver(bankSchema),
   });
-
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof BankFormValues, string>>
-  >({});
+  const { control, formState: { errors }, handleSubmit, reset } = form;
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    setForm({ ...empty, ...initialValues });
-    setErrors({});
-  }, [open, initialValues]);
+    reset({ ...empty, ...initialValues });
+  }, [open, initialValues, reset]);
 
-  const handleSave = () => {
-    const result = bankSchema.safeParse(form);
-
-    if (!result.success) {
-      const fieldErrors: Partial<Record<keyof BankFormValues, string>> = {};
-
-      for (const issue of result.error.issues) {
-        const key = issue.path[0] as keyof BankFormValues;
-        if (!Object.hasOwn(fieldErrors, key)) {
-          fieldErrors[key] = issue.message;
-        }
-      }
-
-      setErrors(fieldErrors);
-      return;
-    }
-
-    setErrors({});
-
+  const handleSave: SubmitHandler<BankFormValues> = (values) => {
+    const parsedValues = values as ParsedBankFormValues;
     updateBankDetails.mutate(
       {
-        bankAccountHolder: result.data.bank_account_holder,
-        bankAccountNumber: result.data.bank_account_number,
-        bankIban: result.data.bank_iban,
-        bankName: result.data.bank_name,
-        bankSwift: result.data.bank_swift,
+        bankAccountHolder: parsedValues.bank_account_holder,
+        bankAccountNumber: parsedValues.bank_account_number,
+        bankIban: parsedValues.bank_iban,
+        bankName: parsedValues.bank_name,
+        bankSwift: parsedValues.bank_swift,
       },
       {
         onError: (error: any) => {
@@ -188,81 +169,90 @@ function BankDetailsModal({
         <div className="space-y-4 py-2">
           <div>
             <Label>Account holder name</Label>
-            <Input
-              onChange={event =>
-                setForm(f => ({
-                  ...f,
-                  bank_account_holder: event.target.value,
-                }))}
-              value={form.bank_account_holder}
+            <Controller
+              name="bank_account_holder"
+              control={control}
+              render={({ field }) => <Input {...field} />}
             />
             {errors.bank_account_holder && (
               <p className="text-xs text-destructive">
-                {errors.bank_account_holder}
+                {errors.bank_account_holder.message}
               </p>
             )}
           </div>
 
           <div>
             <Label>Bank name</Label>
-            <Input
-              onChange={event =>
-                setForm(f => ({
-                  ...f,
-                  bank_name: event.target.value,
-                }))}
-              value={form.bank_name}
+            <Controller
+              name="bank_name"
+              control={control}
+              render={({ field }) => <Input {...field} />}
             />
             {errors.bank_name && (
-              <p className="text-xs text-destructive">{errors.bank_name}</p>
+              <p className="text-xs text-destructive">{errors.bank_name.message}</p>
             )}
           </div>
 
           <div>
             <Label>Account number</Label>
-            <Input
-              onChange={event =>
-                setForm(f => ({
-                  ...f,
-                  bank_account_number: event.target.value.replaceAll(/\D/g, ''),
-                }))}
-              value={form.bank_account_number}
-              inputMode="numeric"
+            <Controller
+              name="bank_account_number"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  onChange={event => field.onChange(event.target.value.replaceAll(/\D/g, ''))}
+                  ref={field.ref}
+                  value={field.value}
+                  inputMode="numeric"
+                />
+              )}
             />
             {errors.bank_account_number && (
               <p className="text-xs text-destructive">
-                {errors.bank_account_number}
+                {errors.bank_account_number.message}
               </p>
             )}
           </div>
 
           <div>
             <Label>IBAN</Label>
-            <Input
-              onChange={event =>
-                setForm(f => ({
-                  ...f,
-                  bank_iban: event.target.value.toUpperCase(),
-                }))}
-              value={form.bank_iban}
+            <Controller
+              name="bank_iban"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  onChange={event => field.onChange(event.target.value.toUpperCase())}
+                  ref={field.ref}
+                  value={field.value}
+                />
+              )}
             />
             {errors.bank_iban && (
-              <p className="text-xs text-destructive">{errors.bank_iban}</p>
+              <p className="text-xs text-destructive">{errors.bank_iban.message}</p>
             )}
           </div>
 
           <div>
             <Label>SWIFT / BIC (optional)</Label>
-            <Input
-              onChange={event =>
-                setForm(f => ({
-                  ...f,
-                  bank_swift: event.target.value.toUpperCase(),
-                }))}
-              value={form.bank_swift}
+            <Controller
+              name="bank_swift"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  onChange={event => field.onChange(event.target.value.toUpperCase())}
+                  ref={field.ref}
+                  value={field.value}
+                />
+              )}
             />
             {errors.bank_swift && (
-              <p className="text-xs text-destructive">{errors.bank_swift}</p>
+              <p className="text-xs text-destructive">{errors.bank_swift.message}</p>
             )}
           </div>
         </div>
@@ -276,7 +266,7 @@ function BankDetailsModal({
             Cancel
           </Button>
 
-          <Button onClick={handleSave} disabled={updateBankDetails.isPending}>
+          <Button onClick={handleSubmit(handleSave)} disabled={updateBankDetails.isPending}>
             {updateBankDetails.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}

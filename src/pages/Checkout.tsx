@@ -1,4 +1,6 @@
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -9,7 +11,9 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -37,6 +41,22 @@ interface AppliedDiscount {
   source: 'platform' | 'seller';
 }
 
+const shippingSchema = z.object({
+  address: z.string().trim().min(1, 'Address is required.'),
+  city: z.string().trim().min(1, 'City is required.'),
+  firstName: z.string().trim().min(1, 'First name is required.'),
+  lastName: z.string().trim().min(1, 'Last name is required.'),
+  phone: z.string().trim().min(1, 'Phone is required.'),
+  postal: z.string().trim().min(1, 'Postal code is required.'),
+});
+
+const discountSchema = z.object({
+  code: z.string().trim().min(1, 'Discount code is required.'),
+});
+
+type ShippingFormValues = z.infer<typeof shippingSchema>;
+type DiscountFormValues = z.infer<typeof discountSchema>;
+
 function Checkout() {
   const { clearCart, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
@@ -46,18 +66,27 @@ function Checkout() {
   const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
   const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [discountCode, setDiscountCode] = useState('');
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
-  const [shipping, setShipping] = useState({
-    address: '',
-    city: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    postal: '',
+  const shippingForm = useForm<ShippingFormValues>({
+    defaultValues: {
+      address: '',
+      city: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      postal: '',
+    },
+    mode: 'all',
+    resolver: zodResolver(shippingSchema),
   });
+  const discountForm = useForm<DiscountFormValues>({
+    defaultValues: { code: '' },
+    mode: 'all',
+    resolver: zodResolver(discountSchema),
+  });
+  const discountCode = discountForm.watch('code');
 
   useEffect(() => {
     if (items.length > 0) {
@@ -91,11 +120,8 @@ function Checkout() {
   const taxAmount = Math.round(taxableAmount * taxRate) / 100;
   const finalPrice = taxableAmount + taxAmount + commissionTotal;
 
-  const handleApplyDiscount = async () => {
-    const code = discountCode.trim().toUpperCase();
-    if (!code)
-      return;
-
+  const handleApplyDiscount: SubmitHandler<DiscountFormValues> = async (values) => {
+    const code = values.code.trim().toUpperCase();
     setApplyingCode(true);
 
     const listingIds = items.map(index => index.listing.id);
@@ -111,7 +137,7 @@ function Checkout() {
           discountValue: data.discountValue,
           source: 'platform',
         });
-        setDiscountCode('');
+        discountForm.reset();
         toast({
           description: `Code "${data.code}" has been applied.`,
           title: 'Discount applied!',
@@ -131,7 +157,7 @@ function Checkout() {
         discountValue: data.discountValue,
         source: 'seller',
       });
-      setDiscountCode('');
+      discountForm.reset();
       toast({
         description: `"${data.code}" applied to eligible items.`,
         title: 'Coupon applied!',
@@ -153,31 +179,9 @@ function Checkout() {
     setAppliedDiscount(null);
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async (shipping) => {
     if (!user) {
       navigate('/auth');
-      return;
-    }
-
-    // Basic shipping validation
-    const required = [
-      'firstName',
-      'lastName',
-      'address',
-      'city',
-      'postal',
-      'phone',
-    ] as const;
-    for (const k of required) {
-      if (shipping[k].trim()) {
-        continue;
-      }
-
-      toast({
-        description: 'Please fill in all shipping information.',
-        title: 'Missing details',
-        variant: 'destructive',
-      });
       return;
     }
 
@@ -338,23 +342,25 @@ function Checkout() {
               >
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input
-                    id="firstName"
-                    onChange={event =>
-                      setShipping({ ...shipping, firstName: event.target.value })}
-                    value={shipping.firstName}
-                    placeholder="Jane"
+                  <Controller
+                    name="firstName"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="firstName" placeholder="Jane" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.firstName && <p className="text-sm text-destructive">{shippingForm.formState.errors.firstName.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input
-                    id="lastName"
-                    onChange={event =>
-                      setShipping({ ...shipping, lastName: event.target.value })}
-                    value={shipping.lastName}
-                    placeholder="Doe"
+                  <Controller
+                    name="lastName"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="lastName" placeholder="Doe" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.lastName && <p className="text-sm text-destructive">{shippingForm.formState.errors.lastName.message}</p>}
                 </div>
                 <div className="
                   space-y-2
@@ -362,33 +368,36 @@ function Checkout() {
                 "
                 >
                   <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    onChange={event =>
-                      setShipping({ ...shipping, address: event.target.value })}
-                    value={shipping.address}
-                    placeholder="123 Main St"
+                  <Controller
+                    name="address"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="address" placeholder="123 Main St" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.address && <p className="text-sm text-destructive">{shippingForm.formState.errors.address.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    onChange={event =>
-                      setShipping({ ...shipping, city: event.target.value })}
-                    value={shipping.city}
-                    placeholder="Cape Town"
+                  <Controller
+                    name="city"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="city" placeholder="Cape Town" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.city && <p className="text-sm text-destructive">{shippingForm.formState.errors.city.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal">Postal code</Label>
-                  <Input
-                    id="postal"
-                    onChange={event =>
-                      setShipping({ ...shipping, postal: event.target.value })}
-                    value={shipping.postal}
-                    placeholder="8001"
+                  <Controller
+                    name="postal"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="postal" placeholder="8001" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.postal && <p className="text-sm text-destructive">{shippingForm.formState.errors.postal.message}</p>}
                 </div>
                 <div className="
                   space-y-2
@@ -396,13 +405,14 @@ function Checkout() {
                 "
                 >
                   <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    onChange={event =>
-                      setShipping({ ...shipping, phone: event.target.value })}
-                    value={shipping.phone}
-                    placeholder="+27 12 345 6789"
+                  <Controller
+                    name="phone"
+                    control={shippingForm.control}
+                    render={({ field }) => (
+                      <Input id="phone" placeholder="+27 12 345 6789" {...field} />
+                    )}
                   />
+                  {shippingForm.formState.errors.phone && <p className="text-sm text-destructive">{shippingForm.formState.errors.phone.message}</p>}
                 </div>
               </div>
             </div>
@@ -514,20 +524,29 @@ function Checkout() {
                       </div>
                     )
                   : (
-                      <div className="flex gap-2">
-                        <Input
-                          onChange={event =>
-                            setDiscountCode(event.target.value.toUpperCase())}
-                          onKeyDown={event =>
-                            event.key === 'Enter' && handleApplyDiscount()}
-                          value={discountCode}
-                          placeholder="Discount code"
-                          className="flex-1 uppercase"
+                      <form
+                        onSubmit={discountForm.handleSubmit(handleApplyDiscount)}
+                        className="flex gap-2"
+                      >
+                        <Controller
+                          name="code"
+                          control={discountForm.control}
+                          render={({ field }) => (
+                            <Input
+                              name={field.name}
+                              onBlur={field.onBlur}
+                              onChange={event => field.onChange(event.target.value.toUpperCase())}
+                              ref={field.ref}
+                              value={field.value}
+                              placeholder="Discount code"
+                              className="flex-1 uppercase"
+                            />
+                          )}
                         />
                         <Button
-                          onClick={handleApplyDiscount}
                           disabled={applyingCode || !discountCode.trim()}
                           size="default"
+                          type="submit"
                           variant="outline"
                         >
                           {applyingCode
@@ -538,7 +557,7 @@ function Checkout() {
                                 'Apply'
                               )}
                         </Button>
-                      </div>
+                      </form>
                     )}
               </div>
 
@@ -605,7 +624,13 @@ function Checkout() {
                 </span>
               </div>
               <Button
-                onClick={handlePlaceOrder}
+                onClick={shippingForm.handleSubmit(handlePlaceOrder, () => {
+                  toast({
+                    description: 'Please fill in all shipping information.',
+                    title: 'Missing details',
+                    variant: 'destructive',
+                  });
+                })}
                 disabled={placing}
                 size="lg"
                 className="w-full"

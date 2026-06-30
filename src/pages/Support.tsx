@@ -1,4 +1,6 @@
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import type { SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -10,6 +12,7 @@ import {
   Send,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -44,10 +47,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 import {
-  useCreateSupportTicketMutation,
-  useSendSupportMessageMutation,
   getSupportMessagesOptions,
   getSupportTicketsOptions,
+  useCreateSupportTicketMutation,
+  useSendSupportMessageMutation,
 } from '@/hooks/useSupport';
 
 const ticketSchema = z.object({
@@ -55,6 +58,13 @@ const ticketSchema = z.object({
   message: z.string().trim().min(10).max(2000),
   subject: z.string().trim().min(3).max(150),
 });
+
+const replySchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+});
+
+type TicketFormValues = z.infer<typeof ticketSchema>;
+type ReplyFormValues = z.infer<typeof replySchema>;
 
 const CATEGORIES = [
   { label: 'General question', value: 'general' },
@@ -102,13 +112,23 @@ function Support() {
     searchParameters.get('ticket') ? 'chat' : 'tickets',
   );
 
-  const [newMessage, setNewMessage] = useState('');
-
   const messagesEndReference = useRef<HTMLDivElement>(null);
 
-  const [subject, setSubject] = useState('');
-  const [category, setCategory] = useState('general');
-  const [message, setMessage] = useState('');
+  const ticketForm = useForm<TicketFormValues>({
+    defaultValues: {
+      category: 'general',
+      message: '',
+      subject: '',
+    },
+    mode: 'all',
+    resolver: zodResolver(ticketSchema),
+  });
+  const replyForm = useForm<ReplyFormValues>({
+    defaultValues: { content: '' },
+    mode: 'all',
+    resolver: zodResolver(replySchema),
+  });
+  const replyContent = replyForm.watch('content');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -137,29 +157,11 @@ function Support() {
   // CREATE ticket
   const createTicket = useCreateSupportTicketMutation();
 
-  const handleCreateTicket = () => {
-    const parsed = ticketSchema.safeParse({
-      category,
-      message,
-      subject,
-    });
-
-    if (!parsed.success) {
-      const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-
-      toast({
-        description: first || 'Check input',
-        title: 'Validation error',
-        variant: 'destructive',
-      });
-
-      return;
-    }
-
+  const handleCreateTicket: SubmitHandler<TicketFormValues> = (values) => {
     createTicket.mutate(
       {
-        content: parsed.data.message, // backend wants content only
-        subject: parsed.data.subject,
+        content: values.message, // backend wants content only
+        subject: values.subject,
       },
       {
         onError: (error: Error) => {
@@ -176,9 +178,11 @@ function Support() {
             title: 'Ticket created',
           });
 
-          setSubject('');
-          setCategory('general');
-          setMessage('');
+          ticketForm.reset({
+            category: 'general',
+            message: '',
+            subject: '',
+          });
 
           setActiveTicket(response.data.id);
           setTab('chat');
@@ -198,18 +202,18 @@ function Support() {
   // SEND reply
   const sendReply = useSendSupportMessageMutation();
 
-  const handleSendReply = () => {
-    if (!newMessage.trim())
+  const handleSendReply: SubmitHandler<ReplyFormValues> = (values) => {
+    if (!activeTicket)
       return;
 
     sendReply.mutate(
       {
         ticketId: activeTicket!,
-        content: newMessage.trim(),
+        content: values.content.trim(),
       },
       {
         onSuccess: () => {
-          setNewMessage('');
+          replyForm.reset();
 
           queryClient.invalidateQueries({
             queryKey: ['support-messages', activeTicket],
@@ -357,47 +361,58 @@ function Support() {
 
                     <CardContent>
                       <form
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          handleCreateTicket();
-                        }}
+                        onSubmit={ticketForm.handleSubmit(handleCreateTicket)}
                         className="space-y-4"
                       >
                         <div className="space-y-2">
                           <label>Subject</label>
 
-                          <Input
-                            onChange={event => setSubject(event.target.value)}
-                            value={subject}
+                          <Controller
+                            name="subject"
+                            control={ticketForm.control}
+                            render={({ field }) => <Input {...field} />}
                           />
+                          {ticketForm.formState.errors.subject && <p className="text-sm text-destructive">{ticketForm.formState.errors.subject.message}</p>}
                         </div>
 
                         <div className="space-y-2">
                           <label>Category</label>
 
-                          <Select onValueChange={setCategory} value={category}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                          <Controller
+                            name="category"
+                            control={ticketForm.control}
+                            render={({ field }) => (
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
 
-                            <SelectContent>
-                              {CATEGORIES.map(c => (
-                                <SelectItem key={c.value} value={c.value}>
-                                  {c.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                                <SelectContent>
+                                  {CATEGORIES.map(c => (
+                                    <SelectItem key={c.value} value={c.value}>
+                                      {c.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
                         </div>
 
                         <div className="space-y-2">
                           <label>Message</label>
 
-                          <Textarea
-                            onChange={event => setMessage(event.target.value)}
-                            value={message}
-                            rows={6}
+                          <Controller
+                            name="message"
+                            control={ticketForm.control}
+                            render={({ field }) => (
+                              <Textarea
+                                rows={6}
+                                {...field}
+                              />
+                            )}
                           />
+                          {ticketForm.formState.errors.message && <p className="text-sm text-destructive">{ticketForm.formState.errors.message.message}</p>}
                         </div>
 
                         <Button disabled={createTicket.isPending} type="submit">
@@ -528,21 +543,23 @@ function Support() {
 
                       <div className="border-t border-border p-3">
                         <form
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            handleSendReply();
-                          }}
+                          onSubmit={replyForm.handleSubmit(handleSendReply)}
                           className="flex gap-2"
                         >
-                          <Input
-                            onChange={event => setNewMessage(event.target.value)}
-                            value={newMessage}
-                            placeholder="Type your reply..."
-                            className="flex-1"
+                          <Controller
+                            name="content"
+                            control={replyForm.control}
+                            render={({ field }) => (
+                              <Input
+                                placeholder="Type your reply..."
+                                className="flex-1"
+                                {...field}
+                              />
+                            )}
                           />
 
                           <Button
-                            disabled={!newMessage.trim() || sendReply.isPending}
+                            disabled={!replyContent.trim() || sendReply.isPending}
                             size="icon"
                             type="submit"
                           >

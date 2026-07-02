@@ -19,67 +19,32 @@ import { trackEvent } from '@/lib/analytics';
 import { sendRegisterOtp } from '@/services/auth.service';
 
 const authBaseSchema = z.object({
-  dob: z.string(),
+  dob: z
+    .string()
+    .refine((value) => {
+      const dobDate = new Date(value);
+      return !Number.isNaN(dobDate.getTime()) && dobDate < new Date();
+    }, 'Please enter a valid date.')
+    .refine((value) => {
+      const dobDate = new Date(value);
+      const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      return age >= 13;
+    }, 'You must be at least 13 years old.'),
   email: z.string().trim().email('Please enter a valid email address.'),
   marketingConsent: z.boolean(),
-  name: z.string(),
+  name: z.string().trim().min(1, 'Full name is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
-  phone: z.string(),
-  termsAccepted: z.boolean(),
+  phone: z.string().trim().regex(/^\+?[\d\s\-().]{7,20}$/, 'Please enter a valid phone number.'),
+  termsAccepted: z.boolean().refine((value) => value === true, 'Please accept the Terms & Conditions to continue.'),
 });
 
-const authSchema = authBaseSchema
-  .extend({
-    otp: z
-      .string()
-      .trim()
-      .length(6, 'OTP must be exactly 6 characters.')
-      .regex(/^[A-Z0-9]{6}$/, 'OTP can only contain numbers and uppercase letters.'),
-  })
-  .superRefine((data, context) => {
-    if (!data.name.trim()) {
-      context.addIssue({
-        path: ['name'],
-        code: z.ZodIssueCode.custom,
-        message: 'Full name is required.',
-      });
-    }
-
-    if (!/^\+?[\d\s\-().]{7,20}$/.test(data.phone.trim())) {
-      context.addIssue({
-        path: ['phone'],
-        code: z.ZodIssueCode.custom,
-        message: 'Please enter a valid phone number.',
-      });
-    }
-
-    const dobDate = new Date(data.dob);
-    if (Number.isNaN(dobDate.getTime()) || dobDate >= new Date()) {
-      context.addIssue({
-        path: ['dob'],
-        code: z.ZodIssueCode.custom,
-        message: 'Please enter a valid date.',
-      });
-    }
-    else {
-      const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-      if (age < 13) {
-        context.addIssue({
-          path: ['dob'],
-          code: z.ZodIssueCode.custom,
-          message: 'You must be at least 13 years old.',
-        });
-      }
-    }
-
-    if (!data.termsAccepted) {
-      context.addIssue({
-        path: ['termsAccepted'],
-        code: z.ZodIssueCode.custom,
-        message: 'Please accept the Terms & Conditions to continue.',
-      });
-    }
-  });
+const authSchema = authBaseSchema.extend({
+  otp: z
+    .string()
+    .trim()
+    .length(6, 'OTP must be exactly 6 characters.')
+    .regex(/^[A-Z0-9]{6}$/, 'OTP can only contain numbers and uppercase letters.'),
+});
 
 const loginSchema = authBaseSchema.pick({
   email: true,

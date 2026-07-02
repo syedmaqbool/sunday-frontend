@@ -25,9 +25,11 @@ import AdminPayouts from './pages/admin/Payouts';
 import Reports from './pages/admin/Reports';
 import SellerCoupons from './pages/admin/SellerCoupons';
 import SiteSettings from './pages/admin/SiteSettings';
+import StaffUsers from './pages/admin/StaffUsers';
 import AdminSupport from './pages/admin/Support';
 import TaxSettings from './pages/admin/TaxSettings';
 import UserManagement from './pages/admin/UserManagement';
+import RolesPermissions from './pages/admin/RolesPermissions';
 import AdminDashboard from './pages/AdminDashboard';
 import Auth from './pages/Auth';
 import Boost from './pages/Boost';
@@ -104,6 +106,8 @@ export default function App() {
                   <Route element={<CommissionManagement />} path="commission" />
                   <Route element={<SiteSettings />} path="site-settings" />
                   <Route element={<SellerCoupons />} path="seller-coupons" />
+                  <Route element={<StaffUsers />} path="access-control/staff-users" />
+                  <Route element={<RolesPermissions />} path="access-control/roles" />
                 </Route>
                 <Route element={<Unsubscribe />} path="/unsubscribe" />
                 <Route element={<NotFound />} path="*" />

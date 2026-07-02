@@ -7,6 +7,7 @@ export interface AdminUserImage {
 }
 
 export type AdminUserStatus = 'ACTIVE' | 'INACTIVE';
+export type AdminUserRoleType = 'STAFF' | 'USER';
 
 export interface AdminUser {
   id: string;
@@ -16,10 +17,23 @@ export interface AdminUser {
   firstName: string;
   image: AdminUserImage | null;
   lastName: string;
+  marketingEmailConsent: boolean;
+  marketingEmailConsentUpdatedAt?: string | null;
   phone: string;
   roleName: string | null;
   status: AdminUserStatus;
+  termsAcceptedAt?: string | null;
+  termsVersion?: string | null;
   username: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateAdminUserInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  phone: string;
+  roleId: string;
 }

@@ -1,9 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminUser } from '@/lib/adminAccess';
 
 export function useAdminCheck() {
   const { user } = useAuth();
 
-  const isAdmin = user?.roleName === 'ADMIN';
+  const isAdmin = isAdminUser(user);
 
   return { data: isAdmin };
 }

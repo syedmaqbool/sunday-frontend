@@ -8,12 +8,25 @@ import {
   Package,
   Users,
 } from 'lucide-react';
+import AccessDenied from '@/components/admin/AccessDenied';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAccessControl } from '@/hooks/useAccessControl';
 import { cn } from '@/lib/utilities';
 import { getAdminAnalyticsQueryOptions } from '@/queries/adminAnalytics.query';
 
 export default function Overview() {
-  const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
+  const { can, isAdmin } = useAccessControl();
+  const canReadAnalytics = isAdmin || can('ANALYTICS_READ');
+  const { data, isLoading } = useQuery({
+    ...getAdminAnalyticsQueryOptions(),
+    enabled: canReadAnalytics,
+  });
+
+  if (!canReadAnalytics) {
+    return (
+      <AccessDenied description="Analytics access is required to view the dashboard overview." />
+    );
+  }
 
   if (isLoading) {
     return (

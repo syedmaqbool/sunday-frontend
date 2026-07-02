@@ -5,6 +5,7 @@ export interface AuthUser {
   [key: string]: unknown;
   email: string;
   permissions: Array<{ id: string; name: string }>;
+  roleName?: string | null;
 }
 
 export interface AuthProfile {

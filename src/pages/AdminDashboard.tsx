@@ -1,113 +1,39 @@
 import {
-  AlertTriangle,
   ArrowLeft,
-  BarChart3,
-  Filter,
-  Flag,
-  FolderTree,
-  Headphones,
-  Image as ImageIcon,
-  LayoutDashboard,
-  LifeBuoy,
   Loader2,
-  Mail,
   Menu,
-  MessageSquareWarning,
-  Package,
-  Percent,
-  Percent as PercentIcon,
-  Rocket,
   ShieldCheck,
-  Tag,
-  Users,
-  Wallet,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import AccessDenied from '@/components/admin/AccessDenied';
 import NotificationBell from '@/components/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import {
+  adminNavItems,
+  canAccessNavItem,
+  findAdminNavItem,
+  getFirstAccessibleAdminPath,
+  getVisibleAdminSections,
+  isNavItemActive,
+} from '@/lib/adminNavigation';
 import { cn } from '@/lib/utilities';
-
-interface NavItem {
-  path: string;
-  icon: typeof LayoutDashboard;
-  label: string;
-}
-
-interface NavSection {
-  items: NavItem[];
-  label: string;
-}
-
-const navSections: NavSection[] = [
-  {
-    items: [
-      { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-      { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-      { path: '/admin/site-settings', icon: ImageIcon, label: 'Site Settings' },
-    ],
-    label: 'Overview',
-  },
-  {
-    items: [
-      { path: '/admin/listings', icon: ShieldCheck, label: 'Listings' },
-      { path: '/admin/orders', icon: Package, label: 'Orders' },
-      { path: '/admin/categories', icon: FolderTree, label: 'Categories' },
-      { path: '/admin/brands', icon: Tag, label: 'Brands' },
-      { path: '/admin/discounts', icon: Tag, label: 'Discounts' },
-      { path: '/admin/seller-coupons', icon: Tag, label: 'Seller Coupons' },
-      { path: '/admin/tax', icon: Percent, label: 'Tax Settings' },
-      { path: '/admin/boosts', icon: Rocket, label: 'Boosts' },
-      { path: '/admin/payouts', icon: Wallet, label: 'Payouts' },
-      { path: '/admin/commission', icon: PercentIcon, label: 'Commission' },
-    ],
-    label: 'Marketplace',
-  },
-  {
-    items: [
-      { path: '/admin/complaints', icon: AlertTriangle, label: 'Complaints' },
-      {
-        path: '/admin/messages',
-        icon: MessageSquareWarning,
-        label: 'Messages',
-      },
-      { path: '/admin/flag-keywords', icon: Filter, label: 'Keywords' },
-      { path: '/admin/reports', icon: Flag, label: 'Reports' },
-    ],
-    label: 'Trust & Safety',
-  },
-  {
-    items: [
-      { path: '/admin/support', icon: Headphones, label: 'Support' },
-      { path: '/admin/help', icon: LifeBuoy, label: 'Help Center' },
-      { path: '/admin/users', icon: Users, label: 'Users' },
-      { path: '/admin/email-templates', icon: Mail, label: 'Email Templates' },
-    ],
-    label: 'Customer',
-  },
-];
-
-const allItems: NavItem[] = navSections.flatMap(s => s.items);
-
-function isNavItemActive(path: string, pathname: string) {
-  return path === '/admin'
-    ? pathname === '/admin'
-    : pathname.startsWith(path);
-}
 
 function AdminNavList({
   onNavigate,
   pathname,
+  sections,
 }: {
   onNavigate?: () => void;
   pathname: string;
+  sections: ReturnType<typeof getVisibleAdminSections>;
 }) {
   return (
     <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-      {navSections.map(section => (
+      {sections.map(section => (
         <div key={section.label}>
           <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
             {section.label}
@@ -157,25 +83,56 @@ function AdminNavList({
 
 export default function AdminDashboard() {
   const { loading: authLoading, user } = useAuth();
-  const { data: isAdmin } = useAdminCheck();
+  const { canAccessAdminPortal, isAdmin } = useAccessControl();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const visibleSections = useMemo(
+    () => getVisibleAdminSections(user),
+    [user],
+  );
+  const currentItem = useMemo(
+    () => findAdminNavItem(location.pathname),
+    [location.pathname],
+  );
+  const currentRouteAllowed = useMemo(
+    () => (currentItem ? canAccessNavItem(currentItem, user) : false),
+    [currentItem, user],
+  );
+  const firstAccessiblePath = useMemo(
+    () => getFirstAccessibleAdminPath(user),
+    [user],
+  );
+
   useEffect(() => {
     if (!authLoading && !user)
       navigate('/auth', { replace: true });
-    if (!authLoading && user && isAdmin === false)
-      navigate('/');
-  }, [authLoading, user, isAdmin, navigate]);
+    else if (!authLoading && user && !canAccessAdminPortal)
+      navigate('/', { replace: true });
+  }, [authLoading, canAccessAdminPortal, navigate, user]);
 
-  const currentItem = useMemo(
-    () =>
-      allItems.find(index =>
-        isNavItemActive(index.path, location.pathname),
-      ),
-    [location.pathname],
-  );
+  useEffect(() => {
+    if (
+      !authLoading
+      && user
+      && canAccessAdminPortal
+      && location.pathname === '/admin'
+      && !currentRouteAllowed
+      && firstAccessiblePath
+      && firstAccessiblePath !== '/admin'
+    ) {
+      navigate(firstAccessiblePath, { replace: true });
+    }
+  }, [
+    authLoading,
+    canAccessAdminPortal,
+    currentRouteAllowed,
+    firstAccessiblePath,
+    location.pathname,
+    navigate,
+    user,
+  ]);
 
   if (authLoading) {
     return (
@@ -185,7 +142,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isAdmin)
+  if (!canAccessAdminPortal)
     return null;
 
   return (
@@ -209,7 +166,7 @@ export default function AdminDashboard() {
             </span>
           </div>
         </div>
-        <AdminNavList pathname={location.pathname} />
+        <AdminNavList pathname={location.pathname} sections={visibleSections} />
         <div className="border-t border-border p-3">
           <Button
             asChild
@@ -261,6 +218,7 @@ export default function AdminDashboard() {
             <AdminNavList
               onNavigate={() => setMobileOpen(false)}
               pathname={location.pathname}
+              sections={visibleSections}
             />
             <div className="border-t border-border p-3">
               <Button
@@ -317,7 +275,7 @@ export default function AdminDashboard() {
               sm:text-lg
             "
             >
-              {currentItem?.label ?? 'Dashboard'}
+              {currentItem?.label ?? 'Admin'}
             </h1>
           </div>
 
@@ -332,7 +290,13 @@ export default function AdminDashboard() {
         "
         >
           <div className="mx-auto w-full max-w-7xl">
-            <Outlet />
+            {currentItem && currentRouteAllowed
+              ? (
+                  <Outlet />
+                )
+              : (
+                  <AccessDenied />
+                )}
           </div>
         </main>
       </div>

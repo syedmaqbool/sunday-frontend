@@ -1,5 +1,9 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listAdminUsers, updateUserRole } from '@/services/user.service';
+import type {
+  AdminUserRoleType,
+  CreateAdminUserInput,
+} from '@/types/adminUser.type';
+import { createAdminUser, listAdminUsers, updateUserRole } from '@/services/user.service';
 
 export const adminUsersQueryKey = {
   all: () => ['admin-users'] as const,
@@ -9,6 +13,7 @@ export const adminUsersQueryKey = {
 
 export interface AdminUsersParams {
   page?: number;
+  roleType?: AdminUserRoleType;
   search?: string;
   size?: number;
   status?: 'ACTIVE' | 'INACTIVE';
@@ -17,10 +22,20 @@ export interface AdminUsersParams {
 export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
   return queryOptions({
     queryFn: async () => {
-      const response = await listAdminUsers(parameters);
-      return response.data;
+      return listAdminUsers(parameters);
     },
     queryKey: adminUsersQueryKey.list(parameters),
+  });
+}
+
+export function useCreateAdminUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAdminUserInput) => createAdminUser(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
+    },
   });
 }
 

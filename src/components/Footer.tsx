@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
-import sundayLogoAsset from '@/assets/sndy-logo.png.asset.json';
 
-const sundayLogo = sundayLogoAsset.url;
+const sundayLogo = 'https://staging.sndymarket.com/sunday-logo.png';
 
 export default function Footer() {
   return (

@@ -33,6 +33,7 @@ import Auth from './pages/Auth';
 import Boost from './pages/Boost';
 import Checkout from './pages/Checkout';
 import CreateListing from './pages/CreateListing';
+import ForgotPassword from './pages/ForgotPassword';
 import HelpCenter from './pages/HelpCenter';
 import Index from './pages/Index';
 import ListingDetail from './pages/ListingDetail';
@@ -80,6 +81,7 @@ export default function App() {
                 <Route element={<SellerProfile />} path="/seller/:id" />
                 <Route element={<UserProfile />} path="/profile" />
                 <Route element={<Auth />} path="/auth" />
+                <Route element={<ForgotPassword />} path="/forgot-password" />
                 <Route element={<AdminDashboard />} path="/admin">
                   <Route element={<Overview />} index />
                   <Route element={<ListingModeration />} path="listings" />

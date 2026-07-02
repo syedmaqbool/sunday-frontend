@@ -26,9 +26,16 @@ export interface RegisterData {
   email: string;
   fullName: string;
   marketingEmailConsent?: boolean;
+  otp: string;
   password: string;
   phone: string;
   termsAccepted: true;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  otp: string;
+  password: string;
 }
 
 export interface AuthSessionData extends AuthSession {

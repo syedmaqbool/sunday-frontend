@@ -52,6 +52,10 @@ import Support from './pages/Support';
 import Terms from './pages/Terms';
 import Unsubscribe from './pages/Unsubscribe';
 import UserProfile from './pages/UserProfile';
+import Cookies from './pages/Cookies';
+import Privacy from './pages/Privacy';
+import CookieConsent from './components/CookieConsent';
+import OrderConfirmation from './pages/OrderConfirmation';
 
 export default function App() {
   return (
@@ -79,9 +83,12 @@ export default function App() {
                 <Route element={<ReturnsPolicy />} path="/returns" />
                 <Route element={<Support />} path="/support" />
                 <Route element={<Messages />} path="/messages" />
+                <Route path="/cookies" element={<Cookies />} />
                 <Route element={<SellerAnalytics />} path="/seller-analytics" />
                 <Route element={<SellerProfile />} path="/seller/:id" />
                 <Route element={<UserProfile />} path="/profile" />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
                 <Route element={<Auth />} path="/auth" />
                 <Route element={<ForgotPassword />} path="/forgot-password" />
                 <Route element={<AdminDashboard />} path="/admin">
@@ -112,6 +119,7 @@ export default function App() {
                 <Route element={<Unsubscribe />} path="/unsubscribe" />
                 <Route element={<NotFound />} path="*" />
               </Routes>
+              <CookieConsent />
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>

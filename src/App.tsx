@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AnalyticsTracker } from '@/components/AnalyticsTracker';
 import { Toaster as Sonner } from '@/components/ui/sonner';
@@ -7,55 +8,57 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { queryClient } from '@/queries/client';
-import AdminAnalytics from './pages/admin/Analytics';
-import BoostManagement from './pages/admin/BoostManagement';
-import BrandManagement from './pages/admin/BrandManagement';
-import CategoryManagement from './pages/admin/CategoryManagement';
-import CommissionManagement from './pages/admin/CommissionManagement';
-import AdminComplaints from './pages/admin/Complaints';
-import DiscountCodes from './pages/admin/DiscountCodes';
-import EmailTemplates from './pages/admin/EmailTemplates';
-import FlagKeywords from './pages/admin/FlagKeywords';
-import HelpManagement from './pages/admin/HelpManagement';
-import ListingModeration from './pages/admin/ListingModeration';
-import MessageModeration from './pages/admin/MessageModeration';
-import AdminOrders from './pages/admin/Orders';
-import Overview from './pages/admin/Overview';
-import AdminPayouts from './pages/admin/Payouts';
-import Reports from './pages/admin/Reports';
-import SellerCoupons from './pages/admin/SellerCoupons';
-import SiteSettings from './pages/admin/SiteSettings';
-import StaffUsers from './pages/admin/StaffUsers';
-import AdminSupport from './pages/admin/Support';
-import TaxSettings from './pages/admin/TaxSettings';
-import UserManagement from './pages/admin/UserManagement';
-import RolesPermissions from './pages/admin/RolesPermissions';
-import AdminDashboard from './pages/AdminDashboard';
-import Auth from './pages/Auth';
-import Boost from './pages/Boost';
-import Checkout from './pages/Checkout';
-import CreateListing from './pages/CreateListing';
-import ForgotPassword from './pages/ForgotPassword';
-import HelpCenter from './pages/HelpCenter';
-import Index from './pages/Index';
-import ListingDetail from './pages/ListingDetail';
-import Listings from './pages/Listings';
-import Messages from './pages/Messages';
-import MyListings from './pages/MyListings';
-import MyOffers from './pages/MyOffers';
-import NotFound from './pages/NotFound';
-import Preferences from './pages/Preferences';
-import ReturnsPolicy from './pages/ReturnsPolicy';
-import SellerAnalytics from './pages/SellerAnalytics';
-import SellerProfile from './pages/SellerProfile';
-import Support from './pages/Support';
-import Terms from './pages/Terms';
-import Unsubscribe from './pages/Unsubscribe';
-import UserProfile from './pages/UserProfile';
-import Cookies from './pages/Cookies';
-import Privacy from './pages/Privacy';
 import CookieConsent from './components/CookieConsent';
-import OrderConfirmation from './pages/OrderConfirmation';
+import LoadingSpinner from './components/LoadingSpinner';
+
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
+const BoostManagement = lazy(() => import('./pages/admin/BoostManagement'));
+const BrandManagement = lazy(() => import('./pages/admin/BrandManagement'));
+const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement'));
+const CommissionManagement = lazy(() => import('./pages/admin/CommissionManagement'));
+const AdminComplaints = lazy(() => import('./pages/admin/Complaints'));
+const DiscountCodes = lazy(() => import('./pages/admin/DiscountCodes'));
+const EmailTemplates = lazy(() => import('./pages/admin/EmailTemplates'));
+const FlagKeywords = lazy(() => import('./pages/admin/FlagKeywords'));
+const HelpManagement = lazy(() => import('./pages/admin/HelpManagement'));
+const ListingModeration = lazy(() => import('./pages/admin/ListingModeration'));
+const MessageModeration = lazy(() => import('./pages/admin/MessageModeration'));
+const AdminOrders = lazy(() => import('./pages/admin/Orders'));
+const Overview = lazy(() => import('./pages/admin/Overview'));
+const AdminPayouts = lazy(() => import('./pages/admin/Payouts'));
+const Reports = lazy(() => import('./pages/admin/Reports'));
+const RolesPermissions = lazy(() => import('./pages/admin/RolesPermissions'));
+const SellerCoupons = lazy(() => import('./pages/admin/SellerCoupons'));
+const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'));
+const StaffUsers = lazy(() => import('./pages/admin/StaffUsers'));
+const AdminSupport = lazy(() => import('./pages/admin/Support'));
+const TaxSettings = lazy(() => import('./pages/admin/TaxSettings'));
+const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Auth = lazy(() => import('./pages/Auth'));
+const Boost = lazy(() => import('./pages/Boost'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Cookies = lazy(() => import('./pages/Cookies'));
+const CreateListing = lazy(() => import('./pages/CreateListing'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const Index = lazy(() => import('./pages/Index'));
+const ListingDetail = lazy(() => import('./pages/ListingDetail'));
+const Listings = lazy(() => import('./pages/Listings'));
+const Messages = lazy(() => import('./pages/Messages'));
+const MyListings = lazy(() => import('./pages/MyListings'));
+const MyOffers = lazy(() => import('./pages/MyOffers'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const Preferences = lazy(() => import('./pages/Preferences'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
+const SellerAnalytics = lazy(() => import('./pages/SellerAnalytics'));
+const SellerProfile = lazy(() => import('./pages/SellerProfile'));
+const Support = lazy(() => import('./pages/Support'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe'));
+const UserProfile = lazy(() => import('./pages/UserProfile'));
 
 export default function App() {
   return (
@@ -68,56 +71,56 @@ export default function App() {
             <BrowserRouter>
               <AnalyticsTracker />
               <Routes>
-                <Route element={<Index />} path="/" />
-                <Route element={<Listings />} path="/listings" />
-                <Route element={<ListingDetail />} path="/listing/:id" />
-                <Route element={<CreateListing />} path="/create-listing" />
-                <Route element={<CreateListing />} path="/edit-listing/:id" />
-                <Route element={<MyListings />} path="/my-listings" />
-                <Route element={<Boost />} path="/boost" />
-                <Route element={<MyOffers />} path="/my-offers" />
-                <Route element={<Checkout />} path="/checkout" />
-                <Route element={<Preferences />} path="/preferences" />
-                <Route element={<HelpCenter />} path="/help" />
-                <Route element={<Terms />} path="/terms" />
-                <Route element={<ReturnsPolicy />} path="/returns" />
-                <Route element={<Support />} path="/support" />
-                <Route element={<Messages />} path="/messages" />
-                <Route path="/cookies" element={<Cookies />} />
-                <Route element={<SellerAnalytics />} path="/seller-analytics" />
-                <Route element={<SellerProfile />} path="/seller/:id" />
-                <Route element={<UserProfile />} path="/profile" />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
-                <Route element={<Auth />} path="/auth" />
-                <Route element={<ForgotPassword />} path="/forgot-password" />
-                <Route element={<AdminDashboard />} path="/admin">
-                  <Route element={<Overview />} index />
-                  <Route element={<ListingModeration />} path="listings" />
-                  <Route element={<MessageModeration />} path="messages" />
-                  <Route element={<UserManagement />} path="users" />
-                  <Route element={<CategoryManagement />} path="categories" />
-                  <Route element={<BrandManagement />} path="brands" />
-                  <Route element={<DiscountCodes />} path="discounts" />
-                  <Route element={<FlagKeywords />} path="flag-keywords" />
-                  <Route element={<HelpManagement />} path="help" />
-                  <Route element={<Reports />} path="reports" />
-                  <Route element={<AdminOrders />} path="orders" />
-                  <Route element={<AdminComplaints />} path="complaints" />
-                  <Route element={<TaxSettings />} path="tax" />
-                  <Route element={<EmailTemplates />} path="email-templates" />
-                  <Route element={<AdminSupport />} path="support" />
-                  <Route element={<BoostManagement />} path="boosts" />
-                  <Route element={<AdminAnalytics />} path="analytics" />
-                  <Route element={<AdminPayouts />} path="payouts" />
-                  <Route element={<CommissionManagement />} path="commission" />
-                  <Route element={<SiteSettings />} path="site-settings" />
-                  <Route element={<SellerCoupons />} path="seller-coupons" />
-                  <Route element={<StaffUsers />} path="access-control/staff-users" />
-                  <Route element={<RolesPermissions />} path="access-control/roles" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Index /></Suspense>} path="/" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Listings /></Suspense>} path="/listings" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ListingDetail /></Suspense>} path="/listing/:id" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/create-listing" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/edit-listing/:id" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><MyListings /></Suspense>} path="/my-listings" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Boost /></Suspense>} path="/boost" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><MyOffers /></Suspense>} path="/my-offers" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Checkout /></Suspense>} path="/checkout" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Preferences /></Suspense>} path="/preferences" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><HelpCenter /></Suspense>} path="/help" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Terms /></Suspense>} path="/terms" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ReturnsPolicy /></Suspense>} path="/returns" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Support /></Suspense>} path="/support" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Messages /></Suspense>} path="/messages" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Cookies /></Suspense>} path="/cookies" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><SellerAnalytics /></Suspense>} path="/seller-analytics" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><SellerProfile /></Suspense>} path="/seller/:id" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><UserProfile /></Suspense>} path="/profile" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Privacy /></Suspense>} path="/privacy" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><OrderConfirmation /></Suspense>} path="/order-confirmation/:id" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Auth /></Suspense>} path="/auth" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ForgotPassword /></Suspense>} path="/forgot-password" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><AdminDashboard /></Suspense>} path="/admin">
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><Overview /></Suspense>} index />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><ListingModeration /></Suspense>} path="listings" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><MessageModeration /></Suspense>} path="messages" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><UserManagement /></Suspense>} path="users" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><CategoryManagement /></Suspense>} path="categories" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><BrandManagement /></Suspense>} path="brands" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><DiscountCodes /></Suspense>} path="discounts" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><FlagKeywords /></Suspense>} path="flag-keywords" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><HelpManagement /></Suspense>} path="help" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><Reports /></Suspense>} path="reports" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminOrders /></Suspense>} path="orders" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminComplaints /></Suspense>} path="complaints" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><TaxSettings /></Suspense>} path="tax" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><EmailTemplates /></Suspense>} path="email-templates" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminSupport /></Suspense>} path="support" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><BoostManagement /></Suspense>} path="boosts" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminAnalytics /></Suspense>} path="analytics" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminPayouts /></Suspense>} path="payouts" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><CommissionManagement /></Suspense>} path="commission" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SiteSettings /></Suspense>} path="site-settings" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SellerCoupons /></Suspense>} path="seller-coupons" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><StaffUsers /></Suspense>} path="access-control/staff-users" />
+                  <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><RolesPermissions /></Suspense>} path="access-control/roles" />
                 </Route>
-                <Route element={<Unsubscribe />} path="/unsubscribe" />
-                <Route element={<NotFound />} path="*" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Unsubscribe /></Suspense>} path="/unsubscribe" />
+                <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><NotFound /></Suspense>} path="*" />
               </Routes>
               <CookieConsent />
             </BrowserRouter>

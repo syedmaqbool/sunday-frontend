@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
-  CheckCircle2,
   Loader2,
   ShoppingBag,
   Tag,
@@ -64,7 +63,6 @@ function Checkout() {
   const queryClient = useQueryClient();
   const { data: activeTax } = useQuery(getActiveTaxOptions());
   const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
-  const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
@@ -215,8 +213,8 @@ function Checkout() {
         value: order.total,
       });
 
-      setPlaced(true);
       clearCart();
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       queryClient.invalidateQueries({ queryKey: ['featured-listings'] });
       queryClient.invalidateQueries({ queryKey: ['trending-listings'] });
@@ -225,6 +223,7 @@ function Checkout() {
         description: 'Your order has been confirmed.',
         title: 'Order placed!',
       });
+      navigate(`/order-confirmation/${order.id}`, { replace: true });
     }
     catch (error: any) {
       toast({
@@ -237,31 +236,6 @@ function Checkout() {
       setPlacing(false);
     }
   };
-
-  if (placed) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
-          <CheckCircle2 className="mb-4 h-16 w-16 text-primary" />
-          <h1 className="font-heading text-3xl font-bold text-foreground">
-            Order Confirmed
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Thank you for your purchase. You'll receive a confirmation email
-            shortly.
-          </p>
-          <div className="mt-6 flex gap-3">
-            <Button onClick={() => navigate('/listings')} variant="outline">
-              Continue Shopping
-            </Button>
-            <Button onClick={() => navigate('/profile')}>View My Orders</Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (

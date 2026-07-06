@@ -4,6 +4,15 @@ import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCategoriesOptions } from '@/hooks/useCategories';
 
+const pillColors = [
+  'bg-[hsl(230,90%,94%)] text-[hsl(230,40%,35%)]',
+  'bg-[hsl(55,55%,90%)] text-[hsl(45,30%,30%)]',
+  'bg-[hsl(350,80%,94%)] text-[hsl(350,40%,35%)]',
+  'bg-[hsl(160,50%,90%)] text-[hsl(160,30%,28%)]',
+  'bg-[hsl(280,60%,93%)] text-[hsl(280,35%,35%)]',
+  'bg-[hsl(25,80%,92%)] text-[hsl(20,40%,32%)]',
+];
+
 export default function CategoryGrid() {
   const { data: categories = [], isLoading } = useQuery(getCategoriesOptions());
 
@@ -19,49 +28,23 @@ export default function CategoryGrid() {
 
   return (
     <section className="container py-16">
-      <h2 className="
-        font-heading text-3xl font-bold text-foreground
-        md:text-4xl
-      "
-      >
+      <h2 className="text-center font-heading text-2xl font-bold text-foreground md:text-3xl">
         Shop by Category
       </h2>
-      <div className="
-        mt-8 grid grid-cols-2 gap-3
-        sm:gap-4
-        md:grid-cols-3
-      "
-      >
-        {categories.map((cat, index) => (
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        {categories.map((cat, i) => (
           <motion.div
             key={cat.id}
             initial={{ opacity: 0, y: 12 }}
-            transition={{ delay: index * 0.1 }}
-            viewport={{ once: true }}
             whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.1 }}
           >
             <Link
               to={`/listings?parent=${cat.value}`}
-              className="
-                group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all
-                hover:border-primary hover:shadow-lg
-                sm:gap-3 sm:p-8
-              "
+              className={`inline-flex min-w-[120px] items-center justify-center rounded-full px-8 py-3 font-heading text-sm font-medium transition-transform hover:scale-105 ${pillColors[i % pillColors.length]}`}
             >
-              <span className="
-                text-3xl
-                sm:text-5xl
-              "
-              >
-                {cat.icon}
-              </span>
-              <span className="
-                font-heading text-sm font-semibold text-card-foreground
-                sm:text-xl
-              "
-              >
-                {cat.label}
-              </span>
+              {cat.label}
             </Link>
           </motion.div>
         ))}

@@ -17,15 +17,25 @@ export type OfferListingStatus
     | 'RESERVED'
     | 'SOLD';
 
+export interface OfferCoverImage {
+  id: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  url: string;
+}
+
 export interface Offer {
   id: string;
   buyerId: string;
   conversationId: string | null;
   listingId: string;
   sellerId: string;
+  message?: string;
   amount: number;
   buyerFullName: string;
   counterAmount: number | null;
+  coverImage: OfferCoverImage | null;
   listingPrice: number;
   listingStatus: OfferListingStatus;
   listingTitle: string;

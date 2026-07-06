@@ -157,8 +157,8 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
             "
             >
               <img
-                src="/placeholder.svg"
-                alt=""
+                 src={offer.coverImage?.url || '/placeholder.svg'}
+                alt={offer.listingTitle ?? 'Listing'}
                 className="h-16 w-16 rounded-md object-cover"
               />
               <div className="min-w-0 flex-1">

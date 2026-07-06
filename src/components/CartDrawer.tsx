@@ -21,7 +21,10 @@ function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice, updateQuantity }
     = useCart();
   const navigate = useNavigate();
-  const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
+  const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
+  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
+    tier => tier.active,
+  );
 
   const itemFees = useMemo(
     () =>

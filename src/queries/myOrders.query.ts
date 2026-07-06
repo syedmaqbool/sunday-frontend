@@ -4,13 +4,13 @@ import {
   listOrders,
   listSales,
   updateItemStatus,
-} from '@/services/myorders.service';
+} from '@/services/myOrders.service';
 
 export const myOrdersQueryKey = {
   all: () => ['my-orders'] as const,
   detail: (orderId: string) => [...myOrdersQueryKey.all(), 'detail', orderId] as const,
   list: () => [...myOrdersQueryKey.all(), 'list'] as const,
-  sales: () => ['my-sales', 'list'] as const,
+  sales: () => [...myOrdersQueryKey.all(), 'sales', 'list'] as const,
 };
 
 export function getMyOrdersOptions() {

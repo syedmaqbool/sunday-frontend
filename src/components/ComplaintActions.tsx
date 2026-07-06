@@ -28,6 +28,7 @@ import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
 } from '@/queries/complaint.query';
+import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {
   createComplaint,
   submitReturnProof,
@@ -109,7 +110,7 @@ export function ComplaintActions({
       toast.success('Return request submitted for admin review.');
       setRaiseOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
       toast.error(error.message ?? 'Failed to raise complaint');
@@ -150,7 +151,7 @@ export function ComplaintActions({
       toast.success('Return proof uploaded. Seller has been notified.');
       setReturnOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
       toast.error(error.message ?? 'Failed to upload return proof');

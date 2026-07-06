@@ -25,6 +25,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import {
   getTaxSettingsOptions,
+  taxSettingsQueryKey,
   useCreateTaxSettingMutation,
   useDeleteTaxSettingMutation,
   useUpdateTaxSettingMutation,
@@ -100,7 +101,7 @@ function TaxSettings() {
       }
 
       setOpen(false);
-      qc.invalidateQueries({ queryKey: ['tax-settings'] });
+      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
       toast({ description: error.message, title: 'Error', variant: 'destructive' });
@@ -115,7 +116,7 @@ function TaxSettings() {
     try {
       await deleteTax.mutateAsync(id);
       toast({ title: 'Tax deleted' });
-      qc.invalidateQueries({ queryKey: ['tax-settings'] });
+      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
       toast({ description: error.message, title: 'Error', variant: 'destructive' });
@@ -131,7 +132,7 @@ function TaxSettings() {
         resourceId: t.id,
         payload: { active: !t.active },
       });
-      qc.invalidateQueries({ queryKey: ['tax-settings'] });
+      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
       toast({ description: error.message, title: 'Error', variant: 'destructive' });

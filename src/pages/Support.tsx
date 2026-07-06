@@ -52,6 +52,7 @@ import {
   useCreateSupportTicketMutation,
   useSendSupportMessageMutation,
 } from '@/hooks/useSupport';
+import { supportQueryKey } from '@/queries/support.query';
 
 const ticketSchema = z.object({
   category: z.string().min(1),
@@ -140,13 +141,13 @@ function Support() {
   const { data: ticketsResponse, isLoading: ticketsLoading }
     = useQuery(getSupportTicketsOptions());
 
-  const tickets = ticketsResponse ?? [];
+  const tickets = ticketsResponse?.data ?? [];
 
   // GET messages
   const { data: messagesResponse, isLoading: messagesLoading }
     = useQuery(getSupportMessagesOptions(activeTicket || ''));
 
-  const messages = useMemo(() => messagesResponse ?? [], [messagesResponse]);
+  const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse]);
 
   useEffect(() => {
     messagesEndReference.current?.scrollIntoView({
@@ -192,7 +193,7 @@ function Support() {
           });
 
           queryClient.invalidateQueries({
-            queryKey: ['support-tickets'],
+            queryKey: supportQueryKey.tickets(),
           });
         },
       },
@@ -216,7 +217,7 @@ function Support() {
           replyForm.reset();
 
           queryClient.invalidateQueries({
-            queryKey: ['support-messages', activeTicket],
+            queryKey: supportQueryKey.messages(activeTicket),
           });
         },
       },

@@ -14,7 +14,8 @@ interface ReviewsListProps {
 export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const { data: reviews = [], isLoading } = useQuery(getUserReviewsOptions(userId, limit));
+  const { data: reviewsResponse, isLoading } = useQuery(getUserReviewsOptions(userId, limit));
+  const reviews = reviewsResponse?.data ?? [];
 
   if (isLoading)
     return null;

@@ -1,3 +1,4 @@
+import type { AdminUser } from '@/types/adminUser.type';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -29,24 +30,23 @@ import {
   useCreateAdminUserMutation,
   useUpdateUserRoleMutation,
 } from '@/queries/adminUsers.query';
-import type { AdminUser } from '@/types/adminUser.type';
 
 interface StaffFormState {
+  roleId: string;
   email: string;
   firstName: string;
   lastName: string;
   password: string;
   phone: string;
-  roleId: string;
 }
 
 const EMPTY_FORM: StaffFormState = {
+  roleId: '',
   email: '',
   firstName: '',
   lastName: '',
   password: '',
   phone: '',
-  roleId: '',
 };
 
 export default function StaffUsers() {
@@ -102,12 +102,12 @@ export default function StaffUsers() {
 
     try {
       await createUser.mutateAsync({
+        roleId: form.roleId,
         email: form.email.trim(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         password: form.password,
         phone: form.phone.trim(),
-        roleId: form.roleId,
       });
       toast.success('Staff user created.');
       resetCreateForm();
@@ -141,20 +141,6 @@ export default function StaffUsers() {
   return (
     <>
       <AdminUsersTable
-        title="Staff Users"
-        users={users}
-        total={total}
-        page={page}
-        pageSize={20}
-        search={search}
-        status={status}
-        isLoading={isLoading}
-        emptyMessage="No staff users match these filters."
-        headerActions={(
-          <Button onClick={() => setCreateOpen(true)}>
-            Create staff user
-          </Button>
-        )}
         onPageChange={setPage}
         onSearchChange={(value) => {
           setPage(1);
@@ -201,17 +187,17 @@ export default function StaffUsers() {
           },
           {
             key: 'actions',
-            label: 'Actions',
             className: 'text-right',
+            label: 'Actions',
             render: user => (
               <div className="flex justify-end">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => {
                     setReassignUser(user);
                     setNextRoleId(user.roleId ?? '');
                   }}
+                  size="sm"
+                  variant="outline"
                 >
                   Reassign role
                 </Button>
@@ -219,6 +205,20 @@ export default function StaffUsers() {
             ),
           },
         ]}
+        emptyMessage="No staff users match these filters."
+        headerActions={(
+          <Button onClick={() => setCreateOpen(true)}>
+            Create staff user
+          </Button>
+        )}
+        isLoading={isLoading}
+        page={page}
+        pageSize={20}
+        search={search}
+        status={status}
+        title="Staff Users"
+        total={total}
+        users={users}
       />
 
       <Dialog onOpenChange={open => !open && resetCreateForm()} open={createOpen}>
@@ -230,50 +230,62 @@ export default function StaffUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="
+            grid gap-4
+            sm:grid-cols-2
+          "
+          >
             <div className="space-y-2">
               <Label htmlFor="staff-first-name">First name</Label>
               <Input
                 id="staff-first-name"
-                value={form.firstName}
                 onChange={event => setForm(current => ({ ...current, firstName: event.target.value }))}
+                value={form.firstName}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-last-name">Last name</Label>
               <Input
                 id="staff-last-name"
-                value={form.lastName}
                 onChange={event => setForm(current => ({ ...current, lastName: event.target.value }))}
+                value={form.lastName}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="
+              space-y-2
+              sm:col-span-2
+            "
+            >
               <Label htmlFor="staff-email">Email</Label>
               <Input
                 id="staff-email"
-                type="email"
-                value={form.email}
                 onChange={event => setForm(current => ({ ...current, email: event.target.value }))}
+                value={form.email}
+                type="email"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-phone">Phone</Label>
               <Input
                 id="staff-phone"
-                value={form.phone}
                 onChange={event => setForm(current => ({ ...current, phone: event.target.value }))}
+                value={form.phone}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-password">Temporary password</Label>
               <Input
                 id="staff-password"
-                type="password"
-                value={form.password}
                 onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
+                value={form.password}
+                type="password"
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="
+              space-y-2
+              sm:col-span-2
+            "
+            >
               <Label>Role</Label>
               <Select
                 onValueChange={value => setForm(current => ({ ...current, roleId: value }))}
@@ -294,7 +306,7 @@ export default function StaffUsers() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={resetCreateForm}>
+            <Button onClick={resetCreateForm} variant="outline">
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={createUser.isPending}>
@@ -305,11 +317,13 @@ export default function StaffUsers() {
       </Dialog>
 
       <Dialog
-        onOpenChange={open => {
-          if (!open) {
-            setReassignUser(null);
-            setNextRoleId('');
+        onOpenChange={(open) => {
+          if (open) {
+            return;
           }
+
+          setReassignUser(null);
+          setNextRoleId('');
         }}
         open={!!reassignUser}
       >
@@ -353,11 +367,11 @@ export default function StaffUsers() {
 
           <DialogFooter>
             <Button
-              variant="outline"
               onClick={() => {
                 setReassignUser(null);
                 setNextRoleId('');
               }}
+              variant="outline"
             >
               Cancel
             </Button>

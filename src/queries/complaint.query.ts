@@ -7,12 +7,13 @@ import {
 import { getOrder } from '@/services/myOrders.service';
 
 export const complaintsQueryKey = {
-  againstMe: () => ['complaints-against-me'] as const,
+  againstMe: () => [...complaintsQueryKey.all(), 'against-me', 'list'] as const,
+  all: () => ['complaints'] as const,
   detail: (orderId: string, orderItemId: string) =>
-    ['complaint', orderId, orderItemId] as const,
-  myRefunds: () => ['my-refund-complaints'] as const,
+    [...complaintsQueryKey.all(), 'detail', orderId, orderItemId] as const,
+  myRefunds: () => [...complaintsQueryKey.all(), 'my-refunds', 'list'] as const,
   orderShipment: (orderId: string, orderItemId: string) =>
-    ['order-shipment', orderId, orderItemId] as const,
+    [...complaintsQueryKey.all(), 'order-shipment', 'detail', orderId, orderItemId] as const,
 };
 
 export interface OrderShipmentInfo {

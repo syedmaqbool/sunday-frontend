@@ -6,7 +6,9 @@ export type AdminListingFeedbackEntry = Awaited<
 >['data'][number];
 
 export const adminListingFeedbackQueryKey = {
-  list: (listingId?: string) => ['admin-listing-feedback', listingId] as const,
+  all: () => ['admin-listing-feedback'] as const,
+  list: (listingId?: string) =>
+    [...adminListingFeedbackQueryKey.all(), 'list', listingId ?? null] as const,
 };
 
 export function getAdminListingFeedbackOptions(listingId: string | undefined) {

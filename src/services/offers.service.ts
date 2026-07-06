@@ -31,7 +31,6 @@ export interface Offer {
   conversationId: string | null;
   listingId: string;
   sellerId: string;
-  message?: string;
   amount: number;
   buyerFullName: string;
   counterAmount: number | null;
@@ -39,6 +38,7 @@ export interface Offer {
   listingPrice: number;
   listingStatus: OfferListingStatus;
   listingTitle: string;
+  message?: string;
   reservedUntil: string | null;
   sellerFullName: string;
   status: OfferStatus;
@@ -46,7 +46,7 @@ export interface Offer {
   updatedAt: string;
 }
 
-export function createOffer(listingId: string, payload: { amount: number; message?: string }) {
+export function createOffer(listingId: string, payload: { amount: number; message?: string }): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/listings/${listingId}/offers`, { json: payload })
     .json<Response<Offer>>();
@@ -54,7 +54,7 @@ export function createOffer(listingId: string, payload: { amount: number; messag
 
 export function listMyOffers(
   parameters: { page?: number; size?: number } = {},
-) {
+): Promise<PaginatedResponse<Offer>> {
   return authInstance
     .get('/api/v1/me/offers', {
       searchParams: {
@@ -67,7 +67,7 @@ export function listMyOffers(
 
 export function listReceivedOffers(
   parameters: { page?: number; size?: number } = {},
-) {
+): Promise<PaginatedResponse<Offer>> {
   return authInstance
     .get('/api/v1/me/offers/received', {
       searchParams: {
@@ -78,7 +78,7 @@ export function listReceivedOffers(
     .json<PaginatedResponse<Offer>>();
 }
 
-export function acceptOffer(offerId: string) {
+export function acceptOffer(offerId: string): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/accept`)
     .json<Response<Offer>>();
@@ -87,25 +87,25 @@ export function acceptOffer(offerId: string) {
 export function counterOffer(
   offerId: string,
   payload: { counterAmount: number },
-) {
+): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/counter`, { json: payload })
     .json<Response<Offer>>();
 }
 
-export function rejectOffer(offerId: string) {
+export function rejectOffer(offerId: string): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/reject`)
     .json<Response<Offer>>();
 }
 
-export function withdrawOffer(offerId: string) {
+export function withdrawOffer(offerId: string): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/withdraw`)
     .json<Response<Offer>>();
 }
 
-export function acceptCounterOffer(offerId: string) {
+export function acceptCounterOffer(offerId: string): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/accept-counter`)
     .json<Response<Offer>>();
@@ -132,7 +132,7 @@ export interface Review {
 
 export function listMyReviews(
   parameters: { listingId?: string; orderId?: string; page?: number; size?: number } = {},
-) {
+): Promise<PaginatedResponse<Review>> {
   return authInstance
     .get('/api/v1/me/reviews', { searchParams: parameters })
     .json<PaginatedResponse<Review>>();
@@ -140,7 +140,7 @@ export function listMyReviews(
 
 export function listReviews(
   parameters: { listingId?: string; reviewedId?: string; page?: number; size?: number } = {},
-) {
+): Promise<PaginatedResponse<Review>> {
   return authInstance
     .get('/api/v1/reviews', { searchParams: parameters })
     .json<PaginatedResponse<Review>>();
@@ -153,7 +153,7 @@ export function createReview(payload: {
   imageUrls?: string[];
   rating: number;
   videoUrl?: string;
-}) {
+}): Promise<Response<Review>> {
   return authInstance
     .post('/api/v1/reviews', { json: payload })
     .json<Response<Review>>();
@@ -166,7 +166,7 @@ export function createOfferReview(payload: {
   comment?: string;
   rating: number;
   role: 'BUYER' | 'SELLER';
-}) {
+}): Promise<Response<Review>> {
   return authInstance
     .post('/api/v1/reviews/offer', { json: payload })
     .json<Response<Review>>();
@@ -186,7 +186,7 @@ export interface ReviewStat {
   totalReviews: number;
 }
 
-export function getReviewStats(reviewedIds: string[]) {
+export function getReviewStats(reviewedIds: string[]): Promise<Response<ReviewStat[]>> {
   return authInstance
     .get('/api/v1/reviews/stats', {
       searchParams: { reviewedIds: reviewedIds.join(',') },

@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
-const Cookies = () => {
+export default function Cookies() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -13,8 +13,16 @@ const Cookies = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container flex-1 py-12">
-        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> Back to home
+        <Link
+          to="/"
+          className="
+            mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground
+            hover:text-foreground
+          "
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {' '}
+          Back to home
         </Link>
         <article className="mx-auto max-w-3xl">
           <h1 className="mb-2 font-heading text-3xl font-bold">Cookie Policy</h1>
@@ -26,8 +34,10 @@ const Cookies = () => {
             <p className="text-sm leading-relaxed text-muted-foreground">
               This Cookie Policy explains how Sunday (“we,” “our,” or “us”) uses cookies and
               similar technologies when you visit our website and use our services (the
-              “Platform”). It should be read alongside our{" "}
-              <Link to="/privacy" className="underline">Privacy Policy</Link>.
+              “Platform”). It should be read alongside our
+              {' '}
+              <Link to="/privacy" className="underline">Privacy Policy</Link>
+              .
             </p>
           </section>
 
@@ -44,20 +54,28 @@ const Cookies = () => {
             <h2 className="mb-3 font-heading text-xl font-semibold">2. Types of Cookies We Use</h2>
             <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
               <li>
-                <strong>Strictly necessary cookies</strong> — required for the Platform to work,
+                <strong>Strictly necessary cookies</strong>
+                {' '}
+                — required for the Platform to work,
                 such as keeping you signed in, remembering your cart, and securing your session.
                 These cannot be turned off.
               </li>
               <li>
-                <strong>Functional cookies</strong> — remember choices you make (like language or
+                <strong>Functional cookies</strong>
+                {' '}
+                — remember choices you make (like language or
                 filters) to give you a better experience.
               </li>
               <li>
-                <strong>Analytics cookies</strong> — help us understand how visitors use the
+                <strong>Analytics cookies</strong>
+                {' '}
+                — help us understand how visitors use the
                 Platform so we can improve pages, features and performance.
               </li>
               <li>
-                <strong>Marketing cookies</strong> — may be used to show relevant offers and
+                <strong>Marketing cookies</strong>
+                {' '}
+                — may be used to show relevant offers and
                 measure the effectiveness of campaigns.
               </li>
             </ul>
@@ -93,8 +111,10 @@ const Cookies = () => {
           <section className="mb-8">
             <h2 className="mb-3 font-heading text-xl font-semibold">6. Contact Us</h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Questions about this Cookie Policy? Email us at{" "}
-              <a href="mailto:areebaghouriii@gmail.com" className="underline">areebaghouriii@gmail.com</a>.
+              Questions about this Cookie Policy? Email us at
+              {' '}
+              <a href="mailto:areebaghouriii@gmail.com" className="underline">areebaghouriii@gmail.com</a>
+              .
             </p>
           </section>
         </article>
@@ -102,6 +122,4 @@ const Cookies = () => {
       <Footer />
     </div>
   );
-};
-
-export default Cookies;
+}

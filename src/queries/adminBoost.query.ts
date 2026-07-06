@@ -1,5 +1,6 @@
 import type { BoostPackage } from '@/types/boost.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { boostsQueryKey } from '@/queries/boosts.query';
 import {
   getBoostPackages,
   listBoosts,
@@ -7,9 +8,10 @@ import {
 } from '@/services/adminBoost.service';
 
 export const adminBoostQueryKey = {
+  all: () => ['admin-boost'] as const,
   boosts: (parameters: AdminBoostsParams = {}) =>
-    ['admin-all-boosts', parameters] as const,
-  packages: () => ['admin-boost-packages'] as const,
+    [...adminBoostQueryKey.all(), 'boosts', 'list', parameters] as const,
+  packages: () => [...adminBoostQueryKey.all(), 'packages', 'list'] as const,
 };
 
 export interface AdminBoostsParams { page?: number; size?: number }
@@ -34,7 +36,7 @@ export function useUpdateBoostPackagesMutation() {
       queryClient.invalidateQueries({
         queryKey: adminBoostQueryKey.packages(),
       });
-      queryClient.invalidateQueries({ queryKey: ['boost-packages'] }); // seller-facing cache
+      queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
   });
 }

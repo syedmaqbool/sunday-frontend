@@ -47,16 +47,19 @@ export function canUser(
   user: AuthUser | null | undefined,
   requirement: PermissionRequirement,
 ) {
-  if (!user)
+  if (!user) {
     return false;
-  if (isAdminUser(user))
+  }
+  if (isAdminUser(user)) {
     return true;
-  if (!requirement)
+  }
+  if (!requirement) {
     return true;
-
-  return Array.isArray(requirement)
-    ? hasPermissions(user, requirement)
-    : hasPermission(user, requirement);
+  }
+  if (Array.isArray(requirement)) {
+    return hasPermissions(user, requirement);
+  }
+  return hasPermission(user, requirement);
 }
 
 export function canAccessAdminPortal(user: AuthUser | null | undefined) {

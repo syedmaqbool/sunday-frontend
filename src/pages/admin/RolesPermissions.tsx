@@ -1,10 +1,11 @@
+import type { AdminRole } from '@/types/adminRole.type';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -25,7 +26,6 @@ import {
   useUpdateAdminRoleMutation,
   useUpdateAdminRolePermissionsMutation,
 } from '@/queries/adminRole.query';
-import type { AdminRole } from '@/types/adminRole.type';
 
 type CrudAction = 'CREATE' | 'DELETE' | 'READ' | 'UPDATE';
 
@@ -133,7 +133,7 @@ export default function RolesPermissions() {
 
       return {
         ...current,
-        selectedPermissions: new Set(normalizePermissions(Array.from(next))),
+        selectedPermissions: new Set(normalizePermissions([...next])),
       };
     });
   };
@@ -153,7 +153,7 @@ export default function RolesPermissions() {
 
       return {
         ...current,
-        selectedPermissions: new Set(normalizePermissions(Array.from(next))),
+        selectedPermissions: new Set(normalizePermissions([...next])),
       };
     });
   };
@@ -173,7 +173,7 @@ export default function RolesPermissions() {
   };
 
   const handleDelete = async (role: AdminRole) => {
-    if (!window.confirm(`Delete the role "${role.name}"?`))
+    if (!confirm(`Delete the role "${role.name}"?`))
       return;
 
     try {
@@ -188,7 +188,7 @@ export default function RolesPermissions() {
   const handleSave = async () => {
     const trimmedName = dialog.name.trim();
     const finalPermissions = normalizePermissions([
-      ...Array.from(dialog.selectedPermissions),
+      ...dialog.selectedPermissions,
       ...dialog.unsupportedPermissions,
     ]);
 
@@ -261,7 +261,11 @@ export default function RolesPermissions() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="
+          flex flex-col gap-3
+          md:flex-row md:items-start md:justify-between
+        "
+        >
           <div>
             <h1 className="font-heading text-3xl font-bold text-foreground">
               Roles & Permissions
@@ -289,7 +293,11 @@ export default function RolesPermissions() {
               <div className="space-y-3">
                 {roles.map(role => (
                   <Card key={role.id}>
-                    <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
+                    <CardContent className="
+                      flex flex-col gap-4 p-4
+                      lg:flex-row lg:items-center lg:justify-between
+                    "
+                    >
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="font-heading text-xl font-semibold text-foreground">
@@ -307,10 +315,10 @@ export default function RolesPermissions() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => openEditDialog(role)}>
+                        <Button onClick={() => openEditDialog(role)} variant="outline">
                           Edit role
                         </Button>
-                        <Button variant="destructive" onClick={() => handleDelete(role)}>
+                        <Button onClick={() => handleDelete(role)} variant="destructive">
                           Delete
                         </Button>
                       </div>
@@ -337,9 +345,9 @@ export default function RolesPermissions() {
               <Label htmlFor="role-name">Role name</Label>
               <Input
                 id="role-name"
+                onChange={event => setDialog(current => ({ ...current, name: event.target.value }))}
                 value={dialog.name}
                 maxLength={80}
-                onChange={event => setDialog(current => ({ ...current, name: event.target.value }))}
               />
             </div>
 
@@ -351,7 +359,7 @@ export default function RolesPermissions() {
                     Toggle all editable permissions.
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={toggleAll}>
+                <Button onClick={toggleAll} size="sm" variant="outline">
                   {editablePermissionNames.every(permission =>
                     dialog.selectedPermissions.has(permission))
                     ? 'Uncheck all'
@@ -367,7 +375,11 @@ export default function RolesPermissions() {
 
                   return (
                     <div key={module.module} className="rounded-lg border border-border">
-                      <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                      <div className="
+                        flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3
+                        md:flex-row md:items-center md:justify-between
+                      "
+                      >
                         <div>
                           <p className="font-medium text-foreground">{module.label}</p>
                           <p className="text-sm text-muted-foreground">
@@ -375,15 +387,20 @@ export default function RolesPermissions() {
                           </p>
                         </div>
                         <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => toggleModule(module)}
+                          size="sm"
+                          variant="outline"
                         >
                           {allSelected ? 'Uncheck' : 'Check'}
                         </Button>
                       </div>
 
-                      <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="
+                        grid gap-3 p-4
+                        sm:grid-cols-2
+                        lg:grid-cols-4
+                      "
+                      >
                         {CRUD_ACTIONS.map((action) => {
                           const permissionName = module.permissions[action];
                           const checked = permissionName
@@ -399,10 +416,10 @@ export default function RolesPermissions() {
                               )}
                             >
                               <Checkbox
-                                checked={checked}
-                                disabled={!permissionName}
                                 onCheckedChange={value =>
                                   permissionName && toggleSinglePermission(permissionName, value === true)}
+                                checked={checked}
+                                disabled={!permissionName}
                               />
                               <span>{action}</span>
                             </label>
@@ -440,7 +457,7 @@ export default function RolesPermissions() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
+            <Button onClick={closeDialog} variant="outline">
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
@@ -471,8 +488,9 @@ function buildEditableModules(permissions: { name: string }[]): EditableModule[]
     grouped.set(parsed.module, current);
   }
 
-  return Array.from(grouped.values()).sort((left, right) =>
-    left.label.localeCompare(right.label));
+  return grouped.values().toArray().toSorted((left, right) =>
+    left.label.localeCompare(right.label),
+  );
 }
 
 function parsePermissionName(name: string) {
@@ -491,16 +509,17 @@ function parsePermissionName(name: string) {
 function normalizePermissions(permissionNames: string[]) {
   const values = new Set(permissionNames);
 
-  for (const name of Array.from(values)) {
+  for (const name of values) {
     const parsed = parsePermissionName(name);
     if (!parsed)
       continue;
     if (parsed.action !== 'READ') {
+      // eslint-disable-next-line unicorn/no-loop-iterable-mutation
       values.add(`${parsed.module}_READ`);
     }
   }
 
-  return Array.from(values).sort();
+  return [...values].toSorted((a, b) => a.localeCompare(b));
 }
 
 function isEditablePermission(name: string, editableModules: EditableModule[]) {
@@ -519,14 +538,12 @@ function sameMembers(left: string[], right: string[]) {
 }
 
 function roleSummary(role: AdminRole) {
-  const moduleLabels = Array.from(
-    new Set(
-      role.permissions
-        .map(permission => parsePermissionName(permission.name)?.module)
-        .filter((value): value is string => Boolean(value))
-        .map(module => MODULE_LABELS[module] ?? module),
-    ),
-  );
+  const moduleLabels = [...new Set(
+    role.permissions
+      .map(permission => parsePermissionName(permission.name)?.module)
+      .filter((value): value is string => Boolean(value))
+      .map(module => MODULE_LABELS[module] ?? module),
+  )];
 
   if (moduleLabels.length === 0)
     return 'No permissions assigned.';

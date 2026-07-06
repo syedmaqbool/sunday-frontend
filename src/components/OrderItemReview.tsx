@@ -1,6 +1,6 @@
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadFile } from '@/lib/uploadFile';
-import { getOrderItemReviewOptions } from '@/queries/review.query';
 import {
-  createReview,
-} from '@/services/offers.service';
+  getOrderItemReviewOptions,
+  useCreateOrderItemReviewMutation,
+} from '@/queries/review.query';
 
 interface OrderItemReviewProps {
   listingId: string;
@@ -44,7 +44,6 @@ export function OrderItemReview({
   sellerName,
 }: OrderItemReviewProps) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(0);
   const [images, setImages] = useState<File[]>([]);
@@ -62,7 +61,10 @@ export function OrderItemReview({
   const { control, handleSubmit, reset, watch } = form;
   const rating = watch('rating');
 
-  const { data: existing, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
+  const { data: existingResponse, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
+  const existing = (existingResponse?.data ?? []).find(
+    review => review.listingId === listingId,
+  ) ?? null;
 
   const handleAddImages = (files: FileList | null) => {
     if (!files)
@@ -108,8 +110,10 @@ export function OrderItemReview({
       videoInputReference.current.value = '';
   };
 
-  const submit = useMutation({
-    mutationFn: async (values: OrderReviewFormValues) => {
+  const submit = useCreateOrderItemReviewMutation(user?.id, sellerId);
+
+  const onSubmit: SubmitHandler<OrderReviewFormValues> = async (values) => {
+    try {
       const imageUrls: string[] = [];
       let videoUrl: string | undefined;
 
@@ -123,38 +127,38 @@ export function OrderItemReview({
         videoUrl = data.url;
       }
 
-      await createReview({
-        orderId,
-        orderItemId,
-        comment: values.comment || undefined,
-        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-        rating: values.rating,
-        videoUrl,
-      });
-    },
-    onError: (error: any) => {
-      toast.error(
-        error.message?.includes('duplicate')
-          ? 'Already reviewed'
-          : error.message || 'Failed to submit review',
+      submit.mutate(
+        {
+          listingId,
+          orderId,
+          orderItemId,
+          comment: values.comment || undefined,
+          imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+          rating: values.rating,
+          videoUrl,
+        },
+        {
+          onError: (error: any) => {
+            toast.error(
+              error.message?.includes('duplicate')
+                ? 'Already reviewed'
+                : error.message || 'Failed to submit review',
+            );
+          },
+          onSuccess: () => {
+            toast.success('Review submitted');
+            setOpen(false);
+            setImages([]);
+            setVideo(null);
+            reset();
+          },
+        },
       );
-    },
-    onSuccess: () => {
-      toast.success('Review submitted');
-      queryClient.invalidateQueries({
-        queryKey: ['order-review', orderId, listingId],
-      });
-      queryClient.invalidateQueries({ queryKey: ['reviews', sellerId] });
-      queryClient.invalidateQueries({ queryKey: ['seller-rating', sellerId] });
-      setOpen(false);
-      setImages([]);
-      setVideo(null);
-      reset();
-    },
-  });
-
-  const onSubmit: SubmitHandler<OrderReviewFormValues> = values =>
-    submit.mutate(values);
+    }
+    catch (error: any) {
+      toast.error(error.message || 'Failed to upload review media');
+    }
+  };
 
   if (!sellerId || isLoading)
     return null;

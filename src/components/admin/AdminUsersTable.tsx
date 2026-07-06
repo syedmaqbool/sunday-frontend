@@ -1,7 +1,7 @@
+import type { ReactNode } from 'react';
 import type { AdminUser, AdminUserStatus } from '@/types/adminUser.type';
 import { format } from 'date-fns';
 import { Loader2, Search } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,8 +24,8 @@ import {
 } from '@/components/ui/table';
 
 interface Column {
-  className?: string;
   key: string;
+  className?: string;
   label: string;
   render: (user: AdminUser) => React.ReactNode;
 }
@@ -52,11 +52,11 @@ export default function AdminUsersTable({
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onSearchChange: (value: string) => void;
-  onStatusChange: (status: AdminUserStatus | 'ALL') => void;
+  onStatusChange: (status: 'ALL' | AdminUserStatus) => void;
   page: number;
   pageSize: number;
   search: string;
-  status: AdminUserStatus | 'ALL';
+  status: 'ALL' | AdminUserStatus;
   title: string;
   total: number;
   users: AdminUser[];
@@ -67,7 +67,11 @@ export default function AdminUsersTable({
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="
+          flex flex-col gap-3
+          md:flex-row md:items-start md:justify-between
+        "
+        >
           <div>
             <h1 className="font-heading text-3xl font-bold text-foreground">
               {title}
@@ -84,22 +88,30 @@ export default function AdminUsersTable({
 
       <Card>
         <CardContent className="space-y-4 p-4">
-          <div className="flex flex-col gap-3 md:flex-row">
+          <div className="
+            flex flex-col gap-3
+            md:flex-row
+          "
+          >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={search}
                 onChange={event => onSearchChange(event.target.value)}
+                value={search}
                 placeholder="Search by name or email"
                 className="pl-9"
               />
             </div>
 
             <Select
-              onValueChange={value => onStatusChange(value as AdminUserStatus | 'ALL')}
+              onValueChange={value => onStatusChange(value as 'ALL' | AdminUserStatus)}
               value={status}
             >
-              <SelectTrigger className="w-full md:w-44">
+              <SelectTrigger className="
+                w-full
+                md:w-44
+              "
+              >
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -127,7 +139,7 @@ export default function AdminUsersTable({
                 {isLoading
                   ? (
                       <TableRow>
-                        <TableCell className="py-12 text-center" colSpan={columns.length + 1}>
+                        <TableCell colSpan={columns.length + 1} className="py-12 text-center">
                           <div className="flex items-center justify-center">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                           </div>
@@ -137,7 +149,7 @@ export default function AdminUsersTable({
                   : (users.length === 0
                       ? (
                           <TableRow>
-                            <TableCell className="py-12 text-center text-muted-foreground" colSpan={columns.length + 1}>
+                            <TableCell colSpan={columns.length + 1} className="py-12 text-center text-muted-foreground">
                               {emptyMessage}
                             </TableCell>
                           </TableRow>
@@ -176,7 +188,11 @@ export default function AdminUsersTable({
             </Table>
           </div>
 
-          <div className="flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
+          <div className="
+            flex flex-col gap-3 text-sm
+            md:flex-row md:items-center md:justify-between
+          "
+          >
             <p className="text-muted-foreground">
               Showing
               {' '}
@@ -192,16 +208,16 @@ export default function AdminUsersTable({
               <Button
                 onClick={() => onPageChange(page - 1)}
                 disabled={page <= 1 || isLoading}
-                variant="outline"
                 size="sm"
+                variant="outline"
               >
                 Previous
               </Button>
               <Button
                 onClick={() => onPageChange(page + 1)}
                 disabled={to >= total || isLoading}
-                variant="outline"
                 size="sm"
+                variant="outline"
               >
                 Next
               </Button>

@@ -8,8 +8,10 @@ import {
 } from '@/services/adminSupport.service';
 
 export const adminSupportQueryKey = {
-  messages: (ticketId: string) => ['admin-support-messages', ticketId] as const,
-  tickets: () => ['admin-support-tickets'] as const,
+  all: () => ['admin-support'] as const,
+  messages: (ticketId: string) =>
+    [...adminSupportQueryKey.all(), 'messages', 'list', ticketId] as const,
+  tickets: () => [...adminSupportQueryKey.all(), 'tickets', 'list'] as const,
 };
 
 export function getAdminSupportTicketsOptions() {

@@ -12,12 +12,12 @@ import {
 
 // ── QUERY KEYS ───────────────────────────────────────────────────────────────
 export const buyerPreferencesQueryKey = {
-  all: ['preferences'] as const,
-  brands: () => [...buyerPreferencesQueryKey.all, 'brands'] as const,
-  categories: () => [...buyerPreferencesQueryKey.all, 'categories'] as const,
-  current: () => [...buyerPreferencesQueryKey.all, 'current'] as const,
+  all: () => ['preferences'] as const,
+  brands: () => [...buyerPreferencesQueryKey.all(), 'brands'] as const,
+  categories: () => [...buyerPreferencesQueryKey.all(), 'categories'] as const,
+  current: () => [...buyerPreferencesQueryKey.all(), 'current'] as const,
   subcategories: () =>
-    [...buyerPreferencesQueryKey.all, 'subcategories'] as const,
+    [...buyerPreferencesQueryKey.all(), 'subcategories'] as const,
 };
 
 // ── 1. GET USER PREFERENCES QUERY ───────────────────────────────────────────

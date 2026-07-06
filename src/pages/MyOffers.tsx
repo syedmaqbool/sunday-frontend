@@ -38,9 +38,13 @@ function MyOffers() {
       navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
-  const { data: sent = [], isLoading: loadingSent } = useQuery(getSentOffersOptions(user?.id));
+  const { data: sentResponse, isLoading: loadingSent } = useQuery(getSentOffersOptions(user?.id));
+  const sent = sentResponse?.data ?? [];
 
-  const { data: myReviews = [] } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
+  const { data: myReviewsResponse } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
+  const myReviews = new Set((myReviewsResponse?.data ?? [])
+    .map(review => review.offerId)
+    .filter((offerId): offerId is string => offerId !== null));
 
   if (authLoading)
     return null;
@@ -150,7 +154,7 @@ function MyOffers() {
                               )}
 
                               {offer.status === 'ACCEPTED'
-                                && !myReviews.includes(offer.id)
+                                && !myReviews.has(offer.id)
                                 && (reviewingOffer === offer.id
                                   ? (
                                       <div className="mt-3 w-full border-t border-border pt-3">
@@ -179,7 +183,7 @@ function MyOffers() {
                                       </Button>
                                     ))}
                               {offer.status === 'ACCEPTED'
-                                && myReviews.includes(offer.id) && (
+                                && myReviews.has(offer.id) && (
                                 <span className="mt-2 inline-flex items-center rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600">
                                   ✓ Reviewed
                                 </span>

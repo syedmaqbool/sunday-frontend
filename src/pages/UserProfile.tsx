@@ -73,9 +73,10 @@ import {
 import {
   getMyOrdersOptions,
   getMySalesOptions,
+  myOrdersQueryKey,
   useUpdateOrderItemStatusMutation,
 } from '@/queries/myOrders.query';
-import { getMyProfileQueryOptions } from '@/queries/myProfile.query';
+import { getMyProfileQueryOptions, myProfileQueryKey } from '@/queries/myProfile.query';
 import {
   updateItemStatus,
   uploadShippingProof,
@@ -491,7 +492,7 @@ function UserProfile() {
         onCancel={() => setBankModalOpen(false)}
         onSaved={() => {
           setBankModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+          queryClient.invalidateQueries({ queryKey: myProfileQueryKey.all() });
         }}
         initialValues={{
           bank_account_holder: profile?.bankAccountHolder ?? '',
@@ -649,7 +650,7 @@ function OrderCard({ order }: { order: Order }) {
                             orderItemId={item.id}
                             onChanged={() =>
                               queryClient.invalidateQueries({
-                                queryKey: ['my-orders'],
+                                queryKey: myOrdersQueryKey.all(),
                               })}
                           />
                         )}
@@ -823,8 +824,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
       toast.success('Marked as shipped');
       setDialogOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ['my-sales'] });
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
       toast.error(error.message || 'Failed to update status');

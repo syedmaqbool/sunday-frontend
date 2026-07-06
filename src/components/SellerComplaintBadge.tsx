@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getComplaintDetailsOptions } from '@/queries/complaint.query';
+import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {
   markComplaintReturnReceived,
   provideReturnAddress,
@@ -75,7 +76,7 @@ export function SellerComplaintBadge({
       toast.success('Return address shared with the buyer.');
       setAddressOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ['sold-orders'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     }
     catch (error: any) {
       toast.error(error.message ?? 'Failed to save return address');
@@ -93,7 +94,7 @@ export function SellerComplaintBadge({
         'Marked return as received. Admin will finalize the refund.',
       );
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ['sold-orders'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     }
     catch (error: any) {
       toast.error(error.message ?? 'Failed to update status');

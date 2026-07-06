@@ -1,5 +1,5 @@
 import type { MarketplaceListing } from '@/queries/marketplace.query';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Check,
@@ -43,7 +43,10 @@ import {
   getMarketplaceListingOptions,
   getReservedOfferAmountOptions,
 } from '@/queries/marketplace.query';
-import { cancelMyListingReservation, deleteMyListing } from '@/services/listing.service';
+import {
+  useCancelMyListingReservationMutation,
+  useDeleteMyListingMutation,
+} from '@/queries/myListings.query';
 
 function useCountdown(target?: string | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -224,7 +227,6 @@ function ListingDetail() {
   const navigate = useNavigate();
   const { addItem, items } = useCart();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const inCart = items.some(index => index.listing.id === id);
 
   const { data: listing, isLoading } = useQuery(getMarketplaceListingOptions(id));
@@ -263,25 +265,8 @@ function ListingDetail() {
       ? reservedOfferAmount
       : (listing?.price ?? 0);
 
-  const cancelReservation = useMutation({
-    mutationFn: () => cancelMyListingReservation(listing!.id),
-    onError: (error: any) => toast.error(error.message ?? 'Failed to cancel'),
-    onSuccess: () => {
-      toast.success('Reservation cancelled');
-      queryClient.invalidateQueries({ queryKey: ['listing', id] });
-      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteMyListing(id!),
-    onError: () => toast.error('Failed to delete'),
-    onSuccess: () => {
-      toast.success('Listing deleted');
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-      navigate('/my-listings');
-    },
-  });
+  const cancelReservation = useCancelMyListingReservationMutation();
+  const deleteMutation = useDeleteMyListingMutation();
 
   if (isLoading) {
     return (
@@ -488,7 +473,12 @@ function ListingDetail() {
                     </Button>
                     {isReserved && (
                       <Button
-                        onClick={() => cancelReservation.mutate()}
+                        onClick={() =>
+                          cancelReservation.mutate(listing.id, {
+                            onError: (error: any) =>
+                              toast.error(error.message ?? 'Failed to cancel'),
+                            onSuccess: () => toast.success('Reservation cancelled'),
+                          })}
                         disabled={cancelReservation.isPending}
                         size="lg"
                         variant="outline"
@@ -521,7 +511,14 @@ function ListingDetail() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteMutation.mutate()}
+                            onClick={() =>
+                              deleteMutation.mutate(id!, {
+                                onError: () => toast.error('Failed to delete'),
+                                onSuccess: () => {
+                                  toast.success('Listing deleted');
+                                  navigate('/my-listings');
+                                },
+                              })}
                             className="
                               bg-destructive text-destructive-foreground
                               hover:bg-destructive/90

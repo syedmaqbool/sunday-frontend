@@ -8,7 +8,8 @@ export interface ActiveTax {
 }
 
 export const activeTaxQueryKey = {
-  current: () => ['active-tax'] as const,
+  all: () => ['active-tax'] as const,
+  current: () => [...activeTaxQueryKey.all(), 'current'] as const,
 };
 
 export function getActiveTaxOptions() {

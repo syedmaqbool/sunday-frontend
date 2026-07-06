@@ -1,6 +1,5 @@
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -9,7 +8,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { trackEvent } from '@/lib/analytics';
-import { createOfferReview } from '@/services/offers.service';
+import { useCreateOfferReviewMutation } from '@/queries/review.query';
 
 const reviewSchema = z.object({
   comment: z.string().max(500).optional(),
@@ -33,7 +32,6 @@ export function ReviewForm({
   onSuccess,
   role,
 }: ReviewFormProps) {
-  const queryClient = useQueryClient();
   const [hoveredRating, setHoveredRating] = useState(0);
   const form = useForm<ReviewFormValues>({
     defaultValues: {
@@ -46,41 +44,40 @@ export function ReviewForm({
   const { control, handleSubmit, reset, watch } = form;
   const rating = watch('rating');
 
-  const submitReview = useMutation({
-    mutationFn: async (values: ReviewFormValues) => {
-      await createOfferReview({
+  const submitReview = useCreateOfferReviewMutation();
+
+  const onSubmit: SubmitHandler<ReviewFormValues> = values =>
+    submitReview.mutate(
+      {
         listingId,
         offerId,
         reviewedId,
         comment: values.comment || undefined,
         rating: values.rating,
         role,
-      });
-    },
-    onError: (error: any) => {
-      if (error.message?.includes('duplicate')) {
-        toast.error('You\'ve already reviewed this transaction');
-      }
-      else {
-        toast.error(error.message ?? 'Failed to submit review');
-      }
-    },
-    onSuccess: () => {
-      trackEvent('review_submitted', {
-        listing_id: listingId,
-        offer_id: offerId,
-        rating,
-        role,
-      });
-      toast.success('Review submitted!');
-      queryClient.invalidateQueries({ queryKey: ['reviews'] });
-      reset();
-      onSuccess?.();
-    },
-  });
-
-  const onSubmit: SubmitHandler<ReviewFormValues> = values =>
-    submitReview.mutate(values);
+      },
+      {
+        onError: (error: any) => {
+          if (error.message?.includes('duplicate')) {
+            toast.error('You\'ve already reviewed this transaction');
+          }
+          else {
+            toast.error(error.message ?? 'Failed to submit review');
+          }
+        },
+        onSuccess: () => {
+          trackEvent('review_submitted', {
+            listing_id: listingId,
+            offer_id: offerId,
+            rating: values.rating,
+            role,
+          });
+          toast.success('Review submitted!');
+          reset();
+          onSuccess?.();
+        },
+      },
+    );
 
   const displayRating = hoveredRating || rating;
 

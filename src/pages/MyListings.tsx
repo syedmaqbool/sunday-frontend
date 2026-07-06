@@ -1,5 +1,5 @@
 import type { MyListing } from '@/queries/myListings.query';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Inbox,
   Loader2,
@@ -42,12 +42,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
-import { getMyListingsOptions, myListingsQueryKey } from '@/queries/myListings.query';
 import {
-  cancelMyListingReservation,
-  deleteMyListing,
-  resubmitMyListing,
-} from '@/services/listing.service';
+  getMyListingsOptions,
+  useCancelMyListingReservationMutation,
+  useDeleteMyListingMutation,
+  useResubmitMyListingMutation,
+} from '@/queries/myListings.query';
 
 function getStatusColor(status: MyListing['status']) {
   if (status === 'APPROVED' || status === 'RESERVED')
@@ -66,39 +66,12 @@ function isReadOnlyStatus(status: MyListing['status']) {
 function MyListings() {
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading } = useQuery(getMyListingsOptions(!!user));
-
-  const invalidateListings = () =>
-    queryClient.invalidateQueries({ queryKey: myListingsQueryKey.list() });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteMyListing(id),
-    onError: () => toast.error('Failed to delete listing'),
-    onSuccess: () => {
-      toast.success('Listing deleted');
-      invalidateListings();
-    },
-  });
-
-  const resubmitMutation = useMutation({
-    mutationFn: (id: string) => resubmitMyListing(id),
-    onError: () => toast.error('Failed to resubmit'),
-    onSuccess: () => {
-      toast.success('Listing resubmitted for review');
-      invalidateListings();
-    },
-  });
-
-  const cancelReservationMutation = useMutation({
-    mutationFn: (id: string) => cancelMyListingReservation(id),
-    onError: (error: any) => toast.error(error.message ?? 'Failed'),
-    onSuccess: () => {
-      toast.success('Reservation cancelled');
-      invalidateListings();
-    },
-  });
+  const { data: listingsResponse, isLoading } = useQuery(getMyListingsOptions(!!user));
+  const listings = listingsResponse?.data ?? [];
+  const deleteMutation = useDeleteMyListingMutation();
+  const resubmitMutation = useResubmitMyListingMutation();
+  const cancelReservationMutation = useCancelMyListingReservationMutation();
 
   useEffect(() => {
     if (!authLoading && !user)
@@ -182,7 +155,13 @@ function MyListings() {
           )}
           {listing.status === 'RESERVED' && (
             <Button
-              onClick={() => cancelReservationMutation.mutate(listing.id)}
+              onClick={() =>
+                cancelReservationMutation.mutate(listing.id, {
+                  onError: (error: any) => toast.error(error.message ?? 'Failed'),
+                  onSuccess: () => {
+                    toast.success('Reservation cancelled');
+                  },
+                })}
               disabled={cancelReservationMutation.isPending}
               size="sm"
               variant="outline"
@@ -223,7 +202,13 @@ function MyListings() {
           {(listing.status === 'REJECTED'
             || listing.status === 'NEEDS_REVISION') && (
             <Button
-              onClick={() => resubmitMutation.mutate(listing.id)}
+              onClick={() =>
+                resubmitMutation.mutate(listing.id, {
+                  onError: () => toast.error('Failed to resubmit'),
+                  onSuccess: () => {
+                    toast.success('Listing resubmitted for review');
+                  },
+                })}
               disabled={resubmitMutation.isPending}
               size="sm"
               variant="outline"
@@ -259,7 +244,13 @@ function MyListings() {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => deleteMutation.mutate(listing.id)}
+                  onClick={() =>
+                    deleteMutation.mutate(listing.id, {
+                      onError: () => toast.error('Failed to delete listing'),
+                      onSuccess: () => {
+                        toast.success('Listing deleted');
+                      },
+                    })}
                   className="
                     bg-destructive text-destructive-foreground
                     hover:bg-destructive/90

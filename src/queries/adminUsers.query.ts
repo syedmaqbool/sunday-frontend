@@ -1,8 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   AdminUserRoleType,
   CreateAdminUserInput,
 } from '@/types/adminUser.type';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createAdminUser, listAdminUsers, updateUserRole } from '@/services/user.service';
 
 export const adminUsersQueryKey = {

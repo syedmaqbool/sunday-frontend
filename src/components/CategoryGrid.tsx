@@ -28,21 +28,29 @@ export default function CategoryGrid() {
 
   return (
     <section className="container py-16">
-      <h2 className="text-center font-heading text-2xl font-bold text-foreground md:text-3xl">
+      <h2 className="
+        text-center font-heading text-2xl font-bold text-foreground
+        md:text-3xl
+      "
+      >
         Shop by Category
       </h2>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-        {categories.map((cat, i) => (
+        {categories.map((cat, index) => (
           <motion.div
             key={cat.id}
             initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
+            whileInView={{ opacity: 1, y: 0 }}
           >
             <Link
               to={`/listings?parent=${cat.value}`}
-              className={`inline-flex min-w-[120px] items-center justify-center rounded-full px-8 py-3 font-heading text-sm font-medium transition-transform hover:scale-105 ${pillColors[i % pillColors.length]}`}
+              className={`
+                inline-flex min-w-[120px] items-center justify-center rounded-full px-8 py-3 font-heading text-sm font-medium transition-transform
+                hover:scale-105
+                ${pillColors[index % pillColors.length]}
+              `}
             >
               {cat.label}
             </Link>

@@ -35,7 +35,7 @@ const authBaseSchema = z.object({
   name: z.string().trim().min(1, 'Full name is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   phone: z.string().trim().regex(/^\+?[\d\s\-().]{7,20}$/, 'Please enter a valid phone number.'),
-  termsAccepted: z.boolean().refine((value) => value === true, 'Please accept the Terms & Conditions to continue.'),
+  termsAccepted: z.boolean().refine(value => value === true, 'Please accept the Terms & Conditions to continue.'),
 });
 
 const authSchema = authBaseSchema.extend({
@@ -115,11 +115,11 @@ function Auth() {
       return;
     }
 
-    const timer = globalThis.setTimeout(() => {
+    const timer = setTimeout(() => {
       setOtpCooldown(current => Math.max(0, current - 1));
     }, 1000);
 
-    return () => globalThis.clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [otpCooldown]);
 
   const handleSendOtp = async () => {
@@ -496,11 +496,8 @@ function Auth() {
                           target="_blank"
                           to="/terms"
                           className="
-
                             text-primary underline
-
                             hover:text-primary/80
-
                           "
                         >
                           Terms & Conditions
@@ -561,11 +558,8 @@ function Auth() {
                           resetSignupVerificationState();
                         }}
                         className="
-
                           font-medium text-primary
-
                           hover:underline
-
                         "
                       >
                         Sign up
@@ -582,11 +576,8 @@ function Auth() {
                           resetSignupVerificationState();
                         }}
                         className="
-
                           font-medium text-primary
-
                           hover:underline
-
                         "
                       >
                         Sign in

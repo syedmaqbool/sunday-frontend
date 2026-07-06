@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import {
-  adminNavItems,
   canAccessNavItem,
   findAdminNavItem,
   getFirstAccessibleAdminPath,
@@ -83,7 +82,7 @@ function AdminNavList({
 
 export default function AdminDashboard() {
   const { loading: authLoading, user } = useAuth();
-  const { canAccessAdminPortal, isAdmin } = useAccessControl();
+  const { canAccessAdminPortal } = useAccessControl();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);

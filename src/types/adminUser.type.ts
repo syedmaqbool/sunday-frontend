@@ -18,22 +18,22 @@ export interface AdminUser {
   image: AdminUserImage | null;
   lastName: string;
   marketingEmailConsent: boolean;
-  marketingEmailConsentUpdatedAt?: string | null;
   phone: string;
   roleName: string | null;
   status: AdminUserStatus;
-  termsAcceptedAt?: string | null;
   termsVersion?: string | null;
   username: string;
+  marketingEmailConsentUpdatedAt?: string | null;
+  termsAcceptedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateAdminUserInput {
+  roleId: string;
   email: string;
   firstName: string;
   lastName: string;
   password: string;
   phone: string;
-  roleId: string;
 }

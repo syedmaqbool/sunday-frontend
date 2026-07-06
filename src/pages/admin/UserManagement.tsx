@@ -28,15 +28,6 @@ export default function UserManagement() {
 
   return (
     <AdminUsersTable
-      title="Platform Users"
-      users={users}
-      total={total}
-      page={page}
-      pageSize={20}
-      search={search}
-      status={status}
-      isLoading={isLoading}
-      emptyMessage="No platform users match these filters."
       onPageChange={setPage}
       onSearchChange={(value) => {
         setPage(1);
@@ -71,6 +62,15 @@ export default function UserManagement() {
           ),
         },
       ]}
+      emptyMessage="No platform users match these filters."
+      isLoading={isLoading}
+      page={page}
+      pageSize={20}
+      search={search}
+      status={status}
+      title="Platform Users"
+      total={total}
+      users={users}
     />
   );
 }

@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -24,8 +24,9 @@ import {
   getConversationsOptions,
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
-
 import { tokenStorage } from '@/lib/tokenStorage';
+
+import { conversationsQueryKey } from '@/queries/conversation.query';
 
 /* TYPES */
 
@@ -94,13 +95,15 @@ function Messages() {
 
   /* FETCH CONVERSATIONS */
 
-  const { data: conversations = [], isLoading: convosLoading }
+  const { data: conversationsResponse, isLoading: convosLoading }
     = useQuery(getConversationsOptions());
+  const conversations = conversationsResponse?.data ?? [];
 
   /* FETCH MESSAGES */
 
-  const { data: messages = [], isLoading: msgsLoading }
+  const { data: messagesResponse, isLoading: msgsLoading }
     = useQuery(getConversationMessagesOptions(activeConvo || undefined));
+  const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse?.data]);
 
   /* SEND MESSAGE */
 
@@ -147,12 +150,12 @@ function Messages() {
 
     const handleMessage = () => {
       queryClient.invalidateQueries({
-        queryKey: ['conversations'],
+        queryKey: conversationsQueryKey.all(),
       });
 
       if (activeConvo) {
         queryClient.invalidateQueries({
-          queryKey: ['messages', activeConvo],
+          queryKey: conversationsQueryKey.messages(activeConvo),
         });
       }
     };

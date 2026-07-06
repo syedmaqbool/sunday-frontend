@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
-const Privacy = () => {
+export default function Privacy() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -13,8 +13,16 @@ const Privacy = () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container flex-1 py-12">
-        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> Back to home
+        <Link
+          to="/"
+          className="
+            mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground
+            hover:text-foreground
+          "
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {' '}
+          Back to home
         </Link>
         <article className="mx-auto max-w-3xl">
           <h1 className="mb-2 font-heading text-3xl font-bold">Privacy Policy</h1>
@@ -35,7 +43,7 @@ const Privacy = () => {
             <h2 className="mb-3 font-heading text-xl font-semibold">1. Information We Collect</h2>
             <p className="text-sm leading-relaxed text-muted-foreground">We may collect the following types of information:</p>
 
-            <h3 className="mt-4 mb-2 font-heading text-lg font-semibold">A. Information You Provide</h3>
+            <h3 className="mb-2 mt-4 font-heading text-lg font-semibold">A. Information You Provide</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">When you create an account or use our services, we may collect:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground">
               <li>Full name or username</li>
@@ -48,7 +56,7 @@ const Privacy = () => {
               <li>Messages sent through the platform</li>
             </ul>
 
-            <h3 className="mt-4 mb-2 font-heading text-lg font-semibold">B. Automatically Collected Information</h3>
+            <h3 className="mb-2 mt-4 font-heading text-lg font-semibold">B. Automatically Collected Information</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">When you use Sunday, we may automatically collect:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground">
               <li>IP address</li>
@@ -59,7 +67,7 @@ const Privacy = () => {
               <li>Location information (if enabled)</li>
             </ul>
 
-            <h3 className="mt-4 mb-2 font-heading text-lg font-semibold">C. Transaction Information</h3>
+            <h3 className="mb-2 mt-4 font-heading text-lg font-semibold">C. Transaction Information</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">We may collect details related to:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground">
               <li>Purchases and sales</li>
@@ -155,7 +163,18 @@ const Privacy = () => {
               <li>Request a copy of your stored information</li>
             </ul>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              To exercise these rights, contact us at <a href="mailto:areebaghouriii@gmail.com" className="text-primary hover:underline">areebaghouriii@gmail.com</a>.
+              To exercise these rights, contact us at
+              {' '}
+              <a
+                href="mailto:areebaghouriii@gmail.com"
+                className="
+                  text-primary
+                  hover:underline
+                "
+              >
+                areebaghouriii@gmail.com
+              </a>
+              .
             </p>
           </section>
 
@@ -184,8 +203,30 @@ const Privacy = () => {
             <h2 className="mb-3 font-heading text-xl font-semibold">14. Contact Information</h2>
             <div className="space-y-1 text-sm leading-relaxed text-muted-foreground">
               <p><strong>Sunday</strong></p>
-              <p>Email: <a href="mailto:areebaghouriii@gmail.com" className="text-primary hover:underline">areebaghouriii@gmail.com</a></p>
-              <p>Website: <Link to="/" className="text-primary hover:underline">www.sndymarket.com</Link></p>
+              <p>
+                Email:
+                <a
+                  href="mailto:areebaghouriii@gmail.com"
+                  className="
+                    text-primary
+                    hover:underline
+                  "
+                >
+                  areebaghouriii@gmail.com
+                </a>
+              </p>
+              <p>
+                Website:
+                <Link
+                  to="/"
+                  className="
+                    text-primary
+                    hover:underline
+                  "
+                >
+                  www.sndymarket.com
+                </Link>
+              </p>
             </div>
           </section>
         </article>
@@ -193,6 +234,4 @@ const Privacy = () => {
       <Footer />
     </div>
   );
-};
-
-export default Privacy;
+}

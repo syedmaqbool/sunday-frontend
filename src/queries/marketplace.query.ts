@@ -9,13 +9,12 @@ export interface MarketplaceAsset {
   url?: string | null;
 }
 
-
 export interface MarketplaceMediaItem {
   id: string;
   file?: MarketplaceAsset | null;
-  url?: string | null;           
   sortOrder?: number | null;
   type?: 'IMAGE' | 'VIDEO' | string;
+  url?: string | null;
   createdAt?: string;
 }
 
@@ -116,23 +115,29 @@ async function fetchAllMarketplaceListings(
         ...searchParams,
       },
     }).json<PaginatedResponse<MarketplaceListing>>();
-    data = data.concat(response.data ?? []);
+    data = [...data, ...response.data ?? []];
   }
 
   return data;
 }
 
 export const marketplaceQueryKey = {
-  editListing: (listingId?: string) => ['edit-listing', listingId] as const,
-  featuredListings: () => ['featured-listings'] as const,
+  all: () => ['marketplace'] as const,
+  editListing: (listingId?: string) =>
+    [...marketplaceQueryKey.all(), 'edit-listing', 'detail', listingId ?? null] as const,
+  featuredListings: () =>
+    [...marketplaceQueryKey.all(), 'featured-listings', 'list'] as const,
   listing: (listingId?: string, isAuthenticated?: boolean) =>
-    ['listing', listingId, isAuthenticated ? 'auth' : 'public'] as const,
-  listings: () => ['listings'] as const,
+    [...marketplaceQueryKey.all(), 'listing', 'detail', listingId ?? null, isAuthenticated ? 'auth' : 'public'] as const,
+  listings: () => [...marketplaceQueryKey.all(), 'listings', 'list'] as const,
   reservedOfferAmount: (offerId?: string | null) =>
-    ['reserved-offer-amount', offerId] as const,
-  sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
-  sellerProfile: (sellerId?: string) => ['seller-profile', sellerId] as const,
-  trendingListings: () => ['trending-listings'] as const,
+    [...marketplaceQueryKey.all(), 'reserved-offer-amount', 'detail', offerId ?? null] as const,
+  sellerListings: (sellerId?: string) =>
+    [...marketplaceQueryKey.all(), 'seller-listings', 'list', sellerId ?? null] as const,
+  sellerProfile: (sellerId?: string) =>
+    [...marketplaceQueryKey.all(), 'seller-profile', 'detail', sellerId ?? null] as const,
+  trendingListings: () =>
+    [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
 };
 
 export async function fetchMarketplaceListings(): Promise<MarketplaceListing[]> {
@@ -285,16 +290,19 @@ export function getListingMediaUrls(listing?: {
   imageUrls?: string[] | null;
   media?: MarketplaceMediaItem[] | null;
 } | null) {
-  if (!listing) return [];
+  if (!listing)
+    return [];
 
-  const mediaUrls = [...(listing.media ?? [])]
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map(item => item.file?.url ?? item.url)  // ← file.url ya direct url
+  const mediaUrls = (listing.media ?? [])
+    .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map(item => item.file?.url ?? item.url) // ← file.url ya direct url
     .filter((url): url is string => !!url);
 
-  if (mediaUrls.length > 0) return mediaUrls;
-  if (listing.imageUrls?.length) return listing.imageUrls.filter((url): url is string => !!url);
-  if (listing.coverImageUrl) return [listing.coverImageUrl];
+  if (mediaUrls.length > 0)
+    return mediaUrls;
+  if (listing.imageUrls?.length)
+    return listing.imageUrls.filter((url): url is string => !!url);
+  if (listing.coverImageUrl)
+    return [listing.coverImageUrl];
   return [];
 }
-

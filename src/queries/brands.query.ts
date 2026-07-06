@@ -9,7 +9,9 @@ export interface Brand {
 }
 
 export const brandsQueryKey = {
-  list: (isIncludingInactive = false) => ['brands', isIncludingInactive] as const,
+  all: () => ['brands'] as const,
+  list: (isIncludingInactive = false) =>
+    [...brandsQueryKey.all(), 'list', isIncludingInactive] as const,
 };
 
 export function getBrandsOptions(isIncludingInactive = false) {

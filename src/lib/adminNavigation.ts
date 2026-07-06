@@ -1,4 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
+import type { PermissionRequirement } from '@/lib/adminAccess';
+import type { AuthUser } from '@/types/auth.type';
 import {
   AlertTriangle,
   BarChart3,
@@ -22,15 +24,13 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import type { PermissionRequirement } from '@/lib/adminAccess';
 import { canUser } from '@/lib/adminAccess';
-import type { AuthUser } from '@/types/auth.type';
 
 export interface AdminNavItem {
+  path: string;
   adminOnly?: boolean;
   icon: LucideIcon;
   label: string;
-  path: string;
   permission?: PermissionRequirement;
 }
 
@@ -59,7 +59,7 @@ export const adminNavSections: AdminNavSection[] = [
       { path: '/admin/tax', icon: Percent, label: 'Tax Settings', permission: 'SETTINGS_READ' },
       { path: '/admin/boosts', icon: Rocket, label: 'Boosts', permission: 'BOOSTS_READ' },
       { path: '/admin/payouts', icon: Wallet, label: 'Payouts', permission: 'PAYOUTS_READ' },
-      { path: '/admin/commission', icon: PercentIcon, label: 'Commission', adminOnly: true },
+      { path: '/admin/commission', adminOnly: true, icon: PercentIcon, label: 'Commission' },
     ],
     label: 'Marketplace',
   },
@@ -67,7 +67,7 @@ export const adminNavSections: AdminNavSection[] = [
     items: [
       { path: '/admin/complaints', icon: AlertTriangle, label: 'Complaints', permission: 'COMPLAINTS_READ' },
       { path: '/admin/messages', icon: MessageSquareWarning, label: 'Messages', permission: 'MESSAGES_READ' },
-      { path: '/admin/flag-keywords', icon: Filter, label: 'Keywords', adminOnly: true },
+      { path: '/admin/flag-keywords', adminOnly: true, icon: Filter, label: 'Keywords' },
       { path: '/admin/reports', icon: Flag, label: 'Reports', permission: 'REPORTS_READ' },
     ],
     label: 'Trust & Safety',
@@ -75,7 +75,7 @@ export const adminNavSections: AdminNavSection[] = [
   {
     items: [
       { path: '/admin/support', icon: Headphones, label: 'Support', permission: 'SUPPORT_TICKETS_READ' },
-      { path: '/admin/help', icon: LifeBuoy, label: 'Help Center', adminOnly: true },
+      { path: '/admin/help', adminOnly: true, icon: LifeBuoy, label: 'Help Center' },
       { path: '/admin/users', icon: Users, label: 'Platform Users', permission: 'USERS_READ' },
       { path: '/admin/email-templates', icon: Mail, label: 'Email Templates', permission: 'SETTINGS_READ' },
     ],
@@ -83,8 +83,8 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     items: [
-      { path: '/admin/access-control/staff-users', icon: UserCog, label: 'Staff Users', adminOnly: true },
-      { path: '/admin/access-control/roles', icon: KeyRound, label: 'Roles & Permissions', adminOnly: true },
+      { path: '/admin/access-control/staff-users', adminOnly: true, icon: UserCog, label: 'Staff Users' },
+      { path: '/admin/access-control/roles', adminOnly: true, icon: KeyRound, label: 'Roles & Permissions' },
     ],
     label: 'Access Control',
   },

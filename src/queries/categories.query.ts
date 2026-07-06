@@ -19,8 +19,10 @@ export interface Subcategory {
 }
 
 export const categoriesQueryKey = {
-  categories: () => ['categories'] as const,
-  subcategories: (categoryId?: string) => ['subcategories', categoryId] as const,
+  all: () => ['categories'] as const,
+  categories: () => [...categoriesQueryKey.all(), 'list'] as const,
+  subcategories: (categoryId?: string) =>
+    [...categoriesQueryKey.all(), 'subcategories', 'list', categoryId ?? null] as const,
 };
 
 export function getCategoriesOptions() {

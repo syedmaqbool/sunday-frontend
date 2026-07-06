@@ -1,5 +1,6 @@
 import type { AdminComplaintStatus, ComplaintStatus } from '@/types/complaint.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminAnalyticsQueryKey } from '@/queries/adminAnalytics.query';
 import {
   listAdminComplaints,
   updateComplaintStatus,
@@ -38,7 +39,7 @@ export function useUpdateComplaintStatusMutation() {
       queryClient.invalidateQueries({
         queryKey: adminComplaintsQueryKey.all(),
       });
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      queryClient.invalidateQueries({ queryKey: adminAnalyticsQueryKey.all() });
     },
   });
 }

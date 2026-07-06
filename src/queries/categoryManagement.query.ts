@@ -11,8 +11,10 @@ import {
 } from '@/services/adminCategoryManagement.service';
 
 export const categoryManagementQueryKey = {
-  categories: () => ['admin-categories'] as const,
-  subcategories: () => ['admin-subcategories'] as const,
+  all: () => ['admin-category-management'] as const,
+  categories: () => [...categoryManagementQueryKey.all(), 'categories', 'list'] as const,
+  subcategories: () =>
+    [...categoryManagementQueryKey.all(), 'subcategories', 'list'] as const,
 };
 
 // ── Categories ────────────────────────────────────────────────────────────────

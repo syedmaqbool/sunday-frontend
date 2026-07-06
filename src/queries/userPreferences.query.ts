@@ -5,7 +5,9 @@ import { getPreferences } from '@/services/buyerPreferences.service';
 export type { UserPreferences } from '@/types/buyerPreferences.type';
 
 export const userPreferencesQueryKey = {
-  current: (userId?: string) => ['user-preferences', userId] as const,
+  all: () => ['user-preferences'] as const,
+  current: (userId?: string) =>
+    [...userPreferencesQueryKey.all(), 'current', userId ?? null] as const,
 };
 
 export function getUserPreferencesOptions(userId?: string) {

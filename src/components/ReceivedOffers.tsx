@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRightLeft,
   ArrowUpDown,
@@ -31,13 +31,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getMyReviewedOfferIdsOptions,
   getReceivedOffersOptions,
-  offersQueryKey,
+  useRespondToOfferMutation,
 } from '@/queries/offers.query';
-import {
-  acceptOffer,
-  counterOffer,
-  rejectOffer,
-} from '@/services/offers.service';
 
 function statusBadge(s: string) {
   const map: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -59,47 +54,22 @@ type SortOption = 'newest' | 'price_desc';
 
 export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [counterDialog, setCounterDialog] = useState<any | null>(null);
   const [counterAmount, setCounterAmount] = useState('');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  const { data: received = [], isLoading } = useQuery(getReceivedOffersOptions(user?.id, listingId));
+  const { data: receivedResponse, isLoading } = useQuery(getReceivedOffersOptions(user?.id, listingId));
+  const received = (receivedResponse?.data ?? []).filter(
+    offer => !listingId || offer.listingId === listingId,
+  );
 
-  const { data: myReviews = [] } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
+  const { data: myReviewsResponse } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
+  const myReviews = new Set((myReviewsResponse?.data ?? [])
+    .map(review => review.offerId)
+    .filter((offerId): offerId is string => offerId !== null));
 
-  const respondToOffer = useMutation({
-    mutationFn: ({
-      id,
-      action,
-      counterAmount: counter,
-    }: {
-      id: string;
-      action: 'accept' | 'counter' | 'reject';
-      counterAmount?: number;
-    }) => {
-      if (action === 'accept')
-        return acceptOffer(id);
-      if (action === 'reject')
-        return rejectOffer(id);
-      return counterOffer(id, { counterAmount: counter! });
-    },
-    onError: () => toast.error('Failed to update offer'),
-    onSuccess: (_, { action }) => {
-      toast.success(`Offer ${action}ed`);
-      if (action === 'accept') {
-        toast.info(
-          'Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.',
-        );
-      }
-      queryClient.invalidateQueries({ queryKey: offersQueryKey.received(user?.id, listingId) });
-      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-      setCounterDialog(null);
-      setCounterAmount('');
-    },
-  });
+  const respondToOffer = useRespondToOfferMutation(user?.id, listingId);
 
   if (isLoading) {
     return (
@@ -157,7 +127,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
             "
             >
               <img
-                 src={offer.coverImage?.url || '/placeholder.svg'}
+                src={offer.coverImage?.url || '/placeholder.svg'}
                 alt={offer.listingTitle ?? 'Listing'}
                 className="h-16 w-16 rounded-md object-cover"
               />
@@ -196,10 +166,23 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 <div className="flex shrink-0 gap-2">
                   <Button
                     onClick={() =>
-                      respondToOffer.mutate({
-                        id: offer.id,
-                        action: 'accept',
-                      })}
+                      respondToOffer.mutate(
+                        {
+                          id: offer.id,
+                          action: 'accept',
+                        },
+                        {
+                          onError: () => toast.error('Failed to update offer'),
+                          onSuccess: () => {
+                            toast.success('Offer accepted');
+                            toast.info(
+                              'Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.',
+                            );
+                            setCounterDialog(null);
+                            setCounterAmount('');
+                          },
+                        },
+                      )}
                     disabled={respondToOffer.isPending}
                     size="sm"
                     className="gap-1"
@@ -220,10 +203,20 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                   </Button>
                   <Button
                     onClick={() =>
-                      respondToOffer.mutate({
-                        id: offer.id,
-                        action: 'reject',
-                      })}
+                      respondToOffer.mutate(
+                        {
+                          id: offer.id,
+                          action: 'reject',
+                        },
+                        {
+                          onError: () => toast.error('Failed to update offer'),
+                          onSuccess: () => {
+                            toast.success('Offer rejected');
+                            setCounterDialog(null);
+                            setCounterAmount('');
+                          },
+                        },
+                      )}
                     disabled={respondToOffer.isPending}
                     size="sm"
                     variant="outline"
@@ -236,7 +229,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                 </div>
               )}
               {offer.status === 'ACCEPTED'
-                && !myReviews.includes(offer.id)
+                && !myReviews.has(offer.id)
                 && (reviewingOffer === offer.id
                   ? (
                       <div className="mt-3 w-full border-t border-border pt-3">
@@ -264,7 +257,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                         Leave Review
                       </Button>
                     ))}
-              {offer.status === 'ACCEPTED' && myReviews.includes(offer.id) && (
+              {offer.status === 'ACCEPTED' && myReviews.has(offer.id) && (
                 <span className="text-xs italic text-muted-foreground">
                   ✓ Reviewed
                 </span>
@@ -304,11 +297,21 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
             <Button
               onClick={() =>
                 counterDialog
-                && respondToOffer.mutate({
-                  id: counterDialog.id,
-                  action: 'counter',
-                  counterAmount: Number(counterAmount),
-                })}
+                && respondToOffer.mutate(
+                  {
+                    id: counterDialog.id,
+                    action: 'counter',
+                    counterAmount: Number(counterAmount),
+                  },
+                  {
+                    onError: () => toast.error('Failed to update offer'),
+                    onSuccess: () => {
+                      toast.success('Offer countered');
+                      setCounterDialog(null);
+                      setCounterAmount('');
+                    },
+                  },
+                )}
               disabled={
                 !counterAmount
                 || Number(counterAmount) <= 0

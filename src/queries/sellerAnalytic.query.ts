@@ -3,11 +3,12 @@ import { getSellerAnalytics } from '@/services/sellerAnalytic.service';
 
 export const sellerAnalyticsQueryKey = {
   all: () => ['seller-analytics'] as const,
+  overview: () => [...sellerAnalyticsQueryKey.all(), 'overview'] as const,
 };
 
 export function getSellerAnalyticsOptions() {
   return queryOptions({
     queryFn: () => getSellerAnalytics(),
-    queryKey: sellerAnalyticsQueryKey.all(),
+    queryKey: sellerAnalyticsQueryKey.overview(),
   });
 }

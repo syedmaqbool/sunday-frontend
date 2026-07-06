@@ -1,5 +1,5 @@
 import type { BoostPackage, BoostPlacement } from '@/hooks/useBoosts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import {
   CalendarIcon,
@@ -39,9 +39,9 @@ import { getBoostPackagesOptions } from '@/hooks/useBoosts';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utilities';
 import {
-  boostWithCampaign,
-  boostWithPackage,
-} from '@/services/clientBoost.service';
+  useBoostWithCampaignMutation,
+  useBoostWithPackageMutation,
+} from '@/queries/clientBoost.query';
 
 const placementMeta: Record<
   BoostPlacement,
@@ -82,12 +82,12 @@ interface Props {
 
 function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
   // Packages tab state
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const { data: packages = [], isLoading } = useQuery(getBoostPackagesOptions());
+  const { data: packagesResponse, isLoading } = useQuery(getBoostPackagesOptions());
+  const packages = useMemo(() => packagesResponse?.data ?? [], [packagesResponse?.data]);
 
   // Custom campaign tab state
   const [placement, setPlacement] = useState<BoostPlacement>('FOR_YOU');
@@ -121,61 +121,8 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     .filter(p => selected.has(p.id))
     .reduce((sum, p) => sum + Number(p.price), 0);
 
-  const purchasePackages = useMutation({
-    mutationFn: async () => {
-      if (!user)
-        throw new Error('Not authenticated');
-      await boostWithPackage(listingId, {
-        packageIds: [...selected],
-        paymentStatus: 'MOCK',
-      });
-    },
-    onError: (error: any) => toast.error(error.message ?? 'Failed to activate boost'),
-    onSuccess: () => {
-      trackEvent('boost_purchased', {
-        currency: 'PKR',
-        listing_id: listingId,
-        type: 'package',
-        value: packagesTotal,
-      });
-      toast.success('Boost activated! (Mock payment)');
-      queryClient.invalidateQueries({ queryKey: ['my-boosts'] });
-      queryClient.invalidateQueries({ queryKey: ['active-boosts'] });
-      setSelected(new Set());
-      setOpen(false);
-    },
-  });
-
-  const purchaseCampaign = useMutation({
-    mutationFn: async () => {
-      if (!user)
-        throw new Error('Not authenticated');
-      if (budget <= 0)
-        throw new Error('Budget must be greater than 0');
-      if (endDate <= startDate)
-        throw new Error('End date must be after start date');
-      await boostWithCampaign(listingId, {
-        paymentStatus: 'MOCK',
-        placement: placement as 'FOR_YOU' | 'SEARCH',
-        endsAt: endDate.toISOString(),
-        startsAt: startDate.toISOString(),
-      });
-    },
-    onError: (error: any) => toast.error(error.message ?? 'Failed to launch campaign'),
-    onSuccess: () => {
-      trackEvent('boost_purchased', {
-        currency: 'PKR',
-        listing_id: listingId,
-        placement,
-        type: 'campaign',
-        value: budget,
-      });
-      toast.success('Campaign launched! (Mock payment)');
-      queryClient.invalidateQueries({ queryKey: ['my-boosts'] });
-      queryClient.invalidateQueries({ queryKey: ['active-boosts'] });
-      setOpen(false);
-    },
-  });
+  const purchasePackages = useBoostWithPackageMutation();
+  const purchaseCampaign = useBoostWithCampaignMutation();
 
   const grouped = useMemo(() => {
     const g: Record<BoostPlacement, BoostPackage[]> = {
@@ -471,7 +418,44 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                 </p>
               </div>
               <Button
-                onClick={() => purchaseCampaign.mutate()}
+                onClick={() => {
+                  if (!user) {
+                    toast.error('Not authenticated');
+                    return;
+                  }
+                  if (budget <= 0) {
+                    toast.error('Budget must be greater than 0');
+                    return;
+                  }
+                  if (endDate <= startDate) {
+                    toast.error('End date must be after start date');
+                    return;
+                  }
+                  purchaseCampaign.mutate(
+                    {
+                      listingId,
+                      paymentStatus: 'MOCK',
+                      placement: placement as 'FOR_YOU' | 'SEARCH',
+                      endsAt: endDate.toISOString(),
+                      startsAt: startDate.toISOString(),
+                    },
+                    {
+                      onError: (error: any) =>
+                        toast.error(error.message ?? 'Failed to launch campaign'),
+                      onSuccess: () => {
+                        trackEvent('boost_purchased', {
+                          currency: 'PKR',
+                          listing_id: listingId,
+                          placement,
+                          type: 'campaign',
+                          value: budget,
+                        });
+                        toast.success('Campaign launched! (Mock payment)');
+                        setOpen(false);
+                      },
+                    },
+                  );
+                }}
                 disabled={purchaseCampaign.isPending || budget <= 0}
                 className="gap-1"
               >
@@ -576,7 +560,34 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                 </p>
               </div>
               <Button
-                onClick={() => purchasePackages.mutate()}
+                onClick={() => {
+                  if (!user) {
+                    toast.error('Not authenticated');
+                    return;
+                  }
+                  purchasePackages.mutate(
+                    {
+                      listingId,
+                      packageIds: [...selected],
+                      paymentStatus: 'MOCK',
+                    },
+                    {
+                      onError: (error: any) =>
+                        toast.error(error.message ?? 'Failed to activate boost'),
+                      onSuccess: () => {
+                        trackEvent('boost_purchased', {
+                          currency: 'PKR',
+                          listing_id: listingId,
+                          type: 'package',
+                          value: packagesTotal,
+                        });
+                        toast.success('Boost activated! (Mock payment)');
+                        setSelected(new Set());
+                        setOpen(false);
+                      },
+                    },
+                  );
+                }}
                 disabled={selected.size === 0 || purchasePackages.isPending}
                 className="gap-1"
               >

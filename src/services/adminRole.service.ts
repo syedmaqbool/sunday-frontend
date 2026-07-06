@@ -1,5 +1,5 @@
-import type { Response } from '@/types/response.type';
 import type { AdminPermission, AdminRole } from '@/types/adminRole.type';
+import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminRoles() {

@@ -5,8 +5,10 @@ import {
 } from '@/services/adminOrders.service';
 
 export const adminOrdersQueryKey = {
-  orders: () => ['admin-orders'] as const,
-  reservedListings: () => ['admin-reserved-listings'] as const,
+  all: () => ['admin-orders'] as const,
+  orders: () => [...adminOrdersQueryKey.all(), 'orders', 'list'] as const,
+  reservedListings: () =>
+    [...adminOrdersQueryKey.all(), 'reserved-listings', 'list'] as const,
 };
 
 export function getAdminOrdersOptions() {

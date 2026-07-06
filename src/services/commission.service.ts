@@ -2,6 +2,14 @@ import type { CommissionTier, CommissionTierPayload } from '@/types/commission.t
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
+export function listPublicCommissionTiers(): Promise<PaginatedResponse<CommissionTier>> {
+  return authInstance
+    .get('/api/v1/commission-tiers', {
+      searchParams: { page: 1, size: 100 },
+    })
+    .json<PaginatedResponse<CommissionTier>>();
+}
+
 export function listCommissionTiers() {
   return authInstance
     .get('/api/v1/admin/settings/commission-tiers')

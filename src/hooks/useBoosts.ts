@@ -29,7 +29,8 @@ export function useActiveBoostsQuery(placement?: BoostPlacement) {
 
 /** Map of listingId -> boost score for a given placement. */
 export function useBoostScoreMap(placement: BoostPlacement) {
-  const { data: boosts = [] } = useQuery(getActiveBoostsOptions(placement));
+  const { data: boostsResponse } = useQuery(getActiveBoostsOptions(placement));
+  const boosts = boostsResponse?.data ?? [];
   const map = new Map<string, number>();
   for (const b of boosts)
     map.set(b.listingId, (map.get(b.listingId) ?? 0) + 1);

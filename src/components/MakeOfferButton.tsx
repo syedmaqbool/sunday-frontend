@@ -1,6 +1,6 @@
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
@@ -17,17 +17,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { trackEvent } from '@/lib/analytics';
-import { getBuyerListingOffersOptions, offersQueryKey } from '@/queries/offers.query';
 import {
-  acceptCounterOffer,
-  createOffer,
-  withdrawOffer as withdrawOfferRequest,
-} from '@/services/offers.service';
+  getBuyerListingOffersOptions,
+  useAcceptCounterOfferMutation,
+  useCreateOfferMutation,
+  useWithdrawOfferMutation,
+} from '@/queries/offers.query';
 
 interface MakeOfferProps {
   listingId: string;
@@ -62,7 +62,6 @@ export function MakeOfferButton({
 }: MakeOfferProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const form = useForm<OfferFormValues>({
     defaultValues: { amount: '', message: '' },
@@ -72,50 +71,33 @@ export function MakeOfferButton({
   const { control, formState: { errors }, handleSubmit, reset, watch } = form;
   const amount = watch('amount');
 
-  const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
+  const { data: existingOffersResponse } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
+  const existingOffers = (existingOffersResponse.data ?? []).filter(
+    offer => offer.listingId === listingId,
+  );
 
-  const invalidateOffers = () =>
-    queryClient.invalidateQueries({
-      queryKey: offersQueryKey.buyerListing(listingId, user?.id),
-    });
-
-  const submitOffer = useMutation({
-    mutationFn: (values: OfferFormValues) =>
-      createOffer(listingId, { amount: Number(values.amount), message: values.message }),
-    onError: (error: any) => toast.error(error.message),
-    onSuccess: () => {
-      trackEvent('make_offer', {
-        listing_id: listingId,
-        listing_price: listingPrice,
-        listing_title: listingTitle,
-        offer_amount: Number(amount),
-      });
-      toast.success('Offer sent!');
-      invalidateOffers();
-      reset();
-    },
-  });
+  const submitOffer = useCreateOfferMutation(listingId, user?.id);
 
   const onSubmit: SubmitHandler<OfferFormValues> = values =>
-    submitOffer.mutate(values);
+    submitOffer.mutate(
+      { amount: Number(values.amount), message: values.message },
+      {
+        onError: (error: any) => toast.error(error.message),
+        onSuccess: () => {
+          trackEvent('make_offer', {
+            listing_id: listingId,
+            listing_price: listingPrice,
+            listing_title: listingTitle,
+            offer_amount: Number(values.amount),
+          });
+          toast.success('Offer sent!');
+          reset();
+        },
+      },
+    );
 
-  const acceptCounter = useMutation({
-    mutationFn: (offerId: string) => acceptCounterOffer(offerId),
-    onError: (error: any) => toast.error(error.message),
-    onSuccess: () => {
-      toast.success('Counter-offer accepted! Check your Messages to chat with the seller.');
-      invalidateOffers();
-    },
-  });
-
-  const withdrawOffer = useMutation({
-    mutationFn: (offerId: string) => withdrawOfferRequest(offerId),
-    onError: (error: any) => toast.error(error.message),
-    onSuccess: () => {
-      toast.success('Offer withdrawn');
-      invalidateOffers();
-    },
-  });
+  const acceptCounter = useAcceptCounterOfferMutation(listingId, user?.id);
+  const withdrawOffer = useWithdrawOfferMutation(listingId, user?.id);
 
   if (!user) {
     return (
@@ -123,9 +105,14 @@ export function MakeOfferButton({
         onClick={() => navigate('/auth')}
         size="lg"
         variant="outline"
-        className="w-full gap-2 sm:w-auto"
+        className="
+          w-full gap-2
+          sm:w-auto
+        "
       >
-        <MessageSquare className="h-4 w-4" /> Make Offer
+        <MessageSquare className="h-4 w-4" />
+        {' '}
+        Make Offer
       </Button>
     );
   }
@@ -137,8 +124,17 @@ export function MakeOfferButton({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button size="lg" variant="outline" className="w-full gap-2 sm:w-auto">
-          <MessageSquare className="h-4 w-4" /> Make Offer
+        <Button
+          size="lg"
+          variant="outline"
+          className="
+            w-full gap-2
+            sm:w-auto
+          "
+        >
+          <MessageSquare className="h-4 w-4" />
+          {' '}
+          Make Offer
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -147,7 +143,10 @@ export function MakeOfferButton({
             {activeOffer ? 'Your Offer' : 'Make an Offer'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {listingTitle} · Listed at Rs {listingPrice.toLocaleString()}
+            {listingTitle}
+            {' '}
+            · Listed at Rs
+            {listingPrice.toLocaleString()}
           </p>
         </DialogHeader>
 
@@ -159,7 +158,9 @@ export function MakeOfferButton({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
-                      Rs {offer.amount.toLocaleString()}
+                      Rs
+                      {' '}
+                      {offer.amount.toLocaleString()}
                     </span>
                     <Badge variant={statusBadge(offer.status)}>{offer.status}</Badge>
                   </div>
@@ -168,23 +169,38 @@ export function MakeOfferButton({
                   </span>
                 </div>
 
-        
                 {offer.status === 'COUNTERED' && offer.counterAmount && (
                   <div className="mt-2 rounded-md border border-border/60 bg-muted p-2">
                     <p className="text-xs font-semibold text-foreground">
-                      Counter: Rs {offer.counterAmount.toLocaleString()}
+                      Counter: Rs
+                      {' '}
+                      {offer.counterAmount.toLocaleString()}
                     </p>
                     <div className="mt-2 flex gap-2">
                       <Button
-                        onClick={() => acceptCounter.mutate(offer.id)}
+                        onClick={() =>
+                          acceptCounter.mutate(offer.id, {
+                            onError: (error: any) => toast.error(error.message),
+                            onSuccess: () => {
+                              toast.success('Counter-offer accepted! Check your Messages to chat with the seller.');
+                            },
+                          })}
                         disabled={acceptCounter.isPending}
                         size="sm"
                         className="h-8 text-xs"
                       >
-                        Accept Rs {offer.counterAmount.toLocaleString()}
+                        Accept Rs
+                        {' '}
+                        {offer.counterAmount.toLocaleString()}
                       </Button>
                       <Button
-                        onClick={() => withdrawOffer.mutate(offer.id)}
+                        onClick={() =>
+                          withdrawOffer.mutate(offer.id, {
+                            onError: (error: any) => toast.error(error.message),
+                            onSuccess: () => {
+                              toast.success('Offer withdrawn');
+                            },
+                          })}
                         disabled={withdrawOffer.isPending}
                         size="sm"
                         variant="outline"
@@ -197,11 +213,20 @@ export function MakeOfferButton({
                 )}
                 {offer.status === 'PENDING' && (
                   <Button
-                    onClick={() => withdrawOffer.mutate(offer.id)}
+                    onClick={() =>
+                      withdrawOffer.mutate(offer.id, {
+                        onError: (error: any) => toast.error(error.message),
+                        onSuccess: () => {
+                          toast.success('Offer withdrawn');
+                        },
+                      })}
                     disabled={withdrawOffer.isPending}
                     size="sm"
                     variant="ghost"
-                    className="mt-2 h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                    className="
+                      mt-2 h-7 px-2 text-xs text-destructive
+                      hover:bg-destructive/10
+                    "
                   >
                     Withdraw
                   </Button>
@@ -243,9 +268,9 @@ export function MakeOfferButton({
                 render={({ field }) => (
                   <Textarea
                     id="offer-message"
+                    maxLength={500}
                     placeholder="e.g. Would you consider this? I can pay immediately."
                     rows={2}
-                    maxLength={500}
                     {...field}
                   />
                 )}

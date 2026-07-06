@@ -6,7 +6,8 @@ import {
 } from '@/services/messageModeration.service';
 
 export const messageModerationQueryKey = {
-  flagged: () => ['admin-flagged-messages'] as const,
+  all: () => ['admin-flagged-messages'] as const,
+  flagged: () => [...messageModerationQueryKey.all(), 'list'] as const,
 };
 
 export function getFlaggedMessagesOptions() {

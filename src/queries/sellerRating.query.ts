@@ -5,9 +5,11 @@ import { getReviewStats } from '@/services/offers.service';
 export type { ReviewStat as SellerRating } from '@/services/offers.service';
 
 export const sellerRatingQueryKey = {
-  detail: (sellerId?: string) => ['seller-rating', sellerId] as const,
+  all: () => ['seller-rating'] as const,
+  detail: (sellerId?: string) =>
+    [...sellerRatingQueryKey.all(), 'detail', sellerId ?? null] as const,
   list: (sellerIds: string[]) =>
-    ['seller-ratings', sellerIds.toSorted((a, b) => a.localeCompare(b)).join(',')] as const,
+    [...sellerRatingQueryKey.all(), 'list', sellerIds.toSorted((a, b) => a.localeCompare(b)).join(',')] as const,
 };
 
 export function getSellerRatingOptions(sellerId: string | undefined) {

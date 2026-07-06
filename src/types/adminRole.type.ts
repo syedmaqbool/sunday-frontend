@@ -1,14 +1,14 @@
 export interface AdminPermission {
-  createdAt: string;
   id: string;
   name: string;
+  createdAt: string;
   updatedAt: string;
 }
 
 export interface AdminRole {
-  createdAt: string;
   id: string;
   name: string;
   permissions: AdminPermission[];
+  createdAt: string;
   updatedAt: string;
 }

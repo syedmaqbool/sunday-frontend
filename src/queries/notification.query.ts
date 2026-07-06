@@ -8,6 +8,7 @@ import {
 
 export const notificationsQueryKey = {
   all: () => ['notifications'] as const,
+  list: () => [...notificationsQueryKey.all(), 'list'] as const,
 };
 
 export function getNotificationsOptions() {
@@ -17,7 +18,7 @@ export function getNotificationsOptions() {
       const response = await listNotifications();
       return response;
     },
-    queryKey: notificationsQueryKey.all(),
+    queryKey: notificationsQueryKey.list(),
   });
 }
 

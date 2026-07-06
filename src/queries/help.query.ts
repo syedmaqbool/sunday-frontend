@@ -12,11 +12,12 @@ export type HelpFaq = HelpFaqAPI;
 export type HelpTutorial = HelpTutorialAPI;
 
 export const helpQueryKey = {
-  categories: () => ['help-categories'] as const,
+  all: () => ['help'] as const,
+  categories: () => [...helpQueryKey.all(), 'categories'] as const,
   faqs: (categoryKey?: string) =>
-    ['help-faqs', categoryKey ?? null] as const,
-  topFaqs: () => ['top-faqs'] as const,
-  tutorials: () => ['help-tutorials'] as const,
+    [...helpQueryKey.all(), 'faqs', categoryKey ?? null] as const,
+  topFaqs: () => [...helpQueryKey.all(), 'top-faqs'] as const,
+  tutorials: () => [...helpQueryKey.all(), 'tutorials'] as const,
 };
 
 export function getHelpCategoriesOptions() {

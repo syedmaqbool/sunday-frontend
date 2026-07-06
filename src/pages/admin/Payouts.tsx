@@ -164,7 +164,7 @@ function Payouts() {
       s.balance = s.sales - s.paid;
     });
 
-    return [...map.values()].toSorted((a, b) => b.balance - a.balance);
+    return map.values().toArray().toSorted((a, b) => b.balance - a.balance);
   }, [sellerPayouts]);
 
   /** Global totals from payout runs */

@@ -9,8 +9,9 @@ import {
 } from '@/services/adminRole.service';
 
 export const adminRoleQueryKey = {
-  permissions: () => ['admin-role-permissions'] as const,
-  roles: () => ['admin-roles'] as const,
+  all: () => ['admin-role'] as const,
+  permissions: () => [...adminRoleQueryKey.all(), 'permissions', 'list'] as const,
+  roles: () => [...adminRoleQueryKey.all(), 'roles', 'list'] as const,
 };
 
 export function getAdminRolesQueryOptions() {
@@ -59,7 +60,7 @@ export function useUpdateAdminRoleMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ payload, roleId }: { payload: { name: string }; roleId: string }) =>
+    mutationFn: ({ roleId, payload }: { roleId: string; payload: { name: string } }) =>
       updateAdminRole(roleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
@@ -73,11 +74,11 @@ export function useUpdateAdminRolePermissionsMutation() {
   return useMutation({
     mutationFn: (
       {
-        payload,
         roleId,
+        payload,
       }: {
-        payload: { permissions: string[] };
         roleId: string;
+        payload: { permissions: string[] };
       },
     ) => updateAdminRolePermissions(roleId, payload),
     onSuccess: () => {

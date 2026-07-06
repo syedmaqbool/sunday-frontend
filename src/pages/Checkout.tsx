@@ -26,6 +26,8 @@ import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
+import { marketplaceQueryKey } from '@/queries/marketplace.query';
+import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {
   createOrder,
   validateDiscount,
@@ -62,7 +64,10 @@ function Checkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: activeTax } = useQuery(getActiveTaxOptions());
-  const { data: commissionTiers } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
+  const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
+  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
+    tier => tier.active,
+  );
   const [placing, setPlacing] = useState(false);
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
@@ -214,11 +219,8 @@ function Checkout() {
       });
 
       clearCart();
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-      queryClient.invalidateQueries({ queryKey: ['featured-listings'] });
-      queryClient.invalidateQueries({ queryKey: ['trending-listings'] });
-      queryClient.invalidateQueries({ queryKey: ['listing'] });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
       toast({
         description: 'Your order has been confirmed.',
         title: 'Order placed!',

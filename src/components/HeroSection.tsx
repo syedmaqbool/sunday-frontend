@@ -10,18 +10,18 @@ import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
 interface HeroContent {
   alt?: string;
   badgeText?: string;
-  badgeIconUrl?: string;              // ← NEW
+  badgeIconUrl?: string;
   headlineLine1?: string;
   headlineLine1Color?: string;
   headlineLine2?: string;
   headlineLine2Color?: string;
   mobileUrl?: string;
   primaryCtaLabel?: string;
-  primaryCtaBg?: string;              // ← NEW
-  primaryCtaTextColor?: string;       // ← NEW
+  primaryCtaBg?: string;
+  primaryCtaTextColor?: string;
   secondaryCtaLabel?: string;
-  secondaryCtaBorderColor?: string;   // ← NEW
-  secondaryCtaTextColor?: string;     // ← NEW
+  secondaryCtaBorderColor?: string;
+  secondaryCtaTextColor?: string;
   subtitle?: string;
   subtitleColor?: string;
   url?: string;
@@ -43,42 +43,64 @@ const DEFAULTS: Required<Omit<HeroContent, 'mobileUrl' | 'url' | 'alt' | 'badgeI
   headlineLine2Color: '',
 };
 
+// Invalid URL guard — sirf base URL reject karo
+const isValidUrl = (url?: string) =>
+  !!url && !url.match(/^https?:\/\/[^/]+\/?$/);
+
 function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { data } = useQuery(getPublicHeroImageOptions());
-  const heroContent = data as HeroContent | null | undefined;
 
-  const heroImage =
-    (isMobile ? heroContent?.mobileUrl || heroContent?.url : heroContent?.url) || heroFallback;
-  const c = { ...DEFAULTS, ...heroContent };
+  // Empty strings aur invalid URLs filter karo
+  const cleaned = Object.fromEntries(
+    Object.entries(data ?? {}).filter(([_, v]) => {
+      if (!v || v === '') return false;
+      if (typeof v === 'string' && v.match(/^https?:\/\/[^/]+\/?$/)) return false;
+      return true;
+    }),
+  ) as HeroContent;
+
+  const c = { ...DEFAULTS, ...cleaned };
+
+  const heroImage = (isMobile
+    ? (isValidUrl(cleaned.mobileUrl) ? cleaned.mobileUrl : isValidUrl(cleaned.url) ? cleaned.url : null)
+    : (isValidUrl(cleaned.url) ? cleaned.url : null)
+  ) ?? heroFallback;
 
   return (
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
           src={heroImage}
-          alt={heroContent?.alt || 'Fashion editorial'}
-          className="h-full w-full object-cover"
+          alt={cleaned.alt || 'Fashion editorial'}
+          className="h-full w-full object-cover transition-opacity duration-500"
         />
       </div>
 
       <div className="container relative z-10">
         <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 30 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
           className="max-w-xl"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-          {/* Badge — icon ya text */}
-          <div className="mb-4 inline-flex items-center gap-2 rounded-sm bg-primary/20 px-3 py-1">
-  <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground">
-    {c.badgeText}
-  </span>
-</div>
+          {/* ← Old UI: icon as image ya text as inline span */}
+          {isValidUrl(c.badgeIconUrl)
+            ? (
+                <img
+                  src={c.badgeIconUrl}
+                  alt={c.badgeText || 'Badge'}
+                  className="mb-4 h-12 w-auto object-contain"
+                />
+              )
+            : c.badgeText?.trim() && (
+                <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
+                  {c.badgeText}
+                </span>
+              )}
 
           <h1 className="font-heading text-5xl font-bold leading-tight text-surface-dark-foreground md:text-7xl">
-            {/* Line 1 — bug fix: headlineLine1Color use ho raha hai */}
             <span
               style={c.headlineLine1Color ? { color: c.headlineLine1Color } : undefined}
               className={c.headlineLine1Color ? '' : 'text-gold'}
@@ -86,7 +108,6 @@ function HeroSection() {
               {c.headlineLine1}
             </span>
             <br />
-            {/* Line 2 — italic accent */}
             <span
               style={c.headlineLine2Color ? { color: c.headlineLine2Color } : undefined}
               className={c.headlineLine2Color ? 'italic' : 'italic text-gold'}
@@ -95,38 +116,37 @@ function HeroSection() {
             </span>
           </h1>
 
+          {/* ← Old UI: mt-5 max-w-md text-lg leading-relaxed */}
           <p
-  className="mt-4 text-surface-dark-foreground/80 whitespace-pre-wrap"
-  style={c.subtitleColor ? { color: c.subtitleColor } : undefined}
->
-  {c.subtitle}
-</p>
+            className="mt-5 max-w-md text-lg leading-relaxed text-surface-dark-foreground/80 whitespace-pre-wrap"
+            style={c.subtitleColor ? { color: c.subtitleColor } : undefined}
+          >
+            {c.subtitle}
+          </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {/* Primary CTA */}
             <Button
-              onClick={() => navigate('/listings')}
               size="lg"
               className="gap-2"
               style={{
                 ...(c.primaryCtaBg && { backgroundColor: c.primaryCtaBg, borderColor: c.primaryCtaBg }),
                 ...(c.primaryCtaTextColor && { color: c.primaryCtaTextColor }),
               }}
+              onClick={() => navigate('/listings')}
             >
               {c.primaryCtaLabel}
               <ArrowRight className="h-4 w-4" />
             </Button>
 
-            {/* Secondary CTA */}
             <Button
-              onClick={() => navigate('/create-listing')}
-              size="lg"
               variant="outline"
+              size="lg"
               className="border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground hover:bg-surface-dark-foreground/10"
               style={{
                 ...(c.secondaryCtaBorderColor && { borderColor: c.secondaryCtaBorderColor }),
                 ...(c.secondaryCtaTextColor && { color: c.secondaryCtaTextColor }),
               }}
+              onClick={() => navigate('/create-listing')}
             >
               {c.secondaryCtaLabel}
             </Button>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-
+import { useEffect } from 'react';
 import {
   Grid3X3,
   List,
@@ -40,7 +40,7 @@ function Listings() {
   const initialCategory = searchParameters.get('category') || 'all';
   const initialParent
     = searchParameters.get('parent')
-      || (initialCategory === 'all' ? 'all' : initialCategory.split('-', 1)[0]);
+    || (initialCategory === 'all' ? 'all' : initialCategory.split('-', 1)[0]);
   const initialSub
     = initialCategory !== 'all' && initialCategory.includes('-')
       ? initialCategory.split('-', 2)[1]
@@ -63,6 +63,20 @@ function Listings() {
   const { data: sellerRatingsMap } = useQuery(getSellerRatingsOptions(sellerIds));
   const searchBoostMap = useBoostScoreMap('SEARCH');
 
+  useEffect(() => {
+    const category = searchParameters.get('category') || 'all';
+    const parent
+      = searchParameters.get('parent')
+      || (category === 'all' ? 'all' : category.split('-', 1)[0]);
+    const sub
+      = category !== 'all' && category.includes('-')
+        ? category.split('-', 2)[1]
+        : 'all';
+
+    setParentCat(parent);
+    setSubCat(sub);
+  }, [searchParameters]);
+
   const filtered = useMemo(() => {
     let items = [...listings];
     if (search) {
@@ -74,7 +88,7 @@ function Listings() {
     }
     if (parentCat !== 'all') {
       items = items.filter(
-        index => index.categoryValue.toLowerCase() === parentCat.toLowerCase(),
+        index => index.categoryValue.toLowerCase().split('-')[0] === parentCat.toLowerCase(),
       );
     }
 
@@ -261,89 +275,89 @@ function Listings() {
 
         {isLoading
           ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          )
           : (
-              <>
-                <p className="mt-6 text-sm text-muted-foreground">
-                  {filtered.length}
-                  {' '}
-                  items
-                </p>
-                {filtered.length === 0
+            <>
+              <p className="mt-6 text-sm text-muted-foreground">
+                {filtered.length}
+                {' '}
+                items
+              </p>
+              {filtered.length === 0
+                ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <p className="font-heading text-2xl font-semibold text-foreground">
+                      No items found
+                    </p>
+                    <p className="mt-2 text-muted-foreground">
+                      Try adjusting your filters
+                    </p>
+                  </div>
+                )
+                : (view === 'grid'
                   ? (
-                      <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <p className="font-heading text-2xl font-semibold text-foreground">
-                          No items found
-                        </p>
-                        <p className="mt-2 text-muted-foreground">
-                          Try adjusting your filters
-                        </p>
-                      </div>
-                    )
-                  : (view === 'grid'
-                      ? (
-                          <div className="
+                    <div className="
                             mt-4 grid grid-cols-2 gap-4
                             sm:grid-cols-3
                             lg:grid-cols-4
                           "
+                    >
+                      {filtered.map((l, index) => (
+                        <ListingCard
+                          key={l.id}
+                          index={index}
+                          listing={l}
+                          sellerRating={sellerRatingsMap?.get(l.sellerId)}
+                        />
+                      ))}
+                    </div>
+                  )
+                  : (
+                    <div className="mt-4 space-y-4">
+                      {filtered.map((l) => {
+                        const mediaUrls = getListingMediaUrls(l);
+                        return (
+                          <div
+                            key={l.id}
+                            className="flex gap-4 rounded-lg border border-border bg-card p-4"
                           >
-                            {filtered.map((l, index) => (
-                              <ListingCard
-                                key={l.id}
-                                index={index}
-                                listing={l}
-                                sellerRating={sellerRatingsMap?.get(l.sellerId)}
-                              />
-                            ))}
+                            <img
+                              src={mediaUrls[0]}
+                              alt={l.title}
+                              className="h-28 w-28 rounded-md object-cover"
+                            />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                {l.brand}
+                              </p>
+                              <h3 className="text-sm font-semibold text-card-foreground">
+                                {l.title}
+                              </h3>
+                              <p className="mt-1 text-sm font-bold text-card-foreground">
+                                Rs
+                                {' '}
+                                {l.price.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Size
+                                {' '}
+                                {l.size}
+                                {' '}
+                                ·
+                                {' '}
+                                {l.condition.replace('_', ' ')}
+                              </p>
+                            </div>
                           </div>
-                        )
-                      : (
-                          <div className="mt-4 space-y-4">
-                            {filtered.map((l) => {
-                              const mediaUrls = getListingMediaUrls(l);
-                              return (
-                                <div
-                                  key={l.id}
-                                  className="flex gap-4 rounded-lg border border-border bg-card p-4"
-                                >
-                                  <img
-                                    src={mediaUrls[0]}
-                                    alt={l.title}
-                                    className="h-28 w-28 rounded-md object-cover"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                      {l.brand}
-                                    </p>
-                                    <h3 className="text-sm font-semibold text-card-foreground">
-                                      {l.title}
-                                    </h3>
-                                    <p className="mt-1 text-sm font-bold text-card-foreground">
-                                      Rs
-                                      {' '}
-                                      {l.price.toLocaleString()}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Size
-                                      {' '}
-                                      {l.size}
-                                      {' '}
-                                      ·
-                                      {' '}
-                                      {l.condition.replace('_', ' ')}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-              </>
-            )}
+                        );
+                      })}
+                    </div>
+                  ))}
+            </>
+          )}
       </main>
       <Footer />
     </div>

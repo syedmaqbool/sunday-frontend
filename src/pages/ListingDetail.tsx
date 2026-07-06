@@ -340,7 +340,7 @@ function ListingDetail() {
         "
         >
           <ImageGallery
-            images={getListingMediaUrls(listing)}
+            images={listing ? getListingMediaUrls(listing) : []}
             status={listing.status.toLowerCase()}
             title={listing.title}
           />

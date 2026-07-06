@@ -17,12 +17,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { trackEvent } from '@/lib/analytics';
 import { getBuyerListingOffersOptions, offersQueryKey } from '@/queries/offers.query';
-
 import {
   acceptCounterOffer,
   createOffer,
@@ -38,6 +38,7 @@ interface MakeOfferProps {
 
 const offerSchema = z.object({
   amount: z.string().refine(value => Number(value) > 0, 'Offer must be greater than 0.'),
+  message: z.string().max(500).optional(),
 });
 
 type OfferFormValues = z.infer<typeof offerSchema>;
@@ -64,14 +65,13 @@ export function MakeOfferButton({
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const form = useForm<OfferFormValues>({
-    defaultValues: { amount: '' },
+    defaultValues: { amount: '', message: '' },
     mode: 'all',
     resolver: zodResolver(offerSchema),
   });
   const { control, formState: { errors }, handleSubmit, reset, watch } = form;
   const amount = watch('amount');
 
-  // Fetch existing offers from this buyer on this listing
   const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
 
   const invalidateOffers = () =>
@@ -81,7 +81,7 @@ export function MakeOfferButton({
 
   const submitOffer = useMutation({
     mutationFn: (values: OfferFormValues) =>
-      createOffer(listingId, { amount: Number(values.amount) }),
+      createOffer(listingId, { amount: Number(values.amount), message: values.message }),
     onError: (error: any) => toast.error(error.message),
     onSuccess: () => {
       trackEvent('make_offer', {
@@ -103,9 +103,7 @@ export function MakeOfferButton({
     mutationFn: (offerId: string) => acceptCounterOffer(offerId),
     onError: (error: any) => toast.error(error.message),
     onSuccess: () => {
-      toast.success(
-        'Counter-offer accepted! Check your Messages to chat with the seller.',
-      );
+      toast.success('Counter-offer accepted! Check your Messages to chat with the seller.');
       invalidateOffers();
     },
   });
@@ -125,14 +123,9 @@ export function MakeOfferButton({
         onClick={() => navigate('/auth')}
         size="lg"
         variant="outline"
-        className="
-          w-full gap-2
-          sm:w-auto
-        "
+        className="w-full gap-2 sm:w-auto"
       >
-        <MessageSquare className="h-4 w-4" />
-        {' '}
-        Make Offer
+        <MessageSquare className="h-4 w-4" /> Make Offer
       </Button>
     );
   }
@@ -144,17 +137,8 @@ export function MakeOfferButton({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button
-          size="lg"
-          variant="outline"
-          className="
-            w-full gap-2
-            sm:w-auto
-          "
-        >
-          <MessageSquare className="h-4 w-4" />
-          {' '}
-          Make Offer
+        <Button size="lg" variant="outline" className="w-full gap-2 sm:w-auto">
+          <MessageSquare className="h-4 w-4" /> Make Offer
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -163,41 +147,32 @@ export function MakeOfferButton({
             {activeOffer ? 'Your Offer' : 'Make an Offer'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {listingTitle}
-            {' '}
-            · Listed at Rs
-            {listingPrice.toLocaleString()}
+            {listingTitle} · Listed at Rs {listingPrice.toLocaleString()}
           </p>
         </DialogHeader>
 
+        {/* ← Existing offers — sirf display, form nahi */}
         {existingOffers.length > 0 && (
           <div className="my-2 max-h-48 space-y-2 overflow-y-auto pr-1">
             {existingOffers.map(offer => (
-              <div
-                key={offer.id}
-                className="rounded-lg border border-border bg-card p-3"
-              >
+              <div key={offer.id} className="rounded-lg border border-border bg-card p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
-                      Rs
-                      {' '}
-                      {offer.amount.toLocaleString()}
+                      Rs {offer.amount.toLocaleString()}
                     </span>
-                    <Badge variant={statusBadge(offer.status)}>
-                      {offer.status}
-                    </Badge>
+                    <Badge variant={statusBadge(offer.status)}>{offer.status}</Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(offer.createdAt), 'MMM d')}
                   </span>
                 </div>
+
+        
                 {offer.status === 'COUNTERED' && offer.counterAmount && (
                   <div className="mt-2 rounded-md border border-border/60 bg-muted p-2">
                     <p className="text-xs font-semibold text-foreground">
-                      Counter: Rs
-                      {' '}
-                      {offer.counterAmount.toLocaleString()}
+                      Counter: Rs {offer.counterAmount.toLocaleString()}
                     </p>
                     <div className="mt-2 flex gap-2">
                       <Button
@@ -206,9 +181,7 @@ export function MakeOfferButton({
                         size="sm"
                         className="h-8 text-xs"
                       >
-                        Accept Rs
-                        {' '}
-                        {offer.counterAmount.toLocaleString()}
+                        Accept Rs {offer.counterAmount.toLocaleString()}
                       </Button>
                       <Button
                         onClick={() => withdrawOffer.mutate(offer.id)}
@@ -228,10 +201,7 @@ export function MakeOfferButton({
                     disabled={withdrawOffer.isPending}
                     size="sm"
                     variant="ghost"
-                    className="
-                      mt-2 h-7 px-2 text-xs text-destructive
-                      hover:bg-destructive/10
-                    "
+                    className="mt-2 h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
                   >
                     Withdraw
                   </Button>
@@ -241,6 +211,7 @@ export function MakeOfferButton({
           </div>
         )}
 
+        {/* ← New offer form — amount + message */}
         {!activeOffer && (
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -258,18 +229,35 @@ export function MakeOfferButton({
                   />
                 )}
               />
-              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
+              {errors.amount && (
+                <p className="text-xs text-destructive">{errors.amount.message}</p>
+              )}
             </div>
+
+            {/* ← Message field */}
+            <div className="space-y-2">
+              <Label htmlFor="offer-message">Message (optional)</Label>
+              <Controller
+                name="message"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    id="offer-message"
+                    placeholder="e.g. Would you consider this? I can pay immediately."
+                    rows={2}
+                    maxLength={500}
+                    {...field}
+                  />
+                )}
+              />
+            </div>
+
             <Button
               onClick={handleSubmit(onSubmit)}
-              disabled={
-                !amount || Number(amount) <= 0 || submitOffer.isPending
-              }
+              disabled={!amount || Number(amount) <= 0 || submitOffer.isPending}
               className="w-full"
             >
-              {submitOffer.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {submitOffer.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send Offer
             </Button>
           </div>

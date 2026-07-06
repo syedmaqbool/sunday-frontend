@@ -9,9 +9,11 @@ export interface MarketplaceAsset {
   url?: string | null;
 }
 
+
 export interface MarketplaceMediaItem {
   id: string;
   file?: MarketplaceAsset | null;
+  url?: string | null;           
   sortOrder?: number | null;
   type?: 'IMAGE' | 'VIDEO' | string;
   createdAt?: string;
@@ -278,21 +280,21 @@ export function getSellerListingsOptions(
   });
 }
 
-export function getListingMediaUrls(listing: {
+export function getListingMediaUrls(listing?: {
   coverImageUrl?: string | null;
   imageUrls?: string[] | null;
   media?: MarketplaceMediaItem[] | null;
-}) {
+} | null) {
+  if (!listing) return [];
+
   const mediaUrls = [...(listing.media ?? [])]
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map(item => item.file?.url)
+    .map(item => item.file?.url ?? item.url)  // ← file.url ya direct url
     .filter((url): url is string => !!url);
 
-  if (mediaUrls.length > 0)
-    return mediaUrls;
-  if (listing.imageUrls?.length)
-    return listing.imageUrls.filter((url): url is string => !!url);
-  if (listing.coverImageUrl)
-    return [listing.coverImageUrl];
+  if (mediaUrls.length > 0) return mediaUrls;
+  if (listing.imageUrls?.length) return listing.imageUrls.filter((url): url is string => !!url);
+  if (listing.coverImageUrl) return [listing.coverImageUrl];
   return [];
 }
+

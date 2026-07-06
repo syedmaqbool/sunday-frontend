@@ -36,7 +36,7 @@ export interface Offer {
   updatedAt: string;
 }
 
-export function createOffer(listingId: string, payload: { amount: number }) {
+export function createOffer(listingId: string, payload: { amount: number; message?: string }) {
   return authInstance
     .post(`/api/v1/listings/${listingId}/offers`, { json: payload })
     .json<Response<Offer>>();

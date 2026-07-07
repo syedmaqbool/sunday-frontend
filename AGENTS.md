@@ -24,6 +24,10 @@ All TanStack Query cache keys in this repo must follow these rules:
 
 - Module-specific types must live in `src/types/<module>.type.ts`. Do not define domain API/types inline in pages, components, query files, or service files when they belong to a module type file.
 
+## Form Conventions
+
+- For all form-related work in this repo, always use `react-hook-form`, `@hookform/resolvers/zod`, and `zod`.
+
 ## UI/Data Boundary
 
 - All data extraction, filtering, mapping, formatting, and view-specific reshaping must happen in the consuming component, page, or UI hook layer.

@@ -79,7 +79,7 @@ import { getMyProfileQueryOptions } from '@/queries/myProfile.query';
 import {
   updateItemStatus,
   uploadShippingProof,
-} from '@/services/myOrders.service';
+} from '@/services/myorders.service';
 
 const SHIPPING_METHODS = [
   'PostNet',
@@ -799,6 +799,8 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
   const handleSubmit = async () => {
     if (!method)
       return toast.error('Please select a shipping method');
+     if (!tracking.trim())
+      return toast.error('Please enter a tracking number');
     if (!expectedDate)
       return toast.error('Please select an expected delivery date');
     if (!proofFile)
@@ -814,7 +816,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
         expectedDelivery: expectedDate.toISOString(),
         shippingMethod: method,
         status: 'SHIPPED',
-        trackingNumber: tracking.trim() || undefined,
+        trackingNumber: tracking.trim()
       });
 
       // 3. Upload shipping proof URL
@@ -989,7 +991,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Tracking number (optional)</Label>
+              <Label>Tracking number</Label>
               <Input
                 onChange={event => setTracking(event.target.value)}
                 value={tracking}

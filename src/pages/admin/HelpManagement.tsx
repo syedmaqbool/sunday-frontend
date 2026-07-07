@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import {
   BookOpen,
-  FileText,
   Loader2,
   Pencil,
   Plus,
@@ -38,6 +37,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { HELP_ICON_OPTIONS, getHelpIcon } from '@/lib/helpIcons';
 import {
   getAdminSettingsOptions,
   useUpdateHelpCategoriesMutation,
@@ -46,13 +46,12 @@ import {
 } from '@/queries/adminSettings.query';
 
 // ── Display types ────────────────────────────────────────────────────────────
-// Note: backend HelpCategorySchema has no `id`/`blurb`/`icon` — `key` is the
-// identifier. HelpTutorialSchema has no `icon`/`steps`/`cta` — it's a simple
-// title+slug+body article, not a step-by-step card. UI redesigned to match.
 interface Category {
   key: string;
   active: boolean;
   label: string;
+  blurb: string;
+  icon: string;
   sort_order: number;
 }
 interface Faq {
@@ -66,9 +65,13 @@ interface Faq {
 interface Tutorial {
   id: string;
   body: string;
+  cta_label: string;
+  cta_to: string;
+  icon: string;
   published: boolean;
   slug: string;
   sort_order: number;
+  steps: string[];
   title: string;
 }
 
@@ -78,6 +81,8 @@ function adaptCategory(c: HelpCategoryAPI): Category {
     key: c.key,
     active: c.active,
     label: c.label,
+    blurb: c.blurb ?? '',
+    icon: c.icon ?? 'BookOpen',
     sort_order: c.sortOrder,
   };
 }
@@ -86,6 +91,8 @@ function categoryToApi(c: Category): HelpCategoryAPI {
     key: c.key,
     active: c.active,
     label: c.label,
+    blurb: c.blurb,
+    icon: c.icon,
     sortOrder: c.sort_order,
   };
 }
@@ -115,19 +122,29 @@ function adaptTutorial(t: HelpTutorialAPI): Tutorial {
   return {
     id: t.id,
     body: t.body,
+    cta_label: t.ctaLabel ?? '',
+    cta_to: t.ctaTo ?? '',
+    icon: t.icon ?? 'BookOpen',
     published: t.published,
     slug: t.slug,
     sort_order: t.sortOrder,
+    steps: t.steps ?? [],
     title: t.title,
   };
 }
+
+
 function tutorialToApi(t: Tutorial): HelpTutorialAPI {
   return {
     id: t.id,
     body: t.body,
+    ctaLabel: t.cta_label,
+    ctaTo: t.cta_to,
+    icon: t.icon,
     published: t.published,
     slug: t.slug,
     sortOrder: t.sort_order,
+    steps: t.steps,
     title: t.title,
   };
 }
@@ -153,6 +170,8 @@ const categorySchema = z.object({
     .max(40)
     .regex(/^[a-z0-9_-]+$/, 'Lowercase letters, numbers, _ or -'),
   label: z.string().trim().min(1).max(60),
+  blurb: z.string().trim().max(160),
+  icon: z.string().min(1),
   sort_order: z.number().int().min(0),
 });
 const faqSchema = z.object({
@@ -163,6 +182,9 @@ const faqSchema = z.object({
 });
 const tutorialSchema = z.object({
   body: z.string().trim().min(3).max(5000),
+  cta_label: z.string().trim().max(40),
+  cta_to: z.string().trim().max(200),
+  icon: z.string().min(1),
   slug: z
     .string()
     .trim()
@@ -170,8 +192,30 @@ const tutorialSchema = z.object({
     .max(80)
     .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, - only'),
   sort_order: z.number().int().min(0),
+  steps: z.array(z.string().trim().min(1)).min(1, 'At least one step'),
   title: z.string().trim().min(2).max(80),
 });
+
+const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent className="max-h-64">
+      {HELP_ICON_OPTIONS.map((name) => {
+        const Icon = getHelpIcon(name);
+        return (
+          <SelectItem key={name} value={name}>
+            <span className="flex items-center gap-2">
+              <Icon className="h-4 w-4" />
+              {name}
+            </span>
+          </SelectItem>
+        );
+      })}
+    </SelectContent>
+  </Select>
+);
 
 function HelpManagement() {
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
@@ -190,14 +234,14 @@ function HelpManagement() {
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
   const [catEdit, setCatEdit] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState({ key: '', label: '', sort_order: 0 });
+  const [catForm, setCatForm] = useState({ key: '', label: '', blurb: '', icon: 'BookOpen', sort_order: 0 });
 
   const openCategoryDialog = (c: Category | null) => {
     setCatEdit(c);
     setCatForm(
       c
-        ? { key: c.key, label: c.label, sort_order: c.sort_order }
-        : { key: '', label: '', sort_order: categories.length },
+        ? { key: c.key, label: c.label, blurb: c.blurb, icon: c.icon, sort_order: c.sort_order }
+        : { key: '', label: '', blurb: '', icon: 'BookOpen', sort_order: categories.length },
     );
     setCatOpen(true);
   };
@@ -220,6 +264,8 @@ function HelpManagement() {
         key: parsed.data.key,
         active: true,
         label: parsed.data.label,
+        blurb: parsed.data.blurb,
+        icon: parsed.data.icon,
         sort_order: parsed.data.sort_order,
       };
       next = [...categories, newCategory];
@@ -262,17 +308,17 @@ function HelpManagement() {
     setFaqForm(
       f
         ? {
-            answer: f.answer,
-            category_key: f.category_key,
-            question: f.question,
-            sort_order: f.sort_order,
-          }
+          answer: f.answer,
+          category_key: f.category_key,
+          question: f.question,
+          sort_order: f.sort_order,
+        }
         : {
-            answer: '',
-            category_key: categories[0]?.key ?? '',
-            question: '',
-            sort_order: faqs.length,
-          },
+          answer: '',
+          category_key: categories[0]?.key ?? '',
+          question: '',
+          sort_order: faqs.length,
+        },
     );
     setFaqOpen(true);
   };
@@ -322,13 +368,17 @@ function HelpManagement() {
     });
   };
 
-  // ── Tutorial dialog (simplified: title + slug + body — no icon/steps/CTA) ──
+  // ── Tutorial dialog ──
   const [tutOpen, setTutOpen] = useState(false);
   const [tutEdit, setTutEdit] = useState<Tutorial | null>(null);
   const [tutForm, setTutForm] = useState({
     body: '',
+    cta_label: '',
+    cta_to: '',
+    icon: 'BookOpen',
     slug: '',
     sort_order: 0,
+    steps: [''] as string[],
     title: '',
   });
 
@@ -345,18 +395,32 @@ function HelpManagement() {
     setTutForm(
       t
         ? {
-            body: t.body,
-            slug: t.slug,
-            sort_order: t.sort_order,
-            title: t.title,
-          }
-        : { body: '', slug: '', sort_order: tutorials.length, title: '' },
+          body: t.body,
+          cta_label: t.cta_label,
+          cta_to: t.cta_to,
+          icon: t.icon,
+          slug: t.slug,
+          sort_order: t.sort_order,
+          steps: t.steps.length ? t.steps : [''],
+          title: t.title,
+        }
+        : {
+          body: '',
+          cta_label: '',
+          cta_to: '',
+          icon: 'BookOpen',
+          slug: '',
+          sort_order: tutorials.length,
+          steps: [''],
+          title: '',
+        },
     );
     setTutOpen(true);
   };
 
   const saveTutorial = () => {
-    const parsed = tutorialSchema.safeParse(tutForm);
+    const cleanSteps = tutForm.steps.map(s => s.trim()).filter(Boolean);
+    const parsed = tutorialSchema.safeParse({ ...tutForm, steps: cleanSteps });
     if (!parsed.success)
       return toast.error(parsed.error.issues[0].message);
 
@@ -370,9 +434,13 @@ function HelpManagement() {
       const newTutorial: Tutorial = {
         id: `tutorial-${Date.now()}`,
         body: parsed.data.body,
+        cta_label: parsed.data.cta_label,
+        cta_to: parsed.data.cta_to,
+        icon: parsed.data.icon,
         published: true,
         slug: parsed.data.slug,
         sort_order: parsed.data.sort_order,
+        steps: parsed.data.steps,
         title: parsed.data.title,
       };
       next = [...tutorials, newTutorial];
@@ -417,7 +485,7 @@ function HelpManagement() {
           <TabsTrigger value="categories">Categories</TabsTrigger>
         </TabsList>
 
-        {/* ── FAQs ── */}
+        {/* ── FAQs (unchanged) ── */}
         <TabsContent value="faqs" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button
@@ -432,69 +500,69 @@ function HelpManagement() {
           </div>
           {faqs.length === 0
             ? (
-                <EmptyState label="No FAQs yet" />
-              )
+              <EmptyState label="No FAQs yet" />
+            )
             : (
-                faqs.map((f) => {
-                  const cat = categories.find(c => c.key === f.category_key);
-                  return (
-                    <Card key={f.id}>
-                      <CardContent className="
+              faqs.map((f) => {
+                const cat = categories.find(c => c.key === f.category_key);
+                return (
+                  <Card key={f.id}>
+                    <CardContent className="
                         flex flex-col gap-3 p-4
                         sm:flex-row sm:items-start
                       "
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px]">
-                              {cat?.label ?? f.category_key}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary" className="text-[10px]">
+                            {cat?.label ?? f.category_key}
+                          </Badge>
+                          {!f.published && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Draft
                             </Badge>
-                            {!f.published && (
-                              <Badge variant="outline" className="text-[10px]">
-                                Draft
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground">
-                              #
-                              {f.sort_order}
-                            </span>
-                          </div>
-                          <p className="mt-1 font-medium text-foreground">
-                            {f.question}
-                          </p>
-                          <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-                            {f.answer}
-                          </p>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            #
+                            {f.sort_order}
+                          </span>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Switch
-                            onCheckedChange={v => toggleFaqPublished(f.id, v)}
-                            checked={f.published}
-                          />
-                          <Button
-                            onClick={() => openFaqDialog(f)}
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => deleteFaq(f.id)}
-                            size="icon"
-                            variant="ghost"
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
+                        <p className="mt-1 font-medium text-foreground">
+                          {f.question}
+                        </p>
+                        <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                          {f.answer}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Switch
+                          onCheckedChange={v => toggleFaqPublished(f.id, v)}
+                          checked={f.published}
+                        />
+                        <Button
+                          onClick={() => openFaqDialog(f)}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => deleteFaq(f.id)}
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
         </TabsContent>
 
-        {/* ── Tutorials (simple articles: title + slug + body) ── */}
+        {/* ── Tutorials (restored: icon, steps, CTA) ── */}
         <TabsContent value="tutorials" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openTutorialDialog(null)} className="gap-2">
@@ -505,18 +573,20 @@ function HelpManagement() {
           </div>
           {tutorials.length === 0
             ? (
-                <EmptyState label="No tutorials yet" />
-              )
+              <EmptyState label="No tutorials yet" />
+            )
             : (
-                tutorials.map(t => (
+              tutorials.map((t) => {
+                const Icon = getHelpIcon(t.icon);
+                return (
                   <Card key={t.id}>
                     <CardContent className="
-                      flex flex-col gap-3 p-4
-                      sm:flex-row sm:items-start
-                    "
+                        flex flex-col gap-3 p-4
+                        sm:flex-row sm:items-start
+                      "
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                        <FileText className="h-5 w-5" />
+                        <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -537,8 +607,12 @@ function HelpManagement() {
                         <p className="mt-1 font-medium text-foreground">
                           {t.title}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                          {t.body}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {(t.steps ?? []).length}
+                          {' '}
+                          step
+                          {(t.steps ?? []).length === 1 ? '' : 's'}
+                          {t.cta_label && t.cta_to ? ` · CTA: ${t.cta_label} → ${t.cta_to}` : ''}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -564,11 +638,12 @@ function HelpManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                ))
-              )}
+                );
+              })
+            )}
         </TabsContent>
 
-        {/* ── Categories ── */}
+        {/* ── Categories (restored: icon + blurb, like old code) ── */}
         <TabsContent value="categories" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openCategoryDialog(null)} className="gap-2">
@@ -579,18 +654,20 @@ function HelpManagement() {
           </div>
           {categories.length === 0
             ? (
-                <EmptyState label="No categories yet" />
-              )
+              <EmptyState label="No categories yet" />
+            )
             : (
-                categories.map(c => (
+              categories.map((c) => {
+                const Icon = getHelpIcon(c.icon);
+                return (
                   <Card key={c.key}>
                     <CardContent className="
-                      flex flex-col gap-3 p-4
-                      sm:flex-row sm:items-center
-                    "
+                        flex flex-col gap-3 p-4
+                        sm:flex-row sm:items-center
+                      "
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                        <BookOpen className="h-5 w-5" />
+                        <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -612,6 +689,9 @@ function HelpManagement() {
                         </div>
                         <p className="mt-1 font-medium text-foreground">
                           {c.label}
+                        </p>
+                        <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                          {c.blurb}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -637,12 +717,13 @@ function HelpManagement() {
                       </div>
                     </CardContent>
                   </Card>
-                ))
-              )}
+                );
+              })
+            )}
         </TabsContent>
       </Tabs>
 
-      {/* ── Category dialog ── */}
+      {/* ── Category dialog (restored: Blurb + Icon fields) ── */}
       <Dialog onOpenChange={setCatOpen} open={catOpen}>
         <DialogContent>
           <DialogHeader>
@@ -675,16 +756,33 @@ function HelpManagement() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Sort order</Label>
+              <Label>Blurb</Label>
               <Input
                 onChange={event =>
-                  setCatForm({
-                    ...catForm,
-                    sort_order: Number(event.target.value) || 0,
-                  })}
-                value={catForm.sort_order}
-                type="number"
+                  setCatForm({ ...catForm, blurb: event.target.value })}
+                value={catForm.blurb}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Icon</Label>
+                <IconSelect
+                  value={catForm.icon}
+                  onChange={v => setCatForm({ ...catForm, icon: v })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sort order</Label>
+                <Input
+                  onChange={event =>
+                    setCatForm({
+                      ...catForm,
+                      sort_order: Number(event.target.value) || 0,
+                    })}
+                  value={catForm.sort_order}
+                  type="number"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -704,7 +802,7 @@ function HelpManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* ── FAQ dialog ── */}
+      {/* ── FAQ dialog (unchanged) ── */}
       <Dialog onOpenChange={setFaqOpen} open={faqOpen}>
         <DialogContent>
           <DialogHeader>
@@ -776,7 +874,7 @@ function HelpManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Tutorial dialog (simple article — no icon/steps/CTA) ── */}
+      {/* ── Tutorial dialog (restored: icon, steps, CTA) ── */}
       <Dialog onOpenChange={setTutOpen} open={tutOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -818,14 +916,80 @@ function HelpManagement() {
               />
             </div>
             <div className="space-y-1.5">
+              <Label>Icon</Label>
+              <IconSelect
+                value={tutForm.icon}
+                onChange={v => setTutForm({ ...tutForm, icon: v })}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label>Body</Label>
               <Textarea
                 onChange={event =>
                   setTutForm({ ...tutForm, body: event.target.value })}
                 value={tutForm.body}
                 placeholder="Write the tutorial content..."
-                rows={10}
+                rows={6}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Steps</Label>
+              {tutForm.steps.map((s, i) => (
+                <div key={i} className="flex gap-2">
+                  <span className="flex h-9 w-7 shrink-0 items-center justify-center text-xs text-muted-foreground">
+                    {i + 1}
+                    .
+                  </span>
+                  <Input
+                    value={s}
+                    onChange={(event) => {
+                      const next = [...tutForm.steps];
+                      next[i] = event.target.value;
+                      setTutForm({ ...tutForm, steps: next });
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      const next = tutForm.steps.filter((_, idx) => idx !== i);
+                      setTutForm({ ...tutForm, steps: next.length ? next : [''] });
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ''] })}
+                className="gap-2"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {' '}
+                Add step
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>CTA label (optional)</Label>
+                <Input
+                  onChange={event =>
+                    setTutForm({ ...tutForm, cta_label: event.target.value })}
+                  value={tutForm.cta_label}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>CTA path (optional)</Label>
+                <Input
+                  onChange={event =>
+                    setTutForm({ ...tutForm, cta_to: event.target.value })}
+                  value={tutForm.cta_to}
+                  placeholder="/listings"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

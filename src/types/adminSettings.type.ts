@@ -14,6 +14,8 @@ export interface HelpCategoryAPI {
   key: string;
   active: boolean;
   label: string;
+  blurb: string;
+  icon: string;
   sortOrder: number;
 }
 
@@ -28,11 +30,15 @@ export interface HelpFaqAPI {
 
 export interface HelpTutorialAPI {
   id: string;
-  body: string;
-  published: boolean;
-  slug: string;
-  sortOrder: number;
   title: string;
+  slug: string;
+  body: string;
+  icon: string;
+  steps: string[];
+  ctaLabel: string;
+  ctaTo: string;
+  sortOrder: number;
+  published: boolean;
 }
 
 export interface EmailTemplateAPI {

@@ -499,12 +499,12 @@ function Preferences() {
                     <div className="mx-auto mt-10 max-w-lg space-y-8">
                       <div className="flex items-center justify-between">
                         <span className="font-heading text-3xl font-bold text-primary">
-                          $
+                          Rs
                           {budgetRange[0]}
                         </span>
                         <span className="text-muted-foreground">—</span>
                         <span className="font-heading text-3xl font-bold text-primary">
-                          $
+                          Rs
                           {budgetRange[1]}
                         </span>
                       </div>
@@ -517,8 +517,8 @@ function Preferences() {
                         className="py-4"
                       />
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>$0</span>
-                        <span>$5,000+</span>
+                        <span>Rs0</span>
+                        <span>Rs5,000+</span>
                       </div>
                     </div>
                   </StepWrapper>

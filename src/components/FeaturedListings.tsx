@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-
+import { useAuth } from '@/contexts/AuthContext';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,9 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const { data: preferences } = useQuery(getUserPreferencesOptions());
+  const { user } = useAuth(); 
+  const { data: preferences } = useQuery(getUserPreferencesOptions(user?.id));
+
   const boostMap = useBoostScoreMap('FOR_YOU');
 
   const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());

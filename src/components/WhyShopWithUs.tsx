@@ -23,7 +23,7 @@ export default function WhyShopWithUs() {
     <section className="container py-20">
       {/* ← Old: rounded yellow card wrapper */}
       <div className="
-        rounded-3xl bg-[hsl(var(--surface-yellow))] p-8
+        rounded-3xl bg-surface-yellow p-8
         md:p-12
       "
       >

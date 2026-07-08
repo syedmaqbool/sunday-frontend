@@ -41,6 +41,7 @@ export default {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        'surface-yellow': '#FFFBEB',
         'foreground': 'hsl(var(--foreground))',
         'gold': 'hsl(var(--gold))',
         'gold-foreground': 'hsl(var(--gold-foreground))',

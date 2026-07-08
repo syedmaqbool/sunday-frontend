@@ -1,4 +1,6 @@
 import type { PutPreferencesPayload } from '@/types/buyerPreferences.type';
+import { useAuth } from '@/contexts/AuthContext';
+import { userPreferencesQueryKey } from '@/queries/userPreferences.query';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -69,10 +71,12 @@ export function getBackendBrandsOptions() {
 }
 
 // ── 5. PUT/SAVE PREFERENCES MUTATION ─────────────────────────────────────────
+
 export function useSavePreferencesMutation() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth(); // ← add karo
 
   return useMutation({
     mutationFn: (payload: PutPreferencesPayload) => putPreferences(payload),
@@ -89,12 +93,14 @@ export function useSavePreferencesMutation() {
         title: 'Preferences saved!',
       });
 
-      // Preferences save hote hi cache data invalidate hoga taake home page par updated feed dikhe
+      
       queryClient.invalidateQueries({
         queryKey: buyerPreferencesQueryKey.current(),
       });
+      queryClient.invalidateQueries({
+        queryKey: userPreferencesQueryKey.current(user?.id), // ← yeh add karo
+      });
 
-      // Direct redirect to main route
       navigate('/');
     },
   });

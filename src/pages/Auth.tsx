@@ -226,7 +226,8 @@ function Auth() {
 
         trackEvent('login', { method: 'email' });
 
-        const onboardingDone = (data.preferences as any)?.onboarding_completed;
+        const onboardingDone = (data.preferences as any)?.onboardingCompleted;
+
 
         if (onboardingDone) {
           toast({ title: 'Welcome back!' });

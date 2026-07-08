@@ -38,7 +38,7 @@ export interface Offer {
   listingPrice: number;
   listingStatus: OfferListingStatus;
   listingTitle: string;
-  message?: string;
+  message?: string | null;
   reservedUntil: string | null;
   sellerFullName: string;
   status: OfferStatus;

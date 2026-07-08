@@ -30,10 +30,18 @@ export const offersQueryKey = {
 export function getBuyerListingOffersOptions(listingId: string, userId?: string) {
   return queryOptions({
     enabled: !!userId,
-    queryFn: async () => await listMyOffers({ page: 1, size: 100 }),
+    queryFn: async () => {
+      try {
+        const response = await listMyOffers({ page: 1, size: 100 });
+        return (response?.data ?? []).filter(offer => offer.listingId === listingId);
+      } catch {
+        return [];
+      }
+    },
     queryKey: offersQueryKey.buyerListing(listingId, userId),
   });
 }
+
 
 export function getSentOffersOptions(userId?: string) {
   return queryOptions({

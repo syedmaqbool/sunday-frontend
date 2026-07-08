@@ -71,10 +71,7 @@ export function MakeOfferButton({
   const { control, formState: { errors }, handleSubmit, reset, watch } = form;
   const amount = watch('amount');
 
-  const { data: existingOffersResponse } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
-  const existingOffers = (existingOffersResponse.data ?? []).filter(
-    offer => offer.listingId === listingId,
-  );
+  const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
 
   const submitOffer = useCreateOfferMutation(listingId, user?.id);
 

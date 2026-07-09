@@ -5,6 +5,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
 const BoostManagement = lazy(() => import('./pages/admin/BoostManagement'));
 const BrandManagement = lazy(() => import('./pages/admin/BrandManagement'));
+const Contact = lazy(() => import('./pages/Contact'));
 const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement'));
 const CommissionManagement = lazy(() => import('./pages/admin/CommissionManagement'));
 const AdminComplaints = lazy(() => import('./pages/admin/Complaints'));
@@ -56,6 +57,7 @@ export default function AppRoutes() {
     <Routes>
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Index /></Suspense>} path="/" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Listings /></Suspense>} path="/listings" />
+      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Contact /></Suspense>} path="/contact" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ListingDetail /></Suspense>} path="/listing/:id" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/create-listing" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/edit-listing/:id" />

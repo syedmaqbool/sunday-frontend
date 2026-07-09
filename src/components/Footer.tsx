@@ -77,7 +77,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:support@sunday.app" className="hover:opacity-100">
+                <a href="/contact" className="hover:opacity-100">
                   Contact
                 </a>
               </li>
@@ -92,13 +92,18 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <span className="
+                <Link to="/privacy" className="
                   cursor-pointer
                   hover:opacity-100
                 "
                 >
                   Privacy
-                </span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/cookies" className="hover:opacity-100">
+                  Cookies
+                </Link>
               </li>
             </ul>
           </div>

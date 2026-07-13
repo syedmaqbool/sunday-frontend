@@ -1,6 +1,6 @@
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Loader2,
@@ -26,13 +26,12 @@ import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
-import { marketplaceQueryKey } from '@/queries/marketplace.query';
-import { myOrdersQueryKey } from '@/queries/myOrders.query';
+import { submitPayFast } from '@/lib/payfast';
 import {
-  createOrder,
-  validateDiscount,
-  validateSellerCoupon,
-} from '@/services/checkout.service';
+  useCreateCheckoutMutation,
+  useValidateDiscountMutation,
+  useValidateSellerCouponMutation,
+} from '@/queries/checkout.query';
 
 interface AppliedDiscount {
   code: string;
@@ -62,7 +61,6 @@ function Checkout() {
   const { clearCart, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { data: activeTax } = useQuery(getActiveTaxOptions());
   const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
   const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
@@ -72,6 +70,9 @@ function Checkout() {
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
+  const { mutateAsync: validateDiscountCode } = useValidateDiscountMutation();
+  const { mutateAsync: validateSellerCouponCode } = useValidateSellerCouponMutation();
   const shippingForm = useForm<ShippingFormValues>({
     defaultValues: {
       address: '',
@@ -132,7 +133,7 @@ function Checkout() {
     try {
       // 1) Try platform-wide discount first
       try {
-        const { data } = await validateDiscount({ code, listingIds });
+        const { data } = await validateDiscountCode({ code, listingIds });
         setAppliedDiscount({
           code: data.code,
           discountAmount: data.discountAmount,
@@ -152,7 +153,7 @@ function Checkout() {
       }
 
       // 2) Try seller coupon
-      const { data } = await validateSellerCoupon({ code, listingIds });
+      const { data } = await validateSellerCouponCode({ code, listingIds });
       setAppliedDiscount({
         code: data.code,
         discountAmount: data.discountAmount,
@@ -191,7 +192,7 @@ function Checkout() {
     setPlacing(true);
 
     try {
-      const { data: order } = await createOrder({
+      const response = await createCheckout({
         listingIds: items.map(index => index.listing.id),
         shippingAddress: shipping.address,
         shippingCity: shipping.city,
@@ -202,30 +203,17 @@ function Checkout() {
         ...(appliedDiscount?.source === 'platform' && { discountCode: appliedDiscount.code }),
         ...(appliedDiscount?.source === 'seller' && { sellerCouponCode: appliedDiscount.code }),
       });
-
-      trackEvent('purchase', {
-        coupon: appliedDiscount?.code ?? undefined,
-        currency: 'PKR',
-        items: items.map(({ listing, quantity }) => ({
-          item_brand: (listing as any).brand,
-          item_id: listing.id,
-          item_name: listing.title,
-          price: listing.price,
-          quantity,
-        })),
-        tax: order.taxAmount,
-        transaction_id: order.id,
-        value: order.total,
-      });
-
+      const result = response.data;
+      if (!result?.order) {
+        throw new Error('Checkout did not return an order.');
+      }
       clearCart();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
-      toast({
-        description: 'Your order has been confirmed.',
-        title: 'Order placed!',
-      });
-      navigate(`/order-confirmation/${order.id}`, { replace: true });
+      if (result.payment) {
+        submitPayFast(result.payment);
+      }
+      else {
+        navigate(`/order-confirmation/${result.order.id}`, { replace: true });
+      }
     }
     catch (error: any) {
       toast({

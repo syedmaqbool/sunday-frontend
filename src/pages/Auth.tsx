@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { HTTPError } from 'ky';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
@@ -72,8 +72,13 @@ function Auth() {
   const [emailExistsError, setEmailExistsError] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
   const { toast } = useToast();
+  const location = useLocation();
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
+  const requestedReturnTo = (location.state as { from?: unknown } | null)?.from;
+  const returnTo = typeof requestedReturnTo === 'string' && requestedReturnTo.startsWith('/')
+    ? requestedReturnTo
+    : null;
   const form = useForm<AuthFormValues>({
     defaultValues: {
       dob: '',
@@ -107,8 +112,8 @@ function Auth() {
   // Already logged in → home
   useEffect(() => {
     if (user)
-      navigate('/', { replace: true });
-  }, [user, navigate]);
+      navigate(returnTo ?? '/', { replace: true });
+  }, [user, navigate, returnTo]);
 
   useEffect(() => {
     if (otpCooldown <= 0) {
@@ -227,11 +232,9 @@ function Auth() {
         trackEvent('login', { method: 'email' });
 
         const onboardingDone = (data.preferences as any)?.onboardingCompleted;
-
-
         if (onboardingDone) {
           toast({ title: 'Welcome back!' });
-          navigate('/');
+          navigate(returnTo ?? '/');
         }
         else {
           navigate('/preferences');

@@ -44,6 +44,7 @@ export interface Order {
   discountAmount: number;
   discountCode: string | null;
   items: OrderItem[];
+  paymentStatus: 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
   platformFeeAmount: number;
   shippingAddress: string;
   shippingCity: string;

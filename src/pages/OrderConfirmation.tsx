@@ -1,19 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package } from 'lucide-react';
-import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
+import { PayFastRetryButton } from '@/components/PayFastRetryButton';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
+import { getPayFastStatusPollDelay, isPayFastRetryableStatus } from '@/lib/payfast';
 import { getMyOrderOptions } from '@/queries/myOrders.query';
 
 function OrderConfirmation() {
   const { id } = useParams<{ id: string }>();
   const { loading: authLoading, user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+  const [pollAttempt, setPollAttempt] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -23,19 +28,70 @@ function OrderConfirmation() {
     if (authLoading)
       return;
     if (!user) {
-      navigate('/auth');
+      navigate('/auth', {
+        state: { from: location.pathname },
+      });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, location.pathname, navigate]);
 
   const {
-    data: order,
+    data: orderResponse,
     error,
+    isFetching,
     isLoading,
+    refetch,
   } = useQuery({
     ...getMyOrderOptions(id ?? ''),
     enabled: Boolean(id) && Boolean(user) && !authLoading,
     retry: false,
   });
+  const order = orderResponse?.data;
+
+  useEffect(() => {
+    if (!order)
+      return;
+
+    const pollDelay = getPayFastStatusPollDelay(order.paymentStatus, pollAttempt);
+    if (pollDelay === null)
+      return;
+
+    const timer = setTimeout(() => {
+      setPollAttempt(current => current + 1);
+      void refetch();
+    }, pollDelay);
+
+    return () => clearTimeout(timer);
+  }, [order, pollAttempt, refetch]);
+
+  useEffect(() => {
+    if (!order || order.paymentStatus !== 'PAID')
+      return;
+
+    const storageKey = `purchase-tracked:${order.id}`;
+    if (localStorage.getItem(storageKey))
+      return;
+
+    trackEvent('purchase', {
+      coupon: order.discountCode ?? undefined,
+      currency: order.currency,
+      items: order.items.map(item => ({
+        item_brand: item.brand,
+        item_id: item.listingId,
+        item_name: item.title,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      tax: order.taxAmount,
+      transaction_id: order.id,
+      value: order.total,
+    });
+    localStorage.setItem(storageKey, '1');
+  }, [order]);
+
+  const handleCheckPaymentStatus = async () => {
+    setPollAttempt(0);
+    await refetch();
+  };
 
   const copyOrderId = async () => {
     if (!order)
@@ -81,6 +137,23 @@ function OrderConfirmation() {
     month: 'long',
     year: 'numeric',
   });
+  const isPaid = order.paymentStatus === 'PAID';
+  const isPending = order.paymentStatus === 'PENDING';
+  const isRetryable = isPayFastRetryableStatus(order.paymentStatus);
+  const heading = isPaid
+    ? 'Thank you for your order!'
+    : isPending
+      ? 'Payment is being verified'
+      : order.paymentStatus === 'FAILED'
+        ? 'Payment failed'
+        : 'Payment was not initialized';
+  const description = isPaid
+    ? 'Your payment has been confirmed and your order is being prepared.'
+    : isPending
+      ? 'We are waiting for PayFast to confirm your payment. This page will check again automatically.'
+      : isRetryable
+        ? 'Your order exists, but payment was not completed. You can retry payment below.'
+        : 'Your order is awaiting payment initialization.';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -110,18 +183,40 @@ function OrderConfirmation() {
           "
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+              {isPaid
+                ? <CheckCircle2 className="h-8 w-8 text-primary" />
+                : isPending
+                  ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  : <XCircle className="h-8 w-8 text-destructive" />}
             </div>
             <h1 className="
               font-heading text-2xl font-bold text-foreground
               sm:text-3xl
             "
             >
-              Thank you for your order!
+              {heading}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your order has been confirmed. A confirmation email is on its way.
+              {description}
             </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <span className="text-sm text-muted-foreground">Payment status:</span>
+              <span className="text-sm font-semibold text-foreground">{order.paymentStatus}</span>
+            </div>
+            {isPending && pollAttempt >= 3 && (
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  Automatic checks are paused. Check again when you are ready.
+                </p>
+                <Button onClick={handleCheckPaymentStatus} disabled={isFetching} type="button" variant="outline">
+                  {isFetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Check payment status
+                </Button>
+              </div>
+            )}
+            {isRetryable && (
+              <PayFastRetryButton orderId={order.id} className="mt-5" />
+            )}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
               <span className="text-muted-foreground">Order</span>
               <button

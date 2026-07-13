@@ -31,6 +31,7 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { OrderItemReview } from '@/components/OrderItemReview';
+import { PayFastRetryButton } from '@/components/PayFastRetryButton';
 import { SellerComplaintBadge } from '@/components/SellerComplaintBadge';
 import { ShareProfileDialog } from '@/components/ShareProfileDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -64,6 +65,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
+import { isPayFastRetryableStatus } from '@/lib/payfast';
 import { uploadFile } from '@/lib/uploadFile';
 import { cn } from '@/lib/utilities';
 import {
@@ -142,9 +144,9 @@ function UserProfile() {
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery(getMyProfileQueryOptions());
-  const { data: orders = [], isLoading: ordersLoading }
+  const { data: ordersResponse, isLoading: ordersLoading }
     = useQuery(getMyOrdersOptions());
-  const { data: sales = [], isLoading: salesLoading }
+  const { data: salesResponse, isLoading: salesLoading }
     = useQuery(getMySalesOptions());
   const { data: rating } = useQuery(getSellerRatingOptions(user?.id));
 
@@ -157,6 +159,8 @@ function UserProfile() {
     return null;
 
   const isLoading = profileLoading || ordersLoading || salesLoading;
+  const orders = ordersResponse?.data ?? [];
+  const sales = salesResponse?.data ?? [];
 
   const boughtCount = orders.reduce(
     (sum, o) => sum + o.items.reduce((s, it) => s + (it.quantity || 0), 0),
@@ -531,6 +535,11 @@ function OrderCard({ order }: { order: Order }) {
                 {order.id.slice(0, 8).toUpperCase()}
               </span>
               <Badge variant="secondary">{order.status}</Badge>
+              <Badge variant={order.paymentStatus === 'PAID' ? 'default' : 'outline'}>
+                Payment:
+                {' '}
+                {order.paymentStatus}
+              </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {itemCount}
@@ -545,6 +554,9 @@ function OrderCard({ order }: { order: Order }) {
             <p className="text-xs text-muted-foreground">
               {format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}
             </p>
+            {isPayFastRetryableStatus(order.paymentStatus) && (
+              <PayFastRetryButton orderId={order.id} size="sm" className="mt-2" />
+            )}
           </div>
           <Button
             onClick={() => setOpen(v => !v)}

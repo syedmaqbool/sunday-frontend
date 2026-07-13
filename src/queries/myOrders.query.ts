@@ -16,8 +16,7 @@ export const myOrdersQueryKey = {
 export function getMyOrdersOptions() {
   return queryOptions({
     queryFn: async () => {
-      const response = await listOrders();
-      return response.data;
+      return listOrders();
     },
     queryKey: myOrdersQueryKey.list(),
   });
@@ -26,8 +25,7 @@ export function getMyOrdersOptions() {
 export function getMyOrderOptions(orderId: string) {
   return queryOptions({
     queryFn: async () => {
-      const response = await getOrder(orderId);
-      return response.data;
+      return getOrder(orderId);
     },
     queryKey: myOrdersQueryKey.detail(orderId),
   });
@@ -36,8 +34,7 @@ export function getMyOrderOptions(orderId: string) {
 export function getMySalesOptions() {
   return queryOptions({
     queryFn: async () => {
-      const response = await listSales();
-      return response.data;
+      return listSales();
     },
     queryKey: myOrdersQueryKey.sales(),
   });

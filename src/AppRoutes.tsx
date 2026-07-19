@@ -42,6 +42,8 @@ const MyListings = lazy(() => import('./pages/MyListings'));
 const MyOffers = lazy(() => import('./pages/MyOffers'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const PaymentCancel = lazy(() => import('./pages/PaymentCancel'));
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const Preferences = lazy(() => import('./pages/Preferences'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
@@ -77,6 +79,8 @@ export default function AppRoutes() {
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><UserProfile /></Suspense>} path="/profile" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Privacy /></Suspense>} path="/privacy" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><OrderConfirmation /></Suspense>} path="/order-confirmation/:id" />
+      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><PaymentSuccess /></Suspense>} path="/payment/success" />
+      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><PaymentCancel /></Suspense>} path="/payment/cancel" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Auth /></Suspense>} path="/auth" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ForgotPassword /></Suspense>} path="/forgot-password" />
       <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><AdminDashboard /></Suspense>} path="/admin">

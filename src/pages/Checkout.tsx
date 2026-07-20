@@ -29,9 +29,11 @@ import { calcCommission } from '@/lib/commission';
 import { submitPayFast } from '@/lib/payfast';
 import {
   useCreateCheckoutMutation,
+  useRetryPayFastOrderMutation,
   useValidateDiscountMutation,
   useValidateSellerCouponMutation,
 } from '@/queries/checkout.query';
+import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 interface AppliedDiscount {
   code: string;
@@ -58,7 +60,7 @@ type ShippingFormValues = z.infer<typeof shippingSchema>;
 type DiscountFormValues = z.infer<typeof discountSchema>;
 
 function Checkout() {
-  const { clearCart, items, removeItem, totalItems, totalPrice } = useCart();
+  const { isHydrated, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: activeTax } = useQuery(getActiveTaxOptions());
@@ -71,6 +73,7 @@ function Checkout() {
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
+  const { mutateAsync: retryPayFast } = useRetryPayFastOrderMutation();
   const { mutateAsync: validateDiscountCode } = useValidateDiscountMutation();
   const { mutateAsync: validateSellerCouponCode } = useValidateSellerCouponMutation();
   const shippingForm = useForm<ShippingFormValues>({
@@ -110,7 +113,7 @@ function Checkout() {
   const itemCommissions = items.map(({ listing, quantity }) => {
     const c = calcCommission(
       commissionTiers,
-      (listing as any).category,
+      listing.categoryValue,
       listing.price,
       quantity,
     );
@@ -207,11 +210,31 @@ function Checkout() {
       if (!result?.order) {
         throw new Error('Checkout did not return an order.');
       }
-      clearCart();
-      if (result.payment) {
-        submitPayFast(result.payment);
+
+      try {
+        if (result.payment) {
+          submitPayFast(result.payment);
+          return;
+        }
+
+        throw new Error('Checkout did not initialize PayFast.');
       }
-      else {
+      catch {
+        try {
+          const retryResponse = await retryPayFast(result.order.id);
+          const retryResult = retryResponse.data;
+          const payment = 'payment' in retryResult ? retryResult.payment : retryResult;
+          submitPayFast(payment);
+          return;
+        }
+        catch (error: any) {
+          toast({
+            description: error?.message ?? 'Retry payment from your order page.',
+            title: 'Payment could not be opened',
+            variant: 'destructive',
+          });
+        }
+
         navigate(`/order-confirmation/${result.order.id}`, { replace: true });
       }
     }
@@ -226,6 +249,18 @@ function Checkout() {
       setPlacing(false);
     }
   };
+
+  if (!isHydrated) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="container flex flex-1 items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -410,7 +445,7 @@ function Checkout() {
                     >
                       <div className="h-14 w-11 flex-shrink-0 overflow-hidden rounded bg-muted">
                         <img
-                          src={listing.images[0]}
+                          src={getListingMediaUrls(listing)[0]}
                           alt={listing.title}
                           className="h-full w-full object-cover"
                         />

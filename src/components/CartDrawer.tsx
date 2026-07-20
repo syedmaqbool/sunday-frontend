@@ -16,8 +16,9 @@ import {
 import { useCart } from '@/contexts/CartContext';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { calcCommission } from '@/lib/commission';
+import { getListingMediaUrls } from '@/queries/marketplace.query';
 
-function CartDrawer() {
+export default function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice, updateQuantity }
     = useCart();
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ function CartDrawer() {
       items.map(({ listing, quantity }) => {
         const c = calcCommission(
           commissionTiers,
-          (listing as any).category,
+          listing.categoryValue,
           listing.price,
           quantity,
         );
@@ -100,7 +101,7 @@ function CartDrawer() {
                         <div key={listing.id} className="flex gap-3">
                           <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                             <img
-                              src={listing.images[0]}
+                              src={getListingMediaUrls(listing)[0]}
                               alt={listing.title}
                               className="h-full w-full object-cover"
                             />
@@ -219,5 +220,3 @@ function CartDrawer() {
     </Sheet>
   );
 }
-
-export default CartDrawer;

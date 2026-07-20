@@ -31,3 +31,9 @@ All TanStack Query cache keys in this repo must follow these rules:
 ## UI/Data Boundary
 
 - All data extraction, filtering, mapping, formatting, and view-specific reshaping must happen in the consuming component, page, or UI hook layer.
+
+## No Mapping
+
+- Consume API response types directly. Do not reshape a server payload into a parallel/duplicate domain model, and do not write adapter/mapping functions (for example `toCartListing`) that convert an API type into an alternate shape (renaming fields to snake_case, lowercasing enum values, flattening nested objects, etc.).
+- State, context, and props must carry the API response type as returned. If the UI needs a derived value, compute it inline at the point of use — do not persist a transformed copy alongside the original.
+- When two features need the same server data in different shapes, prefer the API shape everywhere and adapt only for display; do not introduce a second canonical type.

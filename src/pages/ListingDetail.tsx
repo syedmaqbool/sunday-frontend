@@ -1,4 +1,3 @@
-import type { MarketplaceListing } from '@/queries/marketplace.query';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -201,25 +200,6 @@ function ImageGallery({
       )}
     </div>
   );
-}
-
-function toCartListing(listing: MarketplaceListing) {
-  return {
-    id: listing.id,
-    brand: listing.brand,
-    category: listing.categoryValue,
-    condition: listing.condition,
-    created_at: listing.createdAt,
-    description: listing.description,
-    images: getListingMediaUrls(listing),
-    price: listing.price,
-    seller_id: listing.sellerId,
-    seller_name: listing.seller?.fullName ?? 'Seller',
-    size: listing.size,
-    status: listing.status.toLowerCase() as 'approved' | 'needs_revision' | 'pending' | 'rejected' | 'reserved' | 'sold',
-    title: listing.title,
-    weight: listing.weight ?? null,
-  };
 }
 
 function ListingDetail() {
@@ -538,7 +518,7 @@ function ListingDetail() {
                         <Button
                           onClick={() =>
                             addItem(
-                              toCartListing(listing),
+                              listing,
                               isReservedForMe ? effectivePrice : undefined,
                             )}
                           disabled={inCart || isReservedForOther}

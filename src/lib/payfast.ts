@@ -19,9 +19,17 @@ export function isPayFastRetryableStatus(status: Order['paymentStatus']) {
 }
 
 export function submitPayFast(payment: PayFastPayment) {
+  const paymentUrl = new URL(payment.paymentUrl, location.href);
+  const isExternalHttpUrl
+    = ['http:', 'https:'].includes(paymentUrl.protocol)
+      && paymentUrl.origin !== location.origin;
+
+  if (!isExternalHttpUrl)
+    throw new Error('PayFast payment URL is invalid.');
+
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = payment.paymentUrl;
+  form.action = paymentUrl.href;
 
   for (const [name, value] of Object.entries(payment.fields)) {
     const input = document.createElement('input');

@@ -51,4 +51,16 @@ describe('submitPayFast', () => {
     ]);
     expect(submit).toHaveBeenCalledOnce();
   });
+
+  it('refuses to submit payment back to the checkout page', () => {
+    const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+
+    expect(() => submitPayFast({
+      fields: { BASKET_ID: 'order-uuid' },
+      paymentUrl: '/checkout',
+    })).toThrow('PayFast payment URL is invalid.');
+
+    expect(document.querySelector('form')).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+  });
 });

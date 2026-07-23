@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyReviewedOfferIdsOptions,
   getSentOffersOptions,
@@ -125,7 +126,7 @@ function MyOffers() {
                                   {offer.listingTitle ?? 'Listing'}
                                 </h3>
                                 <Badge variant={statusBadge(offer.status)}>
-                                  {offer.status}
+                                  {formatEnumLabel(offer.status)}
                                 </Badge>
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">

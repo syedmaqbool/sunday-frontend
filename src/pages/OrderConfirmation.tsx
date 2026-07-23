@@ -1,3 +1,4 @@
+import type { Order } from '@/types/order.type';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -10,8 +11,36 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
-import { getPayFastStatusPollDelay, isPayFastRetryableStatus } from '@/lib/payfast';
+import { getPayFastStatusPollDelay, isOrderEligibleForPayFastRetry, MAX_PAYFAST_STATUS_POLLS } from '@/lib/payfast';
+import { formatEnumLabel } from '@/lib/utilities';
 import { getMyOrderOptions } from '@/queries/myOrders.query';
+
+function getConfirmationCopy(order: Order, isRetryable: boolean): { description: string; heading: string } {
+  if (order.status === 'CANCELLED') {
+    return {
+      description: order.cancellationReason ? formatEnumLabel(order.cancellationReason) : 'This order was cancelled.',
+      heading: 'Order cancelled',
+    };
+  }
+  if (order.paymentStatus === 'PAID') {
+    return {
+      description: 'Your payment has been confirmed and your order is being prepared.',
+      heading: 'Thank you for your order!',
+    };
+  }
+  if (order.paymentStatus === 'PENDING') {
+    return {
+      description: 'We are waiting for PayFast to confirm your payment. This page will check again automatically.',
+      heading: 'Payment is being verified',
+    };
+  }
+  return {
+    description: isRetryable
+      ? 'Your order exists, but payment was not completed. You can retry payment below.'
+      : 'Your order is awaiting payment initialization.',
+    heading: order.paymentStatus === 'FAILED' ? 'Payment failed' : 'Payment was not initialized',
+  };
+}
 
 function OrderConfirmation() {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +77,7 @@ function OrderConfirmation() {
   const order = orderResponse?.data;
 
   useEffect(() => {
-    if (!order)
+    if (!order || order.status !== 'AWAITING_PAYMENT')
       return;
 
     const pollDelay = getPayFastStatusPollDelay(order.paymentStatus, pollAttempt);
@@ -137,23 +166,13 @@ function OrderConfirmation() {
     month: 'long',
     year: 'numeric',
   });
+  const isCancelled = order.status === 'CANCELLED';
   const isPaid = order.paymentStatus === 'PAID';
-  const isPending = order.paymentStatus === 'PENDING';
-  const isRetryable = isPayFastRetryableStatus(order.paymentStatus);
-  const heading = isPaid
-    ? 'Thank you for your order!'
-    : isPending
-      ? 'Payment is being verified'
-      : order.paymentStatus === 'FAILED'
-        ? 'Payment failed'
-        : 'Payment was not initialized';
-  const description = isPaid
-    ? 'Your payment has been confirmed and your order is being prepared.'
-    : isPending
-      ? 'We are waiting for PayFast to confirm your payment. This page will check again automatically.'
-      : isRetryable
-        ? 'Your order exists, but payment was not completed. You can retry payment below.'
-        : 'Your order is awaiting payment initialization.';
+  const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
+  const isRetryable = isOrderEligibleForPayFastRetry(order, {
+    pendingPollExhausted: pollAttempt >= MAX_PAYFAST_STATUS_POLLS,
+  });
+  const { description, heading } = getConfirmationCopy(order, isRetryable);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -201,9 +220,20 @@ function OrderConfirmation() {
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <span className="text-sm text-muted-foreground">Payment status:</span>
-              <span className="text-sm font-semibold text-foreground">{order.paymentStatus}</span>
+              <span className="text-sm font-semibold text-foreground">{formatEnumLabel(order.paymentStatus)}</span>
             </div>
-            {isPending && pollAttempt >= 3 && (
+            {isCancelled && order.cancelledAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Cancelled on
+                {' '}
+                {new Date(order.cancelledAt).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </p>
+            )}
+            {isPending && pollAttempt >= MAX_PAYFAST_STATUS_POLLS && (
               <div className="mt-5 flex flex-col items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                   Automatic checks are paused. Check again when you are ready.
@@ -395,9 +425,10 @@ function OrderConfirmation() {
                     {Number(order.total).toLocaleString()}
                   </span>
                 </div>
-                <p className="mt-2 text-xs capitalize text-muted-foreground">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Status:
-                  {order.status}
+                  {' '}
+                  {formatEnumLabel(order.status)}
                 </p>
                 <div className="mt-6 flex flex-col gap-2">
                   <Button onClick={() => navigate('/listings')}>Continue shopping</Button>

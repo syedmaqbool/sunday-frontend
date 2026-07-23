@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { trackEvent } from '@/lib/analytics';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getBuyerListingOffersOptions,
   useAcceptCounterOfferMutation,
@@ -159,7 +160,7 @@ export function MakeOfferButton({
                       {' '}
                       {offer.amount.toLocaleString()}
                     </span>
-                    <Badge variant={statusBadge(offer.status)}>{offer.status}</Badge>
+                    <Badge variant={statusBadge(offer.status)}>{formatEnumLabel(offer.status)}</Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(offer.createdAt), 'MMM d')}

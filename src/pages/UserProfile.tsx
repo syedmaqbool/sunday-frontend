@@ -31,7 +31,6 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { OrderItemReview } from '@/components/OrderItemReview';
-import { PayFastRetryButton } from '@/components/PayFastRetryButton';
 import { SellerComplaintBadge } from '@/components/SellerComplaintBadge';
 import { ShareProfileDialog } from '@/components/ShareProfileDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -65,9 +64,8 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
-import { isPayFastRetryableStatus } from '@/lib/payfast';
 import { uploadFile } from '@/lib/uploadFile';
-import { cn } from '@/lib/utilities';
+import { cn, formatEnumLabel } from '@/lib/utilities';
 import {
   getComplaintsAgainstMeOptions,
   getMyRefundComplaintsOptions,
@@ -534,11 +532,11 @@ function OrderCard({ order }: { order: Order }) {
                 Order #
                 {order.id.slice(0, 8).toUpperCase()}
               </span>
-              <Badge variant="secondary">{order.status}</Badge>
+              <Badge variant="secondary">{formatEnumLabel(order.status)}</Badge>
               <Badge variant={order.paymentStatus === 'PAID' ? 'default' : 'outline'}>
                 Payment:
                 {' '}
-                {order.paymentStatus}
+                {formatEnumLabel(order.paymentStatus)}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -554,25 +552,27 @@ function OrderCard({ order }: { order: Order }) {
             <p className="text-xs text-muted-foreground">
               {format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}
             </p>
-            {isPayFastRetryableStatus(order.paymentStatus) && (
-              <PayFastRetryButton orderId={order.id} size="sm" className="mt-2" />
-            )}
           </div>
-          <Button
-            onClick={() => setOpen(v => !v)}
-            size="sm"
-            variant="ghost"
-            className="gap-1"
-          >
-            <Receipt className="h-4 w-4" />
-            {open ? 'Hide' : 'Details'}
-            <ChevronDown
-              className={`
-                h-4 w-4 transition-transform
-                ${open ? 'rotate-180' : ''}
-              `}
-            />
-          </Button>
+          <div className="flex flex-shrink-0 flex-col items-end gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/order-confirmation/${order.id}`}>View Order</Link>
+            </Button>
+            <Button
+              onClick={() => setOpen(v => !v)}
+              size="sm"
+              variant="ghost"
+              className="gap-1"
+            >
+              <Receipt className="h-4 w-4" />
+              {open ? 'Hide' : 'Details'}
+              <ChevronDown
+                className={`
+                  h-4 w-4 transition-transform
+                  ${open ? 'rotate-180' : ''}
+                `}
+              />
+            </Button>
+          </div>
         </div>
 
         {open && (

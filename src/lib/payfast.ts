@@ -18,6 +18,24 @@ export function isPayFastRetryableStatus(status: Order['paymentStatus']) {
   return status === 'UNPAID' || status === 'FAILED';
 }
 
+export function isOrderEligibleForPayFastRetry(
+  order: Pick<Order, 'expiresAt' | 'paymentStatus' | 'status'>,
+  options: { pendingPollExhausted?: boolean } = {},
+) {
+  if (order.status !== 'AWAITING_PAYMENT')
+    return false;
+  if (order.expiresAt && new Date(order.expiresAt) <= new Date())
+    return false;
+
+  if (isPayFastRetryableStatus(order.paymentStatus))
+    return true;
+
+  // A PENDING order normally means a webhook is still coming, but if polling
+  // gave up and it's still pending, the buyer likely abandoned the PayFast
+  // form entirely — nothing will ever resolve that, so allow another attempt.
+  return order.paymentStatus === 'PENDING' && Boolean(options.pendingPollExhausted);
+}
+
 export function submitPayFast(payment: PayFastPayment) {
   const paymentUrl = new URL(payment.paymentUrl, location.href);
   const isExternalHttpUrl

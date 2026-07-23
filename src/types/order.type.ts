@@ -39,6 +39,7 @@ export interface Order {
   id: string;
   buyerId: string;
   buyerFullName: string;
+  cancellationReason: string | null;
   commissionAmount: number;
   currency: 'PKR';
   discountAmount: number;
@@ -46,17 +47,20 @@ export interface Order {
   items: OrderItem[];
   paymentStatus: 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
   platformFeeAmount: number;
+  refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
   shippingAddress: string;
   shippingCity: string;
   shippingFirstName: string;
   shippingLastName: string;
   shippingPhone: string;
   shippingPostal: string;
-  status: string;
+  status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
   subtotal: number;
   taxAmount: number;
   taxRate: number;
   total: number;
+  cancelledAt: string | null;
+  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

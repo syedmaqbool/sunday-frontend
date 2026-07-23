@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminReportsOptions,
   useResolveReportMutation,
@@ -112,7 +113,7 @@ function Reports() {
                       <Card key={r.id}>
                         <CardContent className="space-y-3 p-4">
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant={STATUS_VARIANT[r.status]}>{r.status}</Badge>
+                            <Badge variant={STATUS_VARIANT[r.status]}>{formatEnumLabel(r.status)}</Badge>
                             {targetType && (
                               <Badge variant="outline" className="capitalize">
                                 {targetType}

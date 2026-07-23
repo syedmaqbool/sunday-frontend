@@ -37,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getListingMediaUrls,
   getMarketplaceListingOptions,
@@ -355,8 +356,8 @@ function ListingDetail() {
                 {' '}
                 {listing.size}
               </span>
-              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
-                {listing.condition.replace('_', ' ')}
+              <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                {formatEnumLabel(listing.condition)}
               </span>
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
                 {listing.categoryValue}

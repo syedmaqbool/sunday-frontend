@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { marketplaceQueryKey } from '@/queries/marketplace.query';
 import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {
+  cancelOrder,
   createOrder,
   retryPayFastOrder,
   validateDiscount,
@@ -45,6 +46,18 @@ export function useRetryPayFastOrderMutation() {
 
   return useMutation({
     mutationFn: (orderId: string) => retryPayFastOrder(orderId),
+    onSuccess: (_response, orderId) => {
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
+    },
+  });
+}
+
+export function useCancelOrderMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: string) => cancelOrder(orderId),
     onSuccess: (_response, orderId) => {
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });

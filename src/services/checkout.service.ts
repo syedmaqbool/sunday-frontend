@@ -1,4 +1,5 @@
 import type {
+  CancelOrderResult,
   CheckoutOrderResult,
   CreateOrderPayload,
   PayFastPayment,
@@ -32,4 +33,10 @@ export function retryPayFastOrder(orderId: string) {
   return authInstance
     .post(`/api/v1/checkout/orders/${orderId}/payfast`)
     .json<Response<PayFastPayment | RetryPayFastResult>>();
+}
+
+export function cancelOrder(orderId: string) {
+  return authInstance
+    .post(`/api/v1/checkout/orders/${orderId}/cancel`)
+    .json<Response<CancelOrderResult>>();
 }

@@ -44,6 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
   getAdminSellerPayoutsOptions,
@@ -1062,7 +1063,7 @@ function Payouts() {
                                     : 'secondary'
                                 }
                               >
-                                {item.status}
+                                {formatEnumLabel(item.status)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right font-medium">
@@ -1116,7 +1117,7 @@ function Payouts() {
                                     : 'secondary'
                                 }
                               >
-                                {item.status}
+                                {formatEnumLabel(item.status)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right font-medium text-destructive">

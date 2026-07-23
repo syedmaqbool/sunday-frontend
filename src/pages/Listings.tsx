@@ -29,6 +29,7 @@ import {
   personalizeListings,
 } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getListingMediaUrls,
   getMarketplaceListingsOptions,
@@ -348,7 +349,7 @@ function Listings() {
                                       {' '}
                                       ·
                                       {' '}
-                                      {l.condition.replace('_', ' ')}
+                                      {formatEnumLabel(l.condition)}
                                     </p>
                                   </div>
                                 </div>

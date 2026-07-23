@@ -55,3 +55,7 @@ export interface CheckoutOrderResult {
 export interface RetryPayFastResult {
   payment: PayFastPayment;
 }
+
+export interface CancelOrderResult {
+  restorableListingIds: string[];
+}

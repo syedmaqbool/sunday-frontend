@@ -2,6 +2,7 @@ import type { MarketplaceListing } from '@/queries/marketplace.query';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatEnumLabel } from '@/lib/utilities';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 interface ListingCardProps {
@@ -68,7 +69,7 @@ function ListingCard({
           )}
           <div className="absolute bottom-2 left-2">
             <span className="rounded-sm bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">
-              {listing.condition.replace('_', ' ')}
+              {formatEnumLabel(listing.condition)}
             </span>
           </div>
         </div>

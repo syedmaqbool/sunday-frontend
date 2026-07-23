@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getWeightLabel } from '@/lib/constants';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminListingsOptions,
   useCreateAdminListingFeedbackMutation,
@@ -262,7 +263,7 @@ function ListingModeration() {
                               {listing.title}
                             </h3>
                             <Badge variant={statusColor(listing.status)}>
-                              {listing.status}
+                              {formatEnumLabel(listing.status)}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
@@ -342,7 +343,7 @@ function ListingModeration() {
                     {reviewListing.title}
                   </DialogTitle>
                   <Badge variant={statusColor(reviewListing.status)}>
-                    {reviewListing.status}
+                    {formatEnumLabel(reviewListing.status)}
                   </Badge>
                 </div>
               </DialogHeader>
@@ -406,8 +407,8 @@ function ListingModeration() {
                         <p className="text-[10px] font-medium uppercase text-muted-foreground">
                           Condition
                         </p>
-                        <p className="text-sm font-semibold capitalize text-foreground">
-                          {reviewListing.condition.replace('_', ' ')}
+                        <p className="text-sm font-semibold text-foreground">
+                          {formatEnumLabel(reviewListing.condition)}
                         </p>
                       </div>
                     </div>

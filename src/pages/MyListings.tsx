@@ -42,6 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyListingsOptions,
   useCancelMyListingReservationMutation,
@@ -112,7 +113,7 @@ function MyListings() {
               {listing.title}
             </h3>
             <Badge variant={getStatusColor(listing.status)}>
-              {listing.status.toLowerCase()}
+              {formatEnumLabel(listing.status)}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">

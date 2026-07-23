@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyReviewedOfferIdsOptions,
   getReceivedOffersOptions,
@@ -137,7 +138,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                     {offer.listingTitle ?? 'Listing'}
                   </h3>
                   <Badge variant={statusBadge(offer.status)}>
-                    {offer.status}
+                    {formatEnumLabel(offer.status)}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">

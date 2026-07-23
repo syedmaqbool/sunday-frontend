@@ -1,8 +1,19 @@
+import type { Order } from '@/types/order.type';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getPayFastStatusPollDelay,
+  isOrderEligibleForPayFastRetry,
   submitPayFast,
 } from '@/lib/payfast';
+
+function baseOrder(overrides: Partial<Order> = {}): Pick<Order, 'expiresAt' | 'paymentStatus' | 'status'> {
+  return {
+    paymentStatus: 'UNPAID',
+    status: 'AWAITING_PAYMENT',
+    expiresAt: null,
+    ...overrides,
+  };
+}
 
 describe('getPayFastStatusPollDelay', () => {
   it('polls pending payments every 15 seconds for three attempts', () => {
@@ -15,6 +26,52 @@ describe('getPayFastStatusPollDelay', () => {
     expect(getPayFastStatusPollDelay('PENDING', 3)).toBeNull();
     expect(getPayFastStatusPollDelay('PAID', 0)).toBeNull();
     expect(getPayFastStatusPollDelay('FAILED', 0)).toBeNull();
+  });
+});
+
+describe('isOrderEligibleForPayFastRetry', () => {
+  it('is eligible when awaiting payment, unpaid/failed, and unexpired', () => {
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'UNPAID' }))).toBe(true);
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'FAILED' }))).toBe(true);
+
+    const futureExpiry = new Date(Date.now() + 60_000).toISOString();
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ expiresAt: futureExpiry }))).toBe(true);
+  });
+
+  it('is not eligible once paid, or pending with polling not yet exhausted', () => {
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'PAID' }))).toBe(false);
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'PENDING' }))).toBe(false);
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'PENDING' }), { pendingPollExhausted: false })).toBe(false);
+  });
+
+  it('is eligible for a pending order once polling has been exhausted (stuck/abandoned payment)', () => {
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'PENDING' }), { pendingPollExhausted: true })).toBe(true);
+  });
+
+  it('a pending-exhausted order still respects status and expiry', () => {
+    expect(isOrderEligibleForPayFastRetry(
+      baseOrder({ paymentStatus: 'PENDING', status: 'CANCELLED' }),
+      { pendingPollExhausted: true },
+    )).toBe(false);
+
+    const pastExpiry = new Date(Date.now() - 60_000).toISOString();
+    expect(isOrderEligibleForPayFastRetry(
+      baseOrder({ paymentStatus: 'PENDING', expiresAt: pastExpiry }),
+      { pendingPollExhausted: true },
+    )).toBe(false);
+  });
+
+  it('is not eligible once the order has been cancelled, even if paymentStatus is stale', () => {
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ status: 'CANCELLED' }))).toBe(false);
+  });
+
+  it('is not eligible once the order has moved past awaiting-payment', () => {
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ paymentStatus: 'PAID', status: 'CONFIRMED' }))).toBe(false);
+  });
+
+  it('is not eligible once the payment window has expired', () => {
+    const pastExpiry = new Date(Date.now() - 60_000).toISOString();
+    expect(isOrderEligibleForPayFastRetry(baseOrder({ expiresAt: pastExpiry }))).toBe(false);
   });
 });
 

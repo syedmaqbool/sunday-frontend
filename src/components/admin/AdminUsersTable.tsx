@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatEnumLabel } from '@/lib/utilities';
 
 interface Column {
   key: string;
@@ -237,7 +238,7 @@ export function fullName(user: AdminUser) {
 export function statusBadge(status: AdminUserStatus) {
   return (
     <Badge variant={status === 'ACTIVE' ? 'default' : 'secondary'}>
-      {status}
+      {formatEnumLabel(status)}
     </Badge>
   );
 }

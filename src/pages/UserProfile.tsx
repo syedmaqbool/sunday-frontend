@@ -516,6 +516,7 @@ function OrderCard({ order }: { order: Order }) {
   const items = order.items;
   const itemCount = items.reduce((s, it) => s + it.quantity, 0);
   const firstImage = items[0]?.imageUrl || '/placeholder.svg';
+  const visiblePaymentStatus = order.status === 'CANCELLED' && order.paymentStatus !== 'PAID' ? null : order.paymentStatus;
 
   return (
     <Card>
@@ -533,11 +534,13 @@ function OrderCard({ order }: { order: Order }) {
                 {order.id.slice(0, 8).toUpperCase()}
               </span>
               <Badge variant="secondary">{formatEnumLabel(order.status)}</Badge>
-              <Badge variant={order.paymentStatus === 'PAID' ? 'default' : 'outline'}>
-                Payment:
-                {' '}
-                {formatEnumLabel(order.paymentStatus)}
-              </Badge>
+              {visiblePaymentStatus && (
+                <Badge variant={visiblePaymentStatus === 'PAID' ? 'default' : 'outline'}>
+                  Payment:
+                  {' '}
+                  {formatEnumLabel(visiblePaymentStatus)}
+                </Badge>
+              )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {itemCount}

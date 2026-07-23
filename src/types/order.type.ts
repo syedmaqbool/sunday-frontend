@@ -45,7 +45,7 @@ export interface Order {
   discountAmount: number;
   discountCode: string | null;
   items: OrderItem[];
-  paymentStatus: 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+  paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
   platformFeeAmount: number;
   refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
   shippingAddress: string;

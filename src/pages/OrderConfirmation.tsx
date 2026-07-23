@@ -17,6 +17,12 @@ import { getMyOrderOptions } from '@/queries/myOrders.query';
 
 function getConfirmationCopy(order: Order, isRetryable: boolean): { description: string; heading: string } {
   if (order.status === 'CANCELLED') {
+    if (order.paymentStatus === 'PAID') {
+      return {
+        description: 'This order was cancelled. Your payment has been received and will be refunded.',
+        heading: 'Order cancelled',
+      };
+    }
     return {
       description: order.cancellationReason ? formatEnumLabel(order.cancellationReason) : 'This order was cancelled.',
       heading: 'Order cancelled',
@@ -169,6 +175,7 @@ function OrderConfirmation() {
   const isCancelled = order.status === 'CANCELLED';
   const isPaid = order.paymentStatus === 'PAID';
   const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
+  const visiblePaymentStatus = isCancelled && !isPaid ? null : order.paymentStatus;
   const isRetryable = isOrderEligibleForPayFastRetry(order, {
     pendingPollExhausted: pollAttempt >= MAX_PAYFAST_STATUS_POLLS,
   });
@@ -202,7 +209,7 @@ function OrderConfirmation() {
           "
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              {isPaid
+              {isPaid && !isCancelled
                 ? <CheckCircle2 className="h-8 w-8 text-primary" />
                 : isPending
                   ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -218,10 +225,12 @@ function OrderConfirmation() {
             <p className="mt-2 text-sm text-muted-foreground">
               {description}
             </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-sm text-muted-foreground">Payment status:</span>
-              <span className="text-sm font-semibold text-foreground">{formatEnumLabel(order.paymentStatus)}</span>
-            </div>
+            {visiblePaymentStatus && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <span className="text-sm text-muted-foreground">Payment status:</span>
+                <span className="text-sm font-semibold text-foreground">{formatEnumLabel(visiblePaymentStatus)}</span>
+              </div>
+            )}
             {isCancelled && order.cancelledAt && (
               <p className="mt-2 text-xs text-muted-foreground">
                 Cancelled on

@@ -5,17 +5,15 @@ export interface AdminSettings {
   emailTemplates: EmailTemplateAPI[];
   flagKeywords: string[];
   helpCategories: HelpCategoryAPI[];
-  helpContent: unknown[];
   helpFaqs: HelpFaqAPI[];
-  helpTutorials: HelpTutorialAPI[];
 }
 
 export interface HelpCategoryAPI {
   key: string;
   active: boolean;
-  label: string;
   blurb: string;
   icon: string;
+  label: string;
   sortOrder: number;
 }
 
@@ -26,19 +24,6 @@ export interface HelpFaqAPI {
   published: boolean;
   question: string;
   sortOrder: number;
-}
-
-export interface HelpTutorialAPI {
-  id: string;
-  title: string;
-  slug: string;
-  body: string;
-  icon: string;
-  steps: string[];
-  ctaLabel: string;
-  ctaTo: string;
-  sortOrder: number;
-  published: boolean;
 }
 
 export interface EmailTemplateAPI {

@@ -3,7 +3,6 @@ import type {
   EmailTemplateAPI,
   HelpCategoryAPI,
   HelpFaqAPI,
-  HelpTutorialAPI,
 } from '@/types/adminSettings.type';
 import type { BoostPackageAPI } from '@/types/boost.type';
 import type { Response } from '@/types/response.type';
@@ -30,12 +29,6 @@ export function updateHelpCategories(helpCategories: HelpCategoryAPI[]) {
 export function updateHelpFaqs(helpFaqs: HelpFaqAPI[]) {
   return authInstance
     .patch('/api/v1/admin/settings', { json: { helpFaqs } })
-    .json<Response<AdminSettings>>();
-}
-
-export function updateHelpTutorials(helpTutorials: HelpTutorialAPI[]) {
-  return authInstance
-    .patch('/api/v1/admin/settings', { json: { helpTutorials } })
     .json<Response<AdminSettings>>();
 }
 

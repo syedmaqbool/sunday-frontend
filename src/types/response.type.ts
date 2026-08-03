@@ -25,9 +25,15 @@ export interface PaginatedResponse<T = unknown> {
   statusCode?: number;
 }
 
+export interface FieldError {
+  field: string;
+  message: string;
+}
+
 export interface ErrorResponse {
   code?: string;
   error?: string;
+  fieldErrors?: FieldError[];
   message?: string;
   statusCode?: number;
 }

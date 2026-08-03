@@ -2,7 +2,6 @@ import type {
   EmailTemplateAPI,
   HelpCategoryAPI,
   HelpFaqAPI,
-  HelpTutorialAPI,
 } from '@/types/adminSettings.type';
 import type { BoostPackageAPI } from '@/types/boost.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +11,6 @@ import {
   updateEmailTemplates,
   updateHelpCategories,
   updateHelpFaqs,
-  updateHelpTutorials,
 } from '@/services/adminSettings.service';
 
 export const adminSettingsQueryKey = {
@@ -55,16 +53,6 @@ export function useUpdateHelpFaqsMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (helpFaqs: HelpFaqAPI[]) => updateHelpFaqs(helpFaqs),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
-  });
-}
-
-export function useUpdateHelpTutorialsMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (helpTutorials: HelpTutorialAPI[]) =>
-      updateHelpTutorials(helpTutorials),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });

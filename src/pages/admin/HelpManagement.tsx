@@ -1,9 +1,6 @@
-import type {
-  HelpCategoryAPI,
-  HelpFaqAPI,
-  HelpTutorialAPI,
-} from '@/types/adminSettings.type';
-import { useQuery } from '@tanstack/react-query';
+import type { HelpCategoryAPI, HelpFaqAPI } from '@/types/adminSettings.type';
+import type { HelpTutorial } from '@/types/helpTutorial.type';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   BookOpen,
@@ -12,9 +9,20 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { createElement, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +35,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -42,8 +57,15 @@ import {
   getAdminSettingsOptions,
   useUpdateHelpCategoriesMutation,
   useUpdateHelpFaqsMutation,
-  useUpdateHelpTutorialsMutation,
 } from '@/queries/adminSettings.query';
+import {
+  getAdminHelpTutorialsOptions,
+  helpTutorialQueryKey,
+  useCreateHelpTutorialMutation,
+  useDeleteHelpTutorialMutation,
+  useUpdateHelpTutorialMutation,
+} from '@/queries/helpTutorial.query';
+import { getApiErrorCode } from '@/services/ky-base-instance';
 
 // ── Display types ────────────────────────────────────────────────────────────
 interface Category {
@@ -61,18 +83,6 @@ interface Faq {
   published: boolean;
   question: string;
   sort_order: number;
-}
-interface Tutorial {
-  id: string;
-  body: string;
-  cta_label: string;
-  cta_to: string;
-  icon: string;
-  published: boolean;
-  slug: string;
-  sort_order: number;
-  steps: string[];
-  title: string;
 }
 
 // ── API ↔ Display adapters ───────────────────────────────────────────────────
@@ -118,47 +128,12 @@ function faqToApi(f: Faq): HelpFaqAPI {
   };
 }
 
-function adaptTutorial(t: HelpTutorialAPI): Tutorial {
-  return {
-    id: t.id,
-    body: t.body,
-    cta_label: t.ctaLabel ?? '',
-    cta_to: t.ctaTo ?? '',
-    icon: t.icon ?? 'BookOpen',
-    published: t.published,
-    slug: t.slug,
-    sort_order: t.sortOrder,
-    steps: t.steps ?? [],
-    title: t.title,
-  };
-}
-
-
-function tutorialToApi(t: Tutorial): HelpTutorialAPI {
-  return {
-    id: t.id,
-    body: t.body,
-    ctaLabel: t.cta_label,
-    ctaTo: t.cta_to,
-    icon: t.icon,
-    published: t.published,
-    slug: t.slug,
-    sortOrder: t.sort_order,
-    steps: t.steps,
-    title: t.title,
-  };
-}
-
 function toCategoryApiList(categories: Category[]) {
   return categories.map(category => categoryToApi(category));
 }
 
 function toFaqApiList(faqs: Faq[]) {
   return faqs.map(faq => faqToApi(faq));
-}
-
-function toTutorialApiList(tutorials: Tutorial[]) {
-  return tutorials.map(tutorial => tutorialToApi(tutorial));
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -181,20 +156,44 @@ const faqSchema = z.object({
   sort_order: z.number().int().min(0),
 });
 const tutorialSchema = z.object({
-  body: z.string().trim().min(3).max(5000),
-  cta_label: z.string().trim().max(40),
-  cta_to: z.string().trim().max(200),
+  ctaLabel: z.string().trim().max(100),
+  ctaTo: z.string().trim().max(500),
   icon: z.string().min(1),
-  slug: z
-    .string()
-    .trim()
-    .min(2)
-    .max(80)
-    .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, - only'),
-  sort_order: z.number().int().min(0),
-  steps: z.array(z.string().trim().min(1)).min(1, 'At least one step'),
-  title: z.string().trim().min(2).max(80),
+  published: z.boolean(),
+  sortOrder: z.number().int().min(0),
+  steps: z
+    .array(z.string().trim().min(1).max(500))
+    .min(1, 'At least one step')
+    .max(20, 'At most 20 steps'),
+  title: z.string().trim().min(1).max(200),
+}).superRefine((data, context) => {
+  if (Boolean(data.ctaLabel) !== Boolean(data.ctaTo)) {
+    context.addIssue({
+      path: ['ctaTo'],
+      code: z.ZodIssueCode.custom,
+      message: 'Set both CTA label and path, or clear both',
+    });
+  }
 });
+
+const emptyTutorialForm = {
+  ctaLabel: '',
+  ctaTo: '',
+  icon: 'BookOpen',
+  published: true,
+  sortOrder: 0,
+  steps: [''] as string[],
+  title: '',
+};
+
+function tutorialErrorMessage(error: unknown) {
+  const code = getApiErrorCode(error);
+  if (code === 'APP_HELP_TUTORIAL_CONFLICT')
+    return 'A tutorial with that title already exists.';
+  if (code === 'APP_HELP_TUTORIAL_INVALID_CTA')
+    return 'Set both CTA label and path, or clear both.';
+  return error instanceof Error ? error.message : 'Failed to save tutorial';
+}
 
 const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
   <Select value={value} onValueChange={onChange}>
@@ -217,19 +216,34 @@ const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) 
   </Select>
 );
 
+const TUTORIAL_PAGE_SIZE = 20;
+
 function HelpManagement() {
+  const qc = useQueryClient();
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
   const updateCategories = useUpdateHelpCategoriesMutation();
   const updateFaqs = useUpdateHelpFaqsMutation();
-  const updateTutorials = useUpdateHelpTutorialsMutation();
 
   const categories: Category[] = (settings?.helpCategories ?? []).map(
     category => adaptCategory(category),
   );
   const faqs: Faq[] = (settings?.helpFaqs ?? []).map(faq => adaptFaq(faq));
-  const tutorials: Tutorial[] = (settings?.helpTutorials ?? []).map(
-    tutorial => adaptTutorial(tutorial),
-  );
+
+  // ── Tutorials list (own paginated endpoint) ──
+  const [tutPage, setTutPage] = useState(1);
+  const { data: tutorialsResponse, isLoading: loadingTutorials } = useQuery({
+    ...getAdminHelpTutorialsOptions({ page: tutPage, size: TUTORIAL_PAGE_SIZE }),
+    placeholderData: keepPreviousData,
+  });
+  const tutorials: HelpTutorial[] = tutorialsResponse?.data ?? [];
+  const tutPagination = tutorialsResponse?.pagination;
+
+  const createTutorial = useCreateHelpTutorialMutation();
+  const updateTutorial = useUpdateHelpTutorialMutation();
+  const deleteTutorial = useDeleteHelpTutorialMutation();
+
+  const refetchTutorials = () =>
+    qc.invalidateQueries({ queryKey: helpTutorialQueryKey.adminAll() });
 
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
@@ -370,17 +384,8 @@ function HelpManagement() {
 
   // ── Tutorial dialog ──
   const [tutOpen, setTutOpen] = useState(false);
-  const [tutEdit, setTutEdit] = useState<Tutorial | null>(null);
-  const [tutForm, setTutForm] = useState({
-    body: '',
-    cta_label: '',
-    cta_to: '',
-    icon: 'BookOpen',
-    slug: '',
-    sort_order: 0,
-    steps: [''] as string[],
-    title: '',
-  });
+  const [tutEdit, setTutEdit] = useState<HelpTutorial | null>(null);
+  const [tutForm, setTutForm] = useState(emptyTutorialForm);
 
   if (isLoading) {
     return (
@@ -390,30 +395,20 @@ function HelpManagement() {
     );
   }
 
-  const openTutorialDialog = (t: Tutorial | null) => {
+  const openTutorialDialog = (t: HelpTutorial | null) => {
     setTutEdit(t);
     setTutForm(
       t
         ? {
-          body: t.body,
-          cta_label: t.cta_label,
-          cta_to: t.cta_to,
-          icon: t.icon,
-          slug: t.slug,
-          sort_order: t.sort_order,
-          steps: t.steps.length ? t.steps : [''],
+          ctaLabel: t.ctaLabel ?? '',
+          ctaTo: t.ctaTo ?? '',
+          icon: t.icon ?? 'BookOpen',
+          published: t.published,
+          sortOrder: t.sortOrder,
+          steps: t.steps.length > 0 ? t.steps : [''],
           title: t.title,
         }
-        : {
-          body: '',
-          cta_label: '',
-          cta_to: '',
-          icon: 'BookOpen',
-          slug: '',
-          sort_order: tutorials.length,
-          steps: [''],
-          title: '',
-        },
+        : emptyTutorialForm,
     );
     setTutOpen(true);
   };
@@ -424,45 +419,56 @@ function HelpManagement() {
     if (!parsed.success)
       return toast.error(parsed.error.issues[0].message);
 
-    let next: Tutorial[];
+    const payload = {
+      ctaLabel: parsed.data.ctaLabel || null,
+      ctaTo: parsed.data.ctaTo || null,
+      icon: parsed.data.icon || null,
+      published: parsed.data.published,
+      sortOrder: parsed.data.sortOrder,
+      steps: parsed.data.steps,
+      title: parsed.data.title,
+    };
+
     if (tutEdit) {
-      next = tutorials.map(t =>
-        t.id === tutEdit.id ? { ...t, ...parsed.data } : t,
+      updateTutorial.mutate(
+        { id: tutEdit.id, payload },
+        {
+          onError: (error: unknown) => toast.error(tutorialErrorMessage(error)),
+          onSuccess: () => {
+            toast.success('Tutorial updated');
+            setTutOpen(false);
+          },
+        },
       );
     }
     else {
-      const newTutorial: Tutorial = {
-        id: `tutorial-${Date.now()}`,
-        body: parsed.data.body,
-        cta_label: parsed.data.cta_label,
-        cta_to: parsed.data.cta_to,
-        icon: parsed.data.icon,
-        published: true,
-        slug: parsed.data.slug,
-        sort_order: parsed.data.sort_order,
-        steps: parsed.data.steps,
-        title: parsed.data.title,
-      };
-      next = [...tutorials, newTutorial];
+      createTutorial.mutate(payload, {
+        onError: (error: unknown) => toast.error(tutorialErrorMessage(error)),
+        onSuccess: () => {
+          toast.success('Tutorial added');
+          setTutOpen(false);
+        },
+      });
     }
-    updateTutorials.mutate(toTutorialApiList(next), {
-      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
-      onSuccess: () => {
-        toast.success(tutEdit ? 'Tutorial updated' : 'Tutorial added');
-        setTutOpen(false);
-      },
-    });
   };
 
   const toggleTutorialPublished = (id: string, isPublished: boolean) => {
-    const next = tutorials.map(t => (t.id === id ? { ...t, published: isPublished } : t));
-    updateTutorials.mutate(toTutorialApiList(next));
+    updateTutorial.mutate(
+      { id, payload: { published: isPublished } },
+      { onError: () => toast.error('Failed to update tutorial') },
+    );
   };
 
-  const deleteTutorial = (id: string) => {
-    const next = tutorials.filter(t => t.id !== id);
-    updateTutorials.mutate(toTutorialApiList(next), {
-      onError: () => toast.error('Failed to remove tutorial'),
+  const handleDeleteTutorial = (id: string) => {
+    deleteTutorial.mutate(id, {
+      onError: (error: unknown) => {
+        if (getApiErrorCode(error) === 'APP_HELP_TUTORIAL_NOT_FOUND') {
+          toast.error('Tutorial was already removed');
+          refetchTutorials();
+          return;
+        }
+        toast.error('Failed to remove tutorial');
+      },
       onSuccess: () => toast.success('Tutorial removed'),
     });
   };
@@ -562,7 +568,7 @@ function HelpManagement() {
             )}
         </TabsContent>
 
-        {/* ── Tutorials (restored: icon, steps, CTA) ── */}
+        {/* ── Tutorials (own paginated CRUD endpoints) ── */}
         <TabsContent value="tutorials" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openTutorialDialog(null)} className="gap-2">
@@ -571,14 +577,18 @@ function HelpManagement() {
               Add tutorial
             </Button>
           </div>
-          {tutorials.length === 0
+          {loadingTutorials
             ? (
-              <EmptyState label="No tutorials yet" />
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
             )
-            : (
-              tutorials.map((t) => {
-                const Icon = getHelpIcon(t.icon);
-                return (
+            : tutorials.length === 0
+              ? (
+                <EmptyState label="No tutorials yet" />
+              )
+              : (
+                tutorials.map(t => (
                   <Card key={t.id}>
                     <CardContent className="
                         flex flex-col gap-3 p-4
@@ -586,7 +596,7 @@ function HelpManagement() {
                       "
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                        <Icon className="h-5 w-5" />
+                        {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -597,22 +607,18 @@ function HelpManagement() {
                           )}
                           <span className="text-[10px] text-muted-foreground">
                             #
-                            {t.sort_order}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            /
-                            {t.slug}
+                            {t.sortOrder}
                           </span>
                         </div>
                         <p className="mt-1 font-medium text-foreground">
                           {t.title}
                         </p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {(t.steps ?? []).length}
+                          {t.steps.length}
                           {' '}
                           step
-                          {(t.steps ?? []).length === 1 ? '' : 's'}
-                          {t.cta_label && t.cta_to ? ` · CTA: ${t.cta_label} → ${t.cta_to}` : ''}
+                          {t.steps.length === 1 ? '' : 's'}
+                          {t.ctaLabel && t.ctaTo ? ` · CTA: ${t.ctaLabel} → ${t.ctaTo}` : ''}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -627,20 +633,85 @@ function HelpManagement() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          onClick={() => deleteTutorial(t.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete tutorial?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently removes "
+                                {t.title}
+                                " and cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTutorial(t.id)}
+                                className="
+                                  bg-destructive text-destructive-foreground
+                                  hover:bg-destructive/90
+                                "
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })
-            )}
+                ))
+              )}
+          {tutPagination && tutPagination.lastPage > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    aria-disabled={tutPagination.prevPage == null}
+                    className={tutPagination.prevPage == null ? 'pointer-events-none opacity-50' : undefined}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (tutPagination.prevPage)
+                        setTutPage(tutPagination.prevPage);
+                    }}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-3 text-sm text-muted-foreground">
+                    Page
+                    {' '}
+                    {tutPagination.currentPage}
+                    {' '}
+                    of
+                    {' '}
+                    {tutPagination.lastPage}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    aria-disabled={tutPagination.nextPage == null}
+                    className={tutPagination.nextPage == null ? 'pointer-events-none opacity-50' : undefined}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (tutPagination.nextPage)
+                        setTutPage(tutPagination.nextPage);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </TabsContent>
 
         {/* ── Categories (restored: icon + blurb, like old code) ── */}
@@ -898,38 +969,19 @@ function HelpManagement() {
                   onChange={event =>
                     setTutForm({
                       ...tutForm,
-                      sort_order: Number(event.target.value) || 0,
+                      sortOrder: Number(event.target.value) || 0,
                     })}
-                  value={tutForm.sort_order}
+                  value={tutForm.sortOrder}
                   type="number"
                   className="w-20"
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Slug</Label>
-              <Input
-                onChange={event =>
-                  setTutForm({ ...tutForm, slug: event.target.value.toLowerCase() })}
-                value={tutForm.slug}
-                placeholder="creating-your-first-listing"
-              />
-            </div>
-            <div className="space-y-1.5">
               <Label>Icon</Label>
               <IconSelect
                 value={tutForm.icon}
                 onChange={v => setTutForm({ ...tutForm, icon: v })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Body</Label>
-              <Textarea
-                onChange={event =>
-                  setTutForm({ ...tutForm, body: event.target.value })}
-                value={tutForm.body}
-                placeholder="Write the tutorial content..."
-                rows={6}
               />
             </div>
             <div className="space-y-1.5">
@@ -964,6 +1016,7 @@ function HelpManagement() {
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={tutForm.steps.length >= 20}
                 onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ''] })}
                 className="gap-2"
               >
@@ -972,21 +1025,31 @@ function HelpManagement() {
                 Add step
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>CTA label (optional)</Label>
-                <Input
-                  onChange={event =>
-                    setTutForm({ ...tutForm, cta_label: event.target.value })}
-                  value={tutForm.cta_label}
-                />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label>CTA (optional — set both, or leave both blank)</Label>
+                {(tutForm.ctaLabel || tutForm.ctaTo) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTutForm({ ...tutForm, ctaLabel: '', ctaTo: '' })}
+                  >
+                    Clear CTA
+                  </Button>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>CTA path (optional)</Label>
+              <div className="grid grid-cols-2 gap-3">
                 <Input
                   onChange={event =>
-                    setTutForm({ ...tutForm, cta_to: event.target.value })}
-                  value={tutForm.cta_to}
+                    setTutForm({ ...tutForm, ctaLabel: event.target.value })}
+                  value={tutForm.ctaLabel}
+                  placeholder="CTA label, e.g. Start browsing"
+                />
+                <Input
+                  onChange={event =>
+                    setTutForm({ ...tutForm, ctaTo: event.target.value })}
+                  value={tutForm.ctaTo}
                   placeholder="/listings"
                 />
               </div>
@@ -996,8 +1059,11 @@ function HelpManagement() {
             <Button onClick={() => setTutOpen(false)} variant="outline">
               Cancel
             </Button>
-            <Button onClick={saveTutorial} disabled={updateTutorials.isPending}>
-              {updateTutorials.isPending && (
+            <Button
+              onClick={saveTutorial}
+              disabled={createTutorial.isPending || updateTutorial.isPending}
+            >
+              {(createTutorial.isPending || updateTutorial.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Save

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { BookOpen, LifeBuoy, Loader2, Mail, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ArrowRight, BookOpen, LifeBuoy, Loader2, Mail, Search } from 'lucide-react';
+import { createElement, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import {
@@ -14,11 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  getHelpCategoriesOptions,
-  getHelpFaqsOptions,
-  getHelpTutorialsOptions,
-} from '@/queries/help.query';
+import { getHelpIcon } from '@/lib/helpIcons';
+import { getHelpCategoriesOptions, getHelpFaqsOptions } from '@/queries/help.query';
+import { getHelpTutorialsOptions } from '@/queries/helpTutorial.query';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -37,6 +36,11 @@ function HelpCenter() {
   const categoryMap = useMemo(
     () => new Map(categories.map(c => [c.key, c])),
     [categories],
+  );
+
+  const sortedTutorials = useMemo(
+    () => tutorials.toSorted((a, b) => a.sortOrder - b.sortOrder),
+    [tutorials],
   );
 
   const filtered = useMemo(() => {
@@ -222,7 +226,7 @@ function HelpCenter() {
                 ))}
       </section>
 
-      {tutorials.length > 0 && (
+      {sortedTutorials.length > 0 && (
         <section className="border-t border-border bg-muted/20">
           <div className="container py-14">
             <div className="mb-8 flex items-center gap-3">
@@ -236,25 +240,34 @@ function HelpCenter() {
               md:grid-cols-3
             "
             >
-              {tutorials.map((t) => {
+              {sortedTutorials.map((t) => {
                 return (
                   <Card key={t.id} className="flex flex-col">
                     <CardContent className="flex flex-1 flex-col gap-4 p-5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <BookOpen className="h-5 w-5" />
+                        {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
                       </div>
                       <h3 className="font-heading text-lg font-semibold text-foreground">
                         {t.title}
                       </h3>
-                      {t.slug && (
-                        <p className="font-mono text-xs text-muted-foreground">
-                          /
-                          {t.slug}
-                        </p>
+                      <ol className="flex-1 space-y-2">
+                        {t.steps.map((step, index) => (
+                          <li key={index} className="flex gap-2 text-sm">
+                            <span className="font-medium text-muted-foreground">
+                              {index + 1}
+                            </span>
+                            <span className="text-muted-foreground">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      {t.ctaTo && t.ctaLabel && (
+                        <Button asChild variant="outline" className="w-full justify-center">
+                          <Link to={t.ctaTo}>
+                            {t.ctaLabel}
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
                       )}
-                      <p className="flex-1 whitespace-pre-line text-sm text-muted-foreground">
-                        {t.body}
-                      </p>
                     </CardContent>
                   </Card>
                 );

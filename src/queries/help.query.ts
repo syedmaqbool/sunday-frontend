@@ -1,15 +1,10 @@
-import type {
-  HelpCategoryAPI,
-  HelpFaqAPI,
-  HelpTutorialAPI,
-} from '@/types/adminSettings.type';
+import type { HelpCategoryAPI, HelpFaqAPI } from '@/types/adminSettings.type';
 import type { Response } from '@/types/response.type';
 import { queryOptions } from '@tanstack/react-query';
 import { authInstance } from '@/services/ky.instance';
 
 export type HelpCategory = HelpCategoryAPI;
 export type HelpFaq = HelpFaqAPI;
-export type HelpTutorial = HelpTutorialAPI;
 
 export const helpQueryKey = {
   all: () => ['help'] as const,
@@ -17,7 +12,6 @@ export const helpQueryKey = {
   faqs: (categoryKey?: string) =>
     [...helpQueryKey.all(), 'faqs', categoryKey ?? null] as const,
   topFaqs: () => [...helpQueryKey.all(), 'top-faqs'] as const,
-  tutorials: () => [...helpQueryKey.all(), 'tutorials'] as const,
 };
 
 export function getHelpCategoriesOptions() {
@@ -55,17 +49,5 @@ export function getTopFaqsOptions() {
       return response.data;
     },
     queryKey: helpQueryKey.topFaqs(),
-  });
-}
-
-export function getHelpTutorialsOptions() {
-  return queryOptions({
-    queryFn: async () => {
-      const response = await authInstance
-        .get('api/v1/help-tutorials')
-        .json<Response<HelpTutorialAPI[]>>();
-      return response.data;
-    },
-    queryKey: helpQueryKey.tutorials(),
   });
 }

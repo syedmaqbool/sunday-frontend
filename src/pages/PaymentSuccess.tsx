@@ -7,8 +7,8 @@ export default function PaymentSuccess() {
   const { clearCart } = useCart();
   const orderId = searchParams.get('orderId');
 
-  // Success is the only outcome that clears the cart. Cancel and the
-  // PayFast-failed fallback intentionally leave it intact for retry.
+  // This route is retained for historical PayFast callbacks. Manual orders
+  // navigate directly to their order confirmation instead.
   useEffect(() => {
     clearCart();
   }, [clearCart]);

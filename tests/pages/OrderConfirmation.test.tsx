@@ -11,10 +11,14 @@ const {
   addItemMock,
   cancelOrderMock,
   fetchMarketplaceListingMock,
+  retryPayFastMock,
+  submitPayFastMock,
 } = vi.hoisted(() => ({
   addItemMock: vi.fn(),
   cancelOrderMock: vi.fn(),
   fetchMarketplaceListingMock: vi.fn(),
+  retryPayFastMock: vi.fn(),
+  submitPayFastMock: vi.fn(),
 }));
 
 const testState = { currentOrder: null as Order | null };
@@ -29,9 +33,14 @@ vi.mock('@/contexts/CartContext', () => ({
 }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
+vi.mock('@/lib/payfast', async importOriginal => ({
+  ...await importOriginal<typeof import('@/lib/payfast')>(),
+  submitPayFast: submitPayFastMock,
+}));
 vi.mock('@/queries/checkout.query', () => ({
   useCancelOrderMutation: () => ({ mutateAsync: cancelOrderMock }),
   useResubmitManualPaymentMutation: () => ({ mutateAsync: vi.fn() }),
+  useRetryPayFastOrderMutation: () => ({ mutateAsync: retryPayFastMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({
   fetchMarketplaceListing: fetchMarketplaceListingMock,
@@ -73,14 +82,18 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     items: [{
       id: 'item-id',
       buyerId: 'buyer-id',
+      commissionTierId: null,
       listingId: 'listing-id',
+      offerId: null,
       orderId: 'order-id',
+      reservationId: null,
       sellerId: 'seller-id',
       brand: 'Example',
       buyerFullName: 'Jane Buyer',
       category: 'Clothing',
       commissionAmount: 0,
       commissionRate: 0,
+      commissionTierName: null,
       condition: 'NEW',
       currency: 'PKR',
       description: 'Example item',
@@ -158,7 +171,49 @@ describe('order confirmation manual actions', () => {
     addItemMock.mockReset();
     cancelOrderMock.mockReset();
     fetchMarketplaceListingMock.mockReset();
+    retryPayFastMock.mockReset();
+    submitPayFastMock.mockReset();
     fetchMarketplaceListingMock.mockResolvedValue({ id: 'listing-id', status: 'APPROVED' });
+  });
+
+  it('does not render a PayFast retry control or call the gateway for a manual order', async () => {
+    renderPage();
+
+    await screen.findByText('Payment pending verification');
+
+    expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
+    expect(retryPayFastMock).not.toHaveBeenCalled();
+    expect(submitPayFastMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the PayFast retry branch available for historical orders', async () => {
+    testState.currentOrder = makeOrder({
+      manualPaymentSubmission: null,
+      paymentStatus: 'FAILED',
+    });
+    retryPayFastMock.mockResolvedValue({
+      data: {
+        basketId: 'basket-id',
+        accessToken: 'access-token',
+        amount: 100,
+        currencyCode: 'PKR',
+        fields: { BASKET_ID: 'basket-id' },
+        paymentUrl: 'https://example.test/payfast',
+      },
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry payment' }));
+
+    await waitFor(() => expect(retryPayFastMock).toHaveBeenCalledWith('order-id'));
+    expect(submitPayFastMock).toHaveBeenCalledWith({
+      basketId: 'basket-id',
+      accessToken: 'access-token',
+      amount: 100,
+      currencyCode: 'PKR',
+      fields: { BASKET_ID: 'basket-id' },
+      paymentUrl: 'https://example.test/payfast',
+    });
   });
 
   it('confirms cancellation, restores returned listings, and refreshes the order', async () => {

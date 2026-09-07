@@ -1,14 +1,18 @@
 export interface OrderItem {
   id: string;
   buyerId: string;
+  commissionTierId: string | null;
   listingId: string;
+  offerId: string | null;
   orderId: string;
+  reservationId: string | null;
   sellerId: string;
   brand: string;
   buyerFullName: string;
   category: string;
   commissionAmount: number;
   commissionRate: number;
+  commissionTierName: string | null;
   condition: string;
   currency: 'PKR';
   description: string;

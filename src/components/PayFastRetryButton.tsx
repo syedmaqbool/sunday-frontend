@@ -28,12 +28,10 @@ export function PayFastRetryButton({
     setRetrying(true);
     try {
       const response = await retryPayFast(orderId);
-      const result = response.data;
-      const payment = 'payment' in result ? result.payment : result;
-      if (!payment?.paymentUrl || !payment.fields) {
+      if (!response.data?.paymentUrl || !response.data.fields) {
         throw new Error('Payment could not be initialized.');
       }
-      submitPayFast(payment);
+      submitPayFast(response.data);
     }
     catch (error: any) {
       toast.error(error?.message ?? 'Unable to retry payment.');

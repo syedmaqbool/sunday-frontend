@@ -228,13 +228,13 @@ function Checkout() {
         ...(appliedDiscount?.source === 'platform' && { discountCode: appliedDiscount.code }),
         ...(appliedDiscount?.source === 'seller' && { sellerCouponCode: appliedDiscount.code }),
       });
-      const order = response.data?.order;
-      if (!order)
-        throw new Error('Checkout did not return an order.');
+      const result = response.data;
+      if (!result?.manualPaymentSubmission || !result.order)
+        throw new Error('Checkout did not return the manual payment submission.');
 
       clearCart();
       setManualPaymentOpen(false);
-      navigate(`/order-confirmation/${order.id}`, { replace: true });
+      navigate(`/order-confirmation/${result.order.id}`, { replace: true });
     }
     catch (error: any) {
       const message = error?.message ?? 'Unknown error';

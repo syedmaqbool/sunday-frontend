@@ -88,6 +88,10 @@ describe('submitPayFast', () => {
     const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
 
     submitPayFast({
+      basketId: 'order-uuid',
+      accessToken: 'access-token',
+      amount: 1250,
+      currencyCode: 'PKR',
       fields: {
         BASKET_ID: 'order-uuid',
         CALLBACK_URL: 'https://example.test/cancel?orderId=order-uuid',
@@ -113,6 +117,10 @@ describe('submitPayFast', () => {
     const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
 
     expect(() => submitPayFast({
+      basketId: 'order-uuid',
+      accessToken: 'access-token',
+      amount: 1250,
+      currencyCode: 'PKR',
       fields: { BASKET_ID: 'order-uuid' },
       paymentUrl: '/checkout',
     })).toThrow('PayFast payment URL is invalid.');

@@ -60,6 +60,10 @@ export interface UploadedPaymentProof {
 }
 
 export interface PayFastPayment {
+  basketId: string;
+  accessToken: string;
+  amount: number;
+  currencyCode: string;
   fields: Record<string, string>;
   paymentUrl: string;
 }
@@ -67,10 +71,6 @@ export interface PayFastPayment {
 export interface CheckoutOrderResult {
   manualPaymentSubmission: ManualPaymentSubmission;
   order: Order;
-}
-
-export interface RetryPayFastResult {
-  payment: PayFastPayment;
 }
 
 export interface CancelOrderResult {

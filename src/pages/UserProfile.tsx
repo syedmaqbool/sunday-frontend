@@ -29,6 +29,7 @@ import BankDetailsModal from '@/components/BankDetailsModal';
 import { ComplaintActions } from '@/components/ComplaintActions';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import Footer from '@/components/Footer';
+import { ManualVerificationStatus } from '@/components/ManualVerificationStatus';
 import Navbar from '@/components/Navbar';
 import { OrderItemReview } from '@/components/OrderItemReview';
 import { SellerComplaintBadge } from '@/components/SellerComplaintBadge';
@@ -541,6 +542,7 @@ function OrderCard({ order }: { order: Order }) {
                   {formatEnumLabel(visiblePaymentStatus)}
                 </Badge>
               )}
+              <ManualVerificationStatus compact order={order} className="basis-full" />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {itemCount}

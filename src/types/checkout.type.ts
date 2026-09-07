@@ -1,4 +1,4 @@
-import type { Order } from '@/types/order.type';
+import type { ManualPaymentSubmission, Order } from '@/types/order.type';
 
 export interface ValidateDiscountPayload {
   code: string;
@@ -59,15 +59,6 @@ export interface UploadedPaymentProof {
   url?: string;
 }
 
-export interface ManualPaymentSubmission {
-  id: string;
-  orderId: string;
-  proofFileId: string;
-  status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PayFastPayment {
   fields: Record<string, string>;
   paymentUrl: string;
@@ -85,3 +76,11 @@ export interface RetryPayFastResult {
 export interface CancelOrderResult {
   restorableListingIds: string[];
 }
+
+export interface ResubmitManualPaymentPayload {
+  proofFileId: string;
+  senderAccountNumber: string;
+  senderAccountTitle: string;
+}
+
+export type ResubmitManualPaymentResult = ManualPaymentSubmission;

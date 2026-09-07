@@ -35,19 +35,37 @@ export interface OrderItem {
   updatedAt: string;
 }
 
+export type ManualPaymentSubmissionStatus
+  = 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
+
+export interface ManualPaymentSubmission {
+  id: string;
+  orderId: string;
+  proofFileId: string;
+  reviewNote?: string | null;
+  status: ManualPaymentSubmissionStatus;
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Order {
   id: string;
   buyerId: string;
   buyerFullName: string;
+  canCancel?: boolean;
   cancellationReason: string | null;
+  canResubmit?: boolean;
   commissionAmount: number;
   currency: 'PKR';
   discountAmount: number;
   discountCode: string | null;
   items: OrderItem[];
+  manualPaymentSubmission?: ManualPaymentSubmission | null;
   paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
   platformFeeAmount: number;
   refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
+  sellerCouponCode: string | null;
   shippingAddress: string;
   shippingCity: string;
   shippingFirstName: string;

@@ -1,5 +1,6 @@
 import type {
   CreateOrderPayload,
+  ResubmitManualPaymentPayload,
   ValidateDiscountPayload,
 } from '@/types/checkout.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import {
   cancelOrder,
   createOrder,
   getPaymentInstructions,
+  resubmitManualPayment,
   retryPayFastOrder,
   uploadPaymentProof,
   validateDiscount,
@@ -75,6 +77,25 @@ export function useCancelOrderMutation() {
   return useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
     onSuccess: (_response, orderId) => {
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
+      queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+    },
+  });
+}
+
+export function useResubmitManualPaymentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      payload,
+    }: {
+      orderId: string;
+      payload: ResubmitManualPaymentPayload;
+    }) => resubmitManualPayment(orderId, payload),
+    onSuccess: (_response, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
     },

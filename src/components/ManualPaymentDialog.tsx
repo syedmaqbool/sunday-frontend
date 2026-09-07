@@ -56,6 +56,7 @@ export interface ManualPaymentSubmissionValues {
 
 interface ManualPaymentDialogProps {
   error?: string | null;
+  mode?: 'create' | 'resubmit';
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: ManualPaymentSubmissionValues) => Promise<void>;
   open: boolean;
@@ -77,6 +78,7 @@ function errorMessage(error: unknown, fallback: string) {
 
 export function ManualPaymentDialog({
   error,
+  mode = 'create',
   onOpenChange,
   onSubmit,
   open,
@@ -149,11 +151,17 @@ export function ManualPaymentDialog({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="
+        max-h-[90vh] overflow-y-auto
+        sm:max-w-lg
+      "
+      >
         <DialogHeader>
-          <DialogTitle>Complete manual payment</DialogTitle>
+          <DialogTitle>{mode === 'resubmit' ? 'Resubmit payment proof' : 'Complete manual payment'}</DialogTitle>
           <DialogDescription>
-            Transfer the order total to the account below, then send the account details and transaction screenshot.
+            {mode === 'resubmit'
+              ? 'Send updated sender details and a new transaction screenshot for the store to review.'
+              : 'Transfer the order total to the account below, then send the account details and transaction screenshot.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +183,11 @@ export function ManualPaymentDialog({
                 )
               : instructions
                 ? (
-                    <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                    <dl className="
+                      grid gap-2 text-sm
+                      sm:grid-cols-3
+                    "
+                    >
                       <div>
                         <dt className="text-muted-foreground">Bank or wallet</dt>
                         <dd className="font-medium text-foreground">{instructions.bankOrWalletLabel}</dd>
@@ -197,8 +209,8 @@ export function ManualPaymentDialog({
           <div className="space-y-2">
             <Label htmlFor="senderAccountTitle">Sender account title/name</Label>
             <Controller
-              control={control}
               name="senderAccountTitle"
+              control={control}
               render={({ field }) => <Input id="senderAccountTitle" placeholder="Your account title or name" {...field} />}
             />
             {errors.senderAccountTitle && <p className="text-sm text-destructive">{errors.senderAccountTitle.message}</p>}
@@ -207,8 +219,8 @@ export function ManualPaymentDialog({
           <div className="space-y-2">
             <Label htmlFor="senderAccountNumber">Sender account number</Label>
             <Controller
-              control={control}
               name="senderAccountNumber"
+              control={control}
               render={({ field }) => <Input id="senderAccountNumber" placeholder="Your account number" {...field} />}
             />
             {errors.senderAccountNumber && <p className="text-sm text-destructive">{errors.senderAccountNumber.message}</p>}
@@ -217,14 +229,14 @@ export function ManualPaymentDialog({
           <div className="space-y-2">
             <Label htmlFor="transactionScreenshot">Transaction screenshot</Label>
             <Controller
-              control={control}
               name="screenshot"
+              control={control}
               render={({ field: { onChange, ref } }) => (
                 <Input
-                  accept="image/jpeg,image/png,image/webp"
                   id="transactionScreenshot"
                   onChange={event => onChange(event.target.files?.[0])}
                   ref={ref}
+                  accept="image/jpeg,image/png,image/webp"
                   type="file"
                 />
               )}
@@ -234,11 +246,11 @@ export function ManualPaymentDialog({
           </div>
 
           {(uploadStatus !== 'idle' || submitting) && (
-            <div className="space-y-1.5" role="status">
+            <div role="status" className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   {submitting
-                    ? 'Creating order...'
+                    ? mode === 'resubmit' ? 'Resubmitting payment proof...' : 'Creating order...'
                     : uploadStatus === 'uploaded'
                       ? 'Screenshot uploaded.'
                       : 'Uploading screenshot...'}
@@ -248,12 +260,12 @@ export function ManualPaymentDialog({
                   %
                 </span>
               </div>
-              <Progress aria-label="Payment proof upload progress" value={uploadProgress} />
+              <Progress value={uploadProgress} aria-label="Payment proof upload progress" />
             </div>
           )}
 
           {displayedError && (
-            <p className="flex items-start gap-2 text-sm text-destructive" role="alert">
+            <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               {displayedError}
             </p>
@@ -261,16 +273,16 @@ export function ManualPaymentDialog({
         </div>
 
         <DialogFooter>
-          <Button disabled={busy} onClick={() => handleOpenChange(false)} type="button" variant="ghost">
+          <Button onClick={() => handleOpenChange(false)} disabled={busy} type="button" variant="ghost">
             Cancel
           </Button>
           <Button
-            disabled={busy || loadingInstructions || !!instructionsError || !instructions}
             onClick={handleSubmit(handlePaymentSubmit)}
+            disabled={busy || loadingInstructions || !!instructionsError || !instructions}
             type="button"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-            Submit payment proof
+            {mode === 'resubmit' ? 'Resubmit payment proof' : 'Submit payment proof'}
           </Button>
         </DialogFooter>
       </DialogContent>

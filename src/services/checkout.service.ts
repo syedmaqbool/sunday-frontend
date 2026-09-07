@@ -4,6 +4,8 @@ import type {
   CreateOrderPayload,
   PayFastPayment,
   PaymentInstructions,
+  ResubmitManualPaymentPayload,
+  ResubmitManualPaymentResult,
   RetryPayFastResult,
   UploadedPaymentProof,
   ValidateDiscountPayload,
@@ -57,4 +59,13 @@ export function cancelOrder(orderId: string) {
   return authInstance
     .post(`/api/v1/checkout/orders/${orderId}/cancel`)
     .json<Response<CancelOrderResult>>();
+}
+
+export function resubmitManualPayment(
+  orderId: string,
+  payload: ResubmitManualPaymentPayload,
+) {
+  return authInstance
+    .post(`/api/v1/checkout/orders/${orderId}/resubmit`, { json: payload })
+    .json<Response<ResubmitManualPaymentResult>>();
 }

@@ -24,7 +24,10 @@ vi.mock('@/queries/checkout.query', () => ({
   }),
 }));
 
-function renderDialog(onSubmit = vi.fn().mockResolvedValue(undefined)) {
+function renderDialog(
+  onSubmit = vi.fn().mockResolvedValue(undefined),
+  mode: 'create' | 'resubmit' = 'create',
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -38,6 +41,7 @@ function renderDialog(onSubmit = vi.fn().mockResolvedValue(undefined)) {
         <ManualPaymentDialog
           onOpenChange={onOpenChange}
           onSubmit={onSubmit}
+          mode={mode}
           open
         />
       </QueryClientProvider>,
@@ -136,6 +140,23 @@ describe('manual payment dialog', () => {
       senderAccountTitle: 'Jane Doe',
     }));
     expect(uploadPaymentProofMock).toHaveBeenCalledOnce();
+  });
+
+  it('uses the same validated proof flow for resubmission', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderDialog(onSubmit, 'resubmit');
+
+    expect(await screen.findByRole('heading', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    expect(await screen.findByText('Sunday Store')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
+      proofFileId: 'proof-file-id',
+      senderAccountNumber: '123456789',
+      senderAccountTitle: 'Jane Doe',
+    }));
   });
 
   it('shows the order error without closing or clearing the form', async () => {

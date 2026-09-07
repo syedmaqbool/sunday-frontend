@@ -1,26 +1,58 @@
 import type { Order } from '@/types/order.type';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { HTTPError } from 'ky';
+import { AlertCircle, ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
+import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
+import { getManualVerificationCopy, getManualVerificationState, ManualVerificationStatus } from '@/components/ManualVerificationStatus';
 import Navbar from '@/components/Navbar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
 import { formatEnumLabel } from '@/lib/utilities';
-import { getMyOrderOptions } from '@/queries/myOrders.query';
+import { useCancelOrderMutation, useResubmitManualPaymentMutation } from '@/queries/checkout.query';
+import { fetchMarketplaceListing } from '@/queries/marketplace.query';
+import { getMyOrderOptions, myOrdersQueryKey } from '@/queries/myOrders.query';
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message)
+    return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string')
+    return error.message;
+  return fallback;
+}
 
 function getConfirmationCopy(order: Order): { description: string; heading: string } {
+  if (order.status === 'CANCELLED' && order.paymentStatus === 'PAID') {
+    return {
+      description: 'This order was cancelled. Your payment has been received and will be refunded.',
+      heading: 'Order cancelled',
+    };
+  }
+
+  const verificationState = getManualVerificationState(order);
+  if (order.manualPaymentSubmission || verificationState === 'EXPIRED') {
+    const copy = getManualVerificationCopy(verificationState);
+    return { description: copy.description, heading: copy.heading };
+  }
+
   if (order.status === 'CANCELLED') {
-    if (order.paymentStatus === 'PAID') {
-      return {
-        description: 'This order was cancelled. Your payment has been received and will be refunded.',
-        heading: 'Order cancelled',
-      };
-    }
     return {
       description: order.cancellationReason ? formatEnumLabel(order.cancellationReason) : 'This order was cancelled.',
       heading: 'Order cancelled',
@@ -51,6 +83,16 @@ function OrderConfirmation() {
   const { loading: authLoading, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { addItem } = useCart();
+  const { mutateAsync: cancelOrder } = useCancelOrderMutation();
+  const { mutateAsync: resubmitManualPayment } = useResubmitManualPaymentMutation();
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [resubmitError, setResubmitError] = useState<string | null>(null);
+  const [resubmitOpen, setResubmitOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -76,6 +118,66 @@ function OrderConfirmation() {
     retry: false,
   });
   const order = orderResponse?.data;
+
+  const handleResubmit = async (values: {
+    proofFileId: string;
+    senderAccountNumber: string;
+    senderAccountTitle: string;
+  }) => {
+    if (!order || resubmitting)
+      return;
+    setResubmitting(true);
+    setResubmitError(null);
+    try {
+      await resubmitManualPayment({ orderId: order.id, payload: values });
+      await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
+      setResubmitOpen(false);
+      toast({ title: 'Payment proof resubmitted' });
+    }
+    catch (submissionError) {
+      if (submissionError instanceof HTTPError && submissionError.response.status === 409) {
+        await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
+        setResubmitError('This order changed while you were viewing it. We refreshed the latest order state.');
+      }
+      else {
+        setResubmitError(getErrorMessage(submissionError, 'Payment proof could not be resubmitted.'));
+      }
+      throw submissionError;
+    }
+    finally {
+      setResubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!order || cancelling)
+      return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const response = await cancelOrder(order.id);
+      await Promise.all(response.data.restorableListingIds.map(async (listingId) => {
+        const listing = await fetchMarketplaceListing(listingId);
+        if (listing)
+          addItem(listing);
+      }));
+      await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
+      setCancelOpen(false);
+      toast({ title: 'Order cancelled' });
+    }
+    catch (cancellationError) {
+      if (cancellationError instanceof HTTPError && cancellationError.response.status === 409) {
+        await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
+        setCancelError('This order changed while you were viewing it. We refreshed the latest order state.');
+      }
+      else {
+        setCancelError(getErrorMessage(cancellationError, 'Order could not be cancelled. Refresh and try again.'));
+      }
+    }
+    finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     if (!order || order.paymentStatus !== 'PAID')
@@ -149,6 +251,8 @@ function OrderConfirmation() {
   const isCancelled = order.status === 'CANCELLED';
   const isPaid = order.paymentStatus === 'PAID';
   const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
+  const verificationState = getManualVerificationState(order);
+  const hasManualPayment = Boolean(order.manualPaymentSubmission);
   const visiblePaymentStatus = isCancelled && !isPaid ? null : order.paymentStatus;
   const { description, heading } = getConfirmationCopy(order);
 
@@ -180,7 +284,7 @@ function OrderConfirmation() {
           "
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              {isPaid && !isCancelled
+              {verificationState === 'APPROVED' || (isPaid && !isCancelled)
                 ? <CheckCircle2 className="h-8 w-8 text-primary" />
                 : isPending
                   ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -196,6 +300,9 @@ function OrderConfirmation() {
             <p className="mt-2 text-sm text-muted-foreground">
               {description}
             </p>
+            {(hasManualPayment || verificationState === 'EXPIRED') && (
+              <ManualVerificationStatus order={order} className="mx-auto mt-4 max-w-xl text-left" />
+            )}
             {visiblePaymentStatus && (
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <span className="text-sm text-muted-foreground">Payment status:</span>
@@ -239,6 +346,60 @@ function OrderConfirmation() {
             lg:grid-cols-5
           "
           >
+            {hasManualPayment && (
+              <div className="
+                space-y-2 rounded-lg border border-border bg-card p-4
+                sm:col-span-5 sm:p-6
+                lg:col-span-5
+              "
+              >
+                {order.canResubmit && (verificationState === 'REJECTED' || verificationState === 'RESUBMISSION_REQUESTED') && (
+                  <Button
+                    onClick={() => {
+                      setResubmitError(null);
+                      setResubmitOpen(true);
+                    }}
+                    type="button"
+                    className="w-full"
+                  >
+                    Resubmit payment proof
+                  </Button>
+                )}
+                {order.canCancel && !isCancelled && !isPaid && (
+                  <AlertDialog onOpenChange={setCancelOpen} open={cancelOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="outline" className="w-full">Cancel order</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will cancel the order and release any listings the store makes available again. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      {cancelError && (
+                        <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                          {cancelError}
+                        </p>
+                      )}
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={cancelling}>Keep order</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(event) => {
+                            event.preventDefault();
+                            void handleCancel();
+                          }}
+                          disabled={cancelling}
+                        >
+                          {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancel order'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
             {/* Items */}
             <div className="
               space-y-6
@@ -406,6 +567,16 @@ function OrderConfirmation() {
         </div>
       </main>
       <Footer />
+      {hasManualPayment && (verificationState === 'REJECTED' || verificationState === 'RESUBMISSION_REQUESTED') && (
+        <ManualPaymentDialog
+          onOpenChange={setResubmitOpen}
+          onSubmit={handleResubmit}
+          error={resubmitError}
+          mode="resubmit"
+          open={resubmitOpen}
+          submitting={resubmitting}
+        />
+      )}
     </div>
   );
 }

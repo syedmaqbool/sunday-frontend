@@ -28,6 +28,12 @@ All TanStack Query cache keys in this repo must follow these rules:
 
 - For all form-related work in this repo, always use `react-hook-form`, `@hookform/resolvers/zod`, and `zod`.
 
+## Test Conventions
+
+- Store all tests in the root `tests` directory, outside `src`.
+- Mirror the relevant `src` structure under `tests`, such as `src/lib/utilities.ts` tested by `tests/lib/utilities.test.ts`.
+- Keep shared test setup in `tests/setup.ts`.
+
 ## UI/Data Boundary
 
 - All data extraction, filtering, mapping, formatting, and view-specific reshaping must happen in the consuming component, page, or UI hook layer.

@@ -2,20 +2,30 @@ import type {
   CreateOrderPayload,
   ValidateDiscountPayload,
 } from '@/types/checkout.type';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { marketplaceQueryKey } from '@/queries/marketplace.query';
 import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {
   cancelOrder,
   createOrder,
+  getPaymentInstructions,
   retryPayFastOrder,
+  uploadPaymentProof,
   validateDiscount,
   validateSellerCoupon,
 } from '@/services/checkout.service';
 
 export const checkoutQueryKey = {
   all: () => ['checkout'] as const,
+  paymentInstructions: () => [...checkoutQueryKey.all(), 'payment-instructions'] as const,
 };
+
+export function getPaymentInstructionsOptions() {
+  return queryOptions({
+    queryFn: () => getPaymentInstructions(),
+    queryKey: checkoutQueryKey.paymentInstructions(),
+  });
+}
 
 export function useValidateDiscountMutation() {
   return useMutation({
@@ -38,6 +48,12 @@ export function useCreateCheckoutMutation() {
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
+  });
+}
+
+export function useUploadPaymentProofMutation() {
+  return useMutation({
+    mutationFn: (file: File) => uploadPaymentProof(file),
   });
 }
 

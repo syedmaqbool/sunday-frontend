@@ -31,9 +31,12 @@ export interface ValidateSellerCouponResult {
 }
 
 export interface CreateOrderPayload {
+  proofFileId: string;
   discountCode?: string;
   listingIds: string[];
   sellerCouponCode?: string;
+  senderAccountNumber: string;
+  senderAccountTitle: string;
   shippingAddress: string;
   shippingCity: string;
   shippingFirstName: string;
@@ -42,14 +45,37 @@ export interface CreateOrderPayload {
   shippingPostal: string;
 }
 
+export interface PaymentInstructions {
+  accountNumber: string;
+  accountTitle: string;
+  bankOrWalletLabel: string;
+}
+
+export interface UploadedPaymentProof {
+  id: string;
+  filename?: string;
+  mimetype?: string;
+  size?: number | string;
+  url?: string;
+}
+
+export interface ManualPaymentSubmission {
+  id: string;
+  orderId: string;
+  proofFileId: string;
+  status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PayFastPayment {
   fields: Record<string, string>;
   paymentUrl: string;
 }
 
 export interface CheckoutOrderResult {
+  manualPaymentSubmission: ManualPaymentSubmission;
   order: Order;
-  payment?: PayFastPayment | null;
 }
 
 export interface RetryPayFastResult {

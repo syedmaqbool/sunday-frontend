@@ -14,6 +14,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import Footer from '@/components/Footer';
+import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +27,8 @@ import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
-import { submitPayFast } from '@/lib/payfast';
 import {
   useCreateCheckoutMutation,
-  useRetryPayFastOrderMutation,
   useValidateDiscountMutation,
   useValidateSellerCouponMutation,
 } from '@/queries/checkout.query';
@@ -60,7 +59,7 @@ type ShippingFormValues = z.infer<typeof shippingSchema>;
 type DiscountFormValues = z.infer<typeof discountSchema>;
 
 function Checkout() {
-  const { isHydrated, items, removeItem, totalItems, totalPrice } = useCart();
+  const { clearCart, isHydrated, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: activeTax } = useQuery(getActiveTaxOptions());
@@ -69,11 +68,13 @@ function Checkout() {
     tier => tier.active,
   );
   const [placing, setPlacing] = useState(false);
+  const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
+  const [manualPaymentOpen, setManualPaymentOpen] = useState(false);
+  const [pendingShipping, setPendingShipping] = useState<ShippingFormValues | null>(null);
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
-  const { mutateAsync: retryPayFast } = useRetryPayFastOrderMutation();
   const { mutateAsync: validateDiscountCode } = useValidateDiscountMutation();
   const { mutateAsync: validateSellerCouponCode } = useValidateSellerCouponMutation();
   const shippingForm = useForm<ShippingFormValues>({
@@ -192,58 +193,58 @@ function Checkout() {
       return;
     }
 
+    setPendingShipping(shipping);
+    setManualPaymentError(null);
+    setManualPaymentOpen(true);
+  };
+
+  const handleManualPaymentSubmit = async ({
+    proofFileId,
+    senderAccountNumber,
+    senderAccountTitle,
+  }: {
+    proofFileId: string;
+    senderAccountNumber: string;
+    senderAccountTitle: string;
+  }) => {
+    if (placing || !pendingShipping)
+      return;
+
     setPlacing(true);
+    setManualPaymentError(null);
 
     try {
       const response = await createCheckout({
         listingIds: items.map(index => index.listing.id),
-        shippingAddress: shipping.address,
-        shippingCity: shipping.city,
-        shippingFirstName: shipping.firstName,
-        shippingLastName: shipping.lastName,
-        shippingPhone: shipping.phone,
-        shippingPostal: shipping.postal,
+        proofFileId,
+        senderAccountNumber,
+        senderAccountTitle,
+        shippingAddress: pendingShipping.address,
+        shippingCity: pendingShipping.city,
+        shippingFirstName: pendingShipping.firstName,
+        shippingLastName: pendingShipping.lastName,
+        shippingPhone: pendingShipping.phone,
+        shippingPostal: pendingShipping.postal,
         ...(appliedDiscount?.source === 'platform' && { discountCode: appliedDiscount.code }),
         ...(appliedDiscount?.source === 'seller' && { sellerCouponCode: appliedDiscount.code }),
       });
-      const result = response.data;
-      if (!result?.order) {
+      const order = response.data?.order;
+      if (!order)
         throw new Error('Checkout did not return an order.');
-      }
 
-      try {
-        if (result.payment) {
-          submitPayFast(result.payment);
-          return;
-        }
-
-        throw new Error('Checkout did not initialize PayFast.');
-      }
-      catch {
-        try {
-          const retryResponse = await retryPayFast(result.order.id);
-          const retryResult = retryResponse.data;
-          const payment = 'payment' in retryResult ? retryResult.payment : retryResult;
-          submitPayFast(payment);
-          return;
-        }
-        catch (error: any) {
-          toast({
-            description: error?.message ?? 'Retry payment from your order page.',
-            title: 'Payment could not be opened',
-            variant: 'destructive',
-          });
-        }
-
-        navigate(`/order-confirmation/${result.order.id}`, { replace: true });
-      }
+      clearCart();
+      setManualPaymentOpen(false);
+      navigate(`/order-confirmation/${order.id}`, { replace: true });
     }
     catch (error: any) {
+      const message = error?.message ?? 'Unknown error';
+      setManualPaymentError(message);
       toast({
-        description: error?.message ?? 'Unknown error',
+        description: message,
         title: 'Order failed',
         variant: 'destructive',
       });
+      throw error;
     }
     finally {
       setPlacing(false);
@@ -647,6 +648,13 @@ function Checkout() {
         </div>
       </main>
       <Footer />
+      <ManualPaymentDialog
+        error={manualPaymentError}
+        onOpenChange={setManualPaymentOpen}
+        onSubmit={handleManualPaymentSubmit}
+        open={manualPaymentOpen}
+        submitting={placing}
+      />
     </div>
   );
 }

@@ -1,21 +1,19 @@
 import type { Order } from '@/types/order.type';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
-import { PayFastRetryButton } from '@/components/PayFastRetryButton';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
-import { getPayFastStatusPollDelay, isOrderEligibleForPayFastRetry, MAX_PAYFAST_STATUS_POLLS } from '@/lib/payfast';
 import { formatEnumLabel } from '@/lib/utilities';
 import { getMyOrderOptions } from '@/queries/myOrders.query';
 
-function getConfirmationCopy(order: Order, isRetryable: boolean): { description: string; heading: string } {
+function getConfirmationCopy(order: Order): { description: string; heading: string } {
   if (order.status === 'CANCELLED') {
     if (order.paymentStatus === 'PAID') {
       return {
@@ -36,15 +34,15 @@ function getConfirmationCopy(order: Order, isRetryable: boolean): { description:
   }
   if (order.paymentStatus === 'PENDING') {
     return {
-      description: 'We are waiting for PayFast to confirm your payment. This page will check again automatically.',
-      heading: 'Payment is being verified',
+      description: 'We received your payment proof. The store will verify it manually before processing your order.',
+      heading: 'Payment is pending verification',
     };
   }
   return {
-    description: isRetryable
-      ? 'Your order exists, but payment was not completed. You can retry payment below.'
-      : 'Your order is awaiting payment initialization.',
-    heading: order.paymentStatus === 'FAILED' ? 'Payment failed' : 'Payment was not initialized',
+    description: order.paymentStatus === 'FAILED'
+      ? 'Your payment proof could not be accepted. Please contact the store for help.'
+      : 'Your order is awaiting manual payment verification.',
+    heading: order.paymentStatus === 'FAILED' ? 'Payment proof needs attention' : 'Payment is awaiting verification',
   };
 }
 
@@ -53,7 +51,6 @@ function OrderConfirmation() {
   const { loading: authLoading, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [pollAttempt, setPollAttempt] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -72,31 +69,13 @@ function OrderConfirmation() {
   const {
     data: orderResponse,
     error,
-    isFetching,
     isLoading,
-    refetch,
   } = useQuery({
     ...getMyOrderOptions(id ?? ''),
     enabled: Boolean(id) && Boolean(user) && !authLoading,
     retry: false,
   });
   const order = orderResponse?.data;
-
-  useEffect(() => {
-    if (!order || order.status !== 'AWAITING_PAYMENT')
-      return;
-
-    const pollDelay = getPayFastStatusPollDelay(order.paymentStatus, pollAttempt);
-    if (pollDelay === null)
-      return;
-
-    const timer = setTimeout(() => {
-      setPollAttempt(current => current + 1);
-      void refetch();
-    }, pollDelay);
-
-    return () => clearTimeout(timer);
-  }, [order, pollAttempt, refetch]);
 
   useEffect(() => {
     if (!order || order.paymentStatus !== 'PAID')
@@ -122,11 +101,6 @@ function OrderConfirmation() {
     });
     localStorage.setItem(storageKey, '1');
   }, [order]);
-
-  const handleCheckPaymentStatus = async () => {
-    setPollAttempt(0);
-    await refetch();
-  };
 
   const copyOrderId = async () => {
     if (!order)
@@ -176,10 +150,7 @@ function OrderConfirmation() {
   const isPaid = order.paymentStatus === 'PAID';
   const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
   const visiblePaymentStatus = isCancelled && !isPaid ? null : order.paymentStatus;
-  const isRetryable = isOrderEligibleForPayFastRetry(order, {
-    pendingPollExhausted: pollAttempt >= MAX_PAYFAST_STATUS_POLLS,
-  });
-  const { description, heading } = getConfirmationCopy(order, isRetryable);
+  const { description, heading } = getConfirmationCopy(order);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -241,20 +212,6 @@ function OrderConfirmation() {
                   year: 'numeric',
                 })}
               </p>
-            )}
-            {isPending && pollAttempt >= MAX_PAYFAST_STATUS_POLLS && (
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Automatic checks are paused. Check again when you are ready.
-                </p>
-                <Button onClick={handleCheckPaymentStatus} disabled={isFetching} type="button" variant="outline">
-                  {isFetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Check payment status
-                </Button>
-              </div>
-            )}
-            {isRetryable && (
-              <PayFastRetryButton orderId={order.id} className="mt-5" />
             )}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
               <span className="text-muted-foreground">Order</span>

@@ -1,7 +1,7 @@
 import type { Order } from '@/types/order.type';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { HTTPError } from 'ky';
-import { AlertCircle, ArrowLeft, CheckCircle2, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock3, Copy, Loader2, MapPin, Package, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
@@ -349,9 +349,11 @@ function OrderConfirmation() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
               {verificationState === 'APPROVED' || (isPaid && !isCancelled)
                 ? <CheckCircle2 className="h-8 w-8 text-primary" />
-                : isPending
-                  ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  : <XCircle className="h-8 w-8 text-destructive" />}
+                : verificationState === 'SUBMITTED'
+                  ? <Clock3 aria-label="Payment awaiting admin approval" className="h-8 w-8 animate-spin text-primary" />
+                  : isPending
+                    ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    : <XCircle className="h-8 w-8 text-destructive" />}
             </div>
             <h1 className="
               font-heading text-2xl font-bold text-foreground

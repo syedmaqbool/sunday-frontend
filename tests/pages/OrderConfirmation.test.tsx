@@ -186,6 +186,15 @@ describe('order confirmation manual actions', () => {
     expect(submitPayFastMock).not.toHaveBeenCalled();
   });
 
+  it('shows an animated clock while a submitted payment waits for admin approval', async () => {
+    testState.currentOrder = makeOrder({ status: 'CONFIRMED' });
+    renderPage();
+
+    await screen.findByText('Payment pending verification');
+
+    expect(screen.getByLabelText('Payment awaiting admin approval')).toHaveClass('animate-spin');
+  });
+
   it('keeps the PayFast retry branch available for historical orders', async () => {
     testState.currentOrder = makeOrder({
       manualPaymentSubmission: null,

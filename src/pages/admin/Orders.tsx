@@ -5,7 +5,9 @@ import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { ExternalLink, Loader2, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -23,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAccessControl } from '@/hooks/useAccessControl';
 import {
   getAdminOrdersOptions,
   getAdminReservedListingsOptions,
@@ -30,7 +33,7 @@ import {
 
 // ── Display types ─────────────────────────────────────────────────────────────
 type EffectiveStatus = 'delivered' | 'shipped' | 'sold';
-type StatusFilter = 'all' | 'reserved' | EffectiveStatus;
+type StatusFilter = 'all' | 'manual-review' | 'reserved' | EffectiveStatus;
 type DateFilter = '7d' | 'all' | 'month' | 'today';
 
 interface Row {
@@ -56,11 +59,20 @@ function dateFilterStart(filter: DateFilter) {
 
 // Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
 function effectiveStatus(status: AdminOrderItem['status']): EffectiveStatus {
-  if (status === 'CONFIRMED')
+  if (['AWAITING_PAYMENT', 'CANCELLED', 'CONFIRMED'].includes(status))
     return 'sold';
   if (status === 'SHIPPED')
     return 'shipped';
   return 'delivered';
+}
+
+function latestManualPaymentSubmission(order: AdminOrder) {
+  return [...order.manualPaymentSubmissions]
+    .toSorted((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
+}
+
+function hasActionableManualPayment(order: AdminOrder) {
+  return latestManualPaymentSubmission(order)?.status === 'SUBMITTED';
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -68,17 +80,29 @@ function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selected, setSelected] = useState<Row | null>(null);
+  const [selectedReviewOrderId, setSelectedReviewOrderId] = useState<string | null>(null);
+  const { can } = useAccessControl();
+  const canReviewPayments = can('ORDERS_UPDATE');
 
-  const { data: orders = [], isLoading } = useQuery(getAdminOrdersOptions());
-  const { data: reservedListings = [], isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
+  const { data: ordersResponse, isLoading } = useQuery(getAdminOrdersOptions({
+    size: 100,
+    sortOrder: 'desc',
+    sortBy: 'createdAt',
+  }));
+  const { data: reservedResponse, isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
+  const orders = ordersResponse?.data;
+  const reservedListings = reservedResponse?.data ?? [];
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
     const start = dateFilterStart(dateFilter);
     const flat: Row[] = [];
+    const orderList = orders ?? [];
 
-    for (const o of orders) {
+    for (const o of orderList) {
       if (start && new Date(o.createdAt) < start)
+        continue;
+      if (statusFilter === 'manual-review' && !hasActionableManualPayment(o))
         continue;
       const buyerName
         = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(' ')
@@ -89,6 +113,7 @@ function AdminOrders() {
         if (
           statusFilter !== 'all'
           && statusFilter !== 'reserved'
+          && statusFilter !== 'manual-review'
           && eff !== statusFilter
         ) {
           continue;
@@ -111,12 +136,13 @@ function AdminOrders() {
   // KPI counts — aggregate counts come directly from backend's itemStatusCounts per order
   const counts = useMemo(() => {
     const start = dateFilterStart(dateFilter);
+    const orderList = orders ?? [];
     let sold = 0;
     let shipped = 0;
     let received = 0;
     let completed = 0;
 
-    for (const o of orders) {
+    for (const o of orderList) {
       if (start && new Date(o.createdAt) < start)
         continue;
       sold += o.itemStatusCounts.confirmed;
@@ -205,6 +231,7 @@ function AdminOrders() {
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="delivered">Delivered</TabsTrigger>
+            <TabsTrigger value="manual-review">Manual review</TabsTrigger>
             <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -316,62 +343,101 @@ function AdminOrders() {
                                 <TableHead>Item</TableHead>
                                 <TableHead>Buyer</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Payment review</TableHead>
+                                <TableHead>Sender account</TableHead>
                                 <TableHead>Tracking</TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Price</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {rows.map(r => (
-                                <TableRow
-                                  key={r.item.id}
-                                  onClick={() => setSelected(r)}
-                                  className="cursor-pointer"
-                                >
-                                  <TableCell className="font-medium">
-                                    {r.item.title}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">{r.buyerName}</div>
-                                    {r.city && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {r.city}
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        r.effective === 'shipped' ? 'default' : 'secondary'
-                                      }
-                                    >
-                                      {r.effective}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {r.item.trackingNumber
-                                      ? (
-                                          <div>
-                                            <div>{r.item.shippingMethod ?? '—'}</div>
-                                            <div className="font-mono text-xs">
-                                              {r.item.trackingNumber}
+                              {rows.map((r) => {
+                                const submission = latestManualPaymentSubmission(r.order);
+
+                                return (
+                                  <TableRow
+                                    key={r.item.id}
+                                    onClick={() => setSelected(r)}
+                                    className="cursor-pointer"
+                                  >
+                                    <TableCell className="font-medium">
+                                      {r.item.title}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="text-sm">{r.buyerName}</div>
+                                      {r.city && (
+                                        <div className="text-xs text-muted-foreground">
+                                          {r.city}
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant={
+                                          r.effective === 'shipped' ? 'default' : 'secondary'
+                                        }
+                                      >
+                                        {r.effective}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {submission
+                                        ? (
+                                            <Badge variant={submission.status === 'SUBMITTED' ? 'outline' : 'secondary'}>
+                                              {submission.status.replaceAll('_', ' ')}
+                                            </Badge>
+                                          )
+                                        : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {submission
+                                        ? (
+                                            <div className="space-y-1">
+                                              <span className="font-mono text-xs">
+                                                {maskSenderAccountNumber(submission.senderAccountNumber)}
+                                              </span>
+                                              {submission.status === 'SUBMITTED' && (
+                                                <Button
+                                                  onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    setSelectedReviewOrderId(r.orderId);
+                                                  }}
+                                                  size="sm"
+                                                  variant="outline"
+                                                  className="block"
+                                                >
+                                                  Review payment
+                                                </Button>
+                                              )}
                                             </div>
-                                          </div>
-                                        )
-                                      : (
-                                          '—'
-                                        )}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {format(new Date(r.created_at), 'MMM d, yyyy')}
-                                  </TableCell>
-                                  <TableCell className="text-right font-medium">
-                                    Rs
-                                    {' '}
-                                    {r.item.price.toLocaleString()}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                          )
+                                        : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {r.item.trackingNumber
+                                        ? (
+                                            <div>
+                                              <div>{r.item.shippingMethod ?? '—'}</div>
+                                              <div className="font-mono text-xs">
+                                                {r.item.trackingNumber}
+                                              </div>
+                                            </div>
+                                          )
+                                        : (
+                                            '—'
+                                          )}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {format(new Date(r.created_at), 'MMM d, yyyy')}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      Rs
+                                      {' '}
+                                      {r.item.price.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         ))}
@@ -380,6 +446,11 @@ function AdminOrders() {
           )}
 
       <OrderDetailDialog onClose={() => setSelected(null)} row={selected} />
+      <AdminManualPaymentReviewDialog
+        orderId={selectedReviewOrderId}
+        onClose={() => setSelectedReviewOrderId(null)}
+        canReview={canReviewPayments}
+      />
     </div>
   );
 }

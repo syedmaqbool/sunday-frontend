@@ -1,3 +1,28 @@
+export type AdminOrderItemStatus
+  = 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';
+
+export type AdminOrderStatus
+  = 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+
+export type AdminPaymentStatus = 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+
+export type ManualPaymentSubmissionStatus
+  = 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
+
+export interface AdminManualPaymentSubmission {
+  id: string;
+  orderId: string;
+  proofFileId: string;
+  reviewerId: string | null;
+  reviewNote: string | null;
+  senderAccountNumber: string;
+  senderAccountTitle: string;
+  status: ManualPaymentSubmissionStatus;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminOrderItem {
   id: string;
   buyerId: string;
@@ -27,7 +52,7 @@ export interface AdminOrderItem {
   sellerFullName: string;
   shippingMethod: string | null;
   size: string;
-  status: 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';
+  status: AdminOrderItemStatus;
   subcategory: string;
   taxAmount: number;
   title: string;
@@ -50,26 +75,46 @@ export interface AdminOrder {
   id: string;
   buyerId: string;
   buyerFullName: string;
+  cancellationReason: string | null;
   commissionAmount: number;
   currency: 'PKR';
   discountAmount: number;
   discountCode: string | null;
   items: AdminOrderItem[];
   itemStatusCounts: AdminOrderItemStatusCounts;
+  manualPaymentSubmissions: AdminManualPaymentSubmission[];
+  paymentStatus: AdminPaymentStatus;
   platformFeeAmount: number;
+  refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
+  restorableListingIds: string[];
+  sellerCouponCode: string | null;
   shippingAddress: string;
   shippingCity: string;
   shippingFirstName: string;
   shippingLastName: string;
   shippingPhone: string;
   shippingPostal: string;
-  status: 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+  status: AdminOrderStatus;
   subtotal: number;
   taxAmount: number;
   taxRate: number;
   total: number;
+  cancelledAt: string | null;
+  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ManualPaymentReviewPayload {
+  reviewNote: string;
+}
+
+export interface AdminOrderListParameters {
+  page?: number;
+  size?: number;
+  sortOrder?: 'asc' | 'desc';
+  status?: AdminOrderStatus;
+  sortBy?: 'createdAt' | 'updatedAt';
 }
 
 export interface ReservedListing {

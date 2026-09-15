@@ -5,7 +5,7 @@ import LandingNavbar from '@/components/LandingNavbar';
 export default function ComingSoonLanding() {
   return (
     <div className="flex min-h-screen flex-col bg-[#999999] text-white">
-      <LandingNavbar />
+      <LandingNavbar navigationDisabled />
 
       <main className="flex flex-1 items-center overflow-hidden">
         <section className="grid w-full items-center gap-10 px-[6.7vw] py-16 md:min-h-[calc(100vh-10rem)] md:grid-cols-2 md:gap-4 md:py-10 lg:py-16">
@@ -45,8 +45,22 @@ export default function ComingSoonLanding() {
             </a>
           </div>
           <div className="flex gap-7">
-            <Link className="transition-colors hover:text-white" to="/privacy">Privacy Policy</Link>
-            <Link className="transition-colors hover:text-white" to="/terms">Terms of Service</Link>
+            <Link
+              aria-disabled="true"
+              className="transition-colors hover:text-white"
+              onClick={event => event.preventDefault()}
+              to="/privacy"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              aria-disabled="true"
+              className="transition-colors hover:text-white"
+              onClick={event => event.preventDefault()}
+              to="/terms"
+            >
+              Terms of Service
+            </Link>
           </div>
         </div>
       </footer>

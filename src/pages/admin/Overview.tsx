@@ -36,7 +36,7 @@ export default function Overview() {
     );
   }
 
-  const stats = data?.kpis;
+  const stats = data?.data?.kpis;
 
   const cards = [
     {

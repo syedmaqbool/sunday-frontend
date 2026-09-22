@@ -69,3 +69,8 @@ export interface AdminMarketingLeadsParams {
   search?: string;
   size?: number;
 }
+
+export type AdminMarketingLeadsExportParams = Pick<
+  AdminMarketingLeadsParams,
+  'leadStatus' | 'search'
+>;

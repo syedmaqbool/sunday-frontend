@@ -15,7 +15,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -26,6 +26,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -47,6 +48,7 @@ import { cn } from '@/lib/utilities';
 import {
   getAdminAnalyticsQueryOptions,
   getAdminMarketingLeadsQueryOptions,
+  useExportAdminMarketingLeadsMutation,
 } from '@/queries/adminAnalytics.query';
 
 // ── Dimension config ─────────────────────────────────────────────────────────
@@ -97,23 +99,28 @@ const CHART_COLORS = [
   'hsl(0 65% 55%)',
 ];
 
-function downloadCSV(rows: any[], filename: string) {
-  if (rows.length === 0)
-    return;
-  const headers = Object.keys(rows[0]);
-  const csv = [
-    headers.join(','),
-    ...rows.map(r =>
-      headers.map(h => JSON.stringify(r[h] ?? '')).join(','),
-    ),
-  ].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+const DEFAULT_MARKETING_LEADS_FILENAME = 'marketing-leads.csv';
+
+function getExportFilename(response: Response) {
+  const contentDisposition = response.headers.get('content-disposition');
+  const filenameMatch = contentDisposition?.match(
+    /filename\*=(?:UTF-8'')?([^;]+)|filename=(?:"([^"]+)"|([^;]+))/i,
+  );
+  const filename = filenameMatch?.[1] ?? filenameMatch?.[2] ?? filenameMatch?.[3];
+
+  if (!filename)
+    return DEFAULT_MARKETING_LEADS_FILENAME;
+
+  const trimmedFilename = filename.trim();
+  if (!trimmedFilename)
+    return DEFAULT_MARKETING_LEADS_FILENAME;
+
+  try {
+    return decodeURIComponent(trimmedFilename) || DEFAULT_MARKETING_LEADS_FILENAME;
+  }
+  catch {
+    return DEFAULT_MARKETING_LEADS_FILENAME;
+  }
 }
 
 function DimChips({
@@ -191,8 +198,9 @@ function Analytics() {
   const [offersDim, setOffersDim] = useState<DimKey>('category');
   const [leadSearch, setLeadSearch] = useState('');
   const [leadStatusFilter] = useState<string>('');
+  const exportInProgress = useRef(false);
 
-  const { data, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
+  const { data: analyticsResult, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
   const { data: leadsResult, isLoading: leadsLoading } = useQuery(getAdminMarketingLeadsQueryOptions({
     leadStatus: leadStatusFilter || undefined,
     search: leadSearch || undefined,
@@ -201,6 +209,43 @@ function Analytics() {
 
   const leads = leadsResult?.data ?? [];
   const leadsTotal = leadsResult?.pagination?.total ?? 0;
+  const data = analyticsResult?.data;
+  const exportMarketingLeads = useExportAdminMarketingLeadsMutation();
+
+  const handleExportMarketingLeads = async () => {
+    if (exportInProgress.current || exportMarketingLeads.isPending)
+      return;
+
+    exportInProgress.current = true;
+
+    try {
+      const parameters = {
+        ...(leadSearch && { search: leadSearch }),
+        ...(leadStatusFilter && { leadStatus: leadStatusFilter }),
+      };
+      const response = await exportMarketingLeads.mutateAsync(parameters);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = getExportFilename(response);
+      document.body.append(link);
+      try {
+        link.click();
+      }
+      finally {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+    }
+    catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export marketing leads.');
+    }
+    finally {
+      exportInProgress.current = false;
+    }
+  };
 
   // ── Order volume (already sorted desc by orderCount from backend) ──────────
   const orderVolumeData = useMemo(() => {
@@ -299,23 +344,15 @@ function Analytics() {
           </p>
         </div>
         <Button
-          onClick={() =>
-            downloadCSV(
-              leads.map(l => ({
-                location: l.location,
-                name: l.name,
-                offers: l.offerCount,
-                orders: l.orderCount,
-                phone: l.phone,
-                status: LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
-              })),
-              'leads-report.csv',
-            )}
+          onClick={handleExportMarketingLeads}
+          disabled={exportMarketingLeads.isPending}
           size="sm"
         >
-          <Download className="mr-2 h-4 w-4" />
+          {exportMarketingLeads.isPending
+            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            : <Download className="mr-2 h-4 w-4" />}
           {' '}
-          Export Report
+          {exportMarketingLeads.isPending ? 'Downloading...' : 'Export Report'}
         </Button>
       </div>
 
@@ -762,25 +799,16 @@ function Analytics() {
               />
             </div>
             <Button
-              onClick={() =>
-                downloadCSV(
-                  leads.map(l => ({
-                    location: l.location,
-                    name: l.name,
-                    offers: l.offerCount,
-                    orders: l.orderCount,
-                    phone: l.phone,
-                    status:
-                      LEAD_STATUS_META[l.leadStatus]?.label ?? l.leadStatus,
-                  })),
-                  'marketing-leads.csv',
-                )}
+              onClick={handleExportMarketingLeads}
+              disabled={exportMarketingLeads.isPending}
               size="sm"
               variant="outline"
             >
-              <Download className="mr-2 h-3.5 w-3.5" />
+              {exportMarketingLeads.isPending
+                ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                : <Download className="mr-2 h-3.5 w-3.5" />}
               {' '}
-              Download
+              {exportMarketingLeads.isPending ? 'Downloading...' : 'Download'}
             </Button>
           </div>
         </CardHeader>

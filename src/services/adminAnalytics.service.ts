@@ -1,6 +1,7 @@
 import type {
   AdminAnalytics,
   AdminMarketingLead,
+  AdminMarketingLeadsExportParams,
   AdminMarketingLeadsParams,
 } from '@/types/adminAnalytics.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
@@ -23,4 +24,19 @@ export function listAdminMarketingLeads(
       >,
     })
     .json<PaginatedResponse<AdminMarketingLead>>();
+}
+
+export function exportAdminMarketingLeads(
+  parameters: AdminMarketingLeadsExportParams = {},
+) {
+  const searchParams: Record<string, string> = {};
+
+  if (parameters.search)
+    searchParams.search = parameters.search;
+  if (parameters.leadStatus)
+    searchParams.leadStatus = parameters.leadStatus;
+
+  return authInstance.get('/api/v1/admin/analytics/marketing-leads/export', {
+    searchParams,
+  });
 }

@@ -25,6 +25,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import BankDetailsModal from '@/components/BankDetailsModal';
 import { ComplaintActions } from '@/components/ComplaintActions';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
@@ -846,7 +847,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
-      toast.error(error.message || 'Failed to update status');
+      showErrorToast(error, 'Failed to update status');
     }
     finally {
       setBusy(false);
@@ -1127,8 +1128,7 @@ function BuyerReceiptActions({
     updateStatus.mutate(
       { orderId, orderItemId, payload: { status: 'DELIVERED' } },
       {
-        onError: (error: any) =>
-          toast.error(error.message ?? 'Failed to update status'),
+        onError: (error: any) => showErrorToast(error, 'Failed to update status'),
         onSuccess: () => {
           toast.success('Order marked as received');
           onChanged();

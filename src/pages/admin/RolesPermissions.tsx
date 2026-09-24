@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -181,7 +182,7 @@ export default function RolesPermissions() {
       toast.success('Role deleted.');
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to delete role.');
+      showErrorToast(error, 'Failed to delete role.');
     }
   };
 
@@ -212,7 +213,7 @@ export default function RolesPermissions() {
         closeDialog();
       }
       catch (error: any) {
-        toast.error(error.message ?? 'Failed to create role.');
+        showErrorToast(error, 'Failed to create role.');
       }
       return;
     }
@@ -246,7 +247,7 @@ export default function RolesPermissions() {
       if (didUpdateName) {
         await refetch();
       }
-      toast.error(error.message ?? 'Failed to update role.');
+      showErrorToast(error, 'Failed to update role.');
     }
   };
 

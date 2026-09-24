@@ -2,6 +2,7 @@ import type { AdminUser } from '@/types/adminUser.type';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import AdminUsersTable, {
   joinedDate,
   statusBadge,
@@ -114,7 +115,7 @@ export default function StaffUsers() {
       setPage(1);
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to create staff user.');
+      showErrorToast(error, 'Failed to create staff user.');
     }
   };
 
@@ -134,7 +135,7 @@ export default function StaffUsers() {
       setNextRoleId('');
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to update staff role.');
+      showErrorToast(error, 'Failed to update staff role.');
     }
   };
 

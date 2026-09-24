@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, PackageCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,7 +80,7 @@ export function SellerComplaintBadge({
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to save return address');
+      showErrorToast(error, 'Failed to save return address');
     }
     finally {
       setBusy(false);
@@ -97,7 +98,7 @@ export function SellerComplaintBadge({
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to update status');
+      showErrorToast(error, 'Failed to update status');
     }
     finally {
       setBusy(false);

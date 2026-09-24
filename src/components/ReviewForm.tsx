@@ -4,6 +4,7 @@ import { Loader2, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,14 +58,7 @@ export function ReviewForm({
         role,
       },
       {
-        onError: (error: any) => {
-          if (error.message?.includes('duplicate')) {
-            toast.error('You\'ve already reviewed this transaction');
-          }
-          else {
-            toast.error(error.message ?? 'Failed to submit review');
-          }
-        },
+        onError: (error: any) => showErrorToast(error, 'Failed to submit review'),
         onSuccess: () => {
           trackEvent('review_submitted', {
             listing_id: listingId,

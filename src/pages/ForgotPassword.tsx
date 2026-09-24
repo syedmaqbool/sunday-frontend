@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { forgotPassword, resetPassword } from '@/services/auth.service';
 
 const forgotPasswordSchema = z.object({
@@ -93,11 +94,7 @@ function ForgotPassword() {
       });
     }
     catch (error: unknown) {
-      toast({
-        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
     }
     finally {
       setSendingCode(false);
@@ -134,19 +131,11 @@ function ForgotPassword() {
       if (error instanceof HTTPError && error.response.status === 401) {
         const message = 'Invalid or expired OTP.';
         setOtpError(message);
-        toast({
-          description: message,
-          title: 'Error',
-          variant: 'destructive',
-        });
+        toast(getErrorToastOptions(error, message));
         return;
       }
 
-      toast({
-        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
     }
     finally {
       setResettingPassword(false);

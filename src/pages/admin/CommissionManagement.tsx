@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getCommissionTiersOptions,
   useCreateCommissionTierMutation,
@@ -126,7 +127,7 @@ function CommissionManagement() {
       setOpen(false);
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
     finally {
       setSaving(false);
@@ -139,7 +140,7 @@ function CommissionManagement() {
       toast({ title: 'Tier deleted' });
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
   };
 
@@ -151,7 +152,7 @@ function CommissionManagement() {
       });
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
   };
 

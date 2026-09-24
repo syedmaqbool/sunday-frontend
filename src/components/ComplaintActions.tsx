@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -113,7 +114,7 @@ export function ComplaintActions({
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to raise complaint');
+      showErrorToast(error, 'Failed to raise complaint');
     }
     finally {
       setBusy(false);
@@ -154,7 +155,7 @@ export function ComplaintActions({
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to upload return proof');
+      showErrorToast(error, 'Failed to upload return proof');
     }
     finally {
       setBusy(false);

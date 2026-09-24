@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Button } from '@/components/ui/button';
 import { submitPayFast } from '@/lib/payfast';
 import { useRetryPayFastOrderMutation } from '@/queries/checkout.query';
@@ -34,7 +35,7 @@ export function PayFastRetryButton({
       submitPayFast(response.data);
     }
     catch (error: any) {
-      toast.error(error?.message ?? 'Unable to retry payment.');
+      showErrorToast(error, 'Unable to retry payment.');
     }
     finally {
       setRetrying(false);

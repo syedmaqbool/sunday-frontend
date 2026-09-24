@@ -25,13 +25,35 @@ export function getApiFieldErrors(error: unknown): FieldError[] | undefined {
 async function normalizeError({ error, options: _options, request: _request }: BeforeErrorState) {
   if (error instanceof HTTPError) {
     let body: ErrorResponse | null = null;
-    try {
-      body = await error.response.json<ErrorResponse>();
+    let responseBody = '';
+    const errorData = error.data;
+
+    if (typeof errorData === 'string') {
+      responseBody = errorData;
+      try {
+        const parsedBody = JSON.parse(errorData) as unknown;
+        if (parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody)) {
+          body = parsedBody as ErrorResponse;
+        }
+      }
+      catch {
+        body = null;
+      }
     }
-    catch {
-      body = null;
+    else if (errorData !== undefined && errorData !== null) {
+      responseBody = JSON.stringify(errorData) ?? '';
+      if (typeof errorData === 'object' && !Array.isArray(errorData)) {
+        body = errorData as ErrorResponse;
+      }
     }
-    error.message = body?.message ?? `Request failed: ${error.response.status}`;
+
+    const bodyMessage = typeof body?.message === 'string' ? body.message.trim() : '';
+    const bodyError = typeof body?.error === 'string' ? body.error.trim() : '';
+
+    error.message = bodyMessage
+      || bodyError
+      || responseBody.trim()
+      || `Request failed: ${error.response.status}`;
     Object.assign(error, {
       code: body?.code,
       fieldErrors: body?.fieldErrors,

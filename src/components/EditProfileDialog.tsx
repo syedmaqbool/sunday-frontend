@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 
 import { z } from 'zod';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -110,7 +111,7 @@ export function EditProfileDialog({ profile }: Props) {
       toast.success('Photo uploaded');
     }
     catch (error: any) {
-      toast.error(error.message || 'Upload failed');
+      showErrorToast(error, 'Upload failed');
     }
     finally {
       setUploading(false);
@@ -127,9 +128,7 @@ export function EditProfileDialog({ profile }: Props) {
         phone: values.phone,
       },
       {
-        onError: (error: any) => {
-          toast.error(error.message || 'Failed to save');
-        },
+        onError: (error: any) => showErrorToast(error, 'Failed to save profile'),
         onSuccess: () => {
           toast.success('Profile updated');
           setOpen(false);

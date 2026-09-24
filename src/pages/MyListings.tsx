@@ -13,6 +13,7 @@ import {
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
 import { MyListingFeedbackInline } from '@/components/MyListingFeedbackWidgets';
@@ -158,7 +159,7 @@ function MyListings() {
             <Button
               onClick={() =>
                 cancelReservationMutation.mutate(listing.id, {
-                  onError: (error: any) => toast.error(error.message ?? 'Failed'),
+                  onError: (error: any) => showErrorToast(error, 'Failed to cancel reservation'),
                   onSuccess: () => {
                     toast.success('Reservation cancelled');
                   },
@@ -205,7 +206,7 @@ function MyListings() {
             <Button
               onClick={() =>
                 resubmitMutation.mutate(listing.id, {
-                  onError: () => toast.error('Failed to resubmit'),
+                  onError: (error: unknown) => showErrorToast(error, 'Failed to resubmit'),
                   onSuccess: () => {
                     toast.success('Listing resubmitted for review');
                   },
@@ -247,7 +248,7 @@ function MyListings() {
                 <AlertDialogAction
                   onClick={() =>
                     deleteMutation.mutate(listing.id, {
-                      onError: () => toast.error('Failed to delete listing'),
+                      onError: (error: unknown) => showErrorToast(error, 'Failed to delete listing'),
                       onSuccess: () => {
                         toast.success('Listing deleted');
                       },

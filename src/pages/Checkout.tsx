@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
@@ -172,11 +173,7 @@ function Checkout() {
       });
     }
     catch (error: any) {
-      toast({
-        description: error?.message ?? 'This code is not valid.',
-        title: 'Invalid code',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'This code is not valid.'));
     }
     finally {
       setApplyingCode(false);
@@ -239,11 +236,7 @@ function Checkout() {
     catch (error: any) {
       const message = error?.message ?? 'Unknown error';
       setManualPaymentError(message);
-      toast({
-        description: message,
-        title: 'Order failed',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'Order failed'));
       throw error;
     }
     finally {

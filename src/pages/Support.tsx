@@ -45,6 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 
 import {
   getSupportMessagesOptions,
@@ -165,13 +166,7 @@ function Support() {
         subject: values.subject,
       },
       {
-        onError: (error: Error) => {
-          toast({
-            description: error.message,
-            title: 'Error',
-            variant: 'destructive',
-          });
-        },
+        onError: (error: Error) => toast(getErrorToastOptions(error)),
 
         onSuccess: (response) => {
           toast({

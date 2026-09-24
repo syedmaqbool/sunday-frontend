@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,7 +37,7 @@ function MessageModeration() {
 
   const handleDismiss = (messageId: string) => {
     dismissFlag.mutate(messageId, {
-      onError: () => toast.error('Failed to dismiss flag'),
+      onError: (error: unknown) => showErrorToast(error, 'Failed to dismiss flag'),
       onSuccess: () => {
         toast.success('Flag dismissed');
         setSelected(null);
@@ -46,7 +47,7 @@ function MessageModeration() {
 
   const handleDelete = (messageId: string) => {
     deleteMessage.mutate(messageId, {
-      onError: () => toast.error('Failed to remove message'),
+      onError: (error: unknown) => showErrorToast(error, 'Failed to remove message'),
       onSuccess: () => {
         toast.success('Message removed');
         setSelected(null);

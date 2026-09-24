@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getTaxSettingsOptions,
   taxSettingsQueryKey,
@@ -104,7 +105,7 @@ function TaxSettings() {
       qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
     finally {
       setSaving(false);
@@ -119,7 +120,7 @@ function TaxSettings() {
       qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
   };
 
@@ -135,7 +136,7 @@ function TaxSettings() {
       qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
   };
 

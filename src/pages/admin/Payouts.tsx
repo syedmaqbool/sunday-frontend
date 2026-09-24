@@ -44,6 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
@@ -325,12 +326,7 @@ function Payouts() {
       setDialogOpen(false);
     }
     catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Something went wrong';
-      toast({
-        description: message,
-        title: 'Could not save payout',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'Could not save payout.'));
     }
   };
 

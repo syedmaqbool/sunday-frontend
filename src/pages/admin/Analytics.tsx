@@ -27,6 +27,7 @@ import {
   YAxis,
 } from 'recharts';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -240,7 +241,7 @@ function Analytics() {
       }
     }
     catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to export marketing leads.');
+      showErrorToast(error, 'Failed to export marketing leads.');
     }
     finally {
       exportInProgress.current = false;

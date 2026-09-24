@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { createElement, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import {
   AlertDialog,
@@ -286,7 +287,7 @@ function HelpManagement() {
     }
 
     updateCategories.mutate(toCategoryApiList(next), {
-      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
+      onError: (error: any) => showErrorToast(error, 'Failed to save category'),
       onSuccess: () => {
         toast.success(catEdit ? 'Category updated' : 'Category added');
         setCatOpen(false);
@@ -302,7 +303,7 @@ function HelpManagement() {
   const deleteCategory = (key: string) => {
     const next = categories.filter(c => c.key !== key);
     updateCategories.mutate(toCategoryApiList(next), {
-      onError: () => toast.error('Failed to remove category'),
+      onError: (error: unknown) => showErrorToast(error, 'Failed to remove category'),
       onSuccess: () => toast.success('Category removed'),
     });
   };
@@ -361,7 +362,7 @@ function HelpManagement() {
     }
 
     updateFaqs.mutate(toFaqApiList(next), {
-      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
+      onError: (error: any) => showErrorToast(error, 'Failed to save FAQ'),
       onSuccess: () => {
         toast.success(faqEdit ? 'FAQ updated' : 'FAQ added');
         setFaqOpen(false);
@@ -377,7 +378,7 @@ function HelpManagement() {
   const deleteFaq = (id: string) => {
     const next = faqs.filter(f => f.id !== id);
     updateFaqs.mutate(toFaqApiList(next), {
-      onError: () => toast.error('Failed to remove FAQ'),
+      onError: (error: unknown) => showErrorToast(error, 'Failed to remove FAQ'),
       onSuccess: () => toast.success('FAQ removed'),
     });
   };
@@ -433,7 +434,7 @@ function HelpManagement() {
       updateTutorial.mutate(
         { id: tutEdit.id, payload },
         {
-          onError: (error: unknown) => toast.error(tutorialErrorMessage(error)),
+          onError: (error: unknown) => showErrorToast(error, tutorialErrorMessage(error)),
           onSuccess: () => {
             toast.success('Tutorial updated');
             setTutOpen(false);
@@ -443,7 +444,7 @@ function HelpManagement() {
     }
     else {
       createTutorial.mutate(payload, {
-        onError: (error: unknown) => toast.error(tutorialErrorMessage(error)),
+        onError: (error: unknown) => showErrorToast(error, tutorialErrorMessage(error)),
         onSuccess: () => {
           toast.success('Tutorial added');
           setTutOpen(false);
@@ -455,7 +456,7 @@ function HelpManagement() {
   const toggleTutorialPublished = (id: string, isPublished: boolean) => {
     updateTutorial.mutate(
       { id, payload: { published: isPublished } },
-      { onError: () => toast.error('Failed to update tutorial') },
+      { onError: (error: unknown) => showErrorToast(error, 'Failed to update tutorial') },
     );
   };
 
@@ -463,11 +464,11 @@ function HelpManagement() {
     deleteTutorial.mutate(id, {
       onError: (error: unknown) => {
         if (getApiErrorCode(error) === 'APP_HELP_TUTORIAL_NOT_FOUND') {
-          toast.error('Tutorial was already removed');
+          showErrorToast(error, 'Tutorial was already removed');
           refetchTutorials();
           return;
         }
-        toast.error('Failed to remove tutorial');
+        showErrorToast(error, 'Failed to remove tutorial');
       },
       onSuccess: () => toast.success('Tutorial removed'),
     });

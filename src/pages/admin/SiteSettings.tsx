@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import heroFallback from '@/assets/hero-fashion.jpg';
 import { Button } from '@/components/ui/button';
 import {
@@ -157,7 +158,7 @@ function SiteSettings() {
 
   const save = (next: HeroImageValue) => {
     updateHero.mutate(next, {
-      onError: (error: any) => toast.error(error.message || 'Failed to save'),
+      onError: (error: any) => showErrorToast(error, 'Failed to save settings'),
       onSuccess: () => toast.success('Hero section updated'),
     });
   };
@@ -189,7 +190,7 @@ function SiteSettings() {
           save(next);
         }
         catch (error: any) {
-          toast.error(error.message || 'Upload failed');
+          showErrorToast(error, 'Upload failed');
         }
         finally {
           setUploading(null);

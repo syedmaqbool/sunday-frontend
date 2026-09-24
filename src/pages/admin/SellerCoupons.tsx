@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getAdminSellerListingsOptions,
   getAdminUsersListOptions,
@@ -243,11 +244,7 @@ function SellerCoupons() {
       resetForm();
     }
     catch (error: any) {
-      toast({
-        description: error?.message,
-        title: 'Save failed',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error, 'Save failed'));
     }
     finally {
       setSaving(false);
@@ -259,12 +256,7 @@ function SellerCoupons() {
 
   const deleteCoupon = (id: string) => {
     deleteCouponM.mutate(id, {
-      onError: (error: any) =>
-        toast({
-          description: error?.message,
-          title: 'Delete failed',
-          variant: 'destructive',
-        }),
+      onError: (error: any) => toast(getErrorToastOptions(error)),
       onSuccess: () => toast({ title: 'Coupon deleted' }),
     });
   };

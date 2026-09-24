@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getAdminCategoriesOptions,
   getAdminSubcategoriesOptions,
@@ -115,12 +116,7 @@ function CategoryManagement() {
           },
         },
         {
-          onError: (error: any) =>
-            toast({
-              description: error.message,
-              title: 'Error',
-              variant: 'destructive',
-            }),
+          onError: (error: any) => toast(getErrorToastOptions(error)),
           onSuccess: () => {
             toast({ title: 'Category updated' });
             setCatOpen(false);
@@ -137,12 +133,7 @@ function CategoryManagement() {
           value: catForm.value.trim(),
         },
         {
-          onError: (error: any) =>
-            toast({
-              description: error.message,
-              title: 'Error',
-              variant: 'destructive',
-            }),
+          onError: (error: any) => toast(getErrorToastOptions(error)),
           onSuccess: () => {
             toast({ title: 'Category created' });
             setCatOpen(false);
@@ -154,12 +145,7 @@ function CategoryManagement() {
 
   const handleDeleteCat = (id: string) => {
     deleteCat.mutate(id, {
-      onError: (error: any) =>
-        toast({
-          description: error.message,
-          title: 'Error',
-          variant: 'destructive',
-        }),
+      onError: (error: any) => toast(getErrorToastOptions(error)),
       onSuccess: () => toast({ title: 'Category deleted' }),
     });
   };
@@ -207,12 +193,7 @@ function CategoryManagement() {
           },
         },
         {
-          onError: (error: any) =>
-            toast({
-              description: error.message,
-              title: 'Error',
-              variant: 'destructive',
-            }),
+          onError: (error: any) => toast(getErrorToastOptions(error)),
           onSuccess: () => {
             toast({ title: 'Subcategory updated' });
             setSubOpen(false);
@@ -230,12 +211,7 @@ function CategoryManagement() {
           value: subForm.value.trim(),
         },
         {
-          onError: (error: any) =>
-            toast({
-              description: error.message,
-              title: 'Error',
-              variant: 'destructive',
-            }),
+          onError: (error: any) => toast(getErrorToastOptions(error)),
           onSuccess: () => {
             toast({ title: 'Subcategory created' });
             setSubOpen(false);
@@ -247,12 +223,7 @@ function CategoryManagement() {
 
   const handleDeleteSub = (id: string) => {
     deleteSub.mutate(id, {
-      onError: (error: any) =>
-        toast({
-          description: error.message,
-          title: 'Error',
-          variant: 'destructive',
-        }),
+      onError: (error: any) => toast(getErrorToastOptions(error)),
       onSuccess: () => toast({ title: 'Subcategory deleted' }),
     });
   };

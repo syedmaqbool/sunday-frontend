@@ -4,6 +4,7 @@ import { AlertTriangle, Landmark, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -121,9 +122,7 @@ function BankDetailsModal({
         bankSwift: parsedValues.bank_swift,
       },
       {
-        onError: (error: any) => {
-          toast.error(error.message || 'Failed to save');
-        },
+        onError: (error: any) => showErrorToast(error, 'Failed to save bank details'),
 
         onSuccess: () => {
           toast.success(

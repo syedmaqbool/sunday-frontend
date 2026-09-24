@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/components/AdminListingFeedbackWidgets';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -199,7 +200,7 @@ function ListingModeration() {
       goToNext();
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Failed to update listing');
+      showErrorToast(error, 'Failed to update listing');
     }
   };
 

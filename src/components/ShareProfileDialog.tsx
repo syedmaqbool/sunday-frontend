@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -46,8 +47,8 @@ export function ShareProfileDialog({
       toast.success('Link copied to clipboard');
       setTimeout(setCopied, 2000, false);
     }
-    catch {
-      toast.error('Failed to copy link');
+    catch (error) {
+      showErrorToast(error, 'Failed to copy link');
     }
   };
 

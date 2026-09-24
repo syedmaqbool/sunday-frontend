@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,7 @@ function FlagKeywords() {
     }
 
     updateKeywords.mutate([lower, ...keywords], {
-      onError: (error: any) => toast.error(error.message ?? 'Failed to add keyword'),
+      onError: (error: any) => showErrorToast(error, 'Failed to add keyword'),
       onSuccess: () => {
         toast.success('Keyword added');
         setDraft('');
@@ -94,8 +95,7 @@ function FlagKeywords() {
     updateKeywords.mutate(
       keywords.filter(k => k !== keyword),
       {
-        onError: (error: any) =>
-          toast.error(error.message ?? 'Failed to remove keyword'),
+        onError: (error: any) => showErrorToast(error, 'Failed to remove keyword'),
         onSuccess: () => toast.success('Keyword removed'),
       },
     );

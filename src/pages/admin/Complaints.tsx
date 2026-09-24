@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -92,8 +93,7 @@ function AdminComplaints() {
     updateStatus.mutate(
       { complaintId, adminNotes: adminNotes || undefined, status },
       {
-        onError: (error: any) =>
-          toast.error(error.message ?? 'Failed to update complaint'),
+        onError: (error: any) => showErrorToast(error, 'Failed to update complaint'),
         onSuccess: () => {
           toast.success('Complaint updated');
           setSelected(null);

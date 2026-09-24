@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getAdminSupportMessagesOptions,
   getAdminSupportTicketsOptions,
@@ -111,12 +112,7 @@ function AdminSupport() {
     sendReply.mutate(
       { ticketId: activeTicket, content: values.content.trim() },
       {
-        onError: (error: any) =>
-          toast({
-            description: error.message,
-            title: 'Couldn\'t send',
-            variant: 'destructive',
-          }),
+        onError: (error: any) => toast(getErrorToastOptions(error)),
         onSuccess: () => replyForm.reset(),
       },
     );

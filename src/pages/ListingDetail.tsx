@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import Footer from '@/components/Footer';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
 import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
@@ -456,8 +457,7 @@ function ListingDetail() {
                       <Button
                         onClick={() =>
                           cancelReservation.mutate(listing.id, {
-                            onError: (error: any) =>
-                              toast.error(error.message ?? 'Failed to cancel'),
+                            onError: (error: any) => showErrorToast(error, 'Failed to cancel reservation'),
                             onSuccess: () => toast.success('Reservation cancelled'),
                           })}
                         disabled={cancelReservation.isPending}
@@ -494,7 +494,7 @@ function ListingDetail() {
                           <AlertDialogAction
                             onClick={() =>
                               deleteMutation.mutate(id!, {
-                                onError: () => toast.error('Failed to delete'),
+                                onError: (error: unknown) => showErrorToast(error, 'Failed to delete listing'),
                                 onSuccess: () => {
                                   toast.success('Listing deleted');
                                   navigate('/my-listings');

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -253,7 +254,7 @@ function BoostManagement() {
 
   const handleSavePackages = (updated: BoostPackage[]) => {
     updatePackages.mutate(updated, {
-      onError: (error: any) => toast.error(error.message ?? 'Failed to save'),
+      onError: (error: any) => showErrorToast(error, 'Failed to save boost package'),
       onSuccess: () => toast.success('Package saved'),
     });
   };

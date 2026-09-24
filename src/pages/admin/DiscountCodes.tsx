@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/table';
 
 import { toast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getDiscountCodesOptions,
   useCreateDiscountCodeMutation,
@@ -90,11 +91,7 @@ function DiscountCodes() {
       resetForm();
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error));
     }
   };
 
@@ -112,11 +109,7 @@ function DiscountCodes() {
       });
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error));
     }
   };
 
@@ -129,11 +122,7 @@ function DiscountCodes() {
       });
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error));
     }
   };
 

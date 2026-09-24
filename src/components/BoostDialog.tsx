@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -440,8 +441,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                       startsAt: startDate.toISOString(),
                     },
                     {
-                      onError: (error: any) =>
-                        toast.error(error.message ?? 'Failed to launch campaign'),
+                      onError: (error: any) => showErrorToast(error, 'Failed to launch campaign'),
                       onSuccess: () => {
                         trackEvent('boost_purchased', {
                           currency: 'PKR',
@@ -572,8 +572,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                       paymentStatus: 'MOCK',
                     },
                     {
-                      onError: (error: any) =>
-                        toast.error(error.message ?? 'Failed to activate boost'),
+                      onError: (error: any) => showErrorToast(error, 'Failed to activate boost'),
                       onSuccess: () => {
                         trackEvent('boost_purchased', {
                           currency: 'PKR',

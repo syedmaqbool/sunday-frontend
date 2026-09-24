@@ -6,6 +6,7 @@ import { ExternalLink, Flag, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,8 +62,7 @@ function Reports() {
     resolveReport.mutate(
       { reportId: id, adminNotes: notes, status },
       {
-        onError: (error: any) =>
-          toast.error(error.message ?? 'Failed to update report'),
+        onError: (error: any) => showErrorToast(error, 'Failed to update report'),
         onSuccess: () => toast.success('Report updated'),
       },
     );

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -115,7 +116,7 @@ export function ReportDialog({
       setOpen(false);
     }
     catch (error: any) {
-      toast.error(error.message ?? 'Could not submit report');
+      showErrorToast(error, 'Could not submit report');
     }
     finally {
       setSubmitting(false);

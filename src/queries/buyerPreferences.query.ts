@@ -4,6 +4,7 @@ import { userPreferencesQueryKey } from '@/queries/userPreferences.query';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getBrands,
   getCategories,
@@ -80,13 +81,7 @@ export function useSavePreferencesMutation() {
 
   return useMutation({
     mutationFn: (payload: PutPreferencesPayload) => putPreferences(payload),
-    onError: (error: any) => {
-      toast({
-        description: error?.response?.data?.message || 'Something went wrong',
-        title: 'Error saving preferences',
-        variant: 'destructive',
-      });
-    },
+    onError: (error: any) => toast(getErrorToastOptions(error)),
     onSuccess: () => {
       toast({
         description: 'Your feed is now personalized.',

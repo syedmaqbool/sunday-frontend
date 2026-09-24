@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getAdminSettingsOptions,
   useUpdateEmailTemplatesMutation,
@@ -59,11 +60,7 @@ function EmailTemplates() {
     const nextTemplates = templates.map(t => (t.id === tpl.id ? tpl : t));
     updateTemplates.mutate(nextTemplates, {
       onError: (error: any) => {
-        toast({
-          description: error.message,
-          title: 'Save failed',
-          variant: 'destructive',
-        });
+        toast(getErrorToastOptions(error));
         setSavingId(null);
       },
       onSuccess: () => {

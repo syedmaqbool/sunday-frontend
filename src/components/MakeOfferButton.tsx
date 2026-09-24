@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,7 @@ export function MakeOfferButton({
     submitOffer.mutate(
       { amount: Number(values.amount), message: values.message },
       {
-        onError: (error: any) => toast.error(error.message),
+        onError: (error: any) => showErrorToast(error, 'Failed to submit offer'),
         onSuccess: () => {
           trackEvent('make_offer', {
             listing_id: listingId,
@@ -178,7 +179,7 @@ export function MakeOfferButton({
                       <Button
                         onClick={() =>
                           acceptCounter.mutate(offer.id, {
-                            onError: (error: any) => toast.error(error.message),
+                            onError: (error: any) => showErrorToast(error, 'Failed to accept counter-offer'),
                             onSuccess: () => {
                               toast.success('Counter-offer accepted! Check your Messages to chat with the seller.');
                             },
@@ -194,7 +195,7 @@ export function MakeOfferButton({
                       <Button
                         onClick={() =>
                           withdrawOffer.mutate(offer.id, {
-                            onError: (error: any) => toast.error(error.message),
+                            onError: (error: any) => showErrorToast(error, 'Failed to withdraw offer'),
                             onSuccess: () => {
                               toast.success('Offer withdrawn');
                             },
@@ -213,7 +214,7 @@ export function MakeOfferButton({
                   <Button
                     onClick={() =>
                       withdrawOffer.mutate(offer.id, {
-                        onError: (error: any) => toast.error(error.message),
+                        onError: (error: any) => showErrorToast(error, 'Failed to withdraw offer'),
                         onSuccess: () => {
                           toast.success('Offer withdrawn');
                         },

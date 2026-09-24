@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getBrandsQueryOptions,
   useCreateBrandMutation,
@@ -97,11 +98,7 @@ function BrandManagement() {
       setEditingId(null);
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error));
     }
 
     setBusy(false);
@@ -116,11 +113,7 @@ function BrandManagement() {
       });
     }
     catch (error: any) {
-      toast({
-        description: error.message,
-        title: 'Error',
-        variant: 'destructive',
-      });
+      toast(getErrorToastOptions(error));
     }
   };
 

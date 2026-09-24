@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { showErrorToast } from '@/lib/errorToast';
 import { ReviewForm } from '@/components/ReviewForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -173,7 +174,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                           action: 'accept',
                         },
                         {
-                          onError: () => toast.error('Failed to update offer'),
+                          onError: (error: unknown) => showErrorToast(error, 'Failed to accept offer'),
                           onSuccess: () => {
                             toast.success('Offer accepted');
                             toast.info(
@@ -210,7 +211,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                           action: 'reject',
                         },
                         {
-                          onError: () => toast.error('Failed to update offer'),
+                          onError: (error: unknown) => showErrorToast(error, 'Failed to reject offer'),
                           onSuccess: () => {
                             toast.success('Offer rejected');
                             setCounterDialog(null);
@@ -305,7 +306,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                     counterAmount: Number(counterAmount),
                   },
                   {
-                    onError: () => toast.error('Failed to update offer'),
+                    onError: (error: unknown) => showErrorToast(error, 'Failed to counter offer'),
                     onSuccess: () => {
                       toast.success('Offer countered');
                       setCounterDialog(null);

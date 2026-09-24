@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
@@ -360,7 +361,7 @@ function CreateListing() {
       }
     }
     catch (error: any) {
-      toast({ description: error.message, title: 'Error', variant: 'destructive' });
+      toast(getErrorToastOptions(error));
     }
     finally {
       setSubmitting(false);
@@ -397,7 +398,7 @@ function CreateListing() {
         }
       }
       catch (error: any) {
-        toast({ description: error.message, title: 'Error', variant: 'destructive' });
+        toast(getErrorToastOptions(error));
         return;
       }
     }

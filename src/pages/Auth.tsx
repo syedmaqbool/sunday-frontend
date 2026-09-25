@@ -15,8 +15,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getErrorToastOptions } from '@/lib/errorToast';
 import { trackEvent } from '@/lib/analytics';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { sendRegisterOtp } from '@/services/auth.service';
 
 const authBaseSchema = z.object({
@@ -37,6 +37,7 @@ const authBaseSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   phone: z.string().trim().regex(/^\+?[\d\s\-().]{7,20}$/, 'Please enter a valid phone number.'),
   termsAccepted: z.boolean().refine(value => value === true, 'Please accept the Terms & Conditions to continue.'),
+  whatsappTransactionalNotificationsEnabled: z.boolean(),
 });
 
 const authSchema = authBaseSchema.extend({
@@ -90,6 +91,7 @@ function Auth() {
       password: '',
       phone: '',
       termsAccepted: false,
+      whatsappTransactionalNotificationsEnabled: false,
     },
     mode: 'all',
     resolver: zodResolver(mode === 'register' ? authSchema : loginSchema),
@@ -206,6 +208,7 @@ function Auth() {
           password: values.password,
           phone: values.phone.trim(),
           termsAccepted: true,
+          whatsappTransactionalNotificationsEnabled: values.whatsappTransactionalNotificationsEnabled,
         });
 
         trackEvent('sign_up', {
@@ -515,6 +518,25 @@ function Auth() {
                       >
                         I would like to receive marketing emails about new
                         arrivals, promotions, and platform updates. (Optional)
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Controller
+                        name="whatsappTransactionalNotificationsEnabled"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="whatsapp-transactional-consent"
+                            onCheckedChange={checked => field.onChange(checked === true)}
+                            checked={field.value}
+                          />
+                        )}
+                      />
+                      <Label
+                        htmlFor="whatsapp-transactional-consent"
+                        className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+                      >
+                        I agree to receive transactional WhatsApp messages about listing decisions, offers, order updates, refunds, and shipping reminders. (Optional)
                       </Label>
                     </div>
                   </div>

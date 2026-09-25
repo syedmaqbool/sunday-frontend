@@ -1,14 +1,13 @@
 import type { SubmitHandler } from 'react-hook-form';
-import type { Profile } from '@/types/profile.type';
+import type { Profile, UpdateProfilePayload } from '@/types/profile.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Pencil, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
-
 import { z } from 'zod';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,10 +20,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 import { Textarea } from '@/components/ui/textarea';
+
+import { useUserPreferencesQuery } from '@/hooks/useUserPreferences';
+import { showErrorToast } from '@/lib/errorToast';
 import { useUpdateProfileMutation } from '@/queries/myProfile.query';
 import { uploadProfileFile } from '@/services/profile.service';
 
@@ -33,6 +35,7 @@ const profileSchema = z.object({
   fullName: z.string().trim().max(80).optional().or(z.literal('')),
   location: z.string().trim().max(80).optional().or(z.literal('')),
   phone: z.string().trim().max(30).optional().or(z.literal('')),
+  whatsappTransactionalNotificationsEnabled: z.boolean(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -58,15 +61,19 @@ export function EditProfileDialog({ profile }: Props) {
       fullName: profile?.fullName ?? '',
       location: profile?.location ?? '',
       phone: profile?.phone ?? '',
+      whatsappTransactionalNotificationsEnabled: false,
     },
     mode: 'all',
     resolver: zodResolver(profileSchema),
   });
-  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const { control, formState: { errors }, getFieldState, handleSubmit, reset, setValue, watch } = form;
   const fullName = watch('fullName') ?? '';
   const bio = watch('bio') ?? '';
 
   const updateProfile = useUpdateProfileMutation();
+  const preferencesQuery = useUserPreferencesQuery();
+  const savedWhatsappConsent = preferencesQuery.data?.data.whatsappTransactionalNotificationsEnabled;
+  const hasSavedWhatsappConsent = typeof savedWhatsappConsent === 'boolean';
 
   useEffect(() => {
     if (!open)
@@ -77,10 +84,18 @@ export function EditProfileDialog({ profile }: Props) {
       fullName: profile?.fullName ?? '',
       location: profile?.location ?? '',
       phone: profile?.phone ?? '',
+      whatsappTransactionalNotificationsEnabled: false,
     });
     setAvatarUrl(profile?.image?.url ?? '');
     setImageId(profile?.image?.id ?? null);
   }, [open, profile, reset]);
+
+  useEffect(() => {
+    if (!open || !hasSavedWhatsappConsent || getFieldState('whatsappTransactionalNotificationsEnabled').isDirty)
+      return;
+
+    setValue('whatsappTransactionalNotificationsEnabled', savedWhatsappConsent);
+  }, [getFieldState, hasSavedWhatsappConsent, open, savedWhatsappConsent, setValue]);
 
   const initials = (fullName || 'U')
     .split(' ')
@@ -119,14 +134,20 @@ export function EditProfileDialog({ profile }: Props) {
   };
 
   const save: SubmitHandler<ProfileFormValues> = (values) => {
+    const payload: UpdateProfilePayload = {
+      bio: values.bio,
+      fullName: values.fullName,
+      image: imageId,
+      location: values.location,
+      phone: values.phone,
+    };
+
+    if (hasSavedWhatsappConsent) {
+      payload.whatsappTransactionalNotificationsEnabled = values.whatsappTransactionalNotificationsEnabled;
+    }
+
     updateProfile.mutate(
-      {
-        bio: values.bio,
-        fullName: values.fullName,
-        image: imageId,
-        location: values.location,
-        phone: values.phone,
-      },
+      payload,
       {
         onError: (error: any) => showErrorToast(error, 'Failed to save profile'),
         onSuccess: () => {
@@ -285,6 +306,35 @@ export function EditProfileDialog({ profile }: Props) {
               />
               {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
             </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
+            <div className="space-y-1">
+              <Label htmlFor="whatsapp-transactional-consent">Transactional WhatsApp messages</Label>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Listing decisions, offers, order updates, refunds, and shipping reminders. No promotional messages.
+              </p>
+              {preferencesQuery.isPending && !hasSavedWhatsappConsent && (
+                <p className="text-xs text-muted-foreground">Loading saved preference…</p>
+              )}
+              {preferencesQuery.isError && !hasSavedWhatsappConsent && (
+                <p className="text-xs text-destructive">
+                  Could not load this preference. Other profile changes can still be saved.
+                </p>
+              )}
+            </div>
+            <Controller
+              name="whatsappTransactionalNotificationsEnabled"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  id="whatsapp-transactional-consent"
+                  onCheckedChange={field.onChange}
+                  checked={field.value}
+                  disabled={!hasSavedWhatsappConsent}
+                />
+              )}
+            />
           </div>
         </div>
 

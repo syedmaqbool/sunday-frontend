@@ -54,7 +54,8 @@ function Listings() {
   const [sort, setSort] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const { data: prefs } = useQuery(getUserPreferencesOptions());
+  const { data: preferencesResponse } = useQuery(getUserPreferencesOptions());
+  const prefs = preferencesResponse?.data;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const { data: subCategoriesList = [] } = useQuery(getSubcategoriesOptions());
 

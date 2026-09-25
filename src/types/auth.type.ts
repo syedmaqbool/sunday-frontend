@@ -31,6 +31,7 @@ export interface RegisterData {
   password: string;
   phone: string;
   termsAccepted: true;
+  whatsappTransactionalNotificationsEnabled?: boolean;
 }
 
 export interface ResetPasswordData {

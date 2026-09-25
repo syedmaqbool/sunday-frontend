@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
 import {
   getUserPreferencesOptions,
@@ -20,8 +20,9 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const { user } = useAuth(); 
-  const { data: preferences } = useQuery(getUserPreferencesOptions(user?.id));
+  const { user } = useAuth();
+  const { data: preferencesResponse } = useQuery(getUserPreferencesOptions(user?.id));
+  const preferences = preferencesResponse?.data;
 
   const boostMap = useBoostScoreMap('FOR_YOU');
 

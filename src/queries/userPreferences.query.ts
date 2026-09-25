@@ -1,4 +1,3 @@
-import type { UserPreferences } from '@/types/buyerPreferences.type';
 import { queryOptions } from '@tanstack/react-query';
 import { getPreferences } from '@/services/buyerPreferences.service';
 
@@ -13,15 +12,7 @@ export const userPreferencesQueryKey = {
 export function getUserPreferencesOptions(userId?: string) {
   return queryOptions({
     enabled: !!userId,
-    queryFn: async (): Promise<UserPreferences | null> => {
-      try {
-        const response = await getPreferences();
-        return response.data;
-      }
-      catch {
-        return null;
-      }
-    },
+    queryFn: async () => getPreferences(),
     queryKey: userPreferencesQueryKey.current(userId),
   });
 }

@@ -15,6 +15,8 @@ export interface UserPreferences {
   onboardingCompleted: boolean;
   preferredFit: string;
   styles: string[];
+  whatsappTransactionalNotificationsEnabled: boolean;
+  whatsappConsentAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

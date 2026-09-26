@@ -33,7 +33,7 @@ export interface UpdateProfilePayload {
   image?: string | null;
   location?: string;
   phone?: string;
-  whatsappTransactionalNotificationsEnabled?: boolean;
+  whatsappTransactionalNotificationsEnabled: true;
 }
 
 export interface UpdateBankDetailsPayload {

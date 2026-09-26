@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { showErrorToast } from '@/lib/errorToast';
 
 interface ShareProfileDialogProps {
   userId: string;

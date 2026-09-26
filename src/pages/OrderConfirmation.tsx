@@ -8,7 +8,6 @@ import Footer from '@/components/Footer';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 import { getManualVerificationCopy, getManualVerificationState, ManualVerificationStatus } from '@/components/ManualVerificationStatus';
 import Navbar from '@/components/Navbar';
-import { PayFastRetryButton } from '@/components/PayFastRetryButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +25,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
-import { getPayFastStatusPollDelay, isOrderEligibleForPayFastRetry, MAX_PAYFAST_STATUS_POLLS } from '@/lib/payfast';
 import { formatEnumLabel } from '@/lib/utilities';
 import { useCancelOrderMutation, useResubmitManualPaymentMutation } from '@/queries/checkout.query';
 import { fetchMarketplaceListing } from '@/queries/marketplace.query';
@@ -40,43 +38,13 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function getConfirmationCopy(
-  order: Order,
-  isLegacyPayFastOrder: boolean,
-  isRetryable: boolean,
-): { description: string; heading: string } {
+function getConfirmationCopy(order: Order): { description: string; heading: string } {
   if (order.status === 'CANCELLED' && order.paymentStatus === 'PAID') {
     return {
-      description: 'This order was cancelled. Your payment has been received and will be refunded.',
+      description: order.refundStatus === 'REFUNDED'
+        ? 'This order was cancelled. Your payment has been refunded.'
+        : 'This order was cancelled. Your payment has been received.',
       heading: 'Order cancelled',
-    };
-  }
-
-  if (order.status === 'CANCELLED' && isLegacyPayFastOrder) {
-    return {
-      description: order.cancellationReason ? formatEnumLabel(order.cancellationReason) : 'This order was cancelled.',
-      heading: 'Order cancelled',
-    };
-  }
-
-  if (isLegacyPayFastOrder) {
-    if (order.paymentStatus === 'PAID') {
-      return {
-        description: 'Your payment has been confirmed and your order is being prepared.',
-        heading: 'Thank you for your order!',
-      };
-    }
-    if (order.paymentStatus === 'PENDING') {
-      return {
-        description: 'We are waiting for PayFast to confirm your payment. This page will check again automatically.',
-        heading: 'Payment is being verified',
-      };
-    }
-    return {
-      description: isRetryable
-        ? 'Your order exists, but payment was not completed. You can retry payment below.'
-        : 'Your order is awaiting payment initialization.',
-      heading: order.paymentStatus === 'FAILED' ? 'Payment failed' : 'Payment was not initialized',
     };
   }
 
@@ -100,15 +68,15 @@ function getConfirmationCopy(
   }
   if (order.paymentStatus === 'PENDING') {
     return {
-      description: 'We received your payment proof. The store will verify it manually before processing your order.',
-      heading: 'Payment is pending verification',
+      description: 'Your payment is awaiting confirmation.',
+      heading: 'Payment is being verified',
     };
   }
   return {
     description: order.paymentStatus === 'FAILED'
-      ? 'Your payment proof could not be accepted. Please contact the store for help.'
-      : 'Your order is awaiting manual payment verification.',
-    heading: order.paymentStatus === 'FAILED' ? 'Payment proof needs attention' : 'Payment is awaiting verification',
+      ? 'Your payment could not be confirmed. Please contact the store for help.'
+      : 'Your order is awaiting payment.',
+    heading: order.paymentStatus === 'FAILED' ? 'Payment failed' : 'Payment is pending',
   };
 }
 
@@ -127,7 +95,6 @@ function OrderConfirmation() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [resubmitting, setResubmitting] = useState(false);
-  const [pollAttempt, setPollAttempt] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -153,8 +120,6 @@ function OrderConfirmation() {
     retry: false,
   });
   const order = orderResponse?.data;
-
-  const isLegacyPayFastOrder = Boolean(order && !order.manualPaymentSubmission);
 
   const handleResubmit = async (values: {
     proofFileId: string;
@@ -217,22 +182,6 @@ function OrderConfirmation() {
   };
 
   useEffect(() => {
-    if (!order || !isLegacyPayFastOrder || order.status !== 'AWAITING_PAYMENT')
-      return;
-
-    const pollDelay = getPayFastStatusPollDelay(order.paymentStatus, pollAttempt);
-    if (pollDelay === null)
-      return;
-
-    const timer = setTimeout(() => {
-      setPollAttempt(current => current + 1);
-      void queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
-    }, pollDelay);
-
-    return () => clearTimeout(timer);
-  }, [isLegacyPayFastOrder, order, pollAttempt, queryClient]);
-
-  useEffect(() => {
     if (!order || order.paymentStatus !== 'PAID')
       return;
 
@@ -256,13 +205,6 @@ function OrderConfirmation() {
     });
     localStorage.setItem(storageKey, '1');
   }, [order]);
-
-  const handleCheckPaymentStatus = async () => {
-    if (!order || !isLegacyPayFastOrder)
-      return;
-    setPollAttempt(0);
-    await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
-  };
 
   const copyOrderId = async () => {
     if (!order)
@@ -313,11 +255,8 @@ function OrderConfirmation() {
   const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
   const verificationState = getManualVerificationState(order);
   const hasManualPayment = Boolean(order.manualPaymentSubmission);
-  const isRetryable = isLegacyPayFastOrder && isOrderEligibleForPayFastRetry(order, {
-    pendingPollExhausted: pollAttempt >= MAX_PAYFAST_STATUS_POLLS,
-  });
   const visiblePaymentStatus = isCancelled && !isPaid ? null : order.paymentStatus;
-  const { description, heading } = getConfirmationCopy(order, isLegacyPayFastOrder, isRetryable);
+  const { description, heading } = getConfirmationCopy(order);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -465,17 +404,6 @@ function OrderConfirmation() {
                 )}
               </div>
             )}
-            {isLegacyPayFastOrder && isPending && pollAttempt >= MAX_PAYFAST_STATUS_POLLS && (
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Automatic checks are paused. Check again when you are ready.
-                </p>
-                <Button onClick={handleCheckPaymentStatus} type="button" variant="outline">
-                  Check payment status
-                </Button>
-              </div>
-            )}
-            {isRetryable && <PayFastRetryButton orderId={order.id} className="mt-5" />}
             {/* Items */}
             <div className="
               space-y-6

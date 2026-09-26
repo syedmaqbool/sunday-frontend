@@ -17,7 +17,6 @@ import {
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminComplaintsOptions,
   useUpdateComplaintStatusMutation,

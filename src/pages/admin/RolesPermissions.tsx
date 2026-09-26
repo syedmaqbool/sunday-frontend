@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { showErrorToast } from '@/lib/errorToast';
 import { cn } from '@/lib/utilities';
 import {
   getAdminPermissionsQueryOptions,

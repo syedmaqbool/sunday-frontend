@@ -92,10 +92,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="
-                  cursor-pointer
-                  hover:opacity-100
-                "
+                <Link
+                  to="/privacy"
+                  className="
+                    cursor-pointer
+                    hover:opacity-100
+                  "
                 >
                   Privacy
                 </Link>

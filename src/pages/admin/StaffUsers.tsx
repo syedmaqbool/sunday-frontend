@@ -2,7 +2,6 @@ import type { AdminUser } from '@/types/adminUser.type';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import AdminUsersTable, {
   joinedDate,
   statusBadge,
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { showErrorToast } from '@/lib/errorToast';
 import { getAdminRolesQueryOptions } from '@/queries/adminRole.query';
 import {
   getAdminUsersQueryOptions,

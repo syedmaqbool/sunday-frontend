@@ -1,10 +1,10 @@
 import type { PutPreferencesPayload } from '@/types/buyerPreferences.type';
-import { useAuth } from '@/contexts/AuthContext';
-import { userPreferencesQueryKey } from '@/queries/userPreferences.query';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorToastOptions } from '@/lib/errorToast';
+import { userPreferencesQueryKey } from '@/queries/userPreferences.query';
 import {
   getBrands,
   getCategories,
@@ -88,7 +88,6 @@ export function useSavePreferencesMutation() {
         title: 'Preferences saved!',
       });
 
-      
       queryClient.invalidateQueries({
         queryKey: buyerPreferencesQueryKey.current(),
       });

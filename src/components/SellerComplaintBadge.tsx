@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, PackageCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { showErrorToast } from '@/lib/errorToast';
 import { getComplaintDetailsOptions } from '@/queries/complaint.query';
 import { myOrdersQueryKey } from '@/queries/myOrders.query';
 import {

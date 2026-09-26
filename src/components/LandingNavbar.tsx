@@ -67,22 +67,29 @@ export default function LandingNavbar({
     <header className="relative z-20 border-b border-white/10 bg-[#777777] text-white">
       <div className="relative flex h-20 items-center justify-between gap-4 px-[4vw]">
         <Link
-          aria-disabled={navigationDisabled || undefined}
-          className="flex items-center"
           onClick={navigationDisabled ? preventNavigation : undefined}
+          aria-disabled={navigationDisabled || undefined}
           to="/"
+          className="flex items-center"
         >
-          <img alt="Sunday" className="h-9 w-auto" src={sundayLogo} />
+          <img src={sundayLogo} alt="Sunday" className="h-9 w-auto" />
         </Link>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+        <nav className="
+          absolute left-1/2 hidden -translate-x-1/2 items-center gap-8
+          md:flex
+        "
+        >
           {navigationLinks.map(link => (
             <Link
-              aria-disabled={navigationDisabled || undefined}
               key={link.label}
-              className="text-base font-normal text-white/85 transition-colors hover:text-white"
               onClick={navigationDisabled ? preventNavigation : undefined}
+              aria-disabled={navigationDisabled || undefined}
               to={link.to}
+              className="
+                text-base font-normal text-white/85 transition-colors
+                hover:text-white
+              "
             >
               {link.label}
             </Link>
@@ -91,34 +98,48 @@ export default function LandingNavbar({
 
         <div className="flex items-center gap-3">
           <Button
-            aria-label="Search listings"
-            aria-disabled={navigationDisabled || undefined}
-            className="text-white hover:bg-white/10 hover:text-white"
             onClick={navigationDisabled ? preventNavigation : () => navigate('/listings')}
+            aria-disabled={navigationDisabled || undefined}
+            aria-label="Search listings"
             size="icon"
             variant="ghost"
+            className="
+              text-white
+              hover:bg-white/10 hover:text-white
+            "
           >
             <Search className="h-5 w-5" />
           </Button>
           <Button
-            aria-label="Saved items"
-            aria-disabled={navigationDisabled || undefined}
-            className="text-white hover:bg-white/10 hover:text-white"
             onClick={navigationDisabled ? preventNavigation : () => navigate('/listings')}
+            aria-disabled={navigationDisabled || undefined}
+            aria-label="Saved items"
             size="icon"
             variant="ghost"
+            className="
+              text-white
+              hover:bg-white/10 hover:text-white
+            "
           >
             <Heart className="h-5 w-5" />
           </Button>
-          <div className="[&_button]:text-white [&_button]:hover:bg-white/10 [&_button]:hover:text-white">
+          <div className="
+            [&_button]:text-white
+            [&_button]:hover:bg-white/10 [&_button]:hover:text-white
+          "
+          >
             <CartDrawer navigationDisabled={navigationDisabled} />
           </div>
           <Button
-            aria-disabled={navigationDisabled || undefined}
-            className="hidden gap-1 rounded-none bg-white px-6 text-xs font-semibold text-[#333333] hover:bg-white/90 md:flex"
             onClick={navigationDisabled ? preventNavigation : handleSellClick}
+            aria-disabled={navigationDisabled || undefined}
             size="sm"
             variant="default"
+            className="
+              hidden gap-1 rounded-none bg-white px-6 text-xs font-semibold text-[#333333]
+              hover:bg-white/90
+              md:flex
+            "
           >
             <Plus className="h-4 w-4" />
             Sell
@@ -127,12 +148,15 @@ export default function LandingNavbar({
             ? navigationDisabled
               ? (
                   <Button
+                    onClick={preventNavigation}
                     aria-disabled="true"
                     aria-label="Open account"
-                    className="text-white hover:bg-white/10 hover:text-white"
-                    onClick={preventNavigation}
                     size="icon"
                     variant="ghost"
+                    className="
+                      text-white
+                      hover:bg-white/10 hover:text-white
+                    "
                   >
                     <User className="h-5 w-5" />
                   </Button>
@@ -142,9 +166,12 @@ export default function LandingNavbar({
                     <DropdownMenuTrigger asChild>
                       <Button
                         aria-label="Open account"
-                        className="text-white hover:bg-white/10 hover:text-white"
                         size="icon"
                         variant="ghost"
+                        className="
+                          text-white
+                          hover:bg-white/10 hover:text-white
+                        "
                       >
                         <User className="h-5 w-5" />
                       </Button>
@@ -200,23 +227,30 @@ export default function LandingNavbar({
                 )
             : (
                 <Button
+                  onClick={navigationDisabled ? preventNavigation : () => navigate('/auth')}
                   aria-disabled={navigationDisabled || undefined}
                   aria-label="Sign in"
-                  className="text-white hover:bg-white/10 hover:text-white"
-                  onClick={navigationDisabled ? preventNavigation : () => navigate('/auth')}
                   size="icon"
                   variant="ghost"
+                  className="
+                    text-white
+                    hover:bg-white/10 hover:text-white
+                  "
                 >
                   <User className="h-5 w-5" />
                 </Button>
               )}
           <Button
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            aria-disabled={navigationDisabled || undefined}
-            className="text-white hover:bg-white/10 hover:text-white md:hidden"
             onClick={navigationDisabled ? preventNavigation : toggleMobileMenu}
+            aria-disabled={navigationDisabled || undefined}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             size="icon"
             variant="ghost"
+            className="
+              text-white
+              hover:bg-white/10 hover:text-white
+              md:hidden
+            "
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -224,25 +258,35 @@ export default function LandingNavbar({
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-white/10 bg-[#777777] p-4 md:hidden">
+        <div className="
+          border-t border-white/10 bg-[#777777] p-4
+          md:hidden
+        "
+        >
           <nav className="flex flex-col gap-3">
             {navigationLinks.map(link => (
               <Link
-                aria-disabled={navigationDisabled || undefined}
                 key={link.label}
-                className="text-sm font-medium text-white/80 hover:text-white"
                 onClick={navigationDisabled ? preventNavigation : () => setMobileOpen(false)}
+                aria-disabled={navigationDisabled || undefined}
                 to={link.to}
+                className="
+                  text-sm font-medium text-white/80
+                  hover:text-white
+                "
               >
                 {link.label}
               </Link>
             ))}
             <Button
-              aria-disabled={navigationDisabled || undefined}
-              className="mt-2 w-full gap-1 rounded-none bg-white text-[#333333] hover:bg-white/90"
               onClick={navigationDisabled ? preventNavigation : handleSellClick}
+              aria-disabled={navigationDisabled || undefined}
               size="sm"
               variant="default"
+              className="
+                mt-2 w-full gap-1 rounded-none bg-white text-[#333333]
+                hover:bg-white/90
+              "
             >
               <Plus className="h-4 w-4" />
               Sell an item

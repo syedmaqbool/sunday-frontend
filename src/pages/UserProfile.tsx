@@ -25,7 +25,6 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import BankDetailsModal from '@/components/BankDetailsModal';
 import { ComplaintActions } from '@/components/ComplaintActions';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
@@ -66,6 +65,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
+import { showErrorToast } from '@/lib/errorToast';
 import { uploadFile } from '@/lib/uploadFile';
 import { cn, formatEnumLabel } from '@/lib/utilities';
 import {

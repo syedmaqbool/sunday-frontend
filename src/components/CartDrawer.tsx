@@ -80,6 +80,7 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
     <Sheet onOpenChange={handleOpenChange} open={navigationDisabled ? false : open}>
       <SheetTrigger asChild>
         <Button
+          onClick={navigationDisabled ? preventNavigation : undefined}
           aria-disabled={navigationDisabled || undefined}
           aria-label="Open cart"
           size="icon"
@@ -88,7 +89,6 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
             relative text-muted-foreground
             hover:text-foreground
           "
-          onClick={navigationDisabled ? preventNavigation : undefined}
         >
           <ShoppingBag className="h-5 w-5" />
           {totalItems > 0 && (
@@ -119,8 +119,8 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
                 {navigationDisabled
                   ? (
                       <Button
-                        aria-disabled="true"
                         onClick={handleBrowseClick}
+                        aria-disabled="true"
                         size="sm"
                         variant="outline"
                       >
@@ -254,8 +254,8 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
                   {navigationDisabled
                     ? (
                         <Button
-                          aria-disabled="true"
                           onClick={handleCheckoutClick}
+                          aria-disabled="true"
                           size="lg"
                           className="mt-2 w-full gap-2"
                         >

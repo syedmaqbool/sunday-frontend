@@ -11,7 +11,6 @@ import {
   createOrder,
   getPaymentInstructions,
   resubmitManualPayment,
-  retryPayFastOrder,
   uploadPaymentProof,
   validateDiscount,
   validateSellerCoupon,
@@ -56,18 +55,6 @@ export function useCreateCheckoutMutation() {
 export function useUploadPaymentProofMutation() {
   return useMutation({
     mutationFn: (file: File) => uploadPaymentProof(file),
-  });
-}
-
-export function useRetryPayFastOrderMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (orderId: string) => retryPayFastOrder(orderId),
-    onSuccess: (_response, orderId) => {
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
-    },
   });
 }
 

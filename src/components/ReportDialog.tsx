@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { showErrorToast } from '@/lib/errorToast';
 import { createReport } from '@/services/report.service';
 
 export type ReportTargetType = 'listing' | 'message' | 'user';

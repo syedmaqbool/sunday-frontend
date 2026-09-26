@@ -4,7 +4,6 @@ import { AlertTriangle, Landmark, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { showErrorToast } from '@/lib/errorToast';
 import { useUpdateBankDetailsMutation } from '@/queries/myProfile.query';
 
 const bankSchema = z.object({

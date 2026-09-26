@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import Footer from '@/components/Footer';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
 import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
@@ -38,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
+import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getListingMediaUrls,

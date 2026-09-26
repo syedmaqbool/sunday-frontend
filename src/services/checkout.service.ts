@@ -2,7 +2,6 @@ import type {
   CancelOrderResult,
   CheckoutOrderResult,
   CreateOrderPayload,
-  PayFastPayment,
   PaymentInstructions,
   ResubmitManualPaymentPayload,
   ResubmitManualPaymentResult,
@@ -46,12 +45,6 @@ export function uploadPaymentProof(file: File) {
   return authInstance
     .post('/api/upload-file', { body: formData })
     .json<Response<UploadedPaymentProof>>();
-}
-
-export function retryPayFastOrder(orderId: string) {
-  return authInstance
-    .post(`/api/v1/checkout/orders/${orderId}/payfast`)
-    .json<Response<PayFastPayment>>();
 }
 
 export function cancelOrder(orderId: string) {

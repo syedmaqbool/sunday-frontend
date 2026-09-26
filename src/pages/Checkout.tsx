@@ -23,11 +23,11 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
-import { getErrorToastOptions } from '@/lib/errorToast';
 import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
 import { calcCommission } from '@/lib/commission';
+import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   useCreateCheckoutMutation,
   useValidateDiscountMutation,
@@ -212,8 +212,8 @@ function Checkout() {
 
     try {
       const response = await createCheckout({
-        listingIds: items.map(index => index.listing.id),
         proofFileId,
+        listingIds: items.map(index => index.listing.id),
         senderAccountNumber,
         senderAccountTitle,
         shippingAddress: pendingShipping.address,
@@ -642,9 +642,9 @@ function Checkout() {
       </main>
       <Footer />
       <ManualPaymentDialog
-        error={manualPaymentError}
         onOpenChange={setManualPaymentOpen}
         onSubmit={handleManualPaymentSubmit}
+        error={manualPaymentError}
         open={manualPaymentOpen}
         submitting={placing}
       />

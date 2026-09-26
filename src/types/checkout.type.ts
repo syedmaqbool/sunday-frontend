@@ -59,15 +59,6 @@ export interface UploadedPaymentProof {
   url?: string;
 }
 
-export interface PayFastPayment {
-  basketId: string;
-  accessToken: string;
-  amount: number;
-  currencyCode: string;
-  fields: Record<string, string>;
-  paymentUrl: string;
-}
-
 export interface CheckoutOrderResult {
   manualPaymentSubmission: ManualPaymentSubmission;
   order: Order;

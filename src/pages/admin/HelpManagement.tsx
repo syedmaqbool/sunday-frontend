@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { createElement, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { z } from 'zod';
 import {
   AlertDialog,
@@ -53,7 +52,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { HELP_ICON_OPTIONS, getHelpIcon } from '@/lib/helpIcons';
+import { showErrorToast } from '@/lib/errorToast';
+import { getHelpIcon, HELP_ICON_OPTIONS } from '@/lib/helpIcons';
 import {
   getAdminSettingsOptions,
   useUpdateHelpCategoriesMutation,
@@ -72,9 +72,9 @@ import { getApiErrorCode } from '@/services/ky-base-instance';
 interface Category {
   key: string;
   active: boolean;
-  label: string;
   blurb: string;
   icon: string;
+  label: string;
   sort_order: number;
 }
 interface Faq {
@@ -91,9 +91,9 @@ function adaptCategory(c: HelpCategoryAPI): Category {
   return {
     key: c.key,
     active: c.active,
-    label: c.label,
     blurb: c.blurb ?? '',
     icon: c.icon ?? 'BookOpen',
+    label: c.label,
     sort_order: c.sortOrder,
   };
 }
@@ -101,9 +101,9 @@ function categoryToApi(c: Category): HelpCategoryAPI {
   return {
     key: c.key,
     active: c.active,
-    label: c.label,
     blurb: c.blurb,
     icon: c.icon,
+    label: c.label,
     sortOrder: c.sort_order,
   };
 }
@@ -145,9 +145,9 @@ const categorySchema = z.object({
     .min(2)
     .max(40)
     .regex(/^[a-z0-9_-]+$/, 'Lowercase letters, numbers, _ or -'),
-  label: z.string().trim().min(1).max(60),
   blurb: z.string().trim().max(160),
   icon: z.string().min(1),
+  label: z.string().trim().min(1).max(60),
   sort_order: z.number().int().min(0),
 });
 const faqSchema = z.object({
@@ -196,26 +196,28 @@ function tutorialErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Failed to save tutorial';
 }
 
-const IconSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
-  <Select value={value} onValueChange={onChange}>
-    <SelectTrigger>
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent className="max-h-64">
-      {HELP_ICON_OPTIONS.map((name) => {
-        const Icon = getHelpIcon(name);
-        return (
-          <SelectItem key={name} value={name}>
-            <span className="flex items-center gap-2">
-              <Icon className="h-4 w-4" />
-              {name}
-            </span>
-          </SelectItem>
-        );
-      })}
-    </SelectContent>
-  </Select>
-);
+function IconSelect({ onChange, value }: { onChange: (v: string) => void; value: string }) {
+  return (
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-64">
+        {HELP_ICON_OPTIONS.map((name) => {
+          const Icon = getHelpIcon(name);
+          return (
+            <SelectItem key={name} value={name}>
+              <span className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                {name}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const TUTORIAL_PAGE_SIZE = 20;
 
@@ -249,14 +251,14 @@ function HelpManagement() {
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
   const [catEdit, setCatEdit] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState({ key: '', label: '', blurb: '', icon: 'BookOpen', sort_order: 0 });
+  const [catForm, setCatForm] = useState({ key: '', blurb: '', icon: 'BookOpen', label: '', sort_order: 0 });
 
   const openCategoryDialog = (c: Category | null) => {
     setCatEdit(c);
     setCatForm(
       c
-        ? { key: c.key, label: c.label, blurb: c.blurb, icon: c.icon, sort_order: c.sort_order }
-        : { key: '', label: '', blurb: '', icon: 'BookOpen', sort_order: categories.length },
+        ? { key: c.key, blurb: c.blurb, icon: c.icon, label: c.label, sort_order: c.sort_order }
+        : { key: '', blurb: '', icon: 'BookOpen', label: '', sort_order: categories.length },
     );
     setCatOpen(true);
   };
@@ -278,9 +280,9 @@ function HelpManagement() {
       const newCategory: Category = {
         key: parsed.data.key,
         active: true,
-        label: parsed.data.label,
         blurb: parsed.data.blurb,
         icon: parsed.data.icon,
+        label: parsed.data.label,
         sort_order: parsed.data.sort_order,
       };
       next = [...categories, newCategory];
@@ -323,17 +325,17 @@ function HelpManagement() {
     setFaqForm(
       f
         ? {
-          answer: f.answer,
-          category_key: f.category_key,
-          question: f.question,
-          sort_order: f.sort_order,
-        }
+            answer: f.answer,
+            category_key: f.category_key,
+            question: f.question,
+            sort_order: f.sort_order,
+          }
         : {
-          answer: '',
-          category_key: categories[0]?.key ?? '',
-          question: '',
-          sort_order: faqs.length,
-        },
+            answer: '',
+            category_key: categories[0]?.key ?? '',
+            question: '',
+            sort_order: faqs.length,
+          },
     );
     setFaqOpen(true);
   };
@@ -401,14 +403,14 @@ function HelpManagement() {
     setTutForm(
       t
         ? {
-          ctaLabel: t.ctaLabel ?? '',
-          ctaTo: t.ctaTo ?? '',
-          icon: t.icon ?? 'BookOpen',
-          published: t.published,
-          sortOrder: t.sortOrder,
-          steps: t.steps.length > 0 ? t.steps : [''],
-          title: t.title,
-        }
+            ctaLabel: t.ctaLabel ?? '',
+            ctaTo: t.ctaTo ?? '',
+            icon: t.icon ?? 'BookOpen',
+            published: t.published,
+            sortOrder: t.sortOrder,
+            steps: t.steps.length > 0 ? t.steps : [''],
+            title: t.title,
+          }
         : emptyTutorialForm,
     );
     setTutOpen(true);
@@ -507,66 +509,66 @@ function HelpManagement() {
           </div>
           {faqs.length === 0
             ? (
-              <EmptyState label="No FAQs yet" />
-            )
+                <EmptyState label="No FAQs yet" />
+              )
             : (
-              faqs.map((f) => {
-                const cat = categories.find(c => c.key === f.category_key);
-                return (
-                  <Card key={f.id}>
-                    <CardContent className="
+                faqs.map((f) => {
+                  const cat = categories.find(c => c.key === f.category_key);
+                  return (
+                    <Card key={f.id}>
+                      <CardContent className="
                         flex flex-col gap-3 p-4
                         sm:flex-row sm:items-start
                       "
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary" className="text-[10px]">
-                            {cat?.label ?? f.category_key}
-                          </Badge>
-                          {!f.published && (
-                            <Badge variant="outline" className="text-[10px]">
-                              Draft
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {cat?.label ?? f.category_key}
                             </Badge>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">
-                            #
-                            {f.sort_order}
-                          </span>
+                            {!f.published && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Draft
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              #
+                              {f.sort_order}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-medium text-foreground">
+                            {f.question}
+                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                            {f.answer}
+                          </p>
                         </div>
-                        <p className="mt-1 font-medium text-foreground">
-                          {f.question}
-                        </p>
-                        <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-                          {f.answer}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Switch
-                          onCheckedChange={v => toggleFaqPublished(f.id, v)}
-                          checked={f.published}
-                        />
-                        <Button
-                          onClick={() => openFaqDialog(f)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteFaq(f.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Switch
+                            onCheckedChange={v => toggleFaqPublished(f.id, v)}
+                            checked={f.published}
+                          />
+                          <Button
+                            onClick={() => openFaqDialog(f)}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => deleteFaq(f.id)}
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
         </TabsContent>
 
         {/* ── Tutorials (own paginated CRUD endpoints) ── */}
@@ -580,111 +582,111 @@ function HelpManagement() {
           </div>
           {loadingTutorials
             ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            )
+                <div className="flex justify-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )
             : tutorials.length === 0
               ? (
-                <EmptyState label="No tutorials yet" />
-              )
+                  <EmptyState label="No tutorials yet" />
+                )
               : (
-                tutorials.map(t => (
-                  <Card key={t.id}>
-                    <CardContent className="
+                  tutorials.map(t => (
+                    <Card key={t.id}>
+                      <CardContent className="
                         flex flex-col gap-3 p-4
                         sm:flex-row sm:items-start
                       "
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                        {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {!t.published && (
-                            <Badge variant="outline" className="text-[10px]">
-                              Draft
-                            </Badge>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">
-                            #
-                            {t.sortOrder}
-                          </span>
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                          {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
                         </div>
-                        <p className="mt-1 font-medium text-foreground">
-                          {t.title}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {t.steps.length}
-                          {' '}
-                          step
-                          {t.steps.length === 1 ? '' : 's'}
-                          {t.ctaLabel && t.ctaTo ? ` · CTA: ${t.ctaLabel} → ${t.ctaTo}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Switch
-                          onCheckedChange={v => toggleTutorialPublished(t.id, v)}
-                          checked={t.published}
-                        />
-                        <Button
-                          onClick={() => openTutorialDialog(t)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete tutorial?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This permanently removes "
-                                {t.title}
-                                " and cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTutorial(t.id)}
-                                className="
-                                  bg-destructive text-destructive-foreground
-                                  hover:bg-destructive/90
-                                "
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {!t.published && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Draft
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              #
+                              {t.sortOrder}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-medium text-foreground">
+                            {t.title}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {t.steps.length}
+                            {' '}
+                            step
+                            {t.steps.length === 1 ? '' : 's'}
+                            {t.ctaLabel && t.ctaTo ? ` · CTA: ${t.ctaLabel} → ${t.ctaTo}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Switch
+                            onCheckedChange={v => toggleTutorialPublished(t.id, v)}
+                            checked={t.published}
+                          />
+                          <Button
+                            onClick={() => openTutorialDialog(t)}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive"
                               >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete tutorial?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This permanently removes "
+                                  {t.title}
+                                  " and cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteTutorial(t.id)}
+                                  className="
+                                    bg-destructive text-destructive-foreground
+                                    hover:bg-destructive/90
+                                  "
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
           {tutPagination && tutPagination.lastPage > 1 && (
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    href="#"
-                    aria-disabled={tutPagination.prevPage == null}
-                    className={tutPagination.prevPage == null ? 'pointer-events-none opacity-50' : undefined}
                     onClick={(event) => {
                       event.preventDefault();
                       if (tutPagination.prevPage)
                         setTutPage(tutPagination.prevPage);
                     }}
+                    aria-disabled={tutPagination.prevPage == null}
+                    href="#"
+                    className={tutPagination.prevPage == null ? 'pointer-events-none opacity-50' : undefined}
                   />
                 </PaginationItem>
                 <PaginationItem>
@@ -700,14 +702,14 @@ function HelpManagement() {
                 </PaginationItem>
                 <PaginationItem>
                   <PaginationNext
-                    href="#"
-                    aria-disabled={tutPagination.nextPage == null}
-                    className={tutPagination.nextPage == null ? 'pointer-events-none opacity-50' : undefined}
                     onClick={(event) => {
                       event.preventDefault();
                       if (tutPagination.nextPage)
                         setTutPage(tutPagination.nextPage);
                     }}
+                    aria-disabled={tutPagination.nextPage == null}
+                    href="#"
+                    className={tutPagination.nextPage == null ? 'pointer-events-none opacity-50' : undefined}
                   />
                 </PaginationItem>
               </PaginationContent>
@@ -726,72 +728,72 @@ function HelpManagement() {
           </div>
           {categories.length === 0
             ? (
-              <EmptyState label="No categories yet" />
-            )
+                <EmptyState label="No categories yet" />
+              )
             : (
-              categories.map((c) => {
-                const Icon = getHelpIcon(c.icon);
-                return (
-                  <Card key={c.key}>
-                    <CardContent className="
+                categories.map((c) => {
+                  const Icon = getHelpIcon(c.icon);
+                  return (
+                    <Card key={c.key}>
+                      <CardContent className="
                         flex flex-col gap-3 p-4
                         sm:flex-row sm:items-center
                       "
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant="secondary"
-                            className="font-mono text-[10px]"
-                          >
-                            {c.key}
-                          </Badge>
-                          {!c.active && (
-                            <Badge variant="outline" className="text-[10px]">
-                              Hidden
-                            </Badge>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">
-                            #
-                            {c.sort_order}
-                          </span>
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                          <Icon className="h-5 w-5" />
                         </div>
-                        <p className="mt-1 font-medium text-foreground">
-                          {c.label}
-                        </p>
-                        <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                          {c.blurb}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Switch
-                          onCheckedChange={v => toggleCategoryActive(c.key, v)}
-                          checked={c.active}
-                        />
-                        <Button
-                          onClick={() => openCategoryDialog(c)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteCategory(c.key)}
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant="secondary"
+                              className="font-mono text-[10px]"
+                            >
+                              {c.key}
+                            </Badge>
+                            {!c.active && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Hidden
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              #
+                              {c.sort_order}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-medium text-foreground">
+                            {c.label}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                            {c.blurb}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Switch
+                            onCheckedChange={v => toggleCategoryActive(c.key, v)}
+                            checked={c.active}
+                          />
+                          <Button
+                            onClick={() => openCategoryDialog(c)}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => deleteCategory(c.key)}
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
         </TabsContent>
       </Tabs>
 
@@ -839,8 +841,8 @@ function HelpManagement() {
               <div className="space-y-1.5">
                 <Label>Icon</Label>
                 <IconSelect
-                  value={catForm.icon}
                   onChange={v => setCatForm({ ...catForm, icon: v })}
+                  value={catForm.icon}
                 />
               </div>
               <div className="space-y-1.5">
@@ -981,44 +983,44 @@ function HelpManagement() {
             <div className="space-y-1.5">
               <Label>Icon</Label>
               <IconSelect
-                value={tutForm.icon}
                 onChange={v => setTutForm({ ...tutForm, icon: v })}
+                value={tutForm.icon}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Steps</Label>
-              {tutForm.steps.map((s, i) => (
-                <div key={i} className="flex gap-2">
+              {tutForm.steps.map((s, index) => (
+                <div key={index} className="flex gap-2">
                   <span className="flex h-9 w-7 shrink-0 items-center justify-center text-xs text-muted-foreground">
-                    {i + 1}
+                    {index + 1}
                     .
                   </span>
                   <Input
-                    value={s}
                     onChange={(event) => {
                       const next = [...tutForm.steps];
-                      next[i] = event.target.value;
+                      next[index] = event.target.value;
                       setTutForm({ ...tutForm, steps: next });
                     }}
+                    value={s}
                   />
                   <Button
+                    onClick={() => {
+                      const next = tutForm.steps.filter((_, index_) => index_ !== index);
+                      setTutForm({ ...tutForm, steps: next.length > 0 ? next : [''] });
+                    }}
                     size="icon"
                     variant="ghost"
-                    onClick={() => {
-                      const next = tutForm.steps.filter((_, idx) => idx !== i);
-                      setTutForm({ ...tutForm, steps: next.length ? next : [''] });
-                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
               <Button
+                onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ''] })}
+                disabled={tutForm.steps.length >= 20}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                disabled={tutForm.steps.length >= 20}
-                onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ''] })}
                 className="gap-2"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -1031,10 +1033,10 @@ function HelpManagement() {
                 <Label>CTA (optional — set both, or leave both blank)</Label>
                 {(tutForm.ctaLabel || tutForm.ctaTo) && (
                   <Button
+                    onClick={() => setTutForm({ ...tutForm, ctaLabel: '', ctaTo: '' })}
+                    size="sm"
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    onClick={() => setTutForm({ ...tutForm, ctaLabel: '', ctaTo: '' })}
                   >
                     Clear CTA
                   </Button>

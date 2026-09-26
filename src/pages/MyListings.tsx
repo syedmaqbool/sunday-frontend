@@ -13,7 +13,6 @@ import {
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
 import { MyListingFeedbackInline } from '@/components/MyListingFeedbackWidgets';
@@ -43,6 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
+import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyListingsOptions,

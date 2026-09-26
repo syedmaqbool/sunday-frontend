@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBoostPackagesOptions } from '@/hooks/useBoosts';
 import { trackEvent } from '@/lib/analytics';
+import { showErrorToast } from '@/lib/errorToast';
 import { cn } from '@/lib/utilities';
 import {
   useBoostWithCampaignMutation,

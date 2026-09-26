@@ -45,14 +45,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { getErrorToastOptions } from '@/lib/errorToast';
-
 import {
   getSupportMessagesOptions,
   getSupportTicketsOptions,
   useCreateSupportTicketMutation,
   useSendSupportMessageMutation,
 } from '@/hooks/useSupport';
+
+import { getErrorToastOptions } from '@/lib/errorToast';
 import { supportQueryKey } from '@/queries/support.query';
 
 const ticketSchema = z.object({

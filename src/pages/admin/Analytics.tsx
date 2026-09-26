@@ -26,8 +26,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -45,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { showErrorToast } from '@/lib/errorToast';
 import { cn } from '@/lib/utilities';
 import {
   getAdminAnalyticsQueryOptions,

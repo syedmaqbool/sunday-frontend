@@ -34,14 +34,14 @@ export function getBuyerListingOffersOptions(listingId: string, userId?: string)
       try {
         const response = await listMyOffers({ page: 1, size: 100 });
         return (response?.data ?? []).filter(offer => offer.listingId === listingId);
-      } catch {
+      }
+      catch {
         return [];
       }
     },
     queryKey: offersQueryKey.buyerListing(listingId, userId),
   });
 }
-
 
 export function getSentOffersOptions(userId?: string) {
   return queryOptions({

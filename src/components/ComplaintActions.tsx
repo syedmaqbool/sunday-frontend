@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { showErrorToast } from '@/lib/errorToast';
 import { uploadFile } from '@/lib/uploadFile';
 import {
   getComplaintDetailsOptions,

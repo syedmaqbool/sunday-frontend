@@ -11,14 +11,10 @@ const {
   addItemMock,
   cancelOrderMock,
   fetchMarketplaceListingMock,
-  retryPayFastMock,
-  submitPayFastMock,
 } = vi.hoisted(() => ({
   addItemMock: vi.fn(),
   cancelOrderMock: vi.fn(),
   fetchMarketplaceListingMock: vi.fn(),
-  retryPayFastMock: vi.fn(),
-  submitPayFastMock: vi.fn(),
 }));
 
 const testState = { currentOrder: null as Order | null };
@@ -33,14 +29,9 @@ vi.mock('@/contexts/CartContext', () => ({
 }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
-vi.mock('@/lib/payfast', async importOriginal => ({
-  ...await importOriginal<typeof import('@/lib/payfast')>(),
-  submitPayFast: submitPayFastMock,
-}));
 vi.mock('@/queries/checkout.query', () => ({
   useCancelOrderMutation: () => ({ mutateAsync: cancelOrderMock }),
   useResubmitManualPaymentMutation: () => ({ mutateAsync: vi.fn() }),
-  useRetryPayFastOrderMutation: () => ({ mutateAsync: retryPayFastMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({
   fetchMarketplaceListing: fetchMarketplaceListingMock,
@@ -171,19 +162,15 @@ describe('order confirmation manual actions', () => {
     addItemMock.mockReset();
     cancelOrderMock.mockReset();
     fetchMarketplaceListingMock.mockReset();
-    retryPayFastMock.mockReset();
-    submitPayFastMock.mockReset();
     fetchMarketplaceListingMock.mockResolvedValue({ id: 'listing-id', status: 'APPROVED' });
   });
 
-  it('does not render a PayFast retry control or call the gateway for a manual order', async () => {
+  it('does not render a retry control or start a gateway flow for a manual order', async () => {
     renderPage();
 
     await screen.findByText('Payment pending verification');
 
     expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
-    expect(retryPayFastMock).not.toHaveBeenCalled();
-    expect(submitPayFastMock).not.toHaveBeenCalled();
   });
 
   it('shows an animated clock while a submitted payment waits for admin approval', async () => {
@@ -195,34 +182,35 @@ describe('order confirmation manual actions', () => {
     expect(screen.getByLabelText('Payment awaiting admin approval')).toHaveClass('animate-spin');
   });
 
-  it('keeps the PayFast retry branch available for historical orders', async () => {
+  it('keeps historical orders viewable without gateway payment actions', async () => {
     testState.currentOrder = makeOrder({
       manualPaymentSubmission: null,
       paymentStatus: 'FAILED',
     });
-    retryPayFastMock.mockResolvedValue({
-      data: {
-        basketId: 'basket-id',
-        accessToken: 'access-token',
-        amount: 100,
-        currencyCode: 'PKR',
-        fields: { BASKET_ID: 'basket-id' },
-        paymentUrl: 'https://example.test/payfast',
-      },
+    renderPage();
+
+    await screen.findByText('Payment failed');
+
+    expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
+    expect(screen.getByText('Jane Buyer')).toBeInTheDocument();
+  });
+
+  it('shows the settled refund status for a historical paid order', async () => {
+    testState.currentOrder = makeOrder({
+      manualPaymentSubmission: null,
+      paymentStatus: 'PAID',
+      refundStatus: 'REFUNDED',
+      status: 'CANCELLED',
     });
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Retry payment' }));
+    await screen.findByText('Order cancelled');
 
-    await waitFor(() => expect(retryPayFastMock).toHaveBeenCalledWith('order-id'));
-    expect(submitPayFastMock).toHaveBeenCalledWith({
-      basketId: 'basket-id',
-      accessToken: 'access-token',
-      amount: 100,
-      currencyCode: 'PKR',
-      fields: { BASKET_ID: 'basket-id' },
-      paymentUrl: 'https://example.test/payfast',
-    });
+    expect(screen.getByText('Payment status:')).toBeInTheDocument();
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.getByText('This order was cancelled. Your payment has been refunded.')).toBeInTheDocument();
+    expect(screen.getByText('Example item')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
   });
 
   it('confirms cancellation, restores returned listings, and refreshes the order', async () => {

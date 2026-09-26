@@ -41,7 +41,6 @@ export default {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
-        'surface-yellow': '#FFFBEB',
         'foreground': 'hsl(var(--foreground))',
         'gold': 'hsl(var(--gold))',
         'gold-foreground': 'hsl(var(--gold-foreground))',
@@ -76,6 +75,7 @@ export default {
         'surface-dark': 'hsl(var(--surface-dark))',
         'surface-dark-foreground': 'hsl(var(--surface-dark-foreground))',
         'surface-warm': 'hsl(var(--surface-warm))',
+        'surface-yellow': '#FFFBEB',
       },
       fontFamily: {
         body: ['Radio Canada Big', 'sans-serif'],

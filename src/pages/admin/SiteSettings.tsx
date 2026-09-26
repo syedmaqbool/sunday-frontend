@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { showErrorToast } from '@/lib/errorToast';
 import heroFallback from '@/assets/hero-fashion.jpg';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import { showErrorToast } from '@/lib/errorToast';
 import {
   getHeroImageQueryOptions,
   useUpdateHeroImageMutation,

@@ -243,6 +243,9 @@ function ForgotPassword() {
                       </InputOTP>
                     )}
                   />
+                  <p className="text-sm text-muted-foreground">
+                    If you don’t see the code, check your spam or junk folder.
+                  </p>
                   {errors.otp && <p className="text-sm text-destructive">{errors.otp.message}</p>}
                   {!errors.otp && otpError && <p className="text-sm text-destructive">{otpError}</p>}
                 </div>

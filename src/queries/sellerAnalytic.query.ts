@@ -1,14 +1,15 @@
+import type { AnalyticsDateRange } from '@/types/analyticsDateRange.type';
 import { queryOptions } from '@tanstack/react-query';
 import { getSellerAnalytics } from '@/services/sellerAnalytic.service';
 
 export const sellerAnalyticsQueryKey = {
   all: () => ['seller-analytics'] as const,
-  overview: () => [...sellerAnalyticsQueryKey.all(), 'overview'] as const,
+  overview: (parameters: AnalyticsDateRange = {}) => [...sellerAnalyticsQueryKey.all(), 'overview', parameters] as const,
 };
 
-export function getSellerAnalyticsOptions() {
+export function getSellerAnalyticsOptions(parameters: AnalyticsDateRange = {}) {
   return queryOptions({
-    queryFn: () => getSellerAnalytics(),
-    queryKey: sellerAnalyticsQueryKey.overview(),
+    queryFn: () => getSellerAnalytics(parameters),
+    queryKey: sellerAnalyticsQueryKey.overview(parameters),
   });
 }

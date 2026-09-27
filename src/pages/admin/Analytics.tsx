@@ -1,5 +1,6 @@
 import type { ChartConfig } from '@/components/ui/chart';
 import type { DimKey } from '@/types/adminAnalytics.type';
+import type { DateFilter } from '@/types/analyticsDateRange.type';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -26,6 +27,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { AnalyticsPeriodFilter } from '@/components/AnalyticsPeriodFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -43,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { getAnalyticsDateRange } from '@/lib/analyticsDateRange';
 import { showErrorToast } from '@/lib/errorToast';
 import { cn } from '@/lib/utilities';
 import {
@@ -198,10 +201,13 @@ function Analytics() {
   const [offersDim, setOffersDim] = useState<DimKey>('category');
   const [leadSearch, setLeadSearch] = useState('');
   const [leadStatusFilter] = useState<string>('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const dateRange = useMemo(() => getAnalyticsDateRange(dateFilter), [dateFilter]);
   const exportInProgress = useRef(false);
 
-  const { data: analyticsResult, isLoading } = useQuery(getAdminAnalyticsQueryOptions());
+  const { data: analyticsResult, isLoading } = useQuery(getAdminAnalyticsQueryOptions(dateRange));
   const { data: leadsResult, isLoading: leadsLoading } = useQuery(getAdminMarketingLeadsQueryOptions({
+    ...dateRange,
     leadStatus: leadStatusFilter || undefined,
     search: leadSearch || undefined,
     size: 50,
@@ -222,6 +228,7 @@ function Analytics() {
       const parameters = {
         ...(leadSearch && { search: leadSearch }),
         ...(leadStatusFilter && { leadStatus: leadStatusFilter }),
+        ...dateRange,
       };
       const response = await exportMarketingLeads.mutateAsync(parameters);
       const blob = await response.blob();
@@ -343,17 +350,24 @@ function Analytics() {
             Performance metrics for the marketplace
           </p>
         </div>
-        <Button
-          onClick={handleExportMarketingLeads}
-          disabled={exportMarketingLeads.isPending}
-          size="sm"
+        <div className="
+          flex flex-col gap-2
+          sm:flex-row sm:items-center
+        "
         >
-          {exportMarketingLeads.isPending
-            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            : <Download className="mr-2 h-4 w-4" />}
-          {' '}
-          {exportMarketingLeads.isPending ? 'Downloading...' : 'Export Report'}
-        </Button>
+          <AnalyticsPeriodFilter onChange={setDateFilter} value={dateFilter} />
+          <Button
+            onClick={handleExportMarketingLeads}
+            disabled={exportMarketingLeads.isPending}
+            size="sm"
+          >
+            {exportMarketingLeads.isPending
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Download className="mr-2 h-4 w-4" />}
+            {' '}
+            {exportMarketingLeads.isPending ? 'Downloading...' : 'Export Report'}
+          </Button>
+        </div>
       </div>
 
       <div className="

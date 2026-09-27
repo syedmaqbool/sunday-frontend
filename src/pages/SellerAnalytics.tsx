@@ -1,4 +1,5 @@
 import type { ChartConfig } from '@/components/ui/chart';
+import type { DateFilter } from '@/types/analyticsDateRange.type';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -9,6 +10,7 @@ import {
   Star,
   TrendingUp,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -19,6 +21,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { AnalyticsPeriodFilter } from '@/components/AnalyticsPeriodFilter';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +31,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { getAnalyticsDateRange } from '@/lib/analyticsDateRange';
 import { getSellerAnalyticsOptions } from '@/queries/sellerAnalytic.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -61,7 +65,9 @@ const OFFER_STATUS_COLORS: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SellerAnalytics() {
-  const { data: response, isLoading } = useQuery(getSellerAnalyticsOptions());
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const dateRange = useMemo(() => getAnalyticsDateRange(dateFilter), [dateFilter]);
+  const { data: response, isLoading } = useQuery(getSellerAnalyticsOptions(dateRange));
   const analytics = response?.data;
 
   // Chart data derived from API response
@@ -90,13 +96,20 @@ export default function SellerAnalytics() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container max-w-5xl flex-1 py-8">
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-bold text-foreground">
-            Sales Analytics
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Track your performance and insights
-          </p>
+        <div className="
+          mb-8 flex flex-col gap-3
+          sm:flex-row sm:items-center sm:justify-between
+        "
+        >
+          <div>
+            <h1 className="font-heading text-3xl font-bold text-foreground">
+              Sales Analytics
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              Track your performance and insights
+            </p>
+          </div>
+          <AnalyticsPeriodFilter onChange={setDateFilter} value={dateFilter} />
         </div>
 
         {isLoading

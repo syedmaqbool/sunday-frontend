@@ -2,6 +2,7 @@ import type {
   AdminMarketingLeadsExportParams,
   AdminMarketingLeadsParams,
 } from '@/types/adminAnalytics.type';
+import type { AnalyticsDateRange } from '@/types/analyticsDateRange.type';
 import { queryOptions, useMutation } from '@tanstack/react-query';
 import {
   exportAdminMarketingLeads,
@@ -16,13 +17,13 @@ export const adminAnalyticsQueryKey = {
     list: (parameters: AdminMarketingLeadsParams = {}) =>
       [...adminAnalyticsQueryKey.marketingLeads.all(), 'list', parameters] as const,
   },
-  overview: () => [...adminAnalyticsQueryKey.all(), 'overview'] as const,
+  overview: (parameters: AnalyticsDateRange = {}) => [...adminAnalyticsQueryKey.all(), 'overview', parameters] as const,
 };
 
-export function getAdminAnalyticsQueryOptions() {
+export function getAdminAnalyticsQueryOptions(parameters: AnalyticsDateRange = {}) {
   return queryOptions({
-    queryFn: getAdminAnalytics,
-    queryKey: adminAnalyticsQueryKey.overview(),
+    queryFn: () => getAdminAnalytics(parameters),
+    queryKey: adminAnalyticsQueryKey.overview(parameters),
     retry: false,
   });
 }

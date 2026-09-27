@@ -176,10 +176,39 @@ describe('admin analytics marketing-leads export', () => {
     const button = await screen.findByRole('button', { name: 'Download' });
     fireEvent.click(button);
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('Export failed'));
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('Error', {
+      description: 'Export failed',
+    }));
 
     expect(URL.createObjectURL).not.toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
     expect(button).not.toBeDisabled();
+  });
+
+  it('passes the selected date range to analytics and marketing leads queries', async () => {
+    exportAdminMarketingLeadsMock.mockResolvedValue(new Response('email,name\n'));
+    renderAnalytics();
+
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Last 7 days' }), { button: 0 });
+
+    await waitFor(() => {
+      expect(getAdminAnalyticsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+        endTime: expect.any(String),
+        startTime: expect.any(String),
+      }));
+      expect(listAdminMarketingLeadsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+        endTime: expect.any(String),
+        startTime: expect.any(String),
+      }));
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
+
+    await waitFor(() => {
+      expect(exportAdminMarketingLeadsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+        endTime: expect.any(String),
+        startTime: expect.any(String),
+      }));
+    });
   });
 });

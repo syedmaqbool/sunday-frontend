@@ -1,3 +1,5 @@
+import type { AnalyticsDateRange } from '@/types/analyticsDateRange.type';
+
 export type DimKey
   = | 'buyerAgeBucket'
     | 'category'
@@ -63,7 +65,7 @@ export interface AdminMarketingLead {
   phone: string;
 }
 
-export interface AdminMarketingLeadsParams {
+export interface AdminMarketingLeadsParams extends AnalyticsDateRange {
   leadStatus?: string;
   page?: number;
   search?: string;
@@ -72,5 +74,5 @@ export interface AdminMarketingLeadsParams {
 
 export type AdminMarketingLeadsExportParams = Pick<
   AdminMarketingLeadsParams,
-  'leadStatus' | 'search'
+  'endTime' | 'leadStatus' | 'search' | 'startTime'
 >;

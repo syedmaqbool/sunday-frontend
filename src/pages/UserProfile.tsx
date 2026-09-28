@@ -30,6 +30,7 @@ import { ComplaintActions } from '@/components/ComplaintActions';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import Footer from '@/components/Footer';
 import { ManualVerificationStatus } from '@/components/ManualVerificationStatus';
+import { SellerShipmentNotice } from '@/components/MarketplaceNotices';
 import Navbar from '@/components/Navbar';
 import { OrderItemReview } from '@/components/OrderItemReview';
 import { SellerComplaintBadge } from '@/components/SellerComplaintBadge';
@@ -1086,6 +1087,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
                 JPEG/PNG/WebP, max 5MB.
               </p>
             </div>
+            <SellerShipmentNotice />
           </div>
           <DialogFooter>
             <Button

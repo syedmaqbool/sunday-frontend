@@ -15,6 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import Footer from '@/components/Footer';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
+import { CheckoutDispatchNotice } from '@/components/MarketplaceNotices';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { getActiveTaxOptions } from '@/hooks/useActiveTax';
 import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
+import { calculateCheckoutPricing } from '@/lib/checkoutPricing';
 import { calcCommission } from '@/lib/commission';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import {
@@ -40,6 +42,7 @@ interface AppliedDiscount {
   discountAmount: number;
   discountType: 'FIXED' | 'PERCENTAGE';
   discountValue: number;
+  listingIdsKey: string;
   source: 'platform' | 'seller';
 }
 
@@ -96,6 +99,11 @@ function Checkout() {
     resolver: zodResolver(discountSchema),
   });
   const discountCode = discountForm.watch('code');
+  const listingIds = items.map(index => index.listing.id);
+  const listingIdsKey = JSON.stringify(listingIds);
+  const validAppliedDiscount = appliedDiscount?.listingIdsKey === listingIdsKey
+    ? appliedDiscount
+    : null;
 
   useEffect(() => {
     if (items.length > 0) {
@@ -112,6 +120,12 @@ function Checkout() {
     }
   }, [items, totalPrice]);
 
+  useEffect(() => {
+    if (appliedDiscount && appliedDiscount.listingIdsKey !== listingIdsKey) {
+      setAppliedDiscount(null);
+    }
+  }, [appliedDiscount, listingIdsKey]);
+
   const itemCommissions = items.map(({ listing, quantity }) => {
     const c = calcCommission(
       commissionTiers,
@@ -123,17 +137,24 @@ function Checkout() {
   });
   const commissionTotal = itemCommissions.reduce((s, index) => s + index.amount, 0);
 
-  const discountAmount = appliedDiscount?.discountAmount ?? 0;
-  const taxableAmount = totalPrice - discountAmount;
+  const platformDiscountAmount = validAppliedDiscount?.source === 'platform'
+    ? validAppliedDiscount.discountAmount
+    : 0;
+  const sellerCouponDiscountAmount = validAppliedDiscount?.source === 'seller'
+    ? validAppliedDiscount.discountAmount
+    : 0;
   const taxRate = activeTax?.rate ?? 0;
-  const taxAmount = Math.round(taxableAmount * taxRate) / 100;
-  const finalPrice = taxableAmount + taxAmount + commissionTotal;
+  const { taxAmount, total: finalPrice } = calculateCheckoutPricing({
+    platformDiscountAmount,
+    platformFeeAmount: commissionTotal,
+    sellerCouponDiscountAmount,
+    subtotal: totalPrice,
+    taxRate,
+  });
 
   const handleApplyDiscount: SubmitHandler<DiscountFormValues> = async (values) => {
     const code = values.code.trim().toUpperCase();
     setApplyingCode(true);
-
-    const listingIds = items.map(index => index.listing.id);
 
     try {
       // 1) Try platform-wide discount first
@@ -144,6 +165,7 @@ function Checkout() {
           discountAmount: data.discountAmount,
           discountType: data.discountType,
           discountValue: data.discountValue,
+          listingIdsKey,
           source: 'platform',
         });
         discountForm.reset();
@@ -164,6 +186,7 @@ function Checkout() {
         discountAmount: data.discountAmount,
         discountType: data.discountType,
         discountValue: data.discountValue,
+        listingIdsKey,
         source: 'seller',
       });
       discountForm.reset();
@@ -213,7 +236,7 @@ function Checkout() {
     try {
       const response = await createCheckout({
         proofFileId,
-        listingIds: items.map(index => index.listing.id),
+        listingIds,
         senderAccountNumber,
         senderAccountTitle,
         shippingAddress: pendingShipping.address,
@@ -222,8 +245,8 @@ function Checkout() {
         shippingLastName: pendingShipping.lastName,
         shippingPhone: pendingShipping.phone,
         shippingPostal: pendingShipping.postal,
-        ...(appliedDiscount?.source === 'platform' && { discountCode: appliedDiscount.code }),
-        ...(appliedDiscount?.source === 'seller' && { sellerCouponCode: appliedDiscount.code }),
+        ...(validAppliedDiscount?.source === 'platform' && { discountCode: validAppliedDiscount.code }),
+        ...(validAppliedDiscount?.source === 'seller' && { sellerCouponCode: validAppliedDiscount.code }),
       });
       const result = response.data;
       if (!result?.manualPaymentSubmission || !result.order)
@@ -489,18 +512,18 @@ function Checkout() {
               {/* Discount code input */}
               <Separator />
               <div className="py-3">
-                {appliedDiscount
+                {validAppliedDiscount
                   ? (
                       <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
                         <div className="flex items-center gap-2">
                           <Tag className="h-4 w-4 text-primary" />
                           <span className="text-sm font-medium text-foreground">
-                            {appliedDiscount.code}
+                            {validAppliedDiscount.code}
                           </span>
                           <span className="text-xs text-primary">
-                            {appliedDiscount.discountType === 'PERCENTAGE'
-                              ? `−${appliedDiscount.discountValue}%`
-                              : `−Rs ${appliedDiscount.discountValue.toLocaleString()}`}
+                            {validAppliedDiscount.discountType === 'PERCENTAGE'
+                              ? `−${validAppliedDiscount.discountValue}%`
+                              : `−Rs ${validAppliedDiscount.discountValue.toLocaleString()}`}
                           </span>
                         </div>
                         <Button
@@ -563,13 +586,13 @@ function Checkout() {
                   {totalPrice.toLocaleString()}
                 </span>
               </div>
-              {discountAmount > 0 && (
+              {platformDiscountAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-primary">Discount</span>
                   <span className="text-sm font-medium text-primary">
                     −Rs
                     {' '}
-                    {discountAmount.toLocaleString()}
+                    {platformDiscountAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -605,6 +628,16 @@ function Checkout() {
                   </span>
                 </div>
               )}
+              {sellerCouponDiscountAmount > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-primary">Coupon (on platform fee)</span>
+                  <span className="text-sm font-medium text-primary">
+                    −Rs
+                    {' '}
+                    {sellerCouponDiscountAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
               <Separator />
               <div className="flex items-center justify-between py-4">
                 <span className="font-heading text-base font-semibold text-foreground">
@@ -636,6 +669,7 @@ function Checkout() {
                       'Place Order'
                     )}
               </Button>
+              <CheckoutDispatchNotice />
             </div>
           </div>
         </div>

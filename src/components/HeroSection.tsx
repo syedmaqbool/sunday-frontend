@@ -51,7 +51,17 @@ function isValidUrl(url?: string) {
 function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { data } = useQuery(getPublicHeroImageOptions());
+  const { data, isLoading } = useQuery(getPublicHeroImageOptions());
+
+  if (isLoading) {
+    return (
+      <section
+        aria-label="Loading hero"
+        role="status"
+        className="min-h-[85vh] bg-muted"
+      />
+    );
+  }
 
   // Empty strings aur invalid URLs filter karo
   const cleaned = Object.fromEntries(

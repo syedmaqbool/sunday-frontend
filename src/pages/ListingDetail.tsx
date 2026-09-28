@@ -17,6 +17,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
+import { ListingDetailsNotice, SoldListingNotice } from '@/components/MarketplaceNotices';
 import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
 import Navbar from '@/components/Navbar';
 import { ReportDialog } from '@/components/ReportDialog';
@@ -394,6 +395,7 @@ function ListingDetail() {
                 >
                   Browse other listings
                 </Button>
+                <SoldListingNotice />
               </div>
             )}
 
@@ -611,6 +613,7 @@ function ListingDetail() {
             </div>
           </div>
         </div>
+        <ListingDetailsNotice />
       </main>
       <Footer />
     </div>

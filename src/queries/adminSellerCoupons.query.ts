@@ -2,6 +2,7 @@ import type {
   CreateSellerCouponPayload,
   UpdateSellerCouponPayload,
 } from '@/types/sellerCoupon.type';
+import type { GetPublicListingsData } from '@/types/generated-api/types.gen';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authInstance } from '@/services/ky.instance';
 import {
@@ -43,10 +44,18 @@ export function getAdminSellerListingsOptions(
 ) {
   return queryOptions({
     enabled,
-    queryFn: () =>
-      authInstance
-        .get(`/api/v1/listings?sellerId=${sellerId}&status=approved&size=100`)
-        .json<{ data: any[] }>(),
+    queryFn: () => {
+      const parameters: GetPublicListingsData['query'] = {
+        page: 1,
+        sellerId,
+        size: 100,
+        status: 'APPROVED',
+      };
+
+      return authInstance
+        .get('/api/v1/listings', { searchParams: parameters })
+        .json<{ data: any[] }>();
+    },
     queryKey: sellerCouponsQueryKey.sellerListings(sellerId),
   });
 }

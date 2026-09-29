@@ -141,15 +141,63 @@ describe('admin margin report page', () => {
     expect(getAdminMarginDateRange('all', new Date(2026, 8, 29))).toEqual({});
   });
 
-  it('is reachable at /admin/margins and shows API aggregates across pages', async () => {
+  it('explains when orders appear in the report', async () => {
+    renderPage();
+
+    expect(await screen.findByText(
+      'Orders with items appear in this report only after every item is delivered, either when the buyer confirms receipt or when delivery completes automatically.',
+    )).toBeInTheDocument();
+  });
+
+  it('renders API rows, pagination, and aggregates without order-status filtering', async () => {
+    const report = createReport({
+      aggregates: {
+        ...createReport().aggregates,
+        matchingOrderCount: 47,
+        negativeMarginOrderCount: 19,
+        nonNegativeMarginOrderCount: 28,
+        orderValue: 876_543,
+        platformMargin: 23_456,
+      },
+      data: [
+        createOrder({
+          id: 'awaiting-order-1',
+          buyerName: 'Buyer with awaiting overall status',
+          status: 'AWAITING_PAYMENT',
+        }),
+        createOrder({
+          id: 'cancelled-order-1',
+          buyerName: 'Buyer with cancelled overall status',
+          platformMargin: -250,
+          status: 'CANCELLED',
+        }),
+      ],
+      pagination: {
+        currentPage: 2,
+        lastPage: 4,
+        nextPage: 3,
+        perPage: 20,
+        prevPage: 1,
+        total: 67,
+      },
+    });
+    getAdminMarginReportMock.mockResolvedValue(report);
+    renderPage();
+
+    expect(await screen.findByRole('row', { name: /AWAITING PAYMENT/ })).toBeInTheDocument();
+    expect(await screen.findByRole('row', { name: /CANCELLED/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Summary/ })).toHaveTextContent(
+      'Summary · 47 orders (28 positive, 19 negative)',
+    );
+    expect(screen.getByText('Rs 876,543')).toBeInTheDocument();
+    expect(screen.getByText('Rs 23,456')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 4 · 67 orders')).toBeInTheDocument();
+  });
+
+  it('is reachable at /admin/margins and requests the default filters', async () => {
     renderPage({ route: true });
 
     expect(await screen.findByRole('heading', { name: 'Margin & Order Financials' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Summary' })).toHaveTextContent(
-      'Summary · 100 orders (80 positive, 20 negative)',
-    );
-    expect(screen.getByText('Rs 8,700')).toBeInTheDocument();
-    expect(screen.getByText('Rs 125')).toBeInTheDocument();
     expect(getAdminMarginReportMock).toHaveBeenCalledWith(expect.objectContaining({
       from: expect.any(String),
       marginFilter: 'all',

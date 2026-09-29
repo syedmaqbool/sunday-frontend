@@ -209,6 +209,10 @@ function MarginFinancials() {
       <header>
         <h1 className="font-heading text-2xl font-semibold">Margin &amp; Order Financials</h1>
         <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
+          Orders with items appear in this report only after every item is delivered, either when
+          the buyer confirms receipt or when delivery completes automatically.
+        </p>
+        <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
           Margin = Platform commission − seller coupon discount − buyer discount − seller
           {' '}
           {SELLER_SHARE_RATE}

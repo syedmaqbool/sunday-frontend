@@ -3079,6 +3079,275 @@ export interface ModerateAdminListingResponses {
 
 export type ModerateAdminListingResponse = ModerateAdminListingResponses[keyof ModerateAdminListingResponses];
 
+export interface GetAdminMarginReportData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    size: number;
+    /**
+     * Inclusive UTC start instant for order creation time.
+     */
+    from?: string;
+    marginFilter?: 'all' | 'negative' | 'positive';
+    /**
+     * Case-insensitive substring matched against order, buyer, seller, and bank names.
+     */
+    search?: string;
+    /**
+     * Inclusive UTC end instant for order creation time.
+     */
+    to?: string;
+  };
+  url: '/api/v1/admin/margins';
+}
+
+export interface GetAdminMarginReportErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminMarginReportError = GetAdminMarginReportErrors[keyof GetAdminMarginReportErrors];
+
+export interface GetAdminMarginReportResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates: {
+      /**
+       * PKR amount as a number.
+       */
+      buyerDiscount: number;
+      /**
+       * PKR amount as a number.
+       */
+      estimatedPayoutFee: number;
+      /**
+       * PKR amount as a number.
+       */
+      finalOrderAmount: number;
+      matchingOrderCount: number;
+      negativeMarginOrderCount: number;
+      nonNegativeMarginOrderCount: number;
+      /**
+       * PKR amount as a number.
+       */
+      orderValue: number;
+      /**
+       * PKR amount as a number.
+       */
+      platformCommission: number;
+      /**
+       * PKR amount as a number.
+       */
+      platformMargin: number;
+      /**
+       * PKR amount as a number.
+       */
+      sellerCouponDiscount: number;
+      /**
+       * PKR amount as a number.
+       */
+      sellerPayout: number;
+      /**
+       * PKR amount as a number.
+       */
+      sellerShare: number;
+    };
+    data: Array<{
+      id: string;
+      bankNames: string;
+      /**
+       * PKR amount as a number.
+       */
+      buyerDiscount: number;
+      buyerName: string;
+      /**
+       * PKR amount as a number.
+       */
+      estimatedPayoutFee: number;
+      /**
+       * PKR amount as a number.
+       */
+      finalOrderAmount: number;
+      /**
+       * PKR amount as a number.
+       */
+      orderValue: number;
+      /**
+       * PKR amount as a number.
+       */
+      platformCommission: number;
+      /**
+       * PKR amount as a number.
+       */
+      platformMargin: number;
+      /**
+       * PKR amount as a number.
+       */
+      sellerCouponDiscount: number;
+      /**
+       * PKR amount as a number.
+       */
+      sellerPayout: number;
+      sellers: Array<{
+        sellerId: string;
+        bankName: string;
+        /**
+         * PKR amount as a number.
+         */
+        estimatedPayout: number;
+        /**
+         * PKR amount as a number.
+         */
+        estimatedPayoutFee: number;
+        /**
+         * PKR amount as a number.
+         */
+        grossItemValue: number;
+        items: Array<{
+          /**
+           * PKR amount as a number.
+           */
+          commissionAmount: number;
+          quantity: number;
+          title: string;
+          /**
+           * PKR amount as a number.
+           */
+          unitPrice: number;
+        }>;
+        sellerName: string;
+      }>;
+      /**
+       * PKR amount as a number.
+       */
+      sellerShare: number;
+      status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+      createdAt: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminMarginReportResponse = GetAdminMarginReportResponses[keyof GetAdminMarginReportResponses];
+
 export interface DeleteAdminMessageData {
   path: {
     messageId: string;

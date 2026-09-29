@@ -59,6 +59,7 @@ export const adminNavSections: AdminNavSection[] = [
       { path: '/admin/tax', icon: Percent, label: 'Tax Settings', permission: 'SETTINGS_READ' },
       { path: '/admin/boosts', icon: Rocket, label: 'Boosts', permission: 'BOOSTS_READ' },
       { path: '/admin/payouts', icon: Wallet, label: 'Payouts', permission: 'PAYOUTS_READ' },
+      { path: '/admin/margins', icon: BarChart3, label: 'Margin & Financials', permission: 'FINANCE_DASHBOARD_READ' },
       { path: '/admin/commission', adminOnly: true, icon: PercentIcon, label: 'Commission' },
     ],
     label: 'Marketplace',

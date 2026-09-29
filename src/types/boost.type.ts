@@ -1,51 +1,27 @@
-export type BoostPlacement = 'FOR_YOU' | 'SEARCH' | 'TRENDING';
-export type BoostPaymentStatus = 'CANCELLED' | 'MOCK' | 'PAID';
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type {
+  CreateListingBoostCampaignData,
+  CreateListingPackageBoostsData,
+  GetActiveListingBoostsData,
+  GetActiveListingBoostsResponses,
+  GetAdminBoostsData,
+  GetBoostPackagesResponses,
+  GetMyBoostableListingsData,
+  GetMyBoostableListingsResponses,
+  GetMyBoostsData,
+  GetMyBoostsResponses,
+} from '@/types/generated-api';
 
-export interface BoostPackage {
-  id: string;
-  active: boolean;
-  credits: number;
-  description: string;
-  durationDays: number;
-  name: string;
-  placement: BoostPlacement;
-  price: number;
-}
-
+export type BoostPackage = ApiResponseItem<GetBoostPackagesResponses>;
 export type BoostPackageAPI = BoostPackage;
-
-export interface ListingBoost {
-  id: string;
-  listingId: string;
-  packageId: string | null;
-  sellerId: string;
-  isActive?: boolean;
-  packageName: string | null;
-  paymentStatus: BoostPaymentStatus;
-  placement: BoostPlacement;
-  pricePaid: number;
-  endsAt: string;
-  startsAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BoostableListingItem {
-  id: string;
-  [key: string]: unknown;
-  images: string[];
-  price: number;
-  title: string;
-}
-
-export interface BoostWithPackagePayload {
-  packageIds: string[];
-  paymentStatus?: 'MOCK' | 'PAID';
-}
-
-export interface BoostWithCampaignPayload {
-  paymentStatus?: 'MOCK' | 'PAID';
-  placement: 'FOR_YOU' | 'SEARCH';
-  endsAt: string;
-  startsAt: string;
-}
+export type ListingBoost = ApiResponseItem<GetMyBoostsResponses>;
+export type ActiveListingBoost = ApiResponseItem<GetActiveListingBoostsResponses>;
+export type BoostPlacement = BoostPackage['placement'];
+export type BoostPaymentStatus = ListingBoost['paymentStatus'];
+export type BoostableListingItem = ApiResponseItem<GetMyBoostableListingsResponses>;
+export type AdminBoostListParameters = Partial<ApiRequestQuery<GetAdminBoostsData>>;
+export type ActiveBoostParameters = Partial<ApiRequestQuery<GetActiveListingBoostsData>>;
+export type MyBoostParameters = Partial<ApiRequestQuery<GetMyBoostsData>>;
+export type BoostableListingsParameters = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
+export type BoostWithPackagePayload = ApiRequestBody<CreateListingPackageBoostsData>;
+export type BoostWithCampaignPayload = ApiRequestBody<CreateListingBoostCampaignData>;

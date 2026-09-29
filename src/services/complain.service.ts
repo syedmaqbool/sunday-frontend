@@ -1,13 +1,13 @@
 import type {
+  AdminComplaintsParameters,
   Complaint,
-  ComplaintStatus,
   UpdateComplaintStatusPayload,
 } from '@/types/complaint.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminComplaints(
-  parameters: { page?: number; size?: number; status?: ComplaintStatus } = {},
+  parameters: AdminComplaintsParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/complaints', { searchParams: parameters })

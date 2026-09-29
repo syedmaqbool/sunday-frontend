@@ -62,24 +62,3 @@ export const SORT_OPTIONS = [
   { label: 'Price: Low to High', value: 'price_asc' },
   { label: 'Price: High to Low', value: 'price_desc' },
 ] as const;
-
-export interface Listing {
-  id: string;
-  admin_feedback?: string | null;
-  brand: string;
-  category: string;
-  condition: string;
-  created_at: string;
-  description: string;
-  images: string[];
-  price: number;
-  reserved_for?: string | null;
-  reserved_offer_id?: string | null;
-  reserved_until?: string | null;
-  seller_id: string;
-  seller_name: string;
-  size: string;
-  status: 'approved' | 'needs_revision' | 'pending' | 'rejected' | 'reserved' | 'sold';
-  title: string;
-  weight?: number | null;
-}

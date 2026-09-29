@@ -1,9 +1,10 @@
+import type { CreateDiscountCodePayload } from '@/types/discountCode.type';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { Loader2, Plus, Tag, Trash2 } from 'lucide-react';
 
 import { useState } from 'react';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
 import {
   Select,
   SelectContent,
@@ -33,7 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
 import { toast } from '@/hooks/use-toast';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import {
@@ -54,7 +55,7 @@ function DiscountCodes() {
 
   // form state
   const [code, setCode] = useState('');
-  const [discountType, setDiscountType] = useState('PERCENTAGE');
+  const [discountType, setDiscountType] = useState<CreateDiscountCodePayload['discountType']>('PERCENTAGE');
   const [discountValue, setDiscountValue] = useState('');
   const [minOrder, setMinOrder] = useState('');
   const [maxUses, setMaxUses] = useState('');
@@ -185,7 +186,10 @@ function DiscountCodes() {
                 <div className="space-y-2">
                   <Label>Type</Label>
 
-                  <Select onValueChange={setDiscountType} value={discountType}>
+                  <Select
+                    onValueChange={value => setDiscountType(value as CreateDiscountCodePayload['discountType'])}
+                    value={discountType}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

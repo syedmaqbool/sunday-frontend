@@ -174,7 +174,7 @@ function Boost() {
                           <Card key={l.id}>
                             <CardContent className="flex items-center gap-3 p-3">
                               <img
-                                src={l.images?.[0] || '/placeholder.svg'}
+                                src={l.coverImage.url || '/placeholder.svg'}
                                 alt={l.title}
                                 className="h-14 w-14 rounded-md object-cover"
                               />

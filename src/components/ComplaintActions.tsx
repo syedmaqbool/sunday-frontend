@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { showErrorToast } from '@/lib/errorToast';
-import { uploadFile } from '@/lib/uploadFile';
+import { getUploadedFileUrl, uploadFile } from '@/lib/uploadFile';
 import {
   getComplaintDetailsOptions,
   getOrderShipmentOptions,
@@ -44,7 +44,7 @@ async function uploadMediaFiles(files: File[]) {
   const urls: string[] = [];
   for (const file of files) {
     const { data } = await uploadFile(file);
-    urls.push(data.url);
+    urls.push(getUploadedFileUrl(data));
   }
   return urls;
 }
@@ -54,6 +54,7 @@ export function ComplaintActions({
   orderItemId,
 }: ComplaintActionsProps) {
   const queryClient = useQueryClient();
+  const [minimumExpectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -273,7 +274,7 @@ export function ComplaintActions({
                   id="return-expected-date"
                   onChange={event => setExpectedDate(event.target.value)}
                   value={expectedDate}
-                  min={new Date().toISOString().slice(0, 10)}
+                  min={minimumExpectedDate}
                   required
                   type="date"
                 />
@@ -408,7 +409,7 @@ function FilePicker({
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {files.map((f, index) => (
           <div
-            key={index}
+            key={`${f.name}-${f.size}-${f.lastModified}`}
             className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted"
           >
             <img

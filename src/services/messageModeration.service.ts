@@ -1,9 +1,9 @@
-import type { FlaggedMessage } from '@/types/adminMessageModeration.type';
+import type { FlaggedMessage, FlaggedMessagesParameters } from '@/types/adminMessageModeration.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listFlaggedMessages(
-  parameters: { page?: number; size?: number } = {},
+  parameters: FlaggedMessagesParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/messages/flagged', { searchParams: parameters })
@@ -12,7 +12,7 @@ export function listFlaggedMessages(
 
 export function dismissFlaggedMessage(messageId: string) {
   return authInstance
-    .patch(`/api/v1/admin/messages/${messageId}/dismiss`, { json: {} })
+    .patch(`/api/v1/admin/messages/${messageId}/dismiss`)
     .json<Response>();
 }
 

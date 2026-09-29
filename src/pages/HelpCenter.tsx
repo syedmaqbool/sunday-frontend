@@ -252,7 +252,7 @@ function HelpCenter() {
                       </h3>
                       <ol className="flex-1 space-y-2">
                         {t.steps.map((step, index) => (
-                          <li key={index} className="flex gap-2 text-sm">
+                          <li key={step} className="flex gap-2 text-sm">
                             <span className="font-medium text-muted-foreground">
                               {index + 1}
                             </span>

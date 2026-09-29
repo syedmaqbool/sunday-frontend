@@ -1,20 +1,6 @@
-export interface Brand {
-  id: string;
-  active: boolean;
-  name: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ApiRequestBody, ApiResponseItem } from './api.type';
+import type { CreateAdminBrandData, GetBrandsResponses, UpdateAdminBrandData } from '@/types/generated-api';
 
-export interface CreateBrandPayload {
-  active?: boolean;
-  name: string;
-  sortOrder?: number;
-}
-
-export interface UpdateBrandPayload {
-  active?: boolean;
-  name?: string;
-  sortOrder?: number;
-}
+export type Brand = ApiResponseItem<GetBrandsResponses>;
+export type CreateBrandPayload = ApiRequestBody<CreateAdminBrandData>;
+export type UpdateBrandPayload = ApiRequestBody<UpdateAdminBrandData>;

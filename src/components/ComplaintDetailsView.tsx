@@ -1,3 +1,4 @@
+import type { Complaint } from '@/types/complaint.type';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -27,21 +28,22 @@ const STATUS_LABEL: Record<string, string> = {
   UNDER_REVIEW: 'Under Review',
 };
 
-export interface ComplaintDetailsData {
-  id: string;
-  adminNotes?: string | null;
-  evidenceUrls: string[];
-  reason: string;
-  returnAddress?: string | null;
-  returnAddressPhone?: string | null;
-  returnAddressRecipient?: string | null;
-  returnCarrier?: string | null;
-  returnInstructions?: string | null;
-  returnProofUrls?: string[] | null;
-  returnTracking?: string | null;
-  status: string;
-  createdAt?: string;
-}
+export type ComplaintDetailsData = Pick<
+  Complaint,
+  | 'adminNotes'
+  | 'createdAt'
+  | 'evidenceUrls'
+  | 'id'
+  | 'reason'
+  | 'returnAddress'
+  | 'returnAddressPhone'
+  | 'returnAddressRecipient'
+  | 'returnCarrier'
+  | 'returnInstructions'
+  | 'returnProofUrls'
+  | 'returnTracking'
+  | 'status'
+>;
 
 export function ComplaintDetailsView({
   className,
@@ -137,7 +139,7 @@ export function ComplaintDetailsView({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {evidence.map((url, index) => (
                     <button
-                      key={index}
+                      key={url}
                       onClick={() => setPreview(url)}
                       type="button"
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"
@@ -201,7 +203,7 @@ export function ComplaintDetailsView({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {proofs.map((url, index) => (
                     <button
-                      key={index}
+                      key={url}
                       onClick={() => setPreview(url)}
                       type="button"
                       className="h-20 w-20 overflow-hidden rounded-md border border-border bg-background"

@@ -1,11 +1,8 @@
+import type { ActiveTax } from '@/types/taxSetting.type';
 import { queryOptions } from '@tanstack/react-query';
 import { getTaxSettings } from '@/services/taxSetting.service';
 
-export interface ActiveTax {
-  id: string;
-  name: string;
-  rate: number;
-}
+export type { ActiveTax } from '@/types/taxSetting.type';
 
 export const activeTaxQueryKey = {
   all: () => ['active-tax'] as const,

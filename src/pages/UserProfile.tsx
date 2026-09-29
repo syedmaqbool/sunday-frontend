@@ -67,7 +67,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
 import { showErrorToast } from '@/lib/errorToast';
-import { uploadFile } from '@/lib/uploadFile';
+import { getUploadedFileUrl, uploadFile } from '@/lib/uploadFile';
 import { cn, formatEnumLabel } from '@/lib/utilities';
 import {
   getComplaintsAgainstMeOptions,
@@ -207,14 +207,13 @@ function UserProfile() {
                     <h1 className="font-heading text-2xl font-bold text-card-foreground">
                       {profile?.fullName || user.email}
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Member since
-                      {' '}
-                      {format(
-                        profile?.createdAt || Date.now(),
-                        'MMMM yyyy',
-                      )}
-                    </p>
+                    {profile?.createdAt && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Member since
+                        {' '}
+                        {format(profile.createdAt, 'MMMM yyyy')}
+                      </p>
+                    )}
                     <div className="
                       mt-2 flex flex-wrap items-center justify-center gap-3
                       sm:justify-start
@@ -840,7 +839,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
       });
 
       // 3. Upload shipping proof URL
-      await uploadShippingProof(item.orderId, item.id, uploaded.data.url);
+      await uploadShippingProof(item.orderId, item.id, getUploadedFileUrl(uploaded.data));
 
       toast.success('Marked as shipped');
       setDialogOpen(false);

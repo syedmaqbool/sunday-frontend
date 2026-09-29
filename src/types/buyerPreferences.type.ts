@@ -1,40 +1,7 @@
-export interface PreferenceBrand {
-  id: string;
-  active: boolean;
-  name: string;
-  sortOrder: number;
-}
+import type { ApiRequestBody, ApiResponseData, ApiResponseItem } from './api.type';
+import type { GetBrandsResponses, GetCategoriesResponses, GetMyPreferencesResponses, ReplaceMyPreferencesData } from '@/types/generated-api';
 
-export interface UserPreferences {
-  id: string;
-  userId: string;
-  brands: string[];
-  budgetMax: number;
-  budgetMin: number;
-  categories: string[];
-  onboardingCompleted: boolean;
-  preferredFit: string;
-  styles: string[];
-  whatsappTransactionalNotificationsEnabled: boolean;
-  whatsappConsentAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PutPreferencesPayload {
-  brands: string[];
-  budgetMax: number;
-  budgetMin: number;
-  categories: string[];
-  onboardingCompleted: boolean;
-  preferredFit: string;
-  styles: string[];
-}
-
-export interface BackendCategory {
-  id: string;
-  icon: string;
-  label: string;
-  sortOrder: number;
-  value: string;
-}
+export type PreferenceBrand = ApiResponseItem<GetBrandsResponses>;
+export type UserPreferences = ApiResponseData<GetMyPreferencesResponses>;
+export type PutPreferencesPayload = ApiRequestBody<ReplaceMyPreferencesData>;
+export type BackendCategory = ApiResponseItem<GetCategoriesResponses>;

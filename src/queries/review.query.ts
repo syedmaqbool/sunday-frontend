@@ -1,3 +1,4 @@
+import type { CreateOfferReviewPayload, CreateReviewPayload } from '@/types/offer.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sellerRatingQueryKey } from '@/queries/sellerRating.query';
 import {
@@ -42,15 +43,7 @@ export function useCreateOrderItemReviewMutation(userId?: string, sellerId?: str
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: {
-      listingId: string;
-      orderId: string;
-      orderItemId: string;
-      comment?: string;
-      imageUrls?: string[];
-      rating: number;
-      videoUrl?: string;
-    }) => createReview(payload),
+    mutationFn: ({ listingId: _listingId, ...payload }: CreateReviewPayload & { listingId: string }) => createReview(payload),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
         queryKey: reviewQueryKey.orderItem(
@@ -73,14 +66,7 @@ export function useCreateOfferReviewMutation() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: {
-      listingId: string;
-      offerId: string;
-      reviewedId: string;
-      comment?: string;
-      rating: number;
-      role: 'BUYER' | 'SELLER';
-    }) => createOfferReview(payload),
+    mutationFn: (payload: CreateOfferReviewPayload) => createOfferReview(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
     },

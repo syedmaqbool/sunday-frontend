@@ -1,5 +1,7 @@
+import type { SubmitHandler } from 'react-hook-form';
 import type { HelpCategoryAPI, HelpFaqAPI } from '@/types/adminSettings.type';
 import type { HelpTutorial } from '@/types/helpTutorial.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -10,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { createElement, useState } from 'react';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import {
@@ -156,18 +159,19 @@ const faqSchema = z.object({
   question: z.string().trim().min(3).max(200),
   sort_order: z.number().int().min(0),
 });
-const tutorialSchema = z.object({
+const tutorialFieldsSchema = z.object({
   ctaLabel: z.string().trim().max(100),
   ctaTo: z.string().trim().max(500),
   icon: z.string().min(1),
   published: z.boolean(),
   sortOrder: z.number().int().min(0),
-  steps: z
-    .array(z.string().trim().min(1).max(500))
-    .min(1, 'At least one step')
-    .max(20, 'At most 20 steps'),
   title: z.string().trim().min(1).max(200),
-}).superRefine((data, context) => {
+});
+
+function validateTutorialCta(
+  data: { ctaLabel: string; ctaTo: string },
+  context: z.RefinementCtx,
+) {
   if (Boolean(data.ctaLabel) !== Boolean(data.ctaTo)) {
     context.addIssue({
       path: ['ctaTo'],
@@ -175,7 +179,19 @@ const tutorialSchema = z.object({
       message: 'Set both CTA label and path, or clear both',
     });
   }
-});
+}
+
+const tutorialStepValueSchema = z.string().trim().min(1).max(500);
+const tutorialStepFormSchema = z.object({ value: tutorialStepValueSchema });
+
+const tutorialFormSchema = tutorialFieldsSchema.extend({
+  steps: z
+    .array(tutorialStepFormSchema)
+    .min(1, 'At least one step')
+    .max(20, 'At most 20 steps'),
+}).superRefine(validateTutorialCta);
+
+type TutorialFormValues = z.infer<typeof tutorialFormSchema>;
 
 const emptyTutorialForm = {
   ctaLabel: '',
@@ -183,7 +199,7 @@ const emptyTutorialForm = {
   icon: 'BookOpen',
   published: true,
   sortOrder: 0,
-  steps: [''] as string[],
+  steps: [{ value: '' }],
   title: '',
 };
 
@@ -204,11 +220,10 @@ function IconSelect({ onChange, value }: { onChange: (v: string) => void; value:
       </SelectTrigger>
       <SelectContent className="max-h-64">
         {HELP_ICON_OPTIONS.map((name) => {
-          const Icon = getHelpIcon(name);
           return (
             <SelectItem key={name} value={name}>
               <span className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
+                {createElement(getHelpIcon(name), { className: 'h-4 w-4' })}
                 {name}
               </span>
             </SelectItem>
@@ -388,7 +403,11 @@ function HelpManagement() {
   // ── Tutorial dialog ──
   const [tutOpen, setTutOpen] = useState(false);
   const [tutEdit, setTutEdit] = useState<HelpTutorial | null>(null);
-  const [tutForm, setTutForm] = useState(emptyTutorialForm);
+  const tutForm = useForm<TutorialFormValues>({
+    defaultValues: emptyTutorialForm,
+    resolver: zodResolver(tutorialFormSchema),
+  });
+  const tutorialSteps = useFieldArray({ control: tutForm.control, name: 'steps' });
 
   if (isLoading) {
     return (
@@ -400,7 +419,7 @@ function HelpManagement() {
 
   const openTutorialDialog = (t: HelpTutorial | null) => {
     setTutEdit(t);
-    setTutForm(
+    tutForm.reset(
       t
         ? {
             ctaLabel: t.ctaLabel ?? '',
@@ -408,7 +427,7 @@ function HelpManagement() {
             icon: t.icon ?? 'BookOpen',
             published: t.published,
             sortOrder: t.sortOrder,
-            steps: t.steps.length > 0 ? t.steps : [''],
+            steps: t.steps.length > 0 ? t.steps.map(value => ({ value })) : [{ value: '' }],
             title: t.title,
           }
         : emptyTutorialForm,
@@ -416,20 +435,15 @@ function HelpManagement() {
     setTutOpen(true);
   };
 
-  const saveTutorial = () => {
-    const cleanSteps = tutForm.steps.map(s => s.trim()).filter(Boolean);
-    const parsed = tutorialSchema.safeParse({ ...tutForm, steps: cleanSteps });
-    if (!parsed.success)
-      return toast.error(parsed.error.issues[0].message);
-
+  const saveTutorial: SubmitHandler<TutorialFormValues> = (values) => {
     const payload = {
-      ctaLabel: parsed.data.ctaLabel || null,
-      ctaTo: parsed.data.ctaTo || null,
-      icon: parsed.data.icon || null,
-      published: parsed.data.published,
-      sortOrder: parsed.data.sortOrder,
-      steps: parsed.data.steps,
-      title: parsed.data.title,
+      ctaLabel: values.ctaLabel || null,
+      ctaTo: values.ctaTo || null,
+      icon: values.icon || null,
+      published: values.published,
+      sortOrder: values.sortOrder,
+      steps: values.steps.map(step => step.value),
+      title: values.title,
     };
 
     if (tutEdit) {
@@ -732,7 +746,6 @@ function HelpManagement() {
               )
             : (
                 categories.map((c) => {
-                  const Icon = getHelpIcon(c.icon);
                   return (
                     <Card key={c.key}>
                       <CardContent className="
@@ -741,7 +754,7 @@ function HelpManagement() {
                       "
                       >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                          <Icon className="h-5 w-5" />
+                          {createElement(getHelpIcon(c.icon), { className: 'h-5 w-5' })}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
@@ -960,53 +973,65 @@ function HelpManagement() {
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div className="space-y-1.5">
                 <Label>Title</Label>
-                <Input
-                  onChange={event =>
-                    setTutForm({ ...tutForm, title: event.target.value })}
-                  value={tutForm.title}
-                />
+                <Input {...tutForm.register('title')} />
+                {tutForm.formState.errors.title?.message && (
+                  <p className="text-sm text-destructive">
+                    {tutForm.formState.errors.title.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Sort</Label>
-                <Input
-                  onChange={event =>
-                    setTutForm({
-                      ...tutForm,
-                      sortOrder: Number(event.target.value) || 0,
-                    })}
-                  value={tutForm.sortOrder}
-                  type="number"
-                  className="w-20"
+                <Controller
+                  name="sortOrder"
+                  control={tutForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={event => field.onChange(Number(event.target.value) || 0)}
+                      type="number"
+                      className="w-20"
+                    />
+                  )}
                 />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Icon</Label>
-              <IconSelect
-                onChange={v => setTutForm({ ...tutForm, icon: v })}
-                value={tutForm.icon}
+              <Controller
+                name="icon"
+                control={tutForm.control}
+                render={({ field }) => (
+                  <IconSelect onChange={field.onChange} value={field.value} />
+                )}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Steps</Label>
-              {tutForm.steps.map((s, index) => (
-                <div key={index} className="flex gap-2">
+              {tutorialSteps.fields.map((field, index) => (
+                <div key={field.id} className="flex gap-2">
                   <span className="flex h-9 w-7 shrink-0 items-center justify-center text-xs text-muted-foreground">
                     {index + 1}
                     .
                   </span>
-                  <Input
-                    onChange={(event) => {
-                      const next = [...tutForm.steps];
-                      next[index] = event.target.value;
-                      setTutForm({ ...tutForm, steps: next });
-                    }}
-                    value={s}
-                  />
+                  <div className="min-w-0 flex-1">
+                    <Input {...tutForm.register(`steps.${index}.value`)} />
+                    {tutForm.formState.errors.steps?.[index]?.value?.message && (
+                      <p className="mt-1 text-sm text-destructive">
+                        {tutForm.formState.errors.steps[index]?.value?.message}
+                      </p>
+                    )}
+                  </div>
                   <Button
                     onClick={() => {
-                      const next = tutForm.steps.filter((_, index_) => index_ !== index);
-                      setTutForm({ ...tutForm, steps: next.length > 0 ? next : [''] });
+                      if (tutorialSteps.fields.length === 1) {
+                        tutForm.setValue(`steps.${index}.value`, '', {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        return;
+                      }
+                      tutorialSteps.remove(index);
                     }}
                     size="icon"
                     variant="ghost"
@@ -1015,9 +1040,14 @@ function HelpManagement() {
                   </Button>
                 </div>
               ))}
+              {tutForm.formState.errors.steps?.root?.message && (
+                <p className="text-sm text-destructive">
+                  {tutForm.formState.errors.steps.root.message}
+                </p>
+              )}
               <Button
-                onClick={() => setTutForm({ ...tutForm, steps: [...tutForm.steps, ''] })}
-                disabled={tutForm.steps.length >= 20}
+                onClick={() => tutorialSteps.append({ value: '' })}
+                disabled={tutorialSteps.fields.length >= 20}
                 size="sm"
                 type="button"
                 variant="outline"
@@ -1031,9 +1061,12 @@ function HelpManagement() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label>CTA (optional — set both, or leave both blank)</Label>
-                {(tutForm.ctaLabel || tutForm.ctaTo) && (
+                {(tutForm.watch('ctaLabel') || tutForm.watch('ctaTo')) && (
                   <Button
-                    onClick={() => setTutForm({ ...tutForm, ctaLabel: '', ctaTo: '' })}
+                    onClick={() => {
+                      tutForm.setValue('ctaLabel', '');
+                      tutForm.setValue('ctaTo', '');
+                    }}
                     size="sm"
                     type="button"
                     variant="ghost"
@@ -1044,18 +1077,19 @@ function HelpManagement() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  onChange={event =>
-                    setTutForm({ ...tutForm, ctaLabel: event.target.value })}
-                  value={tutForm.ctaLabel}
+                  {...tutForm.register('ctaLabel')}
                   placeholder="CTA label, e.g. Start browsing"
                 />
                 <Input
-                  onChange={event =>
-                    setTutForm({ ...tutForm, ctaTo: event.target.value })}
-                  value={tutForm.ctaTo}
+                  {...tutForm.register('ctaTo')}
                   placeholder="/listings"
                 />
               </div>
+              {tutForm.formState.errors.ctaTo?.message && (
+                <p className="text-sm text-destructive">
+                  {tutForm.formState.errors.ctaTo.message}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -1063,7 +1097,9 @@ function HelpManagement() {
               Cancel
             </Button>
             <Button
-              onClick={saveTutorial}
+              onClick={tutForm.handleSubmit(saveTutorial, () => {
+                toast.error('Please correct the highlighted tutorial fields.');
+              })}
               disabled={createTutorial.isPending || updateTutorial.isPending}
             >
               {(createTutorial.isPending || updateTutorial.isPending) && (

@@ -8,6 +8,7 @@ import type {
   UploadedPaymentProof,
   ValidateDiscountPayload,
   ValidateDiscountResult,
+  ValidateSellerCouponPayload,
   ValidateSellerCouponResult,
 } from '@/types/checkout.type';
 import type { Response } from '@/types/response.type';
@@ -19,7 +20,7 @@ export function validateDiscount(payload: ValidateDiscountPayload) {
     .json<Response<ValidateDiscountResult>>();
 }
 
-export function validateSellerCoupon(payload: ValidateDiscountPayload) {
+export function validateSellerCoupon(payload: ValidateSellerCouponPayload) {
   return authInstance
     .post('/api/v1/checkout/validate-seller-coupon', { json: payload })
     .json<Response<ValidateSellerCouponResult>>();

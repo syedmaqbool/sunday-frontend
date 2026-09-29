@@ -5,10 +5,7 @@ import ky, { HTTPError } from 'ky';
 export const API_BASE_URL
   = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
-interface ApiErrorDetails {
-  code?: string;
-  fieldErrors?: FieldError[];
-}
+type ApiErrorDetails = Pick<ErrorResponse, 'code' | 'fieldErrors'>;
 
 export function getApiErrorCode(error: unknown): string | undefined {
   return error instanceof HTTPError

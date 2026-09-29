@@ -1,4 +1,8 @@
-import type { Conversation, Message } from '@/types/conversation.type';
+import type {
+  Conversation,
+  Message,
+  SendConversationMessagePayload,
+} from '@/types/conversation.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
@@ -16,11 +20,11 @@ export function listConversationMessages(conversationId: string): Promise<Respon
 
 export function sendConversationMessage(
   conversationId: string,
-  content: string,
+  content: SendConversationMessagePayload['content'],
 ): Promise<Response<Message>> {
   return authInstance
     .post(`/api/v1/me/conversations/${conversationId}/messages`, {
-      json: { content },
+      json: { content } satisfies SendConversationMessagePayload,
     })
     .json<Response<Message>>();
 }

@@ -1,93 +1,24 @@
+import type { ApiResponseData } from '@/types/api.type';
+import type { GetMyOfferAmountByIdResponses } from '@/types/generated-api';
+import type {
+  MarketplaceEditableListing,
+  MarketplaceListing,
+  MarketplaceListingMediaSource,
+  MarketplaceSellerProfile,
+} from '@/types/marketplace.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { queryOptions } from '@tanstack/react-query';
 import { tokenStorage } from '@/lib/tokenStorage';
 import base, { API_BASE_URL } from '@/services/ky-base-instance';
 import { authInstance } from '@/services/ky.instance';
 
-export interface MarketplaceAsset {
-  id?: string;
-  url?: string | null;
-}
-
-export interface MarketplaceMediaItem {
-  id: string;
-  file?: MarketplaceAsset | null;
-  sortOrder?: number | null;
-  type?: 'IMAGE' | 'VIDEO' | string;
-  url?: string | null;
-  createdAt?: string;
-}
-
-export interface MarketplaceSellerProfile {
-  id: string;
-  userId: string;
-  avatarUrl?: string | null;
-  bio?: string | null;
-  fullName?: string | null;
-  image?: MarketplaceAsset | null;
-  location?: string | null;
-  phone?: string | null;
-  createdAt: string;
-}
-
-export interface MarketplaceSellerSummary {
-  id?: string;
-  fullName?: string | null;
-}
-
-export interface MarketplaceListing {
-  id: string;
-  categoryId: string;
-  reservedOfferId?: string | null;
-  sellerId: string;
-  subcategoryId: string;
-  brand: string;
-  categoryLabel: string;
-  categoryValue: string;
-  condition: string;
-  coverImage?: MarketplaceAsset | null;
-  coverImageUrl?: string | null;
-  description: string;
-  images?: MarketplaceAsset[] | null;
-  imageUrls?: string[] | null;
-  media?: MarketplaceMediaItem[] | null;
-  price: number;
-  reservedForCurrentUser?: boolean;
-  reservedUntil?: string | null;
-  seller?: MarketplaceSellerSummary | null;
-  size: string;
-  status: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
-  subcategoryLabel: string;
-  subcategoryValue: string;
-  title: string;
-  weight?: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface MarketplaceEditableListing {
-  id: string;
-  categoryId: string;
-  sellerId: string;
-  subcategoryId: string;
-  brand: string;
-  categoryLabel: string;
-  categoryValue: string;
-  condition: string;
-  coverImage?: MarketplaceAsset | null;
-  description: string;
-  media?: MarketplaceMediaItem[] | null;
-  price: number;
-  reservedUntil?: string | null;
-  size: string;
-  status: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
-  subcategoryLabel: string;
-  subcategoryValue: string;
-  title: string;
-  weight?: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type {
+  MarketplaceAsset,
+  MarketplaceEditableListing,
+  MarketplaceListing,
+  MarketplaceSellerProfile,
+  MarketplaceSellerSummary,
+} from '@/types/marketplace.type';
 
 const publicApi = base.extend({
   baseUrl: API_BASE_URL,
@@ -193,7 +124,7 @@ export function getReservedOfferAmountOptions(
       try {
         const response = await authInstance
           .get(`/api/v1/me/offers/${offerId}`)
-          .json<Response<{ amount: number }>>();
+          .json<Response<ApiResponseData<GetMyOfferAmountByIdResponses>>>();
         return Number(response.data.amount);
       }
       catch {
@@ -285,17 +216,13 @@ export function getSellerListingsOptions(
   });
 }
 
-export function getListingMediaUrls(listing?: {
-  coverImageUrl?: string | null;
-  imageUrls?: string[] | null;
-  media?: MarketplaceMediaItem[] | null;
-} | null) {
+export function getListingMediaUrls(listing?: MarketplaceListingMediaSource | null) {
   if (!listing)
     return [];
 
   const mediaUrls = (listing.media ?? [])
     .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map(item => item.file?.url ?? item.url) // ← file.url ya direct url
+    .map(item => item.url)
     .filter((url): url is string => !!url);
 
   if (mediaUrls.length > 0)

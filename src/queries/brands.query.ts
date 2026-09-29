@@ -1,12 +1,8 @@
+import type { Brand } from '@/types/brand.type';
 import { queryOptions } from '@tanstack/react-query';
 import { getBrands } from '@/services/buyerPreferences.service';
 
-export interface Brand {
-  id: string;
-  active: boolean;
-  name: string;
-  sortOrder: number;
-}
+export type { Brand } from '@/types/brand.type';
 
 export const brandsQueryKey = {
   all: () => ['brands'] as const,

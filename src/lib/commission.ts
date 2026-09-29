@@ -1,13 +1,6 @@
-export interface CommissionTier {
-  id: string;
-  active: boolean;
-  categories: string[];
-  maxPrice: number | null;
-  minPrice: number;
-  name: string;
-  rate: number;
-  sortOrder: number;
-}
+import type { CommissionTier } from '@/types/commission.type';
+
+export type { CommissionTier } from '@/types/commission.type';
 
 /**
  * Resolve the best-matching active commission tier for a listing.

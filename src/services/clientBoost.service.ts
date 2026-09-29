@@ -1,17 +1,21 @@
 import type {
+  ActiveBoostParameters,
+  ActiveListingBoost,
   BoostableListingItem,
+  BoostableListingsParameters,
   BoostPackage,
   BoostWithCampaignPayload,
   BoostWithPackagePayload,
   ListingBoost,
+  MyBoostParameters,
 } from '@/types/boost.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function listActiveBoosts(parameters: { placement?: string } = {}): Promise<Response<ListingBoost[]>> {
+export function listActiveBoosts(parameters: ActiveBoostParameters = {}): Promise<Response<ActiveListingBoost[]>> {
   return authInstance
     .get('/api/v1/boosts/active', { searchParams: parameters })
-    .json<Response<ListingBoost[]>>();
+    .json<Response<ActiveListingBoost[]>>();
 }
 
 export function listBoostPackages(): Promise<Response<BoostPackage[]>> {
@@ -20,14 +24,14 @@ export function listBoostPackages(): Promise<Response<BoostPackage[]>> {
     .json<Response<BoostPackage[]>>();
 }
 
-export function listMyBoosts(parameters: { page?: number; size?: number } = {}): Promise<PaginatedResponse<ListingBoost>> {
+export function listMyBoosts(parameters: MyBoostParameters = {}): Promise<PaginatedResponse<ListingBoost>> {
   return authInstance
     .get('/api/v1/me/boosts', { searchParams: parameters })
     .json<PaginatedResponse<ListingBoost>>();
 }
 
 export function listBoostableListings(
-  parameters: { page?: number; size?: number } = {},
+  parameters: BoostableListingsParameters = {},
 ): Promise<PaginatedResponse<BoostableListingItem>> {
   return authInstance
     .get('/api/v1/me/listings/boostable', { searchParams: parameters })

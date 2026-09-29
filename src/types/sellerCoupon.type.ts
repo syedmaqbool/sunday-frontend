@@ -1,48 +1,12 @@
-export interface SellerCoupon {
-  id: string;
-  listingId: string | null;
-  sellerId: string;
-  active: boolean;
-  code: string;
-  currentUses: number;
-  discountType: 'FIXED' | 'PERCENTAGE';
-  discountValue: number;
-  maxUses: number | null;
-  minOrderAmount: number;
-  perUserLimit: number | null;
-  scope: 'ITEM_BASED' | 'SELLER_WIDE';
-  expiresAt: string | null;
-  startsAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ApiRequestBody, ApiResponseItem } from './api.type';
+import type {
+  CreateAdminSellerCouponData,
+  GetAdminSellerCouponRedemptionsResponses,
+  GetAdminSellerCouponsResponses,
+  UpdateAdminSellerCouponData,
+} from '@/types/generated-api';
 
-export interface CreateSellerCouponPayload {
-  listingId?: string | null;
-  sellerId: string;
-  active?: boolean;
-  code: string;
-  discountType: string;
-  discountValue: number;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  perUserLimit?: number | null;
-  scope: string;
-  expiresAt?: string | null;
-  startsAt?: string | null;
-}
-
-export interface UpdateSellerCouponPayload {
-  listingId?: string | null;
-  sellerId?: string;
-  active?: boolean;
-  code?: string;
-  discountType?: string;
-  discountValue?: number;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  perUserLimit?: number | null;
-  scope?: string;
-  expiresAt?: string | null;
-  startsAt?: string | null;
-}
+export type SellerCoupon = ApiResponseItem<GetAdminSellerCouponsResponses>;
+export type SellerCouponRedemption = ApiResponseItem<GetAdminSellerCouponRedemptionsResponses>;
+export type CreateSellerCouponPayload = ApiRequestBody<CreateAdminSellerCouponData>;
+export type UpdateSellerCouponPayload = ApiRequestBody<UpdateAdminSellerCouponData>;

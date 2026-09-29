@@ -1,10 +1,11 @@
 import type {
   AdminSettings,
-  EmailTemplateAPI,
-  HelpCategoryAPI,
-  HelpFaqAPI,
+  AdminSettingsUpdatePayload,
+  UpdateBoostPackagesPayload,
+  UpdateEmailTemplatesPayload,
+  UpdateHelpCategoriesPayload,
+  UpdateHelpFaqsPayload,
 } from '@/types/adminSettings.type';
-import type { BoostPackageAPI } from '@/types/boost.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
@@ -14,26 +15,26 @@ export function getAdminSettings() {
     .json<Response<AdminSettings>>();
 }
 
-export function updateAdminBoostPackages(boostPackages: BoostPackageAPI[]) {
+export function updateAdminBoostPackages(boostPackages: UpdateBoostPackagesPayload) {
   return authInstance
-    .patch('/api/v1/admin/settings', { json: { boostPackages } })
+    .patch('/api/v1/admin/settings', { json: { boostPackages } satisfies AdminSettingsUpdatePayload })
     .json<Response<AdminSettings>>();
 }
 
-export function updateHelpCategories(helpCategories: HelpCategoryAPI[]) {
+export function updateHelpCategories(helpCategories: UpdateHelpCategoriesPayload) {
   return authInstance
-    .patch('/api/v1/admin/settings', { json: { helpCategories } })
+    .patch('/api/v1/admin/settings', { json: { helpCategories } satisfies AdminSettingsUpdatePayload })
     .json<Response<AdminSettings>>();
 }
 
-export function updateHelpFaqs(helpFaqs: HelpFaqAPI[]) {
+export function updateHelpFaqs(helpFaqs: UpdateHelpFaqsPayload) {
   return authInstance
-    .patch('/api/v1/admin/settings', { json: { helpFaqs } })
+    .patch('/api/v1/admin/settings', { json: { helpFaqs } satisfies AdminSettingsUpdatePayload })
     .json<Response<AdminSettings>>();
 }
 
-export function updateEmailTemplates(emailTemplates: EmailTemplateAPI[]) {
+export function updateEmailTemplates(emailTemplates: UpdateEmailTemplatesPayload) {
   return authInstance
-    .patch('/api/v1/admin/settings', { json: { emailTemplates } })
+    .patch('/api/v1/admin/settings', { json: { emailTemplates } satisfies AdminSettingsUpdatePayload })
     .json<Response<AdminSettings>>();
 }

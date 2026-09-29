@@ -1,7 +1,6 @@
-import type {
-  AdminUserRoleType,
-  CreateAdminUserInput,
-} from '@/types/adminUser.type';
+import type { CreateAdminUserInput } from '@/types/adminUser.type';
+import type { ApiRequestQuery } from '@/types/api.type';
+import type { GetAdminUsersData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createAdminUser, listAdminUsers, updateUserRole } from '@/services/user.service';
 
@@ -11,13 +10,7 @@ export const adminUsersQueryKey = {
     [...adminUsersQueryKey.all(), 'list', parameters] as const,
 };
 
-export interface AdminUsersParams {
-  page?: number;
-  roleType?: AdminUserRoleType;
-  search?: string;
-  size?: number;
-  status?: 'ACTIVE' | 'INACTIVE';
-}
+export type AdminUsersParams = Partial<ApiRequestQuery<GetAdminUsersData>>;
 
 export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
   return queryOptions({

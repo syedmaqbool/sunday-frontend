@@ -1,20 +1,14 @@
 import type {
   AdminUser,
-  AdminUserRoleType,
-  AdminUserStatus,
+  AdminUsersParameters,
   CreateAdminUserInput,
+  UpdateAdminUserRolePayload,
 } from '@/types/adminUser.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminUsers(
-  parameters: {
-    page?: number;
-    roleType?: AdminUserRoleType;
-    search?: string;
-    size?: number;
-    status?: AdminUserStatus;
-  } = {},
+  parameters: AdminUsersParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/users', {
@@ -35,8 +29,8 @@ export function createAdminUser(payload: CreateAdminUserInput) {
     .json<Response<AdminUser>>();
 }
 
-export function updateUserRole(userId: string, roleId: string) {
+export function updateUserRole(userId: string, roleId: UpdateAdminUserRolePayload['roleId']) {
   return authInstance
-    .patch(`/api/v1/admin/users/${userId}/role`, { json: { roleId } })
+    .patch(`/api/v1/admin/users/${userId}/role`, { json: { roleId } satisfies UpdateAdminUserRolePayload })
     .json<Response<AdminUser>>();
 }

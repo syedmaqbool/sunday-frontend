@@ -1,4 +1,5 @@
 import type {
+  AdminHelpTutorialParameters,
   CreateHelpTutorialPayload,
   UpdateHelpTutorialPayload,
 } from '@/types/helpTutorial.type';
@@ -13,7 +14,7 @@ import {
 
 export const helpTutorialQueryKey = {
   adminAll: () => ['admin-help-tutorials'] as const,
-  adminList: (params: { page?: number; size?: number }) =>
+  adminList: (params: AdminHelpTutorialParameters) =>
     [...helpTutorialQueryKey.adminAll(), 'list', params] as const,
   all: () => ['help-tutorials'] as const,
   list: () => [...helpTutorialQueryKey.all(), 'list'] as const,
@@ -29,7 +30,7 @@ export function getHelpTutorialsOptions() {
   });
 }
 
-export function getAdminHelpTutorialsOptions(params: { page?: number; size?: number }) {
+export function getAdminHelpTutorialsOptions(params: AdminHelpTutorialParameters) {
   return queryOptions({
     queryFn: () => listAdminHelpTutorials(params),
     queryKey: helpTutorialQueryKey.adminList(params),

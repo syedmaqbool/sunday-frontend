@@ -1,37 +1,22 @@
-export type SupportTicketStatus = 'CLOSED' | 'IN_PROGRESS' | 'OPEN' | 'RESOLVED';
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type {
+  CreateSupportTicketData,
+  GetAdminSupportTicketMessagesData,
+  GetAdminSupportTicketsData,
+  GetMySupportTicketMessagesResponses,
+  GetMySupportTicketsResponses,
+  ReplyToMySupportTicketData,
+  ReplyToSupportTicketAsAdminData,
+  UpdateSupportTicketStatusData,
+} from '@/types/generated-api';
 
-export interface SupportTicket {
-  id: string;
-  lastMessageSenderId: string | null;
-  userId: string;
-  lastMessageContent: string | null;
-  messageCount: number;
-  status: SupportTicketStatus;
-  subject: string;
-  userEmail: string;
-  userFullName: string;
-  lastMessageAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SupportMessage {
-  id: string;
-  senderId: string;
-  supportTicketId: string;
-  content: string;
-  senderFullName: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
+export type SupportTicket = ApiResponseItem<GetMySupportTicketsResponses>;
+export type SupportTicketStatus = SupportTicket['status'];
+export type SupportMessage = ApiResponseItem<GetMySupportTicketMessagesResponses>;
 export type SupportTicketMessage = SupportMessage;
-
-export interface CreateTicketPayload {
-  content: string;
-  subject: string;
-}
-
-export interface SendMessagePayload {
-  content: string;
-}
+export type CreateTicketPayload = ApiRequestBody<CreateSupportTicketData>;
+export type SendMessagePayload = ApiRequestBody<ReplyToMySupportTicketData>;
+export type AdminSupportTicketParameters = Partial<ApiRequestQuery<GetAdminSupportTicketsData>>;
+export type AdminSupportMessageParameters = Partial<ApiRequestQuery<GetAdminSupportTicketMessagesData>>;
+export type AdminReplyPayload = ApiRequestBody<ReplyToSupportTicketAsAdminData>;
+export type UpdateSupportTicketStatusPayload = ApiRequestBody<UpdateSupportTicketStatusData>;

@@ -1,8 +1,11 @@
+import type { AdminUser } from '@/types/adminUser.type';
+import type { GetPublicListingsData } from '@/types/generated-api';
+import type { MarketplaceListing } from '@/types/marketplace.type';
+import type { PaginatedResponse } from '@/types/response.type';
 import type {
   CreateSellerCouponPayload,
   UpdateSellerCouponPayload,
 } from '@/types/sellerCoupon.type';
-import type { GetPublicListingsData } from '@/types/generated-api/types.gen';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authInstance } from '@/services/ky.instance';
 import {
@@ -33,7 +36,7 @@ export function getSellerCouponsOptions() {
 export function getAdminUsersListOptions() {
   return queryOptions({
     queryFn: () =>
-      authInstance.get('/api/v1/admin/users?size=100').json<{ data: any[] }>(),
+      authInstance.get('/api/v1/admin/users?size=100').json<PaginatedResponse<AdminUser>>(),
     queryKey: sellerCouponsQueryKey.adminUsers(),
   });
 }
@@ -46,15 +49,15 @@ export function getAdminSellerListingsOptions(
     enabled,
     queryFn: () => {
       const parameters: GetPublicListingsData['query'] = {
-        page: 1,
         sellerId,
+        page: 1,
         size: 100,
         status: 'APPROVED',
       };
 
       return authInstance
         .get('/api/v1/listings', { searchParams: parameters })
-        .json<{ data: any[] }>();
+        .json<PaginatedResponse<MarketplaceListing>>();
     },
     queryKey: sellerCouponsQueryKey.sellerListings(sellerId),
   });

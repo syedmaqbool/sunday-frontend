@@ -1,14 +1,12 @@
-import type { Complaint } from '@/types/complaint.type';
+import type {
+  Complaint,
+  CreateComplaintPayload,
+  ProvideReturnAddressPayload,
+  SubmitReturnProofPayload,
+} from '@/types/complaint.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { HTTPError } from 'ky';
 import { authInstance } from '@/services/ky.instance';
-
-export interface CreateComplaintPayload {
-  orderId: string;
-  orderItemId: string;
-  evidenceUrls: string[];
-  reason: string;
-}
 
 export function listMyRefundComplaints() {
   return authInstance
@@ -46,15 +44,6 @@ export async function getOrderItemComplaint(
   }
 }
 
-export interface ProvideReturnAddressPayload {
-  returnAddress: string;
-  returnAddressCity?: string;
-  returnAddressPhone?: string;
-  returnAddressPostal?: string;
-  returnAddressRecipient?: string;
-  returnInstructions?: string;
-}
-
 export function provideReturnAddress(
   complaintId: string,
   payload: ProvideReturnAddressPayload,
@@ -68,21 +57,6 @@ export function markComplaintReturnReceived(complaintId: string) {
   return authInstance
     .post(`/api/v1/complaints/${complaintId}/return-received`)
     .json<Response<Complaint>>();
-}
-
-export interface ComplaintMedia {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  url: string;
-}
-
-export interface SubmitReturnProofPayload {
-  expectedReturnDate: string;
-  returnCarrier: string;
-  returnProofUrls: string[];
-  returnTracking: string;
 }
 
 export function submitReturnProof(

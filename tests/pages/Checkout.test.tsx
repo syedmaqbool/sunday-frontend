@@ -12,7 +12,6 @@ const { cartState, useQueryMock, validateDiscountMock, validateSellerCouponMock 
         price: 1000,
         title: 'Example coat',
       },
-      quantity: 1,
     }],
   },
   useQueryMock: vi.fn(),
@@ -42,8 +41,8 @@ vi.mock('@/contexts/CartContext', () => ({
     isHydrated: true,
     items: cartState.items,
     removeItem: vi.fn(),
-    totalItems: cartState.items.reduce((total, item) => total + item.quantity, 0),
-    totalPrice: cartState.items.reduce((total, item) => total + item.listing.price * item.quantity, 0),
+    totalItems: cartState.items.length,
+    totalPrice: cartState.items.reduce((total, item) => total + item.listing.price, 0),
   }),
 }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
@@ -78,7 +77,6 @@ describe('checkout seller coupons', () => {
         price: 1000,
         title: 'Example coat',
       },
-      quantity: 1,
     }];
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: readonly unknown[] }) => {
       if (queryKey[0] === 'active-tax') {
@@ -134,7 +132,6 @@ describe('checkout seller coupons', () => {
           price: 500,
           title: 'Example sweater',
         },
-        quantity: 1,
       },
     ];
     const { rerender } = renderCheckout();

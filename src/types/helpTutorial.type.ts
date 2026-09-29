@@ -1,24 +1,12 @@
-export interface HelpTutorial {
-  id: string;
-  ctaLabel: string | null;
-  ctaTo: string | null;
-  icon: string | null;
-  published: boolean;
-  sortOrder: number;
-  steps: string[];
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type {
+  CreateAdminHelpTutorialData,
+  GetAdminHelpTutorialsData,
+  GetAdminHelpTutorialsResponses,
+  UpdateAdminHelpTutorialData,
+} from '@/types/generated-api';
 
-export interface CreateHelpTutorialPayload {
-  ctaLabel?: string | null;
-  ctaTo?: string | null;
-  icon?: string | null;
-  published?: boolean;
-  sortOrder?: number;
-  steps: string[];
-  title: string;
-}
-
-export type UpdateHelpTutorialPayload = Partial<CreateHelpTutorialPayload>;
+export type HelpTutorial = ApiResponseItem<GetAdminHelpTutorialsResponses>;
+export type AdminHelpTutorialParameters = Partial<ApiRequestQuery<GetAdminHelpTutorialsData>>;
+export type CreateHelpTutorialPayload = ApiRequestBody<CreateAdminHelpTutorialData>;
+export type UpdateHelpTutorialPayload = ApiRequestBody<UpdateAdminHelpTutorialData>;

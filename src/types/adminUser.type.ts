@@ -1,39 +1,15 @@
-export interface AdminUserImage {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  url: string;
-}
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type {
+  CreateAdminUserData,
+  GetAdminUsersData,
+  GetAdminUsersResponses,
+  UpdateAdminUserRoleData,
+} from '@/types/generated-api';
 
-export type AdminUserStatus = 'ACTIVE' | 'INACTIVE';
-export type AdminUserRoleType = 'STAFF' | 'USER';
-
-export interface AdminUser {
-  id: string;
-  roleId: string | null;
-  address: string;
-  email: string;
-  firstName: string;
-  image: AdminUserImage | null;
-  lastName: string;
-  marketingEmailConsent: boolean;
-  phone: string;
-  roleName: string | null;
-  status: AdminUserStatus;
-  termsVersion?: string | null;
-  username: string;
-  marketingEmailConsentUpdatedAt?: string | null;
-  termsAcceptedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateAdminUserInput {
-  roleId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  phone: string;
-}
+export type AdminUser = ApiResponseItem<GetAdminUsersResponses>;
+export type AdminUserImage = AdminUser['image'];
+export type AdminUserStatus = AdminUser['status'];
+export type AdminUserRoleType = NonNullable<ApiRequestQuery<GetAdminUsersData>['roleType']>;
+export type CreateAdminUserInput = ApiRequestBody<CreateAdminUserData>;
+export type UpdateAdminUserRolePayload = ApiRequestBody<UpdateAdminUserRoleData>;
+export type AdminUsersParameters = Partial<ApiRequestQuery<GetAdminUsersData>>;

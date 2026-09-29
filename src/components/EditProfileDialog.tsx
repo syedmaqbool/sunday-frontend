@@ -104,7 +104,7 @@ export function EditProfileDialog({ profile }: Props) {
     try {
       const response = await uploadProfileFile(file);
 
-      setAvatarUrl(response.data.url);
+      setAvatarUrl('url' in response.data ? response.data.url : URL.createObjectURL(file));
       setImageId(response.data.id);
 
       toast.success('Photo uploaded');

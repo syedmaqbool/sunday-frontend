@@ -1,13 +1,16 @@
 import type {
   AuthMeResponse,
   AuthSessionResponse,
+  ForgotPasswordPayload,
+  LoginPayload,
   RegisterData,
+  RegisterOtpPayload,
   ResetPasswordData,
 } from '@/types/auth.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from './ky.instance';
 
-export function login(payload: { email: string; password: string }) {
+export function login(payload: LoginPayload) {
   return authInstance
     .post('api/v1/auth/login', {
       context: { skipAuthRefresh: true },
@@ -16,14 +19,14 @@ export function login(payload: { email: string; password: string }) {
     .json<AuthSessionResponse>();
 }
 
-export function sendRegisterOtp(payload: { email: string }) {
+export function sendRegisterOtp(payload: RegisterOtpPayload) {
   return authInstance.post('api/v1/auth/register-otp', {
     context: { skipAuthRefresh: true },
     json: payload,
   });
 }
 
-export function forgotPassword(payload: { email: string }) {
+export function forgotPassword(payload: ForgotPasswordPayload) {
   return authInstance
     .post('api/v1/auth/forgot-password', {
       context: { skipAuthRefresh: true },

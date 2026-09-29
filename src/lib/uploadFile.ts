@@ -1,12 +1,12 @@
+import type { UploadedFile } from '@/types/profile.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export interface UploadedFile {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: string;
-  url: string;
+export function getUploadedFileUrl(uploadedFile: UploadedFile): string {
+  if ('url' in uploadedFile)
+    return uploadedFile.url;
+
+  throw new Error('The uploaded file response did not include a URL.');
 }
 
 export async function uploadFile(file: File) {

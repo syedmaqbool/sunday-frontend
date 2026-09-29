@@ -1,5 +1,5 @@
 import type { ChartConfig } from '@/components/ui/chart';
-import type { DimKey } from '@/types/adminAnalytics.type';
+import type { AdminMarketingLeadStatusFilter, DimKey } from '@/types/adminAnalytics.type';
 import type { DateFilter } from '@/types/analyticsDateRange.type';
 import { useQuery } from '@tanstack/react-query';
 
@@ -200,7 +200,7 @@ function Analytics() {
   const [convDim, setConvDim] = useState<DimKey>('buyerAgeBucket');
   const [offersDim, setOffersDim] = useState<DimKey>('category');
   const [leadSearch, setLeadSearch] = useState('');
-  const [leadStatusFilter] = useState<string>('');
+  const [leadStatusFilter] = useState<AdminMarketingLeadStatusFilter>('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const dateRange = useMemo(() => getAnalyticsDateRange(dateFilter), [dateFilter]);
   const exportInProgress = useRef(false);

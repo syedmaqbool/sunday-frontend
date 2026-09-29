@@ -1,7 +1,8 @@
 import type {
   Order,
-  OrderItem,
+  Sale,
   UpdateOrderItemStatusPayload,
+  UploadShippingProofPayload,
 } from '@/types/order.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -21,7 +22,7 @@ export function getOrder(orderId: string) {
 export function listSales() {
   return authInstance
     .get('/api/v1/me/sales', { searchParams: { size: 100 } })
-    .json<PaginatedResponse<OrderItem>>();
+    .json<PaginatedResponse<Sale>>();
 }
 
 export function updateItemStatus(
@@ -39,11 +40,11 @@ export function updateItemStatus(
 export function uploadShippingProof(
   orderId: string,
   orderItemId: string,
-  proofImageUrl: string,
+  proofImageUrl: UploadShippingProofPayload['proofImageUrl'],
 ) {
   return authInstance
     .post(`/api/v1/orders/${orderId}/items/${orderItemId}/shipping-proof`, {
-      json: { proofImageUrl },
+      json: { proofImageUrl } satisfies UploadShippingProofPayload,
     })
     .json<Response>();
 }

@@ -51,7 +51,7 @@ export default function TopFAQs() {
   if (faqs.length === 0)
     return null;
 
-  const sortedFaqs = [...faqs].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sortedFaqs = faqs.toSorted((a, b) => a.sortOrder - b.sortOrder);
 
   const topFaqs = sortedFaqs.slice(0, 10);
 

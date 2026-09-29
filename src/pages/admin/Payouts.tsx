@@ -65,6 +65,13 @@ function fmt(n: number) {
   })}`;
 }
 
+function getListingTitle(sourceMetadata: unknown) {
+  if (typeof sourceMetadata !== 'object' || sourceMetadata === null || !('listingTitle' in sourceMetadata))
+    return;
+
+  return typeof sourceMetadata.listingTitle === 'string' ? sourceMetadata.listingTitle : undefined;
+}
+
 interface PeriodItem {
   id: string;
   amount: number;
@@ -229,7 +236,7 @@ function Payouts() {
         amount: Number(r.amount),
         at: r.sourceDate ?? r.createdAt,
         description:
-          (r.sourceMetadata?.listingTitle as string) || 'Refunded item',
+          getListingTitle(r.sourceMetadata) || 'Refunded item',
         kind: 'refund' as const,
         party: r.userFullName || `User ${r.buyerId?.slice(0, 6) ?? '?'}`,
         reference: r.orderId ? `Order ${r.orderId.slice(0, 8)}` : '',
@@ -618,7 +625,7 @@ function Payouts() {
                                 || `User ${r.buyerId?.slice(0, 6) ?? '?'}`}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
-                              {(r.sourceMetadata?.listingTitle as string)
+                              {getListingTitle(r.sourceMetadata)
                                 || 'Refunded item'}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
@@ -1043,7 +1050,7 @@ function Payouts() {
                                 || `User ${item.sellerId?.slice(0, 6) ?? '?'}`}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
-                              {(item.sourceMetadata?.listingTitle as string)
+                              {getListingTitle(item.sourceMetadata)
                                 || '—'}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
@@ -1097,7 +1104,7 @@ function Payouts() {
                                 || `User ${item.buyerId?.slice(0, 6) ?? '?'}`}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
-                              {(item.sourceMetadata?.listingTitle as string)
+                              {getListingTitle(item.sourceMetadata)
                                 || '—'}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">

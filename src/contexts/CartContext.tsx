@@ -8,7 +8,6 @@ import { fetchMarketplaceListing } from '@/queries/marketplace.query';
 
 export interface CartItem {
   listing: MarketplaceListing;
-  quantity: number;
 }
 
 interface CartContext_ {
@@ -19,7 +18,6 @@ interface CartContext_ {
   removeItem: (listingId: string) => void;
   totalItems: number;
   totalPrice: number;
-  updateQuantity: (listingId: string, quantity: number) => void;
 }
 
 const CartContext = createContext<CartContext_>({
@@ -30,7 +28,6 @@ const CartContext = createContext<CartContext_>({
   removeItem: () => {},
   totalItems: 0,
   totalPrice: 0,
-  updateQuantity: () => {},
 });
 
 export const useCart = () => useContext(CartContext);
@@ -47,7 +44,26 @@ function readStoredCart(key: string): CartItem[] {
     if (!raw)
       return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed))
+      return [];
+
+    return parsed.flatMap((storedItem): CartItem[] => {
+      if (!storedItem || typeof storedItem !== 'object' || !('listing' in storedItem))
+        return [];
+
+      const { listing } = storedItem;
+      if (
+        !listing
+        || typeof listing !== 'object'
+        || !('id' in listing)
+        || typeof listing.id !== 'string'
+      ) {
+        return [];
+      }
+
+      // Older carts stored quantities, but each marketplace listing is unique.
+      return [{ listing: listing as MarketplaceListing }];
+    });
   }
   catch {
     return [];
@@ -111,7 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const price = (fresh.reservedForCurrentUser ? item.listing : fresh).price;
       if (price !== item.listing.price || fresh.title !== item.listing.title)
         refreshed = true;
-      next.push({ ...item, listing: { ...fresh, price } });
+      next.push({ listing: { ...fresh, price } });
     }
 
     if (removedCount === 0 && !refreshed)
@@ -196,7 +212,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ],
         value: effectivePrice,
       });
-      return [...previous, { listing: finalListing, quantity: 1 }];
+      return [...previous, { listing: finalListing }];
     });
   };
 
@@ -204,21 +220,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems(previous => previous.filter(index => index.listing.id !== listingId));
   };
 
-  const updateQuantity = (listingId: string, quantity: number) => {
-    if (quantity < 1)
-      return removeItem(listingId);
-    setItems(previous =>
-      previous.map(index => (index.listing.id === listingId ? { ...index, quantity } : index)),
-    );
-  };
-
   const clearCart = useCallback(() => setItems([]), []);
 
-  const totalItems = items.reduce((sum, index) => sum + index.quantity, 0);
-  const totalPrice = items.reduce(
-    (sum, index) => sum + index.listing.price * index.quantity,
-    0,
-  );
+  const totalItems = items.length;
+  const totalPrice = items.reduce((sum, index) => sum + index.listing.price, 0);
 
   return (
     <CartContext.Provider
@@ -230,7 +235,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         totalItems,
         totalPrice,
-        updateQuantity,
       }}
     >
       {children}

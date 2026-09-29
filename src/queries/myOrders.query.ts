@@ -1,3 +1,4 @@
+import type { UpdateOrderItemStatusPayload } from '@/types/order.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getOrder,
@@ -50,12 +51,7 @@ export function useUpdateOrderItemStatusMutation() {
     }: {
       orderId: string;
       orderItemId: string;
-      payload: {
-        expectedDelivery?: string;
-        shippingMethod?: string;
-        status: 'DELIVERED' | 'SHIPPED';
-        trackingNumber?: string;
-      };
+      payload: UpdateOrderItemStatusPayload;
     }) => updateItemStatus(orderId, orderItemId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: myOrdersQueryKey.all() });

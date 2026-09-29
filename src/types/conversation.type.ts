@@ -1,26 +1,10 @@
-export interface Conversation {
-  id: string;
-  buyerId: string;
-  listingId: string;
-  offerId: string;
-  sellerId: string;
-  buyerFullName: string;
-  lastMessageContent: string | null;
-  listingTitle: string;
-  sellerFullName: string;
-  unreadCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ApiRequestBody, ApiResponseItem } from './api.type';
+import type {
+  GetConversationMessagesResponses,
+  GetMyConversationsResponses,
+  SendConversationMessageData,
+} from '@/types/generated-api';
 
-export interface Message {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  content: string;
-  flagReasons: string[];
-  isFlagged: boolean;
-  readAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Conversation = ApiResponseItem<GetMyConversationsResponses>;
+export type Message = ApiResponseItem<GetConversationMessagesResponses>;
+export type SendConversationMessagePayload = ApiRequestBody<SendConversationMessageData>;

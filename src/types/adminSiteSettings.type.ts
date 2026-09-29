@@ -1,33 +1,13 @@
-export interface HeroImageValue {
-  alt: string;
-  badgeIconUrl: string;
-  badgeText: string;
-  headlineLine1: string;
-  headlineLine1Color: string;
-  headlineLine2: string;
-  headlineLine2Color: string;
-  mobileUrl: string;
-  primaryCtaBg: string;
-  primaryCtaLabel: string;
-  primaryCtaTextColor: string;
-  secondaryCtaBorderColor: string;
-  secondaryCtaLabel: string;
-  secondaryCtaTextColor: string;
-  siteLogoUrl: string;
-  subtitle: string;
-  subtitleColor: string;
-  url: string;
-}
+import type { ApiRequestBody, ApiResponseData, ApiResponseItem } from './api.type';
+import type {
+  GetAdminSiteSettingsResponses,
+  UpdateAdminSiteSettingData,
+  UploadFileResponses,
+} from '@/types/generated-api';
 
-export interface SiteSetting<T = Record<string, unknown>> {
-  key: string;
-  value: T;
-}
+type GeneratedSiteSetting = ApiResponseItem<GetAdminSiteSettingsResponses>;
 
-export interface UploadedAsset {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  url: string;
-}
+export type SiteSetting<Value = GeneratedSiteSetting['value']> = Omit<GeneratedSiteSetting, 'value'> & { value: Value };
+export type HeroImageValue = Extract<GeneratedSiteSetting['value'], { headlineLine1: string }>;
+export type UploadedAsset = ApiResponseData<UploadFileResponses>;
+export type UpdateAdminSiteSettingPayload = ApiRequestBody<UpdateAdminSiteSettingData>;

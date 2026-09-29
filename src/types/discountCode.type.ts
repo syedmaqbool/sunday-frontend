@@ -1,32 +1,10 @@
-export interface DiscountCode {
-  id: string;
-  active: boolean;
-  code: string;
-  currentUses: number;
-  discountType: string;
-  discountValue: number;
-  maxUses: number | null;
-  minOrderAmount: number;
-  expiresAt: string | null;
-  createdAt: string;
-}
+import type { ApiRequestBody, ApiResponseItem } from './api.type';
+import type {
+  CreateAdminDiscountCodeData,
+  GetAdminDiscountCodesResponses,
+  UpdateAdminDiscountCodeData,
+} from '@/types/generated-api';
 
-export interface CreateDiscountCodePayload {
-  active?: boolean;
-  code: string;
-  discountType: string;
-  discountValue: number;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  expiresAt?: string | null;
-}
-
-export interface UpdateDiscountCodePayload {
-  active?: boolean;
-  code?: string;
-  discountType?: string;
-  discountValue?: number;
-  maxUses?: number | null;
-  minOrderAmount?: number;
-  expiresAt?: string | null;
-}
+export type DiscountCode = ApiResponseItem<GetAdminDiscountCodesResponses>;
+export type CreateDiscountCodePayload = ApiRequestBody<CreateAdminDiscountCodeData>;
+export type UpdateDiscountCodePayload = ApiRequestBody<UpdateAdminDiscountCodeData>;

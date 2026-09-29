@@ -27,7 +27,11 @@ export function SellerShipmentNotice() {
   return (
     <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-      <p className="text-xs text-amber-700 dark:text-amber-400">
+      <p className="
+        text-xs text-amber-700
+        dark:text-amber-400
+      "
+      >
         Please add full details for shipment to ensure no refund disputes.
       </p>
     </div>
@@ -38,12 +42,20 @@ export function CheckoutDispatchNotice() {
   return (
     <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
       <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
-      <p className="text-xs text-amber-800 dark:text-amber-300">
+      <p className="
+        text-xs text-amber-800
+        dark:text-amber-300
+      "
+      >
         Item will be dispatched within 3 working days after quality is verified by buyer.
         {' '}
         <Link
           to="/terms"
-          className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:text-amber-700 dark:hover:text-amber-200"
+          className="
+            inline-flex items-center gap-1 font-semibold underline underline-offset-2
+            hover:text-amber-700
+            dark:hover:text-amber-200
+          "
         >
           More info
           <ExternalLink className="h-3 w-3" />

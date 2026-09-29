@@ -55,7 +55,7 @@ const testRequestOptions: NormalizedOptions = {
   onDownloadProgress: undefined,
   onUploadProgress: undefined,
   prefix: '',
-  retry: {},
+  retry: {} as NormalizedOptions['retry'],
 };
 
 function makeOrder(overrides: Partial<Order> = {}): Order {
@@ -96,6 +96,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
       proofImageUrl: null,
       quantity: 1,
       reservedOfferPrice: null,
+      sellerCouponDiscountAmount: 0,
       sellerFullName: 'Example Seller',
       shippingMethod: null,
       size: 'M',
@@ -137,6 +138,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     total: 100,
     cancelledAt: null,
     expiresAt: '2099-01-01T00:00:00.000Z',
+    paidAt: null,
     createdAt: '2026-09-08T00:00:00.000Z',
     updatedAt: '2026-09-08T00:00:00.000Z',
     ...overrides,

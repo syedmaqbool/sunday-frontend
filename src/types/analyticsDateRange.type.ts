@@ -1,6 +1,6 @@
+import type { ApiRequestQuery } from './api.type';
+import type { GetAdminAnalyticsData } from '@/types/generated-api';
+
 export type DateFilter = '7d' | 'all' | 'month' | 'today';
 
-export interface AnalyticsDateRange {
-  endTime?: string;
-  startTime?: string;
-}
+export type AnalyticsDateRange = Pick<ApiRequestQuery<GetAdminAnalyticsData>, 'endTime' | 'startTime'>;

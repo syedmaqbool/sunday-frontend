@@ -1,8 +1,10 @@
 import type {
   AdminOrder,
+  AdminOrderDetail,
   AdminOrderListParameters,
   ManualPaymentReviewPayload,
   ReservedListing,
+  ReservedListingParameters,
 } from '@/types/adminOrder.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -20,7 +22,7 @@ export function listAdminOrders(
 export function getAdminOrder(orderId: string) {
   return authInstance
     .get(`/api/v1/admin/orders/${orderId}`)
-    .json<Response<AdminOrder>>();
+    .json<Response<AdminOrderDetail>>();
 }
 
 export function approveAdminManualPayment(orderId: string) {
@@ -54,7 +56,7 @@ export function getPaymentProofFile(fileId: string) {
 }
 
 export function listReservedListings(
-  parameters: { page?: number; size?: number } = {},
+  parameters: ReservedListingParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/orders/reserved-listings', { searchParams: parameters })

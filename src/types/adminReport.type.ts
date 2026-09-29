@@ -1,28 +1,13 @@
-export type ReportStatus = 'DISMISSED' | 'OPEN' | 'RESOLVED';
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type {
+  CreateReportData,
+  GetAdminReportsData,
+  GetAdminReportsResponses,
+  ResolveAdminReportData,
+} from '@/types/generated-api';
 
-export interface AdminReport {
-  id: string;
-  conversationId: string | null;
-  listingId: string | null;
-  messageId: string | null;
-  reportedUserId: string | null;
-  reporterId: string;
-  adminNotes: string | null;
-  details: string | null;
-  listingTitle: string | null;
-  messageContent: string | null;
-  reason: string;
-  reportedUserFullName: string | null;
-  reporterFullName: string;
-  resolverFullName: string | null;
-  status: ReportStatus;
-  resolvedAt: string | null;
-  resolvedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ResolveReportPayload {
-  adminNotes?: string;
-  status: 'DISMISSED' | 'RESOLVED';
-}
+export type AdminReport = ApiResponseItem<GetAdminReportsResponses>;
+export type ReportStatus = AdminReport['status'];
+export type ResolveReportPayload = ApiRequestBody<ResolveAdminReportData>;
+export type CreateReportPayload = ApiRequestBody<CreateReportData>;
+export type AdminReportParameters = Partial<ApiRequestQuery<GetAdminReportsData>>;

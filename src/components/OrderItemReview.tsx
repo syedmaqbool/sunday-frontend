@@ -2,7 +2,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { showErrorToast } from '@/lib/errorToast';
-import { uploadFile } from '@/lib/uploadFile';
+import { getUploadedFileUrl, uploadFile } from '@/lib/uploadFile';
 import {
   getOrderItemReviewOptions,
   useCreateOrderItemReviewMutation,
@@ -49,8 +49,17 @@ export function OrderItemReview({
   const [hovered, setHovered] = useState(0);
   const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const imageInputReference = useRef<HTMLInputElement>(null);
   const videoInputReference = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!videoPreviewUrl)
+      return;
+
+    return () => URL.revokeObjectURL(videoPreviewUrl);
+  }, [videoPreviewUrl]);
+
   const form = useForm<OrderReviewFormValues>({
     defaultValues: {
       comment: '',
@@ -107,6 +116,7 @@ export function OrderItemReview({
       return;
     }
     setVideo(f);
+    setVideoPreviewUrl(URL.createObjectURL(f));
     if (videoInputReference.current)
       videoInputReference.current.value = '';
   };
@@ -120,12 +130,12 @@ export function OrderItemReview({
 
       for (const file of images) {
         const { data } = await uploadFile(file);
-        imageUrls.push(data.url);
+        imageUrls.push(getUploadedFileUrl(data));
       }
 
       if (video) {
         const { data } = await uploadFile(video);
-        videoUrl = data.url;
+        videoUrl = getUploadedFileUrl(data);
       }
 
       submit.mutate(
@@ -145,6 +155,7 @@ export function OrderItemReview({
             setOpen(false);
             setImages([]);
             setVideo(null);
+            setVideoPreviewUrl(null);
             reset();
           },
         },
@@ -283,15 +294,18 @@ export function OrderItemReview({
       )}
 
       {/* Video preview */}
-      {video && (
+      {video && videoPreviewUrl && (
         <div className="relative inline-block">
           <video
-            src={URL.createObjectURL(video)}
+            src={videoPreviewUrl}
             muted
             className="h-24 rounded-md border border-border"
           />
           <button
-            onClick={() => setVideo(null)}
+            onClick={() => {
+              setVideo(null);
+              setVideoPreviewUrl(null);
+            }}
             aria-label="Remove video"
             type="button"
             className="absolute right-1 top-1 rounded-full bg-background/90 p-0.5 text-foreground shadow"

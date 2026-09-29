@@ -1,51 +1,41 @@
 import type {
   AdminListing,
-  ListingStatus,
   ModerateListingPayload,
 } from '@/types/adminListing.type';
+import type {
+  AdminListingFeedbackEntry,
+  AdminListingFeedbackParameters,
+  AdminListingFeedbackPayload,
+  AdminListingParameters,
+  CancelledListingReservation,
+  CreatedListing,
+  CreateListingPayload,
+  ModeratedListing,
+  MyListing,
+  MyListingFeedbackEntry,
+  MyListingFeedbackParameters,
+  MyListingParameters,
+  ResubmittedListing,
+  UpdatedMyListing,
+  UpdateListingPayload,
+} from '@/types/listing.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export interface CreateListingPayload {
-  categoryId: string;
-  subcategoryId: string;
-  brand: string;
-  condition: string;
-  description: string;
-  media: Array<{ fileId: string; sortOrder?: number }>;
-  price: number;
-  size: string;
-  title: string;
-  weight: number | null;
-}
-
-export type UpdateListingPayload = Partial<Omit<CreateListingPayload, 'media'>> & {
-  media?: Array<{ fileId: string; sortOrder?: number }>;
-};
-
-export interface ListingFeedbackEntry {
-  id: string;
-  adminId: string;
-  listingId: string;
-  adminFullName: string | null;
-  feedback: string;
-  createdAt: string;
-}
-
-export function createListing(payload: CreateListingPayload): Promise<Response<AdminListing>> {
+export function createListing(payload: CreateListingPayload): Promise<Response<CreatedListing>> {
   return authInstance
     .post('/api/v1/listings', { json: payload })
-    .json<Response<AdminListing>>();
+    .json<Response<CreatedListing>>();
 }
 
-export function updateMyListing(listingId: string, payload: UpdateListingPayload): Promise<Response<AdminListing>> {
+export function updateMyListing(listingId: string, payload: UpdateListingPayload): Promise<Response<UpdatedMyListing>> {
   return authInstance
     .patch(`/api/v1/me/listings/${listingId}`, { json: payload })
-    .json<Response<AdminListing>>();
+    .json<Response<UpdatedMyListing>>();
 }
 
 export function listAdminListings(
-  parameters: { page?: number; size?: number; status?: ListingStatus } = {},
+  parameters: AdminListingParameters = {},
 ): Promise<PaginatedResponse<AdminListing>> {
   return authInstance
     .get('/api/v1/admin/listings', {
@@ -61,15 +51,15 @@ export function listAdminListings(
 export function moderateListing(
   listingId: string,
   payload: ModerateListingPayload,
-): Promise<Response<AdminListing>> {
+): Promise<Response<ModeratedListing>> {
   return authInstance
     .patch(`/api/v1/admin/listings/${listingId}/moderate`, { json: payload })
-    .json<Response<AdminListing>>();
+    .json<Response<ModeratedListing>>();
 }
 
 export function listMyListings(
-  parameters: { page?: number; size?: number } = {},
-): Promise<PaginatedResponse<AdminListing>> {
+  parameters: MyListingParameters = {},
+): Promise<PaginatedResponse<MyListing>> {
   return authInstance
     .get('/api/v1/me/listings', {
       searchParams: {
@@ -77,7 +67,7 @@ export function listMyListings(
         size: parameters.size ?? 100,
       },
     })
-    .json<PaginatedResponse<AdminListing>>();
+    .json<PaginatedResponse<MyListing>>();
 }
 
 export function deleteMyListing(listingId: string): Promise<Response> {
@@ -86,22 +76,22 @@ export function deleteMyListing(listingId: string): Promise<Response> {
     .json<Response>();
 }
 
-export function resubmitMyListing(listingId: string): Promise<Response<AdminListing>> {
+export function resubmitMyListing(listingId: string): Promise<Response<ResubmittedListing>> {
   return authInstance
     .post(`/api/v1/me/listings/${listingId}/resubmit`)
-    .json<Response<AdminListing>>();
+    .json<Response<ResubmittedListing>>();
 }
 
-export function cancelMyListingReservation(listingId: string): Promise<Response<AdminListing>> {
+export function cancelMyListingReservation(listingId: string): Promise<Response<CancelledListingReservation>> {
   return authInstance
     .post(`/api/v1/me/listings/${listingId}/cancel-reservation`)
-    .json<Response<AdminListing>>();
+    .json<Response<CancelledListingReservation>>();
 }
 
 export function listMyListingFeedback(
   listingId: string,
-  parameters: { page?: number; size?: number } = {},
-): Promise<PaginatedResponse<ListingFeedbackEntry>> {
+  parameters: MyListingFeedbackParameters = {},
+): Promise<PaginatedResponse<MyListingFeedbackEntry>> {
   return authInstance
     .get(`/api/v1/me/listings/${listingId}/feedback`, {
       searchParams: {
@@ -109,13 +99,13 @@ export function listMyListingFeedback(
         size: parameters.size ?? 100,
       },
     })
-    .json<PaginatedResponse<ListingFeedbackEntry>>();
+    .json<PaginatedResponse<MyListingFeedbackEntry>>();
 }
 
 export function listAdminListingFeedback(
   listingId: string,
-  parameters: { page?: number; size?: number } = {},
-): Promise<PaginatedResponse<ListingFeedbackEntry>> {
+  parameters: AdminListingFeedbackParameters = {},
+): Promise<PaginatedResponse<AdminListingFeedbackEntry>> {
   return authInstance
     .get(`/api/v1/admin/listings/${listingId}/feedback`, {
       searchParams: {
@@ -123,14 +113,14 @@ export function listAdminListingFeedback(
         size: parameters.size ?? 100,
       },
     })
-    .json<PaginatedResponse<ListingFeedbackEntry>>();
+    .json<PaginatedResponse<AdminListingFeedbackEntry>>();
 }
 
 export function createAdminListingFeedback(
   listingId: string,
-  payload: { feedback: string },
-): Promise<Response<ListingFeedbackEntry>> {
+  payload: AdminListingFeedbackPayload,
+): Promise<Response<AdminListingFeedbackEntry>> {
   return authInstance
     .post(`/api/v1/admin/listings/${listingId}/feedback`, { json: payload })
-    .json<Response<ListingFeedbackEntry>>();
+    .json<Response<AdminListingFeedbackEntry>>();
 }

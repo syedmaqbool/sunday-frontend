@@ -1,12 +1,7 @@
+import type { ApiSuccessResponse } from '@/types/api.type';
+import type { RefreshUserTokenResponses } from '@/types/generated-api';
 import { tokenStorage } from '@/lib/tokenStorage';
 import base, { API_BASE_URL } from './ky-base-instance';
-
-interface RefreshResponse {
-  data: {
-    accessToken: string;
-    refreshToken: string;
-  };
-}
 
 const refreshState: {
   isRefreshing: boolean;
@@ -33,7 +28,7 @@ export const refreshInstance = base.extend({
 export function refresh() {
   return refreshInstance
     .post('/api/v1/auth/refresh', { context: { skipAuthRefresh: true } })
-    .json<RefreshResponse>();
+    .json<ApiSuccessResponse<RefreshUserTokenResponses>>();
 }
 
 async function runRefresh(): Promise<string | null> {

@@ -1,78 +1,21 @@
-import type { AnalyticsDateRange } from '@/types/analyticsDateRange.type';
+import type { ApiRequestQuery, ApiResponseData, ApiResponseItem } from './api.type';
+import type {
+  ExportAdminMarketingLeadsData,
+  GetAdminAnalyticsResponses,
+  GetAdminMarketingLeadsData,
+  GetAdminMarketingLeadsResponses,
+} from '@/types/generated-api';
 
-export type DimKey
-  = | 'buyerAgeBucket'
-    | 'category'
-    | 'listingSize'
-    | 'location'
-    | 'priceRange';
+export type AdminAnalytics = ApiResponseData<GetAdminAnalyticsResponses>;
+export type DimKey = keyof AdminAnalytics['breakdowns'];
+export type BreakdownRow = AdminAnalytics['breakdowns'][DimKey][number];
+export type FunnelRow = AdminAnalytics['funnels'][DimKey][number];
+export type AvgOffersRow = AdminAnalytics['averageOffersBeforePurchase'][DimKey][number];
+export type PriceVarianceRow = AdminAnalytics['priceVariance'][DimKey][number];
 
-export interface BreakdownRow {
-  key: string;
-  orderCount: number;
-  refundedComplaintCount: number;
-  salesVolume: number;
-}
-
-export interface FunnelRow {
-  key: string;
-  acceptedOfferPairs: number;
-  engagedOfferPairs: number;
-  orderedPairs: number;
-}
-
-export interface AvgOffersRow {
-  key: string;
-  averageOffersBeforePurchase: number;
-  orderedPairs: number;
-}
-
-export interface PriceVarianceRow {
-  key: string;
-  averageVarianceAmount: number;
-  averageVariancePercentage: number;
-}
-
-type DimMap<T> = Record<DimKey, T[]>;
-
-export interface AdminAnalytics {
-  averageOffersBeforePurchase: DimMap<AvgOffersRow>;
-  breakdowns: DimMap<BreakdownRow>;
-  funnels: DimMap<FunnelRow>;
-  kpis: {
-    approvedListings: number;
-    averageOfferToOrderConversionRate: number;
-    currency: string;
-    flaggedMessages: number;
-    itemsSold: number;
-    orderCount: number;
-    pendingListings: number;
-    refundRate: number;
-    totalListings: number;
-    totalRevenue: number;
-    totalUsers: number;
-  };
-  priceVariance: DimMap<PriceVarianceRow>;
-}
-
-export interface AdminMarketingLead {
-  userId: string;
-  leadStatus: 'CUSTOMER' | 'ENGAGED' | 'NEW';
-  location: string;
-  name: string;
-  offerCount: number;
-  orderCount: number;
-  phone: string;
-}
-
-export interface AdminMarketingLeadsParams extends AnalyticsDateRange {
-  leadStatus?: string;
-  page?: number;
-  search?: string;
-  size?: number;
-}
-
-export type AdminMarketingLeadsExportParams = Pick<
-  AdminMarketingLeadsParams,
-  'endTime' | 'leadStatus' | 'search' | 'startTime'
->;
+export type AdminMarketingLead = ApiResponseItem<GetAdminMarketingLeadsResponses>;
+export type AdminMarketingLeadStatusFilter = '' | AdminMarketingLead['leadStatus'];
+export type AdminMarketingLeadsParams = Partial<ApiRequestQuery<GetAdminMarketingLeadsData>>;
+export type AdminMarketingLeadsExportParams = Omit<Partial<ApiRequestQuery<ExportAdminMarketingLeadsData>>, 'leadStatus'> & {
+  leadStatus?: AdminMarketingLeadStatusFilter;
+};

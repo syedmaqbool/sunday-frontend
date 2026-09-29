@@ -25,7 +25,7 @@ function ListingCard({
   listing,
   sellerRating,
 }: ListingCardProps) {
-  const image = 'imageUrls' in listing || 'media' in listing || 'coverImageUrl' in listing
+  const image = 'categoryId' in listing
     ? getListingMediaUrls(listing)[0]
     : listing.images?.find((value): value is string => typeof value === 'string');
   const status = listing.status.toLowerCase();

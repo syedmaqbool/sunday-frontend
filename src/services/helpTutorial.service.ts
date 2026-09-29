@@ -1,4 +1,5 @@
 import type {
+  AdminHelpTutorialParameters,
   CreateHelpTutorialPayload,
   HelpTutorial,
   UpdateHelpTutorialPayload,
@@ -12,7 +13,7 @@ export function getHelpTutorials() {
     .json<Response<HelpTutorial[]>>();
 }
 
-export function listAdminHelpTutorials(params: { page?: number; size?: number }) {
+export function listAdminHelpTutorials(params: AdminHelpTutorialParameters) {
   return authInstance
     .get('api/v1/admin/settings/help-tutorials', {
       searchParams: {

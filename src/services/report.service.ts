@@ -1,19 +1,11 @@
 import type {
   AdminReport,
-  ReportStatus,
+  AdminReportParameters,
+  CreateReportPayload,
   ResolveReportPayload,
 } from '@/types/adminReport.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
-
-export interface CreateReportPayload {
-  conversationId?: string;
-  listingId?: string;
-  messageId?: string;
-  reportedUserId?: string;
-  details?: string;
-  reason: string;
-}
 
 export function createReport(payload: CreateReportPayload) {
   return authInstance
@@ -22,7 +14,7 @@ export function createReport(payload: CreateReportPayload) {
 }
 
 export function listAdminReports(
-  parameters: { page?: number; size?: number; status?: ReportStatus } = {},
+  parameters: AdminReportParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/reports', {

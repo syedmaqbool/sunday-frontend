@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,7 @@ function preventNavigation(event: MouseEvent<HTMLElement>) {
 }
 
 export default function CartDrawer({ navigationDisabled = false }: CartDrawerProps) {
-  const { items, removeItem, totalItems, totalPrice, updateQuantity }
-    = useCart();
+  const { items, removeItem, totalItems, totalPrice } = useCart();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
@@ -39,12 +38,11 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
 
   const itemFees = useMemo(
     () =>
-      items.map(({ listing, quantity }) => {
+      items.map(({ listing }) => {
         const c = calcCommission(
           commissionTiers,
           listing.categoryValue,
           listing.price,
-          quantity,
         );
         return { listingId: listing.id, amount: c.amount, rate: c.rate };
       }),
@@ -144,7 +142,7 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
               <>
                 <ScrollArea className="-mx-6 flex-1 px-6">
                   <div className="flex flex-col gap-4 py-4">
-                    {items.map(({ listing, quantity }) => {
+                    {items.map(({ listing }) => {
                       const fee = itemFees.find(f => f.listingId === listing.id);
                       return (
                         <div key={listing.id} className="flex gap-3">
@@ -174,33 +172,11 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
                               )}
                             </div>
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  onClick={() =>
-                                    updateQuantity(listing.id, quantity - 1)}
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-6 w-6"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-6 text-center text-xs font-medium">
-                                  {quantity}
-                                </span>
-                                <Button
-                                  onClick={() =>
-                                    updateQuantity(listing.id, quantity + 1)}
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-6 w-6"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              <span className="text-xs text-muted-foreground">1 item</span>
                               <p className="text-sm font-bold text-foreground">
                                 Rs
                                 {' '}
-                                {(listing.price * quantity).toLocaleString()}
+                                {listing.price.toLocaleString()}
                               </p>
                             </div>
                           </div>

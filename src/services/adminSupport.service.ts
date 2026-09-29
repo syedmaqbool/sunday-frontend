@@ -1,13 +1,16 @@
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
+  AdminReplyPayload,
+  AdminSupportMessageParameters,
+  AdminSupportTicketParameters,
   SupportTicket,
   SupportTicketMessage,
-  SupportTicketStatus,
+  UpdateSupportTicketStatusPayload,
 } from '@/types/support.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminSupportTickets(
-  parameters: { page?: number; size?: number } = {},
+  parameters: AdminSupportTicketParameters = {},
 ) {
   return authInstance
     .get('/api/v1/admin/support-tickets', { searchParams: parameters })
@@ -16,7 +19,7 @@ export function listAdminSupportTickets(
 
 export function listAdminSupportMessages(
   ticketId: string,
-  parameters: { page?: number; size?: number } = {},
+  parameters: AdminSupportMessageParameters = {},
 ) {
   return authInstance
     .get(`/api/v1/admin/support-tickets/${ticketId}/messages`, {
@@ -25,21 +28,21 @@ export function listAdminSupportMessages(
     .json<PaginatedResponse<SupportTicketMessage>>();
 }
 
-export function replyToSupportTicket(ticketId: string, content: string) {
+export function replyToSupportTicket(ticketId: string, content: AdminReplyPayload['content']) {
   return authInstance
     .post(`/api/v1/admin/support-tickets/${ticketId}/messages`, {
-      json: { content },
+      json: { content } satisfies AdminReplyPayload,
     })
     .json<Response<SupportTicketMessage>>();
 }
 
 export function updateSupportTicketStatus(
   ticketId: string,
-  status: SupportTicketStatus,
+  status: UpdateSupportTicketStatusPayload['status'],
 ) {
   return authInstance
     .patch(`/api/v1/admin/support-tickets/${ticketId}/status`, {
-      json: { status },
+      json: { status } satisfies UpdateSupportTicketStatusPayload,
     })
     .json<Response>();
 }

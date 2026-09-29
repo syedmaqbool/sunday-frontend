@@ -1,4 +1,5 @@
 import type { SubmitHandler } from 'react-hook-form';
+import type { AppliedDiscount } from '@/types/checkout.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -36,15 +37,6 @@ import {
   useValidateSellerCouponMutation,
 } from '@/queries/checkout.query';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
-
-interface AppliedDiscount {
-  code: string;
-  discountAmount: number;
-  discountType: 'FIXED' | 'PERCENTAGE';
-  discountValue: number;
-  listingIdsKey: string;
-  source: 'platform' | 'seller';
-}
 
 const shippingSchema = z.object({
   address: z.string().trim().min(1, 'Address is required.'),
@@ -113,7 +105,7 @@ function Checkout() {
           item_id: index.listing.id,
           item_name: index.listing.title,
           price: index.listing.price,
-          quantity: index.quantity,
+          quantity: 1,
         })),
         value: totalPrice,
       });
@@ -126,12 +118,11 @@ function Checkout() {
     }
   }, [appliedDiscount, listingIdsKey]);
 
-  const itemCommissions = items.map(({ listing, quantity }) => {
+  const itemCommissions = items.map(({ listing }) => {
     const c = calcCommission(
       commissionTiers,
       listing.categoryValue,
       listing.price,
-      quantity,
     );
     return { listingId: listing.id, ...c };
   });
@@ -448,7 +439,7 @@ function Checkout() {
                 )
               </h2>
               <div className="mb-4 space-y-3">
-                {items.map(({ listing, quantity }) => {
+                {items.map(({ listing }) => {
                   const c = itemCommissions.find(
                     x => x.listingId === listing.id,
                   );
@@ -471,11 +462,6 @@ function Checkout() {
                         <p className="truncate text-sm font-medium text-foreground">
                           {listing.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          Qty:
-                          {' '}
-                          {quantity}
-                        </p>
                         {c && c.amount > 0 && (
                           <p className="text-[11px] text-muted-foreground">
                             Platform fee (
@@ -490,7 +476,7 @@ function Checkout() {
                         <p className="whitespace-nowrap text-sm font-semibold text-foreground">
                           Rs
                           {' '}
-                          {(listing.price * quantity).toLocaleString()}
+                          {listing.price.toLocaleString()}
                         </p>
                         <Button
                           onClick={() => removeItem(listing.id)}

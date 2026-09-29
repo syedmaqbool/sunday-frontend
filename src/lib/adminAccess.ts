@@ -1,6 +1,7 @@
+import type { AdminPermissionName } from '@/types/adminRole.type';
 import type { AuthUser } from '@/types/auth.type';
 
-export type AdminPermissionName = string;
+export type { AdminPermissionName } from '@/types/adminRole.type';
 export type PermissionRequirement
   = AdminPermissionName
     | AdminPermissionName[]

@@ -1,20 +1,21 @@
 import type { SubmitHandler } from 'react-hook-form';
+import type { Conversation, Message } from '@/types/conversation.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
 
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
+
 import Footer from '@/components/Footer';
 
 import Navbar from '@/components/Navbar';
-
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,39 +25,11 @@ import {
   getConversationsOptions,
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
-import { tokenStorage } from '@/lib/tokenStorage';
 
+import { tokenStorage } from '@/lib/tokenStorage';
 import { conversationsQueryKey } from '@/queries/conversation.query';
 
 /* TYPES */
-
-interface Conversation {
-  id: string;
-  buyerId: string;
-  listingId: string;
-  offerId: string;
-  sellerId: string;
-  buyerFullName: string;
-  lastMessageContent: string | null;
-  listingTitle: string;
-  sellerFullName: string;
-  unreadCount: number;
-  lastMessageCreatedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Message {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  content: string;
-  flagReasons: string[];
-  isFlagged: boolean;
-  readAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const messageSchema = z.object({
   content: z.string().trim().min(1).max(2000),

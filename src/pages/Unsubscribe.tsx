@@ -1,4 +1,6 @@
-import type { Response } from '@/types/response.type';
+import type { ApiSuccessResponse } from '@/types/api.type';
+import type { ProcessUnsubscribePayload } from '@/types/auth.type';
+import type { ValidateUnsubscribeTokenResponses } from '@/types/generated-api';
 import { CheckCircle2, Loader2, MailX, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -30,7 +32,7 @@ function Unsubscribe() {
       try {
         const { data } = await authInstance
           .get('api/v1/emails/unsubscribe', { searchParams: { token } })
-          .json<Response<{ reason?: string; valid: boolean }>>();
+          .json<ApiSuccessResponse<ValidateUnsubscribeTokenResponses>>();
         if (data.valid) {
           setState({ kind: 'valid' });
         }
@@ -52,8 +54,9 @@ function Unsubscribe() {
       return;
     setState({ kind: 'submitting' });
     try {
+      const payload: ProcessUnsubscribePayload = { token };
       await authInstance
-        .post('api/v1/emails/unsubscribe', { json: { token } })
+        .post('api/v1/emails/unsubscribe', { json: payload })
         .json();
       setState({ kind: 'success' });
     }

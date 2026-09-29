@@ -1,3 +1,7 @@
+import type {
+  UpdateAdminRolePayload,
+  UpdateAdminRolePermissionsPayload,
+} from '@/types/adminRole.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createAdminRole,
@@ -60,7 +64,7 @@ export function useUpdateAdminRoleMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ roleId, payload }: { roleId: string; payload: { name: string } }) =>
+    mutationFn: ({ roleId, payload }: { roleId: string; payload: UpdateAdminRolePayload }) =>
       updateAdminRole(roleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
@@ -78,7 +82,7 @@ export function useUpdateAdminRolePermissionsMutation() {
         payload,
       }: {
         roleId: string;
-        payload: { permissions: string[] };
+        payload: UpdateAdminRolePermissionsPayload;
       },
     ) => updateAdminRolePermissions(roleId, payload),
     onSuccess: () => {

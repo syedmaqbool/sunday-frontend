@@ -1,21 +1,9 @@
-export interface CommissionTier {
-  id: string;
-  active: boolean;
-  categories: string[];
-  maxPrice: number | null;
-  minPrice: number;
-  name: string;
-  rate: number;
-  sortOrder: number;
-  createdAt: string;
-}
+import type { ApiRequestBody, ApiResponseItem } from './api.type';
+import type {
+  CreateAdminCommissionTierData,
+  GetCommissionTiersResponses,
+  UpdateAdminCommissionTierData,
+} from '@/types/generated-api';
 
-export interface CommissionTierPayload {
-  active?: boolean;
-  categories: string[];
-  maxPrice?: number | null;
-  minPrice?: number;
-  name: string;
-  rate: number;
-  sortOrder?: number;
-}
+export type CommissionTier = ApiResponseItem<GetCommissionTiersResponses>;
+export type CommissionTierPayload = ApiRequestBody<CreateAdminCommissionTierData> | ApiRequestBody<UpdateAdminCommissionTierData>;

@@ -1,59 +1,30 @@
+import type {
+  CounterOfferPayload,
+  CreateOfferPayload,
+  CreateOfferReviewPayload,
+  CreateReviewPayload,
+  MyOffersParameters,
+  MyReviewsParameters,
+  Offer,
+  ReceivedOffersParameters,
+  Review,
+  ReviewsParameters,
+  ReviewStat,
+  ReviewStatsParameters,
+} from '@/types/offer.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export type OfferStatus
-  = | 'ACCEPTED'
-    | 'COUNTERED'
-    | 'EXPIRED'
-    | 'PENDING'
-    | 'REJECTED'
-    | 'WITHDRAWN';
+export type { Offer, OfferStatus, Review, ReviewStat } from '@/types/offer.type';
 
-export type OfferListingStatus
-  = | 'APPROVED'
-    | 'NEEDS_REVISION'
-    | 'PENDING'
-    | 'REJECTED'
-    | 'RESERVED'
-    | 'SOLD';
-
-export interface OfferCoverImage {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number;
-  url: string;
-}
-
-export interface Offer {
-  id: string;
-  buyerId: string;
-  conversationId: string | null;
-  listingId: string;
-  sellerId: string;
-  amount: number;
-  buyerFullName: string;
-  counterAmount: number | null;
-  coverImage: OfferCoverImage | null;
-  listingPrice: number;
-  listingStatus: OfferListingStatus;
-  listingTitle: string;
-  message?: string | null;
-  reservedUntil: string | null;
-  sellerFullName: string;
-  status: OfferStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export function createOffer(listingId: string, payload: { amount: number; message?: string }): Promise<Response<Offer>> {
+export function createOffer(listingId: string, payload: CreateOfferPayload): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/listings/${listingId}/offers`, { json: payload })
     .json<Response<Offer>>();
 }
 
 export function listMyOffers(
-  parameters: { page?: number; size?: number } = {},
+  parameters: MyOffersParameters = {},
 ): Promise<PaginatedResponse<Offer>> {
   return authInstance
     .get('/api/v1/me/offers', {
@@ -66,7 +37,7 @@ export function listMyOffers(
 }
 
 export function listReceivedOffers(
-  parameters: { page?: number; size?: number } = {},
+  parameters: ReceivedOffersParameters = {},
 ): Promise<PaginatedResponse<Offer>> {
   return authInstance
     .get('/api/v1/me/offers/received', {
@@ -86,7 +57,7 @@ export function acceptOffer(offerId: string): Promise<Response<Offer>> {
 
 export function counterOffer(
   offerId: string,
-  payload: { counterAmount: number },
+  payload: CounterOfferPayload,
 ): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/me/offers/${offerId}/counter`, { json: payload })
@@ -111,27 +82,8 @@ export function acceptCounterOffer(offerId: string): Promise<Response<Offer>> {
     .json<Response<Offer>>();
 }
 
-export interface Review {
-  id: string;
-  listingId: string;
-  offerId: string | null;
-  orderId: string;
-  reviewedId: string;
-  reviewerId: string;
-  comment: string;
-  imageUrls: string[];
-  listingTitle: string;
-  rating: number;
-  reviewedFullName: string;
-  reviewerFullName: string;
-  role: 'BUYER' | 'SELLER';
-  videoUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export function listMyReviews(
-  parameters: { listingId?: string; orderId?: string; page?: number; size?: number } = {},
+  parameters: MyReviewsParameters = {},
 ): Promise<PaginatedResponse<Review>> {
   return authInstance
     .get('/api/v1/me/reviews', { searchParams: parameters })
@@ -139,54 +91,26 @@ export function listMyReviews(
 }
 
 export function listReviews(
-  parameters: { listingId?: string; reviewedId?: string; page?: number; size?: number } = {},
+  parameters: ReviewsParameters = {},
 ): Promise<PaginatedResponse<Review>> {
   return authInstance
     .get('/api/v1/reviews', { searchParams: parameters })
     .json<PaginatedResponse<Review>>();
 }
 
-export function createReview(payload: {
-  orderId: string;
-  orderItemId: string;
-  comment?: string;
-  imageUrls?: string[];
-  rating: number;
-  videoUrl?: string;
-}): Promise<Response<Review>> {
+export function createReview(payload: CreateReviewPayload): Promise<Response<Review>> {
   return authInstance
     .post('/api/v1/reviews', { json: payload })
     .json<Response<Review>>();
 }
 
-export function createOfferReview(payload: {
-  listingId: string;
-  offerId: string;
-  reviewedId: string;
-  comment?: string;
-  rating: number;
-  role: 'BUYER' | 'SELLER';
-}): Promise<Response<Review>> {
+export function createOfferReview(payload: CreateOfferReviewPayload): Promise<Response<Review>> {
   return authInstance
     .post('/api/v1/reviews/offer', { json: payload })
     .json<Response<Review>>();
 }
 
-export interface ReviewMedia {
-  id: string;
-  filename: string;
-  mimetype: string;
-  size: number | string;
-  url: string;
-}
-
-export interface ReviewStat {
-  reviewedId: string;
-  avgRating: number;
-  totalReviews: number;
-}
-
-export function getReviewStats(reviewedIds: string[]): Promise<Response<ReviewStat[]>> {
+export function getReviewStats(reviewedIds: ReviewStatsParameters): Promise<Response<ReviewStat[]>> {
   return authInstance
     .get('/api/v1/reviews/stats', {
       searchParams: { reviewedIds: reviewedIds.join(',') },

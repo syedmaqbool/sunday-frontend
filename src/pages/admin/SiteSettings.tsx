@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { showErrorToast } from '@/lib/errorToast';
+import { getUploadedFileUrl } from '@/lib/uploadFile';
 import {
   getHeroImageQueryOptions,
   useUpdateHeroImageMutation,
@@ -185,7 +186,7 @@ function SiteSettings() {
                 : variant === 'logo'
                   ? 'siteLogoUrl'
                   : 'url';
-          const next = { ...form, [key]: asset.url };
+          const next = { ...form, [key]: getUploadedFileUrl(asset) };
           setForm(next);
           save(next);
         }

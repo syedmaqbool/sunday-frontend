@@ -1,3 +1,4 @@
+import type { OrderShipmentInfo } from '@/types/order.type';
 import { queryOptions } from '@tanstack/react-query';
 import {
   getOrderItemComplaint,
@@ -16,10 +17,7 @@ export const complaintsQueryKey = {
     [...complaintsQueryKey.all(), 'order-shipment', 'detail', orderId, orderItemId] as const,
 };
 
-export interface OrderShipmentInfo {
-  expectedDelivery?: string | null;
-  shippedAt?: string | null;
-}
+export type { OrderShipmentInfo } from '@/types/order.type';
 
 export function getMyRefundComplaintsOptions() {
   return queryOptions({

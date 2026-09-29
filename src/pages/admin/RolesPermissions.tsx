@@ -1,8 +1,19 @@
-import type { AdminRole } from '@/types/adminRole.type';
+import type { AdminPermissionName, AdminRole, AssignableAdminPermissionName } from '@/types/adminRole.type';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,13 +44,13 @@ type CrudAction = 'CREATE' | 'DELETE' | 'READ' | 'UPDATE';
 interface EditableModule {
   label: string;
   module: string;
-  permissions: Partial<Record<CrudAction, string>>;
+  permissions: Partial<Record<CrudAction, AssignableAdminPermissionName>>;
 }
 
 interface RoleDialogState {
   name: string;
   role: AdminRole | null;
-  selectedPermissions: Set<string>;
+  selectedPermissions: Set<AssignableAdminPermissionName>;
   unsupportedPermissions: string[];
 }
 
@@ -69,7 +80,7 @@ const SUPPORTED_MODULES = new Set(Object.keys(MODULE_LABELS));
 const EMPTY_ROLE_DIALOG: RoleDialogState = {
   name: '',
   role: null,
-  selectedPermissions: new Set<string>(),
+  selectedPermissions: new Set<AssignableAdminPermissionName>(),
   unsupportedPermissions: [],
 };
 
@@ -91,7 +102,9 @@ export default function RolesPermissions() {
 
   const editablePermissionNames = useMemo(
     () => editableModules.flatMap(module =>
-      Object.values(module.permissions).filter(Boolean) as string[]),
+      Object.values(module.permissions).filter(
+        (permission): permission is AssignableAdminPermissionName => permission !== undefined,
+      )),
     [editableModules],
   );
 
@@ -124,7 +137,7 @@ export default function RolesPermissions() {
     setDialog(EMPTY_ROLE_DIALOG);
   };
 
-  const toggleSinglePermission = (permissionName: string, checked: boolean) => {
+  const toggleSinglePermission = (permissionName: AssignableAdminPermissionName, checked: boolean) => {
     setDialog((current) => {
       const next = new Set(current.selectedPermissions);
       if (checked)
@@ -142,7 +155,9 @@ export default function RolesPermissions() {
   const toggleModule = (module: EditableModule) => {
     setDialog((current) => {
       const next = new Set(current.selectedPermissions);
-      const modulePermissions = Object.values(module.permissions).filter(Boolean) as string[];
+      const modulePermissions = Object.values(module.permissions).filter(
+        (permission): permission is AssignableAdminPermissionName => permission !== undefined,
+      );
       const allSelected = modulePermissions.every(permission => next.has(permission));
 
       for (const permission of modulePermissions) {
@@ -174,9 +189,6 @@ export default function RolesPermissions() {
   };
 
   const handleDelete = async (role: AdminRole) => {
-    if (!confirm(`Delete the role "${role.name}"?`))
-      return;
-
     try {
       await deleteRole.mutateAsync(role.id);
       toast.success('Role deleted.');
@@ -188,17 +200,17 @@ export default function RolesPermissions() {
 
   const handleSave = async () => {
     const trimmedName = dialog.name.trim();
-    const finalPermissions = normalizePermissions([
-      ...dialog.selectedPermissions,
-      ...dialog.unsupportedPermissions,
-    ]);
+    const finalPermissions = normalizePermissions([...dialog.selectedPermissions]);
 
     if (!trimmedName) {
       toast.error('Role name is required.');
       return;
     }
 
-    if (finalPermissions.length === 0) {
+    if (
+      finalPermissions.length === 0
+      && (!dialog.role || dialog.unsupportedPermissions.length === 0)
+    ) {
       toast.error('Select at least one permission.');
       return;
     }
@@ -220,8 +232,16 @@ export default function RolesPermissions() {
 
     const originalName = dialog.role.name;
     const originalPermissions = dialog.role.permissions.map(permission => permission.name);
+    const originalEditablePermissions = originalPermissions.filter(name =>
+      isEditablePermission(name, editableModules));
     const didNameChange = originalName !== trimmedName;
-    const didPermissionsChange = !sameMembers(originalPermissions, finalPermissions);
+    const didPermissionsChange = !sameMembers(originalEditablePermissions, finalPermissions);
+
+    if (didPermissionsChange && dialog.unsupportedPermissions.length > 0) {
+      toast.error('This role has permissions that cannot be changed with the current API contract.');
+      return;
+    }
+
     let didUpdateName = false;
 
     try {
@@ -319,9 +339,35 @@ export default function RolesPermissions() {
                         <Button onClick={() => openEditDialog(role)} variant="outline">
                           Edit role
                         </Button>
-                        <Button onClick={() => handleDelete(role)} variant="destructive">
-                          Delete
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete role?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently removes "
+                                {role.name}
+                                " and cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(role)}
+                                className="
+                                  bg-destructive text-destructive-foreground
+                                  hover:bg-destructive/90
+                                "
+                              >
+                                Delete role
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>
@@ -360,7 +406,12 @@ export default function RolesPermissions() {
                     Toggle all editable permissions.
                   </p>
                 </div>
-                <Button onClick={toggleAll} size="sm" variant="outline">
+                <Button
+                  onClick={toggleAll}
+                  disabled={dialog.unsupportedPermissions.length > 0}
+                  size="sm"
+                  variant="outline"
+                >
                   {editablePermissionNames.every(permission =>
                     dialog.selectedPermissions.has(permission))
                     ? 'Uncheck all'
@@ -370,7 +421,9 @@ export default function RolesPermissions() {
 
               <div className="space-y-4">
                 {editableModules.map((module) => {
-                  const modulePermissions = Object.values(module.permissions).filter(Boolean) as string[];
+                  const modulePermissions = Object.values(module.permissions).filter(
+                    (permission): permission is AssignableAdminPermissionName => permission !== undefined,
+                  );
                   const allSelected = modulePermissions.every(permission =>
                     dialog.selectedPermissions.has(permission));
 
@@ -389,6 +442,7 @@ export default function RolesPermissions() {
                         </div>
                         <Button
                           onClick={() => toggleModule(module)}
+                          disabled={dialog.unsupportedPermissions.length > 0}
                           size="sm"
                           variant="outline"
                         >
@@ -420,7 +474,7 @@ export default function RolesPermissions() {
                                 onCheckedChange={value =>
                                   permissionName && toggleSinglePermission(permissionName, value === true)}
                                 checked={checked}
-                                disabled={!permissionName}
+                                disabled={!permissionName || dialog.unsupportedPermissions.length > 0}
                               />
                               <span>{action}</span>
                             </label>
@@ -438,7 +492,8 @@ export default function RolesPermissions() {
                 <div>
                   <p className="font-medium text-foreground">Other permissions</p>
                   <p className="text-sm text-muted-foreground">
-                    These permissions are preserved on save but cannot be edited here.
+                    These permissions are preserved and cannot be edited here. Permission changes are
+                    disabled for this role until the API contract supports them.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -471,7 +526,7 @@ export default function RolesPermissions() {
   );
 }
 
-function buildEditableModules(permissions: { name: string }[]): EditableModule[] {
+function buildEditableModules(permissions: { name: AdminPermissionName }[]): EditableModule[] {
   const grouped = new Map<string, EditableModule>();
 
   for (const permission of permissions) {
@@ -485,7 +540,7 @@ function buildEditableModules(permissions: { name: string }[]): EditableModule[]
       permissions: {},
     };
 
-    current.permissions[parsed.action] = permission.name;
+    current.permissions[parsed.action] = permission.name as AssignableAdminPermissionName;
     grouped.set(parsed.module, current);
   }
 
@@ -507,7 +562,13 @@ function parsePermissionName(name: string) {
   return { action, module };
 }
 
-function normalizePermissions(permissionNames: string[]) {
+function normalizePermissions(
+  permissionNames: AssignableAdminPermissionName[],
+): AssignableAdminPermissionName[] {
+  return normalizePermissionNames(permissionNames) as AssignableAdminPermissionName[];
+}
+
+function normalizePermissionNames(permissionNames: string[]): string[] {
   const values = new Set(permissionNames);
 
   for (const name of values) {
@@ -516,21 +577,24 @@ function normalizePermissions(permissionNames: string[]) {
       continue;
     if (parsed.action !== 'READ') {
       // eslint-disable-next-line unicorn/no-loop-iterable-mutation
-      values.add(`${parsed.module}_READ`);
+      values.add(`${parsed.module}_READ` as AssignableAdminPermissionName);
     }
   }
 
   return [...values].toSorted((a, b) => a.localeCompare(b));
 }
 
-function isEditablePermission(name: string, editableModules: EditableModule[]) {
+function isEditablePermission(
+  name: string,
+  editableModules: EditableModule[],
+): name is AssignableAdminPermissionName {
   return editableModules.some(module =>
-    Object.values(module.permissions).includes(name));
+    Object.values(module.permissions).includes(name as AssignableAdminPermissionName));
 }
 
 function sameMembers(left: string[], right: string[]) {
-  const normalizedLeft = normalizePermissions(left);
-  const normalizedRight = normalizePermissions(right);
+  const normalizedLeft = normalizePermissionNames(left);
+  const normalizedRight = normalizePermissionNames(right);
 
   if (normalizedLeft.length !== normalizedRight.length)
     return false;

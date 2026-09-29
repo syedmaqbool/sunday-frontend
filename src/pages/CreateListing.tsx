@@ -1,6 +1,7 @@
 import type { SubmitHandler } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import type { CreateListingPayload } from '@/types/listing.type';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
   Camera,
@@ -54,6 +55,11 @@ import {
 import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
+const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
+
+function isListingSize(value: string): boolean {
+  return (LISTING_SIZE_OPTIONS as readonly string[]).includes(value);
+}
 
 interface ExistingMediaItem { fileId: string; url: string }
 
@@ -65,10 +71,16 @@ const listingSchema = z.object({
   description: z.string().trim().min(1, 'Description is required.'),
   parentCategory: z.string().min(1, 'Category is required.'),
   price: z.string().refine(value => Number(value) > 0, 'Price must be greater than 0.'),
-  size: z.string().min(1, 'Size is required.'),
+  size: z.string().refine(
+    isListingSize,
+    'Select a valid size.',
+  ),
   subCategory: z.string().min(1, 'Subcategory is required.'),
   title: z.string().trim().min(1, 'Title is required.'),
-  weight: z.string().optional(),
+  weight: z.string().optional().refine(
+    value => !value || WEIGHT_OPTIONS.some(option => option.value === value),
+    'Select a valid weight.',
+  ),
 });
 
 type ListingFormValues = z.infer<typeof listingSchema>;
@@ -278,6 +290,9 @@ function CreateListing() {
     }
 
     try {
+      const weight: CreateListingPayload['weight'] = values.weight
+        ? Number(values.weight) as CreateListingPayload['weight']
+        : null;
       const newImageItems = await Promise.all(
         imageFiles.map(async (file, index) => {
           const { data } = await uploadFile(file);
@@ -317,9 +332,9 @@ function CreateListing() {
           description: values.description,
           media,
           price: Number(values.price),
-          size: values.size,
+          size: values.size as CreateListingPayload['size'],
           title: values.title,
-          weight: values.weight ? Number(values.weight) : null,
+          weight,
         });
 
         toast({ description: 'Your changes have been saved.', title: 'Listing updated!' });
@@ -345,9 +360,9 @@ function CreateListing() {
           description: values.description,
           media,
           price: Number(values.price),
-          size: values.size,
+          size: values.size as CreateListingPayload['size'],
           title: values.title,
-          weight: values.weight ? Number(values.weight) : null,
+          weight,
         });
 
         trackEvent('listing_created', {

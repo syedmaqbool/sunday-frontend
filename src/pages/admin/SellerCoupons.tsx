@@ -1,5 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import type { AdminUser } from '@/types/adminUser.type';
 
+import type { PaginatedResponse } from '@/types/response.type';
+import type { CreateSellerCouponPayload, SellerCoupon, SellerCouponRedemption } from '@/types/sellerCoupon.type';
+import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -73,7 +76,7 @@ interface ListingOption {
 }
 
 // ── Adapters ─────────────────────────────────────────────────────────────────
-function adaptCoupon(c: any, sellerName?: string | null): SellerCouponDisplay {
+function adaptCoupon(c: SellerCoupon, sellerName?: string | null): SellerCouponDisplay {
   return {
     id: c.id,
     active: c.active,
@@ -94,17 +97,17 @@ function adaptCoupon(c: any, sellerName?: string | null): SellerCouponDisplay {
   };
 }
 
-function formToPayload(form: typeof emptyForm) {
+function formToPayload(form: typeof emptyForm): CreateSellerCouponPayload {
   return {
     listingId: form.scope === 'item_based' ? form.listing_id || null : null,
     sellerId: form.seller_id,
     code: form.code.trim().toUpperCase(),
-    discountType: form.discount_type.toUpperCase(),
+    discountType: form.discount_type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
     discountValue: Number(form.discount_value),
     maxUses: form.max_uses ? Number(form.max_uses) : null,
     minOrderAmount: form.min_order_amount ? Number(form.min_order_amount) : 0,
     perUserLimit: form.per_user_limit ? Number(form.per_user_limit) : null,
-    scope: form.scope.toUpperCase(),
+    scope: form.scope === 'item_based' ? 'ITEM_BASED' : 'SELLER_WIDE',
     expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     startsAt: form.starts_at ? new Date(form.starts_at).toISOString() : null,
   };
@@ -132,7 +135,7 @@ function SellerCoupons() {
   const [form, setForm] = useState(emptyForm);
   const [redemptionsFor, setRedemptionsFor]
     = useState<SellerCouponDisplay | null>(null);
-  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [redemptions, setRedemptions] = useState<SellerCouponRedemption[]>([]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data: couponsRaw = [], isLoading } = useQuery(getSellerCouponsOptions());
@@ -141,13 +144,9 @@ function SellerCoupons() {
 
   const sellers: SellerOption[] = useMemo(
     () =>
-      (sellersRaw?.data ?? []).map((u: any) => ({
+      (sellersRaw?.data ?? []).map((u: AdminUser) => ({
         id: u.id,
-        full_name:
-          (u.fullName
-            ?? u.profile?.fullName
-            ?? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim())
-          || undefined,
+        full_name: `${u.firstName} ${u.lastName}`.trim() || null,
       })),
     [sellersRaw],
   );
@@ -159,7 +158,7 @@ function SellerCoupons() {
 
   const coupons: SellerCouponDisplay[] = useMemo(
     () =>
-      (couponsRaw as any[]).map(c =>
+      couponsRaw.map(c =>
         adaptCoupon(c, sellerMap.get(c.sellerId)),
       ),
     [couponsRaw, sellerMap],
@@ -173,7 +172,7 @@ function SellerCoupons() {
 
   const listings: ListingOption[] = useMemo(
     () =>
-      (listingsRaw?.data ?? []).map((l: any) => ({ id: l.id, title: l.title })),
+      (listingsRaw?.data ?? []).map(l => ({ id: l.id, title: l.title })),
     [listingsRaw],
   );
 
@@ -237,7 +236,7 @@ function SellerCoupons() {
         toast({ title: 'Coupon updated' });
       }
       else {
-        await createCoupon.mutateAsync(payload as any);
+        await createCoupon.mutateAsync(payload);
         toast({ title: 'Coupon created' });
       }
       setDialogOpen(false);
@@ -266,8 +265,8 @@ function SellerCoupons() {
     try {
       const response = await authInstance
         .get(`/api/v1/admin/seller-coupons/${c.id}/redemptions`)
-        .json<{ data: any[] }>();
-      setRedemptions(response.data ?? []); // ← { data: [...] } shape
+        .json<PaginatedResponse<SellerCouponRedemption>>();
+      setRedemptions(response.data ?? []);
     }
     catch {
       setRedemptions([]);

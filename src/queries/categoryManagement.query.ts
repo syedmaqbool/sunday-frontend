@@ -1,3 +1,9 @@
+import type {
+  CreateCategoryPayload,
+  CreateSubcategoryPayload,
+  UpdateCategoryPayload,
+  UpdateSubcategoryPayload,
+} from '@/types/adminCategory.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createCategory,
@@ -31,12 +37,7 @@ export function getAdminCategoriesOptions() {
 export function useCreateCategoryMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: {
-      icon?: string;
-      label: string;
-      sortOrder?: number;
-      value: string;
-    }) => createCategory(payload),
+    mutationFn: (payload: CreateCategoryPayload) => createCategory(payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.categories(),
@@ -52,7 +53,7 @@ export function useUpdateCategoryMutation() {
       payload,
     }: {
       id: string;
-      payload: { icon?: string; label?: string; sortOrder?: number };
+      payload: UpdateCategoryPayload;
     }) => updateCategory(id, payload),
     onSuccess: () =>
       qc.invalidateQueries({
@@ -86,13 +87,7 @@ export function getAdminSubcategoriesOptions() {
 export function useCreateSubcategoryMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: {
-      categoryId: string;
-      icon?: string;
-      label: string;
-      sortOrder?: number;
-      value: string;
-    }) => createSubcategory(payload),
+    mutationFn: (payload: CreateSubcategoryPayload) => createSubcategory(payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.subcategories(),
@@ -108,12 +103,7 @@ export function useUpdateSubcategoryMutation() {
       payload,
     }: {
       id: string;
-      payload: {
-        categoryId?: string;
-        icon?: string;
-        label?: string;
-        sortOrder?: number;
-      };
+      payload: UpdateSubcategoryPayload;
     }) => updateSubcategory(id, payload),
     onSuccess: () =>
       qc.invalidateQueries({

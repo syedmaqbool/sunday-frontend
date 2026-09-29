@@ -1,3 +1,5 @@
+import type { ApiRequestQuery } from '@/types/api.type';
+import type { GetMyBoostableListingsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { boostsQueryKey } from '@/queries/boosts.query';
 import {
@@ -17,7 +19,7 @@ export const clientBoostQueryKey = {
   packages: () => [...clientBoostQueryKey.all(), 'packages', 'list'] as const,
 };
 
-export interface BoostListParams { page?: number; size?: number }
+export type BoostListParams = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 

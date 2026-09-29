@@ -1,39 +1,8 @@
-export type OfferStatus
-  = | 'ACCEPTED'
-    | 'COUNTERED'
-    | 'EXPIRED'
-    | 'PENDING'
-    | 'REJECTED'
-    | 'WITHDRAWN';
+import type { ApiResponseData } from './api.type';
+import type { GetSellerAnalyticsResponses } from '@/types/generated-api';
 
-export interface OfferStatusCount {
-  count: number;
-  status: OfferStatus;
-}
-
-export interface CategoryDistribution {
-  category: string;
-  count: number;
-}
-
-export interface MonthlyValue {
-  label: string;
-  month: string;
-  totalValue: number;
-}
-
-export interface SellerAnalytics {
-  acceptedOffers: number;
-  activeListings: number;
-  averageRating: number;
-  conversionRate: number;
-  currency: 'PKR';
-  listingCategoryDistribution: CategoryDistribution[];
-  monthlyAcceptedOfferValue: MonthlyValue[];
-  offerStatusCounts: OfferStatusCount[];
-  pendingOffers: number;
-  rejectedOffers: number;
-  reviewCount: number;
-  totalAcceptedOfferValue: number;
-  totalOffers: number;
-}
+export type SellerAnalytics = ApiResponseData<GetSellerAnalyticsResponses>;
+export type OfferStatusCount = SellerAnalytics['offerStatusCounts'][number];
+export type OfferStatus = OfferStatusCount['status'];
+export type CategoryDistribution = SellerAnalytics['listingCategoryDistribution'][number];
+export type MonthlyValue = SellerAnalytics['monthlyAcceptedOfferValue'][number];

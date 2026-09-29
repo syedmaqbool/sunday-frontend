@@ -1,6 +1,7 @@
 import type {
   HeroImageValue,
   SiteSetting,
+  UpdateAdminSiteSettingPayload,
 } from '@/types/adminSiteSettings.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -19,10 +20,10 @@ export function getHeroImage() {
     .json<Response<SiteSetting<HeroImageValue>>>();
 }
 
-export function updateHeroImage(value: Partial<HeroImageValue>) {
+export function updateHeroImage(value: UpdateAdminSiteSettingPayload['value']) {
   return authInstance
     .patch(`/api/v1/admin/settings/site-settings/${HERO_IMAGE_KEY}`, {
-      json: { value },
+      json: { value } satisfies UpdateAdminSiteSettingPayload,
     })
     .json<Response<SiteSetting<HeroImageValue>>>();
 }

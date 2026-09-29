@@ -133,7 +133,7 @@ function AdminOrders() {
     return flat;
   }, [orders, statusFilter, dateFilter]);
 
-  // KPI counts — aggregate counts come directly from backend's itemStatusCounts per order
+  // KPI counts are returned with the generated order list response.
   const counts = useMemo(() => {
     const start = dateFilterStart(dateFilter);
     const orderList = orders ?? [];

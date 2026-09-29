@@ -1,22 +1,9 @@
+import type { Category, Subcategory } from '@/types/category.type';
 import type { PaginatedResponse } from '@/types/response.type';
 import { queryOptions } from '@tanstack/react-query';
 import { authInstance } from '@/services/ky.instance';
 
-export interface Category {
-  id: string;
-  icon: string;
-  label: string;
-  sortOrder: number;
-  value: string;
-}
-
-export interface Subcategory {
-  id: string;
-  icon: string;
-  label: string;
-  sortOrder: number;
-  value: string;
-}
+export type { Category, Subcategory } from '@/types/category.type';
 
 export const categoriesQueryKey = {
   all: () => ['categories'] as const,

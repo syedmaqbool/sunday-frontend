@@ -1,77 +1,33 @@
-import type { ManualPaymentSubmission, Order } from '@/types/order.type';
+import type { ApiRequestBody, ApiResponseData } from './api.type';
+import type {
+  CancelMyAwaitingPaymentOrderResponses,
+  CreateOrderData,
+  CreateOrderResponses,
+  GetPaymentInstructionsResponses,
+  ResubmitMyManualPaymentOrderData,
+  ResubmitMyManualPaymentOrderResponses,
+  UploadFileResponses,
+  ValidateCheckoutDiscountData,
+  ValidateCheckoutDiscountResponses,
+  ValidateCheckoutSellerCouponData,
+  ValidateCheckoutSellerCouponResponses,
+} from '@/types/generated-api';
 
-export interface ValidateDiscountPayload {
-  code: string;
-  listingIds: string[];
-}
-
-export interface ValidateDiscountResult {
-  code: string;
-  commissionAmount: number;
-  currency: string;
-  discountAmount: number;
-  discountType: 'FIXED' | 'PERCENTAGE';
-  discountValue: number;
-  platformFeeAmount: number;
-  subtotal: number;
-  taxAmount: number;
-  taxRate: number;
-  total: number;
-  totalAfterDiscount: number;
-}
-
-export interface ValidateSellerCouponResult {
-  sellerId: string;
-  code: string;
-  currency: string;
-  discountAmount: number;
-  discountType: 'FIXED' | 'PERCENTAGE';
-  discountValue: number;
-  eligibleSubtotal: number;
-}
-
-export interface CreateOrderPayload {
-  proofFileId: string;
-  discountCode?: string;
-  listingIds: string[];
-  sellerCouponCode?: string;
-  senderAccountNumber: string;
-  senderAccountTitle: string;
-  shippingAddress: string;
-  shippingCity: string;
-  shippingFirstName: string;
-  shippingLastName: string;
-  shippingPhone: string;
-  shippingPostal: string;
-}
-
-export interface PaymentInstructions {
-  accountNumber: string;
-  accountTitle: string;
-  bankOrWalletLabel: string;
-}
-
-export interface UploadedPaymentProof {
-  id: string;
-  filename?: string;
-  mimetype?: string;
-  size?: number | string;
-  url?: string;
-}
-
-export interface CheckoutOrderResult {
-  manualPaymentSubmission: ManualPaymentSubmission;
-  order: Order;
-}
-
-export interface CancelOrderResult {
-  restorableListingIds: string[];
-}
-
-export interface ResubmitManualPaymentPayload {
-  proofFileId: string;
-  senderAccountNumber: string;
-  senderAccountTitle: string;
-}
-
-export type ResubmitManualPaymentResult = ManualPaymentSubmission;
+export type ValidateDiscountPayload = ApiRequestBody<ValidateCheckoutDiscountData>;
+export type ValidateSellerCouponPayload = ApiRequestBody<ValidateCheckoutSellerCouponData>;
+export type ValidateDiscountResult = ApiResponseData<ValidateCheckoutDiscountResponses>;
+export type ValidateSellerCouponResult = ApiResponseData<ValidateCheckoutSellerCouponResponses>;
+export type AppliedDiscount = Pick<
+  ValidateDiscountResult | ValidateSellerCouponResult,
+  'code' | 'discountAmount' | 'discountType' | 'discountValue'
+> & {
+  listingIdsKey: string;
+  source: 'platform' | 'seller';
+};
+export type CreateOrderPayload = ApiRequestBody<CreateOrderData>;
+export type PaymentInstructions = ApiResponseData<GetPaymentInstructionsResponses>;
+export type UploadedPaymentProof = ApiResponseData<UploadFileResponses>;
+export type CheckoutOrderResult = ApiResponseData<CreateOrderResponses>;
+export type CancelOrderResult = ApiResponseData<CancelMyAwaitingPaymentOrderResponses>;
+export type ResubmitManualPaymentPayload = ApiRequestBody<ResubmitMyManualPaymentOrderData>;
+export type ResubmitManualPaymentResult = ApiResponseData<ResubmitMyManualPaymentOrderResponses>;

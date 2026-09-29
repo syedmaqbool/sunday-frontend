@@ -1,6 +1,5 @@
 import antfu from '@antfu/eslint-config';
 import eslintPluginBetterTailwindcss from 'eslint-plugin-better-tailwindcss';
-import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 
 const customGroups
   = [
@@ -19,6 +18,7 @@ const groups = ['key', 'id', 'related-id', 'path', 'index', 'element', 'unknown'
 
 export default antfu(
   {
+    ignores: ['src/components/ui/**'],
     react: true,
     stylistic: {
       commaDangle: 'only-multiline',
@@ -28,10 +28,9 @@ export default antfu(
       severity: 'warn',
     },
     typescript: true,
-  },
-  {
-    name: 'unicorn/recommended',
-    rules: eslintPluginUnicorn.configs.recommended.rules,
+    unicorn: {
+      allRecommended: true,
+    },
   },
   {
     name: 'better-tailwindcss/recommended',
@@ -205,6 +204,12 @@ export default antfu(
       'unicorn/no-declarations-before-early-exit': 'off',
       'unicorn/no-nested-ternary': 'off',
       'unicorn/no-null': 'off',
+    },
+  },
+  {
+    files: ['**/*.{json,jsonc,json5}'],
+    rules: {
+      'unicorn/name-replacements': 'off',
     },
   },
 );

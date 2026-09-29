@@ -161,7 +161,14 @@ export default function AdminUsersTable({
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   <Avatar className="h-9 w-9">
-                                    <AvatarImage src={user.image?.url ?? undefined} />
+                                    <AvatarImage
+                                      src={typeof user.image === 'object'
+                                        && user.image !== null
+                                        && 'url' in user.image
+                                        && typeof user.image.url === 'string'
+                                        ? user.image.url
+                                        : undefined}
+                                    />
                                     <AvatarFallback className="text-xs">
                                       {initials(user)}
                                     </AvatarFallback>

@@ -109,7 +109,7 @@ export function SellerComplaintBadge({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ComplaintDetailsView complaint={complaint as any} viewerRole="seller" />
+      <ComplaintDetailsView complaint={complaint} viewerRole="seller" />
 
       {status === 'RETURN_APPROVED' && (
         <Button

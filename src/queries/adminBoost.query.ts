@@ -1,4 +1,6 @@
+import type { ApiRequestQuery } from '@/types/api.type';
 import type { BoostPackage } from '@/types/boost.type';
+import type { GetAdminBoostsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { boostsQueryKey } from '@/queries/boosts.query';
 import {
@@ -14,7 +16,7 @@ export const adminBoostQueryKey = {
   packages: () => [...adminBoostQueryKey.all(), 'packages', 'list'] as const,
 };
 
-export interface AdminBoostsParams { page?: number; size?: number }
+export type AdminBoostsParams = Partial<ApiRequestQuery<GetAdminBoostsData>>;
 
 // ── Packages ──────────────────────────────────────────────────────────────────
 

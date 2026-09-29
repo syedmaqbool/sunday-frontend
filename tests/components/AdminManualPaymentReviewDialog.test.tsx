@@ -1,4 +1,4 @@
-import type { AdminOrder } from '@/types/adminOrder.type';
+import type { AdminOrderDetail } from '@/types/adminOrder.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +7,7 @@ import { AdminManualPaymentReviewDialog } from '@/components/admin/AdminManualPa
 const state = vi.hoisted(() => ({
   approve: vi.fn(),
   isPending: false,
-  order: null as AdminOrder | null,
+  order: null as AdminOrderDetail | null,
   proofError: false,
   reject: vi.fn(),
   requestResubmission: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('@/queries/adminOrders.query', () => ({
   useRequestAdminManualPaymentResubmissionMutation: () => ({ isPending: state.isPending, mutateAsync: state.requestResubmission }),
 }));
 
-function makeOrder(overrides: Partial<AdminOrder> = {}): AdminOrder {
+function makeOrder(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail {
   const submission = {
     id: 'submission-id',
     orderId: 'order-id',
@@ -58,7 +58,6 @@ function makeOrder(overrides: Partial<AdminOrder> = {}): AdminOrder {
     discountAmount: 0,
     discountCode: null,
     items: [],
-    itemStatusCounts: { completed: 0, confirmed: 0, received: 0, shipped: 0 },
     manualPaymentSubmissions: [submission],
     paymentStatus: 'PENDING',
     platformFeeAmount: 0,
@@ -78,6 +77,7 @@ function makeOrder(overrides: Partial<AdminOrder> = {}): AdminOrder {
     total: 100,
     cancelledAt: null,
     expiresAt: '2099-01-01T00:00:00.000Z',
+    paidAt: null,
     createdAt: '2026-09-08T00:00:00.000Z',
     updatedAt: '2026-09-08T00:00:00.000Z',
     ...overrides,

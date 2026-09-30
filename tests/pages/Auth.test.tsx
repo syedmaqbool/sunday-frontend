@@ -56,7 +56,7 @@ describe('signup WhatsApp behavior', () => {
     expect(screen.queryByText(/transactional WhatsApp messages/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Ada Lovelace' } });
-    fireEvent.change(screen.getByLabelText('Phone Number'), { target: { value: '+14155552671' } });
+    fireEvent.change(screen.getByLabelText('Phone Number'), { target: { value: '+1 (415) 555-2671' } });
     fireEvent.change(screen.getByLabelText('Date of Birth'), { target: { value: '1990-01-01' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ada@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
@@ -70,6 +70,7 @@ describe('signup WhatsApp behavior', () => {
 
     await waitFor(() => {
       expect(signUpMock).toHaveBeenCalledWith(expect.objectContaining({
+        phone: '+14155552671',
         whatsappTransactionalNotificationsEnabled: true,
       }));
     });

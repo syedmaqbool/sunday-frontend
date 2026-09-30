@@ -2407,6 +2407,2095 @@ export interface UpdateAdminComplaintStatusResponses {
 
 export type UpdateAdminComplaintStatusResponse = UpdateAdminComplaintStatusResponses[keyof UpdateAdminComplaintStatusResponses];
 
+export interface GetAdminFinanceAdjustmentsData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    orderId?: string;
+    size: number;
+    status?: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+  };
+  url: '/api/v1/admin/finance-adjustments';
+}
+
+export interface GetAdminFinanceAdjustmentsErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminFinanceAdjustmentsError = GetAdminFinanceAdjustmentsErrors[keyof GetAdminFinanceAdjustmentsErrors];
+
+export interface GetAdminFinanceAdjustmentsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      [key: string]: unknown;
+    };
+    data: Array<{
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminFinanceAdjustmentsResponse = GetAdminFinanceAdjustmentsResponses[keyof GetAdminFinanceAdjustmentsResponses];
+
+export interface CreateAdminFinanceAdjustmentData {
+  path?: never;
+  body: {
+    accountingSnapshotId: string;
+    orderId: string;
+    orderItemId: string;
+    adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+    attachmentReference?: string;
+    buyerDiscountCogsMinorUnits: number;
+    commissionAmountMinorUnits: number;
+    grossItemValueMinorUnits: number;
+    idempotencyKey: string;
+    note?: string;
+    profitMinorUnits: number;
+    reason: string;
+    sellerCouponCogsMinorUnits: number;
+    sellerPaidAmountMinorUnits: number;
+    sellerPayableMinorUnits: number;
+    sellerPayoutFeeMinorUnits: number;
+  };
+  query?: never;
+  url: '/api/v1/admin/finance-adjustments';
+}
+
+export interface CreateAdminFinanceAdjustmentErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CreateAdminFinanceAdjustmentError = CreateAdminFinanceAdjustmentErrors[keyof CreateAdminFinanceAdjustmentErrors];
+
+export interface CreateAdminFinanceAdjustmentResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+  /**
+   * Default Response
+   */
+  201: {
+    data: {
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 201;
+  };
+}
+
+export type CreateAdminFinanceAdjustmentResponse = CreateAdminFinanceAdjustmentResponses[keyof CreateAdminFinanceAdjustmentResponses];
+
+export interface ApproveAdminFinanceAdjustmentData {
+  path: {
+    adjustmentId: string;
+  };
+  body?: never;
+  query?: never;
+  url: '/api/v1/admin/finance-adjustments/{adjustmentId}/approve';
+}
+
+export interface ApproveAdminFinanceAdjustmentErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type ApproveAdminFinanceAdjustmentError = ApproveAdminFinanceAdjustmentErrors[keyof ApproveAdminFinanceAdjustmentErrors];
+
+export interface ApproveAdminFinanceAdjustmentResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type ApproveAdminFinanceAdjustmentResponse = ApproveAdminFinanceAdjustmentResponses[keyof ApproveAdminFinanceAdjustmentResponses];
+
+export interface CancelAdminFinanceAdjustmentData {
+  path: {
+    adjustmentId: string;
+  };
+  body?: never;
+  query?: never;
+  url: '/api/v1/admin/finance-adjustments/{adjustmentId}/cancel';
+}
+
+export interface CancelAdminFinanceAdjustmentErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CancelAdminFinanceAdjustmentError = CancelAdminFinanceAdjustmentErrors[keyof CancelAdminFinanceAdjustmentErrors];
+
+export interface CancelAdminFinanceAdjustmentResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type CancelAdminFinanceAdjustmentResponse = CancelAdminFinanceAdjustmentResponses[keyof CancelAdminFinanceAdjustmentResponses];
+
+export interface RejectAdminFinanceAdjustmentData {
+  path: {
+    adjustmentId: string;
+  };
+  body: {
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/finance-adjustments/{adjustmentId}/reject';
+}
+
+export interface RejectAdminFinanceAdjustmentErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type RejectAdminFinanceAdjustmentError = RejectAdminFinanceAdjustmentErrors[keyof RejectAdminFinanceAdjustmentErrors];
+
+export interface RejectAdminFinanceAdjustmentResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      accountingSnapshotId: string;
+      actorId: string | null;
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      attachmentReference: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      note: string | null;
+      profitMinorUnits: number;
+      reason: string;
+      rejectionReason: string | null;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'CANCELLED' | 'INCOMPLETE' | 'PENDING' | 'POSTED' | 'REJECTED';
+      approvedAt: string | null;
+      approvedBy: string | null;
+      cancelledAt: string | null;
+      cancelledBy: string | null;
+      rejectedAt: string | null;
+      rejectedBy: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type RejectAdminFinanceAdjustmentResponse = RejectAdminFinanceAdjustmentResponses[keyof RejectAdminFinanceAdjustmentResponses];
+
+export interface ExportAdminFinanceReportData {
+  path?: never;
+  body?: never;
+  query?: {
+    orderId?: string;
+    sellerId?: string;
+    accountingStatus?: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+    category?: string;
+    paymentStatus?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+    payoutStatus?: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+    periodEnd?: string;
+    periodStart?: string;
+  };
+  url: '/api/v1/admin/finance-reports/export';
+}
+
+export interface ExportAdminFinanceReportErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  500: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 500;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type ExportAdminFinanceReportError = ExportAdminFinanceReportErrors[keyof ExportAdminFinanceReportErrors];
+
+export interface ExportAdminFinanceReportResponses {
+  /**
+   * CSV attachment containing matching finance items and a summary row.
+   */
+  200: string;
+}
+
+export type ExportAdminFinanceReportResponse = ExportAdminFinanceReportResponses[keyof ExportAdminFinanceReportResponses];
+
+export interface GetAdminFinanceReportItemsData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    orderId?: string;
+    sellerId?: string;
+    accountingStatus?: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+    category?: string;
+    paymentStatus?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+    payoutStatus?: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+    periodEnd?: string;
+    periodStart?: string;
+    size: number;
+  };
+  url: '/api/v1/admin/finance-reports/items';
+}
+
+export interface GetAdminFinanceReportItemsErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminFinanceReportItemsError = GetAdminFinanceReportItemsErrors[keyof GetAdminFinanceReportItemsErrors];
+
+export interface GetAdminFinanceReportItemsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      buyerDiscountCogsMinorUnits: number;
+      commissionRevenueMinorUnits: number;
+      currency: string;
+      grossProfitMinorUnits: number;
+      incompleteAmountMinorUnits: number;
+      orderValueMinorUnits: number;
+      outstandingPayoutMinorUnits: number;
+      paidPayoutMinorUnits: number;
+      pendingAmountMinorUnits: number;
+      quickbooks: {
+        syncedAmountMinorUnits: number;
+        syncedRecordCount: number;
+      };
+      reconciliationStatus: {
+        incompleteRecordCount: number;
+        pendingRecordCount: number;
+        postedRecordCount: number;
+      };
+      sellerCouponCogsMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeCogsMinorUnits: number;
+      totalCogsMinorUnits: number;
+    };
+    data: Array<{
+      orderId: string;
+      orderItemId: string;
+      sellerId: string;
+      accountingStatus: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+      adjustments: Array<{
+        id: string;
+        accountingSnapshotId: string;
+        quickbooksBatchId: string | null;
+        quickbooksTransactionId: string | null;
+        adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+        buyerDiscountCogsMinorUnits: number;
+        commissionAmountMinorUnits: number;
+        grossItemValueMinorUnits: number;
+        postingDate: string | null;
+        profitMinorUnits: number;
+        quickbooksSyncStatus: 'UNKNOWN';
+        reason: string;
+        recordType: 'ADJUSTMENT';
+        sellerCouponCogsMinorUnits: number;
+        sellerPayableMinorUnits: number;
+        sellerPayoutFeeMinorUnits: number;
+        sourceEventDate: string;
+        sourceEventKey: string;
+        status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+      }>;
+      buyerDiscountCogsMinorUnits: number;
+      category: string;
+      commissionAmountMinorUnits: number;
+      commissionBaseMinorUnits: number;
+      commissionRateBasisPoints: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      itemTitle: string;
+      orderDate: string;
+      outstandingAmountMinorUnits: number;
+      paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+      payoutEvents: Array<{
+        id: string;
+        amountMinorUnits: number | null;
+        sourceEventDate: string | null;
+        sourceEventKey: string;
+        status: 'INCOMPLETE' | 'PAID' | 'REVERSAL';
+      }>;
+      payoutFeeRule: string;
+      payoutStatus: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+      postingDate: string | null;
+      profitMinorUnits: number;
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sellerPayoutStatuses: Array<{
+        id: string;
+        periodEnd: string;
+        periodStart: string;
+        status: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING';
+        paidAt: string;
+      }>;
+      snapshot: {
+        id: string;
+        quickbooksBatchId: string | null;
+        quickbooksTransactionId: string | null;
+        postingDate: string | null;
+        quickbooksSyncStatus: 'UNKNOWN';
+        reason: string;
+        recordType: 'SNAPSHOT';
+        sourceEventDate: string;
+        sourceEventKey: string;
+        status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+      };
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminFinanceReportItemsResponse = GetAdminFinanceReportItemsResponses[keyof GetAdminFinanceReportItemsResponses];
+
+export interface GetAdminFinanceReportOrdersData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    orderId?: string;
+    sellerId?: string;
+    accountingStatus?: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+    category?: string;
+    paymentStatus?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+    payoutStatus?: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+    periodEnd?: string;
+    periodStart?: string;
+    size: number;
+  };
+  url: '/api/v1/admin/finance-reports/orders';
+}
+
+export interface GetAdminFinanceReportOrdersErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminFinanceReportOrdersError = GetAdminFinanceReportOrdersErrors[keyof GetAdminFinanceReportOrdersErrors];
+
+export interface GetAdminFinanceReportOrdersResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      buyerDiscountCogsMinorUnits: number;
+      commissionRevenueMinorUnits: number;
+      currency: string;
+      grossProfitMinorUnits: number;
+      incompleteAmountMinorUnits: number;
+      orderValueMinorUnits: number;
+      outstandingPayoutMinorUnits: number;
+      paidPayoutMinorUnits: number;
+      pendingAmountMinorUnits: number;
+      quickbooks: {
+        syncedAmountMinorUnits: number;
+        syncedRecordCount: number;
+      };
+      reconciliationStatus: {
+        incompleteRecordCount: number;
+        pendingRecordCount: number;
+        postedRecordCount: number;
+      };
+      sellerCouponCogsMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeCogsMinorUnits: number;
+      totalCogsMinorUnits: number;
+    };
+    data: Array<{
+      orderId: string;
+      aggregates: {
+        buyerDiscountCogsMinorUnits: number;
+        commissionRevenueMinorUnits: number;
+        currency: string;
+        grossProfitMinorUnits: number;
+        incompleteAmountMinorUnits: number;
+        orderValueMinorUnits: number;
+        outstandingPayoutMinorUnits: number;
+        paidPayoutMinorUnits: number;
+        pendingAmountMinorUnits: number;
+        quickbooks: {
+          syncedAmountMinorUnits: number;
+          syncedRecordCount: number;
+        };
+        reconciliationStatus: {
+          incompleteRecordCount: number;
+          pendingRecordCount: number;
+          postedRecordCount: number;
+        };
+        sellerCouponCogsMinorUnits: number;
+        sellerPayableMinorUnits: number;
+        sellerPayoutFeeCogsMinorUnits: number;
+        totalCogsMinorUnits: number;
+      };
+      itemCount: number;
+      items: Array<{
+        orderId: string;
+        orderItemId: string;
+        sellerId: string;
+        accountingStatus: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        adjustments: Array<{
+          id: string;
+          accountingSnapshotId: string;
+          quickbooksBatchId: string | null;
+          quickbooksTransactionId: string | null;
+          adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+          buyerDiscountCogsMinorUnits: number;
+          commissionAmountMinorUnits: number;
+          grossItemValueMinorUnits: number;
+          postingDate: string | null;
+          profitMinorUnits: number;
+          quickbooksSyncStatus: 'UNKNOWN';
+          reason: string;
+          recordType: 'ADJUSTMENT';
+          sellerCouponCogsMinorUnits: number;
+          sellerPayableMinorUnits: number;
+          sellerPayoutFeeMinorUnits: number;
+          sourceEventDate: string;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        }>;
+        buyerDiscountCogsMinorUnits: number;
+        category: string;
+        commissionAmountMinorUnits: number;
+        commissionBaseMinorUnits: number;
+        commissionRateBasisPoints: number;
+        currency: string;
+        grossItemValueMinorUnits: number;
+        itemTitle: string;
+        orderDate: string;
+        outstandingAmountMinorUnits: number;
+        paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+        payoutEvents: Array<{
+          id: string;
+          amountMinorUnits: number | null;
+          sourceEventDate: string | null;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PAID' | 'REVERSAL';
+        }>;
+        payoutFeeRule: string;
+        payoutStatus: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+        postingDate: string | null;
+        profitMinorUnits: number;
+        sellerCouponCogsMinorUnits: number;
+        sellerPaidAmountMinorUnits: number;
+        sellerPayableMinorUnits: number;
+        sellerPayoutFeeMinorUnits: number;
+        sellerPayoutStatuses: Array<{
+          id: string;
+          periodEnd: string;
+          periodStart: string;
+          status: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING';
+          paidAt: string;
+        }>;
+        snapshot: {
+          id: string;
+          quickbooksBatchId: string | null;
+          quickbooksTransactionId: string | null;
+          postingDate: string | null;
+          quickbooksSyncStatus: 'UNKNOWN';
+          reason: string;
+          recordType: 'SNAPSHOT';
+          sourceEventDate: string;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        };
+      }>;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminFinanceReportOrdersResponse = GetAdminFinanceReportOrdersResponses[keyof GetAdminFinanceReportOrdersResponses];
+
+export interface GetAdminFinanceReportSellersData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    orderId?: string;
+    sellerId?: string;
+    accountingStatus?: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+    category?: string;
+    paymentStatus?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+    payoutStatus?: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+    periodEnd?: string;
+    periodStart?: string;
+    size: number;
+  };
+  url: '/api/v1/admin/finance-reports/sellers';
+}
+
+export interface GetAdminFinanceReportSellersErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminFinanceReportSellersError = GetAdminFinanceReportSellersErrors[keyof GetAdminFinanceReportSellersErrors];
+
+export interface GetAdminFinanceReportSellersResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      buyerDiscountCogsMinorUnits: number;
+      commissionRevenueMinorUnits: number;
+      currency: string;
+      grossProfitMinorUnits: number;
+      incompleteAmountMinorUnits: number;
+      orderValueMinorUnits: number;
+      outstandingPayoutMinorUnits: number;
+      paidPayoutMinorUnits: number;
+      pendingAmountMinorUnits: number;
+      quickbooks: {
+        syncedAmountMinorUnits: number;
+        syncedRecordCount: number;
+      };
+      reconciliationStatus: {
+        incompleteRecordCount: number;
+        pendingRecordCount: number;
+        postedRecordCount: number;
+      };
+      sellerCouponCogsMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeCogsMinorUnits: number;
+      totalCogsMinorUnits: number;
+    };
+    data: Array<{
+      sellerId: string;
+      aggregates: {
+        buyerDiscountCogsMinorUnits: number;
+        commissionRevenueMinorUnits: number;
+        currency: string;
+        grossProfitMinorUnits: number;
+        incompleteAmountMinorUnits: number;
+        orderValueMinorUnits: number;
+        outstandingPayoutMinorUnits: number;
+        paidPayoutMinorUnits: number;
+        pendingAmountMinorUnits: number;
+        quickbooks: {
+          syncedAmountMinorUnits: number;
+          syncedRecordCount: number;
+        };
+        reconciliationStatus: {
+          incompleteRecordCount: number;
+          pendingRecordCount: number;
+          postedRecordCount: number;
+        };
+        sellerCouponCogsMinorUnits: number;
+        sellerPayableMinorUnits: number;
+        sellerPayoutFeeCogsMinorUnits: number;
+        totalCogsMinorUnits: number;
+      };
+      itemCount: number;
+      items: Array<{
+        orderId: string;
+        orderItemId: string;
+        sellerId: string;
+        accountingStatus: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        adjustments: Array<{
+          id: string;
+          accountingSnapshotId: string;
+          quickbooksBatchId: string | null;
+          quickbooksTransactionId: string | null;
+          adjustmentType: 'CANCELLATION' | 'CORRECTION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+          buyerDiscountCogsMinorUnits: number;
+          commissionAmountMinorUnits: number;
+          grossItemValueMinorUnits: number;
+          postingDate: string | null;
+          profitMinorUnits: number;
+          quickbooksSyncStatus: 'UNKNOWN';
+          reason: string;
+          recordType: 'ADJUSTMENT';
+          sellerCouponCogsMinorUnits: number;
+          sellerPayableMinorUnits: number;
+          sellerPayoutFeeMinorUnits: number;
+          sourceEventDate: string;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        }>;
+        buyerDiscountCogsMinorUnits: number;
+        category: string;
+        commissionAmountMinorUnits: number;
+        commissionBaseMinorUnits: number;
+        commissionRateBasisPoints: number;
+        currency: string;
+        grossItemValueMinorUnits: number;
+        itemTitle: string;
+        orderDate: string;
+        outstandingAmountMinorUnits: number;
+        paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+        payoutEvents: Array<{
+          id: string;
+          amountMinorUnits: number | null;
+          sourceEventDate: string | null;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PAID' | 'REVERSAL';
+        }>;
+        payoutFeeRule: string;
+        payoutStatus: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+        postingDate: string | null;
+        profitMinorUnits: number;
+        sellerCouponCogsMinorUnits: number;
+        sellerPaidAmountMinorUnits: number;
+        sellerPayableMinorUnits: number;
+        sellerPayoutFeeMinorUnits: number;
+        sellerPayoutStatuses: Array<{
+          id: string;
+          periodEnd: string;
+          periodStart: string;
+          status: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING';
+          paidAt: string;
+        }>;
+        snapshot: {
+          id: string;
+          quickbooksBatchId: string | null;
+          quickbooksTransactionId: string | null;
+          postingDate: string | null;
+          quickbooksSyncStatus: 'UNKNOWN';
+          reason: string;
+          recordType: 'SNAPSHOT';
+          sourceEventDate: string;
+          sourceEventKey: string;
+          status: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+        };
+      }>;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminFinanceReportSellersResponse = GetAdminFinanceReportSellersResponses[keyof GetAdminFinanceReportSellersResponses];
+
+export interface GetAdminFinanceReportSummaryData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    orderId?: string;
+    sellerId?: string;
+    accountingStatus?: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+    category?: string;
+    paymentStatus?: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+    payoutStatus?: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+    periodEnd?: string;
+    periodStart?: string;
+    size: number;
+  };
+  url: '/api/v1/admin/finance-reports/summary';
+}
+
+export interface GetAdminFinanceReportSummaryErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminFinanceReportSummaryError = GetAdminFinanceReportSummaryErrors[keyof GetAdminFinanceReportSummaryErrors];
+
+export interface GetAdminFinanceReportSummaryResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      buyerDiscountCogsMinorUnits: number;
+      commissionRevenueMinorUnits: number;
+      currency: string;
+      grossProfitMinorUnits: number;
+      incompleteAmountMinorUnits: number;
+      orderValueMinorUnits: number;
+      outstandingPayoutMinorUnits: number;
+      paidPayoutMinorUnits: number;
+      pendingAmountMinorUnits: number;
+      quickbooks: {
+        syncedAmountMinorUnits: number;
+        syncedRecordCount: number;
+      };
+      reconciliationStatus: {
+        incompleteRecordCount: number;
+        pendingRecordCount: number;
+        postedRecordCount: number;
+      };
+      sellerCouponCogsMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeCogsMinorUnits: number;
+      totalCogsMinorUnits: number;
+    };
+    data: Array<{
+      id: string;
+      orderId: string;
+      orderItemId: string;
+      quickbooksBatchId: string | null;
+      sellerId: string;
+      accountingStatus: 'INCOMPLETE' | 'PENDING' | 'POSTED';
+      adjustmentDate: string | null;
+      buyerDiscountCogsMinorUnits: number;
+      category: string;
+      commissionAmountMinorUnits: number;
+      currency: string;
+      grossItemValueMinorUnits: number;
+      orderDate: string;
+      paymentStatus: 'CANCELLED' | 'FAILED' | 'PAID' | 'PENDING' | 'UNPAID';
+      payoutStatus: 'PAID' | 'RECEIVABLE_OFFSET' | 'UNPAID';
+      postingDate: string | null;
+      profitMinorUnits: number;
+      recordType: 'ADJUSTMENT' | 'SNAPSHOT';
+      sellerCouponCogsMinorUnits: number;
+      sellerPaidAmountMinorUnits: number;
+      sellerPayableMinorUnits: number;
+      sellerPayoutFeeMinorUnits: number;
+      sourceEventDate: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminFinanceReportSummaryResponse = GetAdminFinanceReportSummaryResponses[keyof GetAdminFinanceReportSummaryResponses];
+
 export interface GetAdminListingsData {
   path?: never;
   body?: never;
@@ -3202,7 +5291,7 @@ export interface GetAdminMarginReportResponses {
    * Default Response
    */
   200: {
-    aggregates: {
+    aggregates?: {
       /**
        * PKR amount as a number.
        */
@@ -4964,6 +7053,34 @@ export interface GetAdminPayoutRunsErrors {
       message: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  422: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 422;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
 }
 
 export type GetAdminPayoutRunsError = GetAdminPayoutRunsErrors[keyof GetAdminPayoutRunsErrors];
@@ -5024,6 +7141,23 @@ export type GetAdminPayoutRunsResponse = GetAdminPayoutRunsResponses[keyof GetAd
 export interface CreateAdminPayoutRunData {
   path?: never;
   body: {
+    approvedAccountingAdjustments?: {
+      [key: string]: {
+        adjustmentId: string;
+        adjustmentScope: 'COMPLAINT' | 'ORDER_ITEM';
+        amountMinorUnits: number;
+        bankDetails: {
+          bankAccountHolder: string;
+          bankAccountNumber: string;
+          bankIban: string;
+          bankName: string;
+          bankSwift: string;
+        };
+        rule: string;
+        sourceDate: string;
+        type: 'CANCELLATION' | 'QUANTITY_CHANGE' | 'REFUND' | 'RETURN';
+      };
+    };
     periodEnd: string;
     periodStart: string;
   };
@@ -5100,6 +7234,62 @@ export interface CreateAdminPayoutRunErrors {
      * Http status code of the error response
      */
     statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  422: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 422;
     /**
      * Detailed human-readable error message
      */
@@ -5490,6 +7680,176 @@ export interface UpdateAdminPayoutRunItemStatusResponses {
 }
 
 export type UpdateAdminPayoutRunItemStatusResponse = UpdateAdminPayoutRunItemStatusResponses[keyof UpdateAdminPayoutRunItemStatusResponses];
+
+export interface RecordAdminPayoutRunItemPaymentData {
+  path: {
+    itemId: string;
+  };
+  body: {
+    amountMinorUnits: number;
+    idempotencyKey: string;
+    paidAt?: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/payout-runs/items/{itemId}/status';
+}
+
+export interface RecordAdminPayoutRunItemPaymentErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type RecordAdminPayoutRunItemPaymentError = RecordAdminPayoutRunItemPaymentErrors[keyof RecordAdminPayoutRunItemPaymentErrors];
+
+export interface RecordAdminPayoutRunItemPaymentResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      buyerId: string | null;
+      complaintId: string | null;
+      orderId: string | null;
+      orderItemId: string | null;
+      payoutRunId: string;
+      sellerId: string | null;
+      userId: string;
+      amount: number;
+      bankAccountHolder: string | null;
+      bankAccountNumber: string | null;
+      bankIban: string | null;
+      bankName: string | null;
+      bankSwift: string | null;
+      itemType: 'BUYER_REFUND' | 'SELLER_PAYOUT';
+      periodEnd: string;
+      periodStart: string;
+      sourceDate: string | null;
+      sourceMetadata: unknown;
+      sourceStatus: string;
+      sourceType: string;
+      status: 'PAID' | 'UNPAID';
+      userFullName: string;
+      paidAt: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type RecordAdminPayoutRunItemPaymentResponse = RecordAdminPayoutRunItemPaymentResponses[keyof RecordAdminPayoutRunItemPaymentResponses];
 
 export interface GetAdminBuyerRefundReportData {
   path?: never;
@@ -5963,6 +8323,34 @@ export interface CreateSellerPayoutErrors {
       message: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  422: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 422;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
 }
 
 export type CreateSellerPayoutError = CreateSellerPayoutErrors[keyof CreateSellerPayoutErrors];
@@ -6071,7 +8459,7 @@ export interface GetAdminPermissionsResponses {
   200: {
     data: Array<{
       id: string;
-      name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
+      name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
       createdAt: string;
       updatedAt: string;
     }>;
@@ -6081,6 +8469,2471 @@ export interface GetAdminPermissionsResponses {
 }
 
 export type GetAdminPermissionsResponse = GetAdminPermissionsResponses[keyof GetAdminPermissionsResponses];
+
+export interface GetAdminQuickBooksAccountMappingVersionsData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    size: number;
+  };
+  url: '/api/v1/admin/quickbooks-account-mappings';
+}
+
+export interface GetAdminQuickBooksAccountMappingVersionsErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksAccountMappingVersionsError = GetAdminQuickBooksAccountMappingVersionsErrors[keyof GetAdminQuickBooksAccountMappingVersionsErrors];
+
+export interface GetAdminQuickBooksAccountMappingVersionsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      [key: string]: unknown;
+    };
+    data: Array<{
+      id: string;
+      actorId: string;
+      effectiveDate: string;
+      mappings: Array<{
+        accountId: string;
+        category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+        displayName: string;
+      }>;
+      reason: string;
+      version: number;
+      createdAt: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksAccountMappingVersionsResponse = GetAdminQuickBooksAccountMappingVersionsResponses[keyof GetAdminQuickBooksAccountMappingVersionsResponses];
+
+export interface CreateAdminQuickBooksAccountMappingVersionData {
+  path?: never;
+  body: {
+    effectiveDate: string;
+    mappings: Array<{
+      accountId: string;
+      category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+      displayName: string;
+    }>;
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-account-mappings';
+}
+
+export interface CreateAdminQuickBooksAccountMappingVersionErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CreateAdminQuickBooksAccountMappingVersionError = CreateAdminQuickBooksAccountMappingVersionErrors[keyof CreateAdminQuickBooksAccountMappingVersionErrors];
+
+export interface CreateAdminQuickBooksAccountMappingVersionResponses {
+  /**
+   * Default Response
+   */
+  201: {
+    data: {
+      id: string;
+      actorId: string;
+      effectiveDate: string;
+      mappings: Array<{
+        accountId: string;
+        category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+        displayName: string;
+      }>;
+      reason: string;
+      version: number;
+      createdAt: string;
+    };
+    message: string;
+    statusCode: 201;
+  };
+}
+
+export type CreateAdminQuickBooksAccountMappingVersionResponse = CreateAdminQuickBooksAccountMappingVersionResponses[keyof CreateAdminQuickBooksAccountMappingVersionResponses];
+
+export interface CreateAdminQuickBooksHistoricalBackfillData {
+  path?: never;
+  body: {
+    accountMappingVersionId: string;
+    approvalReference: string;
+    approved: true;
+    currency: string;
+    dateEnd: string;
+    dateStart: string;
+    environment: 'PRODUCTION' | 'SANDBOX';
+    openingPeriod: string;
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-backfills';
+}
+
+export interface CreateAdminQuickBooksHistoricalBackfillErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CreateAdminQuickBooksHistoricalBackfillError = CreateAdminQuickBooksHistoricalBackfillErrors[keyof CreateAdminQuickBooksHistoricalBackfillErrors];
+
+export interface CreateAdminQuickBooksHistoricalBackfillResponses {
+  /**
+   * Default Response
+   */
+  202: {
+    data: {
+      id: string;
+      accountMappingVersionId: string;
+      actorId: string;
+      approvalReference: string;
+      blockers: Array<string>;
+      counts: {
+        eligible: number;
+        failed: number;
+        incomplete: number;
+        pending: number;
+        posted: number;
+        skipped: number;
+      };
+      currency: string;
+      dateEnd: string;
+      dateStart: string;
+      environment: 'PRODUCTION' | 'SANDBOX';
+      incompleteRecords: Array<{
+        orderId: string;
+        orderItemId: string;
+        snapshotId: string | null;
+        missingInputs: Array<string>;
+      }>;
+      openingPeriod: string;
+      reason: string;
+      reconciliation: {
+        matched: number;
+        mismatched: number;
+        unverified: number;
+      };
+      status: 'BLOCKED' | 'COMPLETE' | 'PROCESSING';
+      createdAt: string;
+    };
+    message: string;
+    statusCode: 202;
+  };
+}
+
+export type CreateAdminQuickBooksHistoricalBackfillResponse = CreateAdminQuickBooksHistoricalBackfillResponses[keyof CreateAdminQuickBooksHistoricalBackfillResponses];
+
+export interface GetAdminQuickBooksHistoricalBackfillData {
+  path: {
+    backfillId: string;
+  };
+  body?: never;
+  query?: never;
+  url: '/api/v1/admin/quickbooks-backfills/{backfillId}';
+}
+
+export interface GetAdminQuickBooksHistoricalBackfillErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksHistoricalBackfillError = GetAdminQuickBooksHistoricalBackfillErrors[keyof GetAdminQuickBooksHistoricalBackfillErrors];
+
+export interface GetAdminQuickBooksHistoricalBackfillResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      id: string;
+      accountMappingVersionId: string;
+      actorId: string;
+      approvalReference: string;
+      blockers: Array<string>;
+      counts: {
+        eligible: number;
+        failed: number;
+        incomplete: number;
+        pending: number;
+        posted: number;
+        skipped: number;
+      };
+      currency: string;
+      dateEnd: string;
+      dateStart: string;
+      environment: 'PRODUCTION' | 'SANDBOX';
+      incompleteRecords: Array<{
+        orderId: string;
+        orderItemId: string;
+        snapshotId: string | null;
+        missingInputs: Array<string>;
+      }>;
+      openingPeriod: string;
+      reason: string;
+      reconciliation: {
+        matched: number;
+        mismatched: number;
+        unverified: number;
+      };
+      status: 'BLOCKED' | 'COMPLETE' | 'PROCESSING';
+      createdAt: string;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksHistoricalBackfillResponse = GetAdminQuickBooksHistoricalBackfillResponses[keyof GetAdminQuickBooksHistoricalBackfillResponses];
+
+export interface GetAdminQuickBooksConnectionData {
+  path?: never;
+  body?: never;
+  query: {
+    environment: 'PRODUCTION' | 'SANDBOX';
+  };
+  url: '/api/v1/admin/quickbooks-connection';
+}
+
+export interface GetAdminQuickBooksConnectionErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksConnectionError = GetAdminQuickBooksConnectionErrors[keyof GetAdminQuickBooksConnectionErrors];
+
+export interface GetAdminQuickBooksConnectionResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      environment: 'PRODUCTION' | 'SANDBOX';
+      status: 'CONNECTED' | 'DISCONNECTED' | 'REAUTH_REQUIRED';
+      accessTokenExpiresAt: string | null;
+      connectedAt: string | null;
+      disconnectedAt: string | null;
+      updatedAt: string | null;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksConnectionResponse = GetAdminQuickBooksConnectionResponses[keyof GetAdminQuickBooksConnectionResponses];
+
+export interface StartAdminQuickBooksConnectionData {
+  path?: never;
+  body: {
+    environment: 'PRODUCTION' | 'SANDBOX';
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-connection/connect';
+}
+
+export interface StartAdminQuickBooksConnectionErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  503: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 503;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type StartAdminQuickBooksConnectionError = StartAdminQuickBooksConnectionErrors[keyof StartAdminQuickBooksConnectionErrors];
+
+export interface StartAdminQuickBooksConnectionResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      authorizationUrl: string;
+      environment: 'PRODUCTION' | 'SANDBOX';
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type StartAdminQuickBooksConnectionResponse = StartAdminQuickBooksConnectionResponses[keyof StartAdminQuickBooksConnectionResponses];
+
+export interface DisconnectAdminQuickBooksConnectionData {
+  path?: never;
+  body: {
+    environment: 'PRODUCTION' | 'SANDBOX';
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-connection/disconnect';
+}
+
+export interface DisconnectAdminQuickBooksConnectionErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  502: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 502;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type DisconnectAdminQuickBooksConnectionError = DisconnectAdminQuickBooksConnectionErrors[keyof DisconnectAdminQuickBooksConnectionErrors];
+
+export interface DisconnectAdminQuickBooksConnectionResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type DisconnectAdminQuickBooksConnectionResponse = DisconnectAdminQuickBooksConnectionResponses[keyof DisconnectAdminQuickBooksConnectionResponses];
+
+export interface ReconnectAdminQuickBooksConnectionData {
+  path?: never;
+  body: {
+    environment: 'PRODUCTION' | 'SANDBOX';
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-connection/reconnect';
+}
+
+export interface ReconnectAdminQuickBooksConnectionErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  503: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 503;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type ReconnectAdminQuickBooksConnectionError = ReconnectAdminQuickBooksConnectionErrors[keyof ReconnectAdminQuickBooksConnectionErrors];
+
+export interface ReconnectAdminQuickBooksConnectionResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      authorizationUrl: string;
+      environment: 'PRODUCTION' | 'SANDBOX';
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type ReconnectAdminQuickBooksConnectionResponse = ReconnectAdminQuickBooksConnectionResponses[keyof ReconnectAdminQuickBooksConnectionResponses];
+
+export interface RefreshAdminQuickBooksConnectionData {
+  path?: never;
+  body: {
+    environment: 'PRODUCTION' | 'SANDBOX';
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-connection/refresh';
+}
+
+export interface RefreshAdminQuickBooksConnectionErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  502: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 502;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type RefreshAdminQuickBooksConnectionError = RefreshAdminQuickBooksConnectionErrors[keyof RefreshAdminQuickBooksConnectionErrors];
+
+export interface RefreshAdminQuickBooksConnectionResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      environment: 'PRODUCTION' | 'SANDBOX';
+      status: 'CONNECTED' | 'DISCONNECTED' | 'REAUTH_REQUIRED';
+      accessTokenExpiresAt: string | null;
+      connectedAt: string | null;
+      disconnectedAt: string | null;
+      updatedAt: string | null;
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type RefreshAdminQuickBooksConnectionResponse = RefreshAdminQuickBooksConnectionResponses[keyof RefreshAdminQuickBooksConnectionResponses];
+
+export interface GetAdminQuickBooksReconciliationData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    accountId?: string;
+    batchId?: string;
+    sellerId?: string;
+    dateEnd: string;
+    dateStart: string;
+    reconciliationStatus?: 'ACCOUNT_MISMATCH' | 'AMOUNT_MISMATCH' | 'DUPLICATE' | 'FAILED_SYNC' | 'LINK_MISMATCH' | 'MATCHED' | 'MISSING_QUICKBOOKS' | 'MISSING_SUNDAY_EVENTS' | 'PENDING_SYNC' | 'POSTING_DATE_MISMATCH' | 'POSTING_SIDE_MISMATCH' | 'UNMATCHED_QUICKBOOKS' | 'UNVERIFIED_MAPPING' | 'UNVERIFIED_SOURCE';
+    size: number;
+    syncStatus?: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED';
+  };
+  url: '/api/v1/admin/quickbooks-reconciliation';
+}
+
+export interface GetAdminQuickBooksReconciliationErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  503: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 503;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksReconciliationError = GetAdminQuickBooksReconciliationErrors[keyof GetAdminQuickBooksReconciliationErrors];
+
+export interface GetAdminQuickBooksReconciliationResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      [key: string]: unknown;
+    };
+    data: Array<{
+      accountId: string | null;
+      accountingPostingBatchId: string | null;
+      externalTransactionId: string | null;
+      accountIds: Array<string>;
+      currency: string | null;
+      differenceMinorUnits: string | null;
+      postingDate: string | null;
+      recordType: 'BATCH' | 'PAYOUT_BILL' | 'PAYOUT_PAYMENT' | 'QUICKBOOKS_ONLY';
+      sellerIds: Array<string>;
+      sourceEventCount: number | null;
+      sourceEventKeys: Array<string>;
+      sourceReferences: Array<{
+        id: string;
+        type: string;
+      }>;
+      status: 'ACCOUNT_MISMATCH' | 'AMOUNT_MISMATCH' | 'DUPLICATE' | 'FAILED_SYNC' | 'LINK_MISMATCH' | 'MATCHED' | 'MISSING_QUICKBOOKS' | 'MISSING_SUNDAY_EVENTS' | 'PENDING_SYNC' | 'POSTING_DATE_MISMATCH' | 'POSTING_SIDE_MISMATCH' | 'UNMATCHED_QUICKBOOKS' | 'UNVERIFIED_MAPPING' | 'UNVERIFIED_SOURCE';
+      syncStatus: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED' | null;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksReconciliationResponse = GetAdminQuickBooksReconciliationResponses[keyof GetAdminQuickBooksReconciliationResponses];
+
+export interface GetAdminQuickBooksRolloutReadinessData {
+  path?: never;
+  body?: never;
+  query?: never;
+  url: '/api/v1/admin/quickbooks-rollout';
+}
+
+export interface GetAdminQuickBooksRolloutReadinessErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksRolloutReadinessError = GetAdminQuickBooksRolloutReadinessErrors[keyof GetAdminQuickBooksRolloutReadinessErrors];
+
+export interface GetAdminQuickBooksRolloutReadinessResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    data: {
+      alerts: Array<string>;
+      configuredEnvironment: 'PRODUCTION' | 'SANDBOX';
+      counts: {
+        failed: number;
+        incompleteAccountingRecords: number;
+        pending: number;
+        reconciled: number | null;
+        reconciliationCountsAvailable: boolean;
+        repeatedRetries: number;
+        retrying: number;
+        stalled: number;
+        synced: number;
+        unmatched: number | null;
+      };
+      externalPostingPaused: boolean;
+      production: {
+        accountMappingsComplete: boolean;
+        accountMappingVersion: number | null;
+        accountMappingVersionMatches: boolean;
+        auditHistoryDeletionDisabled: boolean;
+        auditHistoryPreservedPendingApproval: boolean;
+        auditRetentionPolicyApproved: boolean;
+        blockers: Array<string>;
+        clientConfigurationPresent: boolean;
+        companyIdentityConfigured: boolean;
+        companyIdentityVerified: boolean;
+        connectionStatus: 'CONNECTED' | 'DISCONNECTED' | 'REAUTH_REQUIRED';
+        connectionTokenValid: boolean;
+        ready: boolean;
+      };
+    };
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksRolloutReadinessResponse = GetAdminQuickBooksRolloutReadinessResponses[keyof GetAdminQuickBooksRolloutReadinessResponses];
+
+export interface GetAdminQuickBooksSellerVendorMappingsData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    size: number;
+  };
+  url: '/api/v1/admin/quickbooks-seller-vendor-mappings';
+}
+
+export interface GetAdminQuickBooksSellerVendorMappingsErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksSellerVendorMappingsError = GetAdminQuickBooksSellerVendorMappingsErrors[keyof GetAdminQuickBooksSellerVendorMappingsErrors];
+
+export interface GetAdminQuickBooksSellerVendorMappingsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      [key: string]: unknown;
+    };
+    data: Array<{
+      id: string;
+      actorId: string;
+      quickbooksApAccountId: string | null;
+      quickbooksVendorId: string;
+      sellerId: string;
+      displayName: string;
+      effectiveDate: string;
+      quickbooksApAccountName: string | null;
+      reason: string;
+      version: number;
+      createdAt: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksSellerVendorMappingsResponse = GetAdminQuickBooksSellerVendorMappingsResponses[keyof GetAdminQuickBooksSellerVendorMappingsResponses];
+
+export interface CreateAdminQuickBooksSellerVendorMappingData {
+  path?: never;
+  body: {
+    quickbooksApAccountId: string;
+    quickbooksVendorId: string;
+    sellerId: string;
+    displayName: string;
+    effectiveDate: string;
+    quickbooksApAccountName: string;
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-seller-vendor-mappings';
+}
+
+export interface CreateAdminQuickBooksSellerVendorMappingErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CreateAdminQuickBooksSellerVendorMappingError = CreateAdminQuickBooksSellerVendorMappingErrors[keyof CreateAdminQuickBooksSellerVendorMappingErrors];
+
+export interface CreateAdminQuickBooksSellerVendorMappingResponses {
+  /**
+   * Default Response
+   */
+  201: {
+    data: {
+      id: string;
+      actorId: string;
+      quickbooksApAccountId: string | null;
+      quickbooksVendorId: string;
+      sellerId: string;
+      displayName: string;
+      effectiveDate: string;
+      quickbooksApAccountName: string | null;
+      reason: string;
+      version: number;
+      createdAt: string;
+    };
+    message: string;
+    statusCode: 201;
+  };
+}
+
+export type CreateAdminQuickBooksSellerVendorMappingResponse = CreateAdminQuickBooksSellerVendorMappingResponses[keyof CreateAdminQuickBooksSellerVendorMappingResponses];
+
+export interface GetAdminQuickBooksSyncEventsData {
+  path?: never;
+  body?: never;
+  query: {
+    /**
+     * Page number (starts from 1)
+     */
+    page: number;
+    /**
+     * Number of records per page
+     */
+    size: number;
+    status?: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED';
+  };
+  url: '/api/v1/admin/quickbooks-sync';
+}
+
+export interface GetAdminQuickBooksSyncEventsErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type GetAdminQuickBooksSyncEventsError = GetAdminQuickBooksSyncEventsErrors[keyof GetAdminQuickBooksSyncEventsErrors];
+
+export interface GetAdminQuickBooksSyncEventsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    aggregates?: {
+      [key: string]: unknown;
+    };
+    data: Array<{
+      id: string;
+      accountingEventId: string;
+      accountingPostingBatchId: string | null;
+      externalTransactionId: string | null;
+      approvedPostingDate: string | null;
+      attemptCount: number;
+      closedPeriodApprovalReason: string | null;
+      correctionApprovalReason: string | null;
+      correctionApprovedPostingDate: string | null;
+      correctionDetails: string | null;
+      lastError: string | null;
+      originalPostingDate: string | null;
+      postingBatchStatus: 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED' | null;
+      sourceEventDate: string;
+      sourceEventKey: string;
+      status: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED';
+      closedPeriodApprovedAt: string | null;
+      closedPeriodApprovedBy: string | null;
+      correctionApprovedAt: string | null;
+      correctionApprovedBy: string | null;
+      failedAt: string | null;
+      lastAttemptAt: string | null;
+      nextAttemptAt: string | null;
+      syncedAt: string | null;
+      createdAt: string;
+    }>;
+    message: string;
+    pagination: {
+      /**
+       * Current page number
+       */
+      currentPage: number;
+      /**
+       * Total number of pages (last available page)
+       */
+      lastPage: number;
+      /**
+       * Next page number if available, otherwise null
+       */
+      nextPage: number | null;
+      /**
+       * Number of records per page
+       */
+      perPage: number;
+      /**
+       * Previous page number if available, otherwise null
+       */
+      prevPage: number | null;
+      /**
+       * Total number of records
+       */
+      total: number;
+    };
+    statusCode: 200;
+  };
+}
+
+export type GetAdminQuickBooksSyncEventsResponse = GetAdminQuickBooksSyncEventsResponses[keyof GetAdminQuickBooksSyncEventsResponses];
+
+export interface ApproveAdminQuickBooksClosedPeriodDateShiftData {
+  path: {
+    outboxId: string;
+  };
+  body: {
+    approvedPostingDate: string;
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-sync/{outboxId}/approve-closed-period';
+}
+
+export interface ApproveAdminQuickBooksClosedPeriodDateShiftErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type ApproveAdminQuickBooksClosedPeriodDateShiftError = ApproveAdminQuickBooksClosedPeriodDateShiftErrors[keyof ApproveAdminQuickBooksClosedPeriodDateShiftErrors];
+
+export interface ApproveAdminQuickBooksClosedPeriodDateShiftResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type ApproveAdminQuickBooksClosedPeriodDateShiftResponse = ApproveAdminQuickBooksClosedPeriodDateShiftResponses[keyof ApproveAdminQuickBooksClosedPeriodDateShiftResponses];
+
+export interface ApproveAdminQuickBooksPayoutCorrectionDetailsData {
+  path: {
+    outboxId: string;
+  };
+  body: {
+    approvedPostingDate: string;
+    correctionDetails: string;
+    reason: string;
+  };
+  query?: never;
+  url: '/api/v1/admin/quickbooks-sync/{outboxId}/approve-correction';
+}
+
+export interface ApproveAdminQuickBooksPayoutCorrectionDetailsErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type ApproveAdminQuickBooksPayoutCorrectionDetailsError = ApproveAdminQuickBooksPayoutCorrectionDetailsErrors[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsErrors];
+
+export interface ApproveAdminQuickBooksPayoutCorrectionDetailsResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type ApproveAdminQuickBooksPayoutCorrectionDetailsResponse = ApproveAdminQuickBooksPayoutCorrectionDetailsResponses[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsResponses];
+
+export interface RetryAdminQuickBooksSyncEventData {
+  path: {
+    outboxId: string;
+  };
+  body?: never;
+  query?: never;
+  url: '/api/v1/admin/quickbooks-sync/{outboxId}/retry';
+}
+
+export interface RetryAdminQuickBooksSyncEventErrors {
+  /**
+   * Default Response
+   */
+  401: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  403: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 403;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type RetryAdminQuickBooksSyncEventError = RetryAdminQuickBooksSyncEventErrors[keyof RetryAdminQuickBooksSyncEventErrors];
+
+export interface RetryAdminQuickBooksSyncEventResponses {
+  /**
+   * Default Response
+   */
+  200: {
+    message: string;
+    statusCode: 200;
+  };
+}
+
+export type RetryAdminQuickBooksSyncEventResponse = RetryAdminQuickBooksSyncEventResponses[keyof RetryAdminQuickBooksSyncEventResponses];
 
 export interface GetAdminReportsData {
   path?: never;
@@ -6458,7 +11311,7 @@ export interface CreateAdminRoleData {
     /**
      * Array of permission names to assign to the role
      */
-    permissions: Array<'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE'>;
+    permissions: Array<'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE'>;
   };
   query?: never;
   url: '/api/v1/admin/roles';
@@ -6962,7 +11815,7 @@ export interface UpdateAdminRolePermissionsData {
     /**
      * Array of permission names to assign to the role
      */
-    permissions: Array<'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE'>;
+    permissions: Array<'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE'>;
   };
   query?: never;
   url: '/api/v1/admin/roles/{roleId}/permissions';
@@ -7557,6 +12410,34 @@ export interface UpdateAdminSellerCouponErrors {
      * Http status code of the error response
      */
     statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
     /**
      * Detailed human-readable error message
      */
@@ -8927,6 +13808,34 @@ export interface UpdateAdminDiscountCodeErrors {
      * Http status code of the error response
      */
     statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
     /**
      * Detailed human-readable error message
      */
@@ -12304,7 +17213,7 @@ export interface LoginUserResponses {
         marketingEmailConsent: boolean;
         permissions: Array<{
           id: string;
-          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
+          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
         }>;
         /**
          * Phone number.
@@ -12571,7 +17480,7 @@ export interface GetCurrentUserResponses {
         marketingEmailConsent: boolean;
         permissions: Array<{
           id: string;
-          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
+          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
         }>;
         /**
          * Phone number.
@@ -12734,7 +17643,7 @@ export interface RefreshUserTokenResponses {
         marketingEmailConsent: boolean;
         permissions: Array<{
           id: string;
-          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
+          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
         }>;
         /**
          * Phone number.
@@ -12964,7 +17873,7 @@ export interface RegisterUserResponses {
         marketingEmailConsent: boolean;
         permissions: Array<{
           id: string;
-          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
+          name: 'ANALYTICS_CREATE' | 'ANALYTICS_DELETE' | 'ANALYTICS_READ' | 'ANALYTICS_UPDATE' | 'BOOSTS_CREATE' | 'BOOSTS_DELETE' | 'BOOSTS_READ' | 'BOOSTS_UPDATE' | 'BRANDS_CREATE' | 'BRANDS_DELETE' | 'BRANDS_READ' | 'BRANDS_UPDATE' | 'CATALOG_CREATE' | 'CATALOG_DELETE' | 'CATALOG_READ' | 'CATALOG_UPDATE' | 'COMPLAINTS_CREATE' | 'COMPLAINTS_DELETE' | 'COMPLAINTS_READ' | 'COMPLAINTS_UPDATE' | 'FINANCE_ADJUSTMENTS_CREATE' | 'FINANCE_ADJUSTMENTS_READ' | 'FINANCE_ADJUSTMENTS_REVIEW' | 'FINANCE_DASHBOARD_CREATE' | 'FINANCE_DASHBOARD_DELETE' | 'FINANCE_DASHBOARD_READ' | 'FINANCE_DASHBOARD_UPDATE' | 'FINANCE_QUICKBOOKS_CONNECTION_MANAGE' | 'FINANCE_QUICKBOOKS_CONNECTION_READ' | 'FINANCE_QUICKBOOKS_MAPPINGS_MANAGE' | 'FINANCE_QUICKBOOKS_MAPPINGS_READ' | 'FINANCE_QUICKBOOKS_SYNC_MANAGE' | 'FINANCE_QUICKBOOKS_SYNC_READ' | 'FINANCE_REPORTS_CREATE' | 'FINANCE_REPORTS_DELETE' | 'FINANCE_REPORTS_READ' | 'FINANCE_REPORTS_UPDATE' | 'LISTINGS_CREATE' | 'LISTINGS_DELETE' | 'LISTINGS_READ' | 'LISTINGS_UPDATE' | 'MARKETING_LEADS_CREATE' | 'MARKETING_LEADS_DELETE' | 'MARKETING_LEADS_READ' | 'MARKETING_LEADS_UPDATE' | 'MESSAGES_CREATE' | 'MESSAGES_DELETE' | 'MESSAGES_READ' | 'MESSAGES_UPDATE' | 'ORDERS_CREATE' | 'ORDERS_DELETE' | 'ORDERS_READ' | 'ORDERS_UPDATE' | 'PAYOUTS_CREATE' | 'PAYOUTS_DELETE' | 'PAYOUTS_READ' | 'PAYOUTS_UPDATE' | 'REPORTS_CREATE' | 'REPORTS_DELETE' | 'REPORTS_READ' | 'REPORTS_UPDATE' | 'RETURNS_CREATE' | 'RETURNS_DELETE' | 'RETURNS_READ' | 'RETURNS_UPDATE' | 'ROLES_AND_PERMISSIONS_CREATE' | 'ROLES_AND_PERMISSIONS_DELETE' | 'ROLES_AND_PERMISSIONS_READ' | 'ROLES_AND_PERMISSIONS_UPDATE' | 'SELLER_COUPONS_CREATE' | 'SELLER_COUPONS_DELETE' | 'SELLER_COUPONS_READ' | 'SELLER_COUPONS_UPDATE' | 'SETTINGS_CREATE' | 'SETTINGS_DELETE' | 'SETTINGS_READ' | 'SETTINGS_UPDATE' | 'SUPPORT_TICKETS_CREATE' | 'SUPPORT_TICKETS_DELETE' | 'SUPPORT_TICKETS_READ' | 'SUPPORT_TICKETS_UPDATE' | 'USERS_CREATE' | 'USERS_DELETE' | 'USERS_READ' | 'USERS_UPDATE';
         }>;
         /**
          * Phone number.
@@ -21526,6 +26435,34 @@ export interface GetMyPayoutsErrors {
       message: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  422: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 422;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
 }
 
 export type GetMyPayoutsError = GetMyPayoutsErrors[keyof GetMyPayoutsErrors];
@@ -23046,6 +27983,80 @@ export interface UpdateMyBankDetailsResponses {
 }
 
 export type UpdateMyBankDetailsResponse = UpdateMyBankDetailsResponses[keyof UpdateMyBankDetailsResponses];
+
+export interface CompleteQuickBooksOAuthCallbackData {
+  path?: never;
+  body?: never;
+  query: {
+    realmId?: string;
+    code?: string;
+    error?: string;
+    error_description?: string;
+    state: string;
+  };
+  url: '/api/v1/quickbooks/callback';
+}
+
+export interface CompleteQuickBooksOAuthCallbackErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  502: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 502;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+}
+
+export type CompleteQuickBooksOAuthCallbackError = CompleteQuickBooksOAuthCallbackErrors[keyof CompleteQuickBooksOAuthCallbackErrors];
 
 export interface CreateReportData {
   path?: never;

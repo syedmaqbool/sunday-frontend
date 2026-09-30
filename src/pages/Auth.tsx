@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
 import { getErrorToastOptions } from '@/lib/errorToast';
+import { internationalPhoneSchema } from '@/lib/phone';
 import { sendRegisterOtp } from '@/services/auth.service';
 
 const authBaseSchema = z.object({
@@ -35,7 +36,7 @@ const authBaseSchema = z.object({
   marketingConsent: z.boolean(),
   name: z.string().trim().min(1, 'Full name is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
-  phone: z.string().trim().regex(/^\+?[\d\s\-().]{7,20}$/, 'Please enter a valid phone number.'),
+  phone: internationalPhoneSchema,
   termsAccepted: z.boolean().refine(value => value === true, 'Please accept the Terms & Conditions to continue.'),
 });
 
@@ -204,7 +205,7 @@ function Auth() {
           marketingEmailConsent: values.marketingConsent,
           otp: values.otp.trim().toUpperCase(),
           password: values.password,
-          phone: values.phone.trim(),
+          phone: values.phone,
           termsAccepted: true,
           whatsappTransactionalNotificationsEnabled: true,
         });
@@ -314,8 +315,8 @@ function Auth() {
                       render={({ field }) => (
                         <Input
                           id="phone"
-                          maxLength={20}
-                          placeholder="+92 ..."
+                          maxLength={30}
+                          placeholder="+92 300 1234567"
                           type="tel"
                           {...field}
                         />

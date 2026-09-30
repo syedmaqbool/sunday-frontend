@@ -381,7 +381,6 @@ function DiscountCodes() {
                           variant="ghost"
                           className="
                             h-7 w-7 text-muted-foreground
-
                             hover:text-destructive
                           "
                         >

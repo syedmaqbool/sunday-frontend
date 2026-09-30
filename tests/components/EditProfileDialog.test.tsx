@@ -34,4 +34,19 @@ describe('profile edit WhatsApp behavior', () => {
       );
     });
   });
+
+  it('normalizes formatted phone numbers before updating the profile', async () => {
+    render(<EditProfileDialog profile={null} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }));
+    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '+92 (300) 123-4567' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mutateMock).toHaveBeenCalledWith(
+        expect.objectContaining({ phone: '+923001234567' }),
+        expect.any(Object),
+      );
+    });
+  });
 });

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { showErrorToast } from '@/lib/errorToast';
+import { internationalPhoneSchema } from '@/lib/phone';
 import { getAdminRolesQueryOptions } from '@/queries/adminRole.query';
 import {
   getAdminUsersQueryOptions,
@@ -41,7 +42,7 @@ const staffCreateFormSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required.'),
   lastName: z.string().trim().min(1, 'Last name is required.'),
   password: z.string().min(8, 'Temporary password must be at least 8 characters.'),
-  phone: z.string().trim().min(1, 'Phone is required.'),
+  phone: internationalPhoneSchema,
 });
 const roleReassignFormSchema = z.object({ roleId: z.string().min(1, 'Select a target role.') });
 
@@ -250,7 +251,7 @@ export default function StaffUsers() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-phone">Phone</Label>
-              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="staff-phone" />} />
+              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="staff-phone" placeholder="+92 300 1234567" type="tel" />} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-password">Temporary password</Label>

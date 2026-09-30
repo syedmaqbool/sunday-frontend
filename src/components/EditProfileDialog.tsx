@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 import { showErrorToast } from '@/lib/errorToast';
+import { internationalPhoneSchema } from '@/lib/phone';
 import { useUpdateProfileMutation } from '@/queries/myProfile.query';
 import { uploadProfileFile } from '@/services/profile.service';
 
@@ -34,7 +35,7 @@ const profileSchema = z.object({
   bio: z.string().trim().max(280).optional().or(z.literal('')),
   fullName: z.string().trim().max(80).optional().or(z.literal('')),
   location: z.string().trim().max(80).optional().or(z.literal('')),
-  phone: z.string().trim().max(30).optional().or(z.literal('')),
+  phone: internationalPhoneSchema.optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -123,7 +124,7 @@ export function EditProfileDialog({ profile }: Props) {
       fullName: values.fullName,
       image: values.imageId,
       location: values.location,
-      phone: values.phone,
+      phone: values.phone || undefined,
       whatsappTransactionalNotificationsEnabled: true,
     };
 
@@ -272,7 +273,8 @@ export function EditProfileDialog({ profile }: Props) {
                   <Input
                     id="phone"
                     maxLength={30}
-                    placeholder="+92..."
+                    placeholder="+92 300 1234567"
+                    type="tel"
                     {...field}
                   />
                 )}

@@ -1,10 +1,9 @@
-import type { CreateDiscountCodePayload } from '@/types/discountCode.type';
-
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-
 import { Loader2, Plus, Tag, Trash2 } from 'lucide-react';
-
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,9 +13,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
 import {
   Select,
   SelectContent,
@@ -26,7 +31,6 @@ import {
 } from '@/components/ui/select';
 
 import { Switch } from '@/components/ui/switch';
-
 import {
   Table,
   TableBody,
@@ -44,6 +48,47 @@ import {
   useUpdateDiscountCodeMutation,
 } from '@/queries/adminDiscountCodes.query';
 
+const discountCodeFormSchema = z.object({
+  code: z.string().trim().min(1, 'Enter a code.'),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']),
+  discountValue: z.string()
+    .min(1, 'Enter a discount value.')
+    .transform(Number)
+    .pipe(z.number().positive('Enter a value greater than zero.'))
+    .transform(String),
+  maxUses: z.union([
+    z.literal(''),
+    z.string()
+      .min(1, 'Enter a positive whole number.')
+      .transform(Number)
+      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
+      .transform(String),
+  ]),
+  minOrder: z.union([
+    z.literal(''),
+    z.string()
+      .min(1, 'Enter zero or more.')
+      .transform(Number)
+      .pipe(z.number().min(0, 'Enter zero or more.'))
+      .transform(String),
+  ]),
+  expiresAt: z.union([
+    z.literal(''),
+    z.string().datetime({ local: true }),
+  ]),
+});
+
+type DiscountCodeFormValues = z.infer<typeof discountCodeFormSchema>;
+
+const emptyDiscountCodeForm: DiscountCodeFormValues = {
+  code: '',
+  discountType: 'PERCENTAGE',
+  discountValue: '',
+  maxUses: '',
+  minOrder: '',
+  expiresAt: '',
+};
+
 function DiscountCodes() {
   const { data: codes = [], isLoading } = useQuery(getDiscountCodesOptions());
 
@@ -52,36 +97,24 @@ function DiscountCodes() {
   const deleteMutation = useDeleteDiscountCodeMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // form state
-  const [code, setCode] = useState('');
-  const [discountType, setDiscountType] = useState<CreateDiscountCodePayload['discountType']>('PERCENTAGE');
-  const [discountValue, setDiscountValue] = useState('');
-  const [minOrder, setMinOrder] = useState('');
-  const [maxUses, setMaxUses] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
+  const form = useForm<DiscountCodeFormValues>({
+    defaultValues: emptyDiscountCodeForm,
+    resolver: zodResolver(discountCodeFormSchema),
+  });
 
   const resetForm = () => {
-    setCode('');
-    setDiscountType('PERCENTAGE');
-    setDiscountValue('');
-    setMinOrder('');
-    setMaxUses('');
-    setExpiresAt('');
+    form.reset(emptyDiscountCodeForm);
   };
 
-  const handleCreate = async () => {
-    if (!code.trim() || !discountValue)
-      return;
-
+  const handleCreate = async (values: DiscountCodeFormValues) => {
     try {
       await createMutation.mutateAsync({
-        code: code.trim().toUpperCase(),
-        discountType,
-        discountValue: Number(discountValue),
-        maxUses: maxUses ? Number(maxUses) : null,
-        minOrderAmount: minOrder ? Number(minOrder) : 0,
-        expiresAt: expiresAt || null,
+        code: values.code.toUpperCase(),
+        discountType: values.discountType,
+        discountValue: Number(values.discountValue),
+        maxUses: values.maxUses ? Number(values.maxUses) : null,
+        minOrderAmount: values.minOrder ? Number(values.minOrder) : 0,
+        expiresAt: values.expiresAt ? new Date(values.expiresAt).toISOString() : null,
       });
 
       toast({
@@ -91,7 +124,7 @@ function DiscountCodes() {
       setDialogOpen(false);
       resetForm();
     }
-    catch (error: any) {
+    catch (error) {
       toast(getErrorToastOptions(error));
     }
   };
@@ -166,103 +199,115 @@ function DiscountCodes() {
           </DialogTrigger>
 
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Discount Code</DialogTitle>
-            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreate)} className="grid gap-4 py-2">
+                <DialogHeader>
+                  <DialogTitle>Create Discount Code</DialogTitle>
+                </DialogHeader>
 
-            <div className="grid gap-4 py-2">
-              <div className="space-y-2">
-                <Label>Code</Label>
-
-                <Input
-                  onChange={event => setCode(event.target.value.toUpperCase())}
-                  value={code}
-                  placeholder="SUMMER20"
-                  className="uppercase"
+                <FormField
+                  name="code"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Code</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="SUMMER20" className="uppercase" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Type</Label>
-
-                  <Select
-                    onValueChange={value => setDiscountType(value as CreateDiscountCodePayload['discountType'])}
-                    value={discountType}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-
-                      <SelectItem value="FIXED">Fixed (Rs)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Value</Label>
-
-                  <Input
-                    onChange={event => setDiscountValue(event.target.value)}
-                    value={discountValue}
-                    placeholder="20"
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Min order (Rs)</Label>
-
-                  <Input
-                    onChange={event => setMinOrder(event.target.value)}
-                    value={minOrder}
-                    placeholder="0"
-                    type="number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Max uses</Label>
-
-                  <Input
-                    onChange={event => setMaxUses(event.target.value)}
-                    value={maxUses}
-                    placeholder="Unlimited"
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Expires at</Label>
-
-                <Input
-                  onChange={event => setExpiresAt(event.target.value)}
-                  value={expiresAt}
-                  type="datetime-local"
-                />
-              </div>
-
-              <Button
-                onClick={handleCreate}
-                disabled={
-                  createMutation.isPending || !code.trim() || !discountValue
-                }
-              >
-                {createMutation.isPending
-                  ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      'Create Code'
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    name="discountType"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                            <SelectItem value="FIXED">Fixed (Rs)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )}
-              </Button>
-            </div>
+                  />
+
+                  <FormField
+                    name="discountValue"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Value</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="20" type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    name="minOrder"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Min order (Rs)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="0" type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="maxUses"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Max uses</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Unlimited" type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  name="expiresAt"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expires at</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="datetime-local" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button disabled={createMutation.isPending} type="submit">
+                  {createMutation.isPending
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : 'Create Code'}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -336,6 +381,7 @@ function DiscountCodes() {
                           variant="ghost"
                           className="
                             h-7 w-7 text-muted-foreground
+
                             hover:text-destructive
                           "
                         >

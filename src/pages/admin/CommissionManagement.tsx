@@ -1,8 +1,11 @@
 import type { CommissionTier } from '@/types/commission.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Pencil, Percent, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +36,27 @@ import {
   useUpdateCommissionTierMutation,
 } from '@/queries/adminCommission.query';
 
-const blankForm = {
+const commissionFormSchema = z.object({
+  active: z.boolean(),
+  categories: z.string(),
+  max_price: z.string(),
+  min_price: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) >= 0, 'Minimum price must be zero or greater.'),
+  name: z.string().trim().min(1, 'Name is required.'),
+  rate: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100, 'Rate must be between 0 and 100.'),
+  sort_order: z.string().refine(value => value.trim() === '' || (Number.isSafeInteger(Number(value)) && Number(value) >= 0), 'Sort order must be a non-negative whole number.'),
+}).superRefine((values, context) => {
+  if (values.max_price.trim() === '')
+    return;
+  const minimum = Number(values.min_price);
+  const maximum = Number(values.max_price);
+  if (!Number.isFinite(maximum) || maximum < minimum) {
+    context.addIssue({ path: ['max_price'], code: z.ZodIssueCode.custom, message: 'Max price must be greater than or equal to min price.' });
+  }
+});
+
+type CommissionFormValues = z.infer<typeof commissionFormSchema>;
+
+const blankForm: CommissionFormValues = {
   active: true,
   categories: '',
   max_price: '',
@@ -55,18 +78,21 @@ function CommissionManagement() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CommissionTier | null>(null);
-  const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
+  const form = useForm<CommissionFormValues>({
+    defaultValues: blankForm,
+    resolver: zodResolver(commissionFormSchema),
+  });
 
   const openNew = () => {
     setEditing(null);
-    setForm(blankForm);
+    form.reset(blankForm);
     setOpen(true);
   };
 
   const openEdit = (t: CommissionTier) => {
     setEditing(t);
-    setForm({
+    form.reset({
       active: t.active,
       categories: (t.categories ?? []).join(', '),
       max_price: t.maxPrice == null ? '' : String(t.maxPrice),
@@ -78,40 +104,24 @@ function CommissionManagement() {
     setOpen(true);
   };
 
-  const handleSave = async () => {
-    const rate = Number(form.rate);
-    const minP = Number(form.min_price || '0');
+  const handleSave = async (values: CommissionFormValues) => {
+    const rate = Number(values.rate);
+    const minP = Number(values.min_price || '0');
     const maxP
-      = form.max_price.trim() === '' ? null : Number(form.max_price);
-    if (!form.name.trim() || Number.isNaN(rate) || rate < 0 || rate > 100) {
-      toast({
-        description: 'Name and rate (0-100) required.',
-        title: 'Invalid input',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (Number.isNaN(minP) || (maxP !== null && (Number.isNaN(maxP) || maxP < minP))) {
-      toast({
-        description: 'Max price must be ≥ min price.',
-        title: 'Invalid price range',
-        variant: 'destructive',
-      });
-      return;
-    }
-    const categories = form.categories
+      = values.max_price.trim() === '' ? null : Number(values.max_price);
+    const categories = values.categories
       .split(',')
       .map(c => c.trim().toLowerCase())
       .filter(Boolean);
 
     const payload = {
-      active: form.active,
+      active: values.active,
       categories,
       maxPrice: maxP,
       minPrice: minP,
-      name: form.name.trim(),
+      name: values.name,
       rate,
-      sortOrder: Number.parseInt(form.sort_order || '0') || 0,
+      sortOrder: Number.parseInt(values.sort_order || '0') || 0,
     };
 
     setSaving(true);
@@ -278,27 +288,16 @@ function CommissionManagement() {
               configured percentage.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSave, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Invalid input', variant: 'destructive' }))} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Tier name</Label>
-              <Input
-                id="name"
-                onChange={event => setForm({ ...form, name: event.target.value })}
-                value={form.name}
-                placeholder="Tier 1"
-              />
+              <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="name" placeholder="Tier 1" />} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="categories">
                 Categories (comma separated, blank = any)
               </Label>
-              <Input
-                id="categories"
-                onChange={event =>
-                  setForm({ ...form, categories: event.target.value })}
-                value={form.categories}
-                placeholder="formals, eastern, luxury"
-              />
+              <Controller name="categories" control={form.control} render={({ field }) => <Input {...field} id="categories" placeholder="formals, eastern, luxury" />} />
               <p className="text-xs text-muted-foreground">
                 Matched against listing category tokens (lowercase). Leave empty
                 to apply to every category.
@@ -307,68 +306,81 @@ function CommissionManagement() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="min_price">Min price (PKR)</Label>
-                <Input
-                  id="min_price"
-                  onChange={event =>
-                    setForm({ ...form, min_price: event.target.value })}
-                  value={form.min_price}
-                  min="0"
-                  type="number"
+                <Controller
+                  name="min_price"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="min_price"
+                      min="0"
+                      type="number"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="max_price">Max price (blank = no cap)</Label>
-                <Input
-                  id="max_price"
-                  onChange={event =>
-                    setForm({ ...form, max_price: event.target.value })}
-                  value={form.max_price}
-                  min="0"
-                  type="number"
+                <Controller
+                  name="max_price"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="max_price"
+                      min="0"
+                      type="number"
+                    />
+                  )}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="rate">Platform fee (%)</Label>
-                <Input
-                  id="rate"
-                  onChange={event => setForm({ ...form, rate: event.target.value })}
-                  value={form.rate}
-                  max="100"
-                  min="0"
-                  step="0.01"
-                  type="number"
+                <Controller
+                  name="rate"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="rate"
+                      max="100"
+                      min="0"
+                      step="0.01"
+                      type="number"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sort_order">Sort order</Label>
-                <Input
-                  id="sort_order"
-                  onChange={event =>
-                    setForm({ ...form, sort_order: event.target.value })}
-                  value={form.sort_order}
-                  type="number"
+                <Controller
+                  name="sort_order"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="sort_order"
+                      type="number"
+                    />
+                  )}
                 />
               </div>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="active">Active</Label>
-              <Switch
-                id="active"
-                onCheckedChange={v => setForm({ ...form, active: v })}
-                checked={form.active}
-              />
+              <Controller name="active" control={form.control} render={({ field }) => <Switch id="active" onCheckedChange={field.onChange} checked={field.value} />} />
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button disabled={saving} type="submit">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

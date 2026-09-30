@@ -1,11 +1,14 @@
 import type { AdminReport, ReportStatus } from '@/types/adminReport.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Flag, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +29,8 @@ const STATUS_VARIANT: Record<
   OPEN: 'destructive',
   RESOLVED: 'secondary',
 };
+
+const reportNotesSchema = z.object({ notes: z.record(z.string()) });
 
 function getTargetType(r: AdminReport): 'conversation' | 'listing' | 'message' | 'user' | null {
   if (r.listingId)
@@ -49,7 +54,10 @@ function targetLink(r: AdminReport) {
 
 function Reports() {
   const [filter, setFilter] = useState<'all' | ReportStatus>('OPEN');
-  const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const form = useForm<z.infer<typeof reportNotesSchema>>({
+    defaultValues: { notes: {} },
+    resolver: zodResolver(reportNotesSchema),
+  });
 
   const { data: reports = [], isLoading } = useQuery(getAdminReportsOptions(filter));
   const resolveReport = useResolveReportMutation();
@@ -108,7 +116,6 @@ function Reports() {
                   {reports.map((r) => {
                     const link = targetLink(r);
                     const targetType = getTargetType(r);
-                    const notes = notesDraft[r.id] ?? r.adminNotes ?? '';
                     return (
                       <Card key={r.id}>
                         <CardContent className="space-y-3 p-4">
@@ -200,26 +207,27 @@ function Reports() {
                             </p>
                           )}
 
-                          <Textarea
-                            onChange={event =>
-                              setNotesDraft({ ...notesDraft, [r.id]: event.target.value })}
-                            value={notes}
-                            placeholder="Admin notes..."
-                            rows={2}
+                          <Controller
+                            name={`notes.${r.id}`}
+                            control={form.control}
+                            defaultValue={r.adminNotes ?? ''}
+                            render={({ field }) => <Textarea {...field} placeholder="Admin notes..." rows={2} />}
                           />
 
                           <div className="flex flex-wrap gap-2">
                             <Button
-                              onClick={() => handleUpdate(r.id, 'RESOLVED', notes)}
+                              onClick={form.handleSubmit(values => handleUpdate(r.id, 'RESOLVED', values.notes[r.id] ?? r.adminNotes ?? ''))}
                               disabled={resolveReport.isPending}
                               size="sm"
+                              type="button"
                             >
                               Resolve
                             </Button>
                             <Button
-                              onClick={() => handleUpdate(r.id, 'DISMISSED', notes)}
+                              onClick={form.handleSubmit(values => handleUpdate(r.id, 'DISMISSED', values.notes[r.id] ?? r.adminNotes ?? ''))}
                               disabled={resolveReport.isPending}
                               size="sm"
+                              type="button"
                               variant="outline"
                             >
                               Dismiss

@@ -56,12 +56,12 @@ import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
 const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
+const listingMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
+const existingMediaSchema = z.object({ fileId: z.string(), url: z.string() });
 
 function isListingSize(value: string): boolean {
   return (LISTING_SIZE_OPTIONS as readonly string[]).includes(value);
 }
-
-interface ExistingMediaItem { fileId: string; url: string }
 
 const listingSchema = z.object({
   categoryId: z.string().min(1, 'Category is required.'),
@@ -69,6 +69,9 @@ const listingSchema = z.object({
   brand: z.string().trim().min(1, 'Brand is required.'),
   condition: z.string().min(1, 'Condition is required.'),
   description: z.string().trim().min(1, 'Description is required.'),
+  existingImages: z.array(existingMediaSchema),
+  existingVideo: existingMediaSchema.nullable(),
+  imageFiles: z.array(listingMediaFileSchema),
   parentCategory: z.string().min(1, 'Category is required.'),
   price: z.string().refine(value => Number(value) > 0, 'Price must be greater than 0.'),
   size: z.string().refine(
@@ -77,6 +80,7 @@ const listingSchema = z.object({
   ),
   subCategory: z.string().min(1, 'Subcategory is required.'),
   title: z.string().trim().min(1, 'Title is required.'),
+  videoFile: listingMediaFileSchema.nullable(),
   weight: z.string().optional().refine(
     value => !value || WEIGHT_OPTIONS.some(option => option.value === value),
     'Select a valid weight.',
@@ -91,11 +95,15 @@ const defaultListingValues: ListingFormValues = {
   brand: '',
   condition: '',
   description: '',
+  existingImages: [],
+  existingVideo: null,
+  imageFiles: [],
   parentCategory: '',
   price: '',
   size: '',
   subCategory: '',
   title: '',
+  videoFile: null,
   weight: '',
 };
 
@@ -149,11 +157,10 @@ function CreateListing() {
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));
   const [submitting, setSubmitting] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<ExistingMediaItem[]>([]);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [existingVideo, setExistingVideo] = useState<ExistingMediaItem | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
+
+  const imageFiles = formValues.imageFiles;
+  const existingImages = formValues.existingImages;
 
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
@@ -196,11 +203,15 @@ function CreateListing() {
       brand: existingListing.brand || '',
       condition: existingListing.condition,
       description: existingListing.description || '',
+      existingImages: [],
+      existingVideo: null,
+      imageFiles: [],
       parentCategory: parts[0] || '',
       price: String(existingListing.price),
       size: existingListing.size,
       subCategory: parts[1] || '',
       title: existingListing.title,
+      videoFile: null,
       weight: closestWeight,
     });
 
@@ -213,25 +224,24 @@ function CreateListing() {
       .filter(m => m.fileId && m.url);
 
     const vid = sortedMedia.find(m => m.type === 'VIDEO');
-    setExistingImages(images);
-    setExistingVideo(
-      vid?.file?.id && vid?.file.url
-        ? { fileId: vid.file.id, url: vid.file.url }
-        : null,
-    );
-  }, [existingListing, user, navigate, reset]);
+    setValue('existingImages', images);
+    setValue('existingVideo', vid?.file?.id && vid?.file.url
+      ? { fileId: vid.file.id, url: vid.file.url }
+      : null);
+  }, [existingListing, user, navigate, reset, setValue]);
 
-  const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>, currentFiles: File[], onChange: (files: File[]) => void) => {
     const files = [...event_.target.files || []];
-    const total = imageFiles.length + existingImages.length + files.length;
+    const total = currentFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
       toast({ title: `Max ${MAX_PHOTOS} photos allowed`, variant: 'destructive' });
       return;
     }
-    setImageFiles(previous => [...previous, ...files]);
+    onChange([...currentFiles, ...files]);
+    event_.target.value = '';
   };
 
-  const handleAddVideo = (event_: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddVideo = (event_: React.ChangeEvent<HTMLInputElement>, onChange: (file: File) => void) => {
     const file = event_.target.files?.[0];
     if (!file)
       return;
@@ -239,47 +249,43 @@ function CreateListing() {
       toast({ title: 'Video must be under 50MB', variant: 'destructive' });
       return;
     }
-    setVideoFile(file);
-    setExistingVideo(null);
+    onChange(file);
+    setValue('existingVideo', null, { shouldDirty: true, shouldValidate: true });
+    event_.target.value = '';
   };
 
   const removeNewImage = (index: number) => {
-    setImageFiles(previous => previous.filter((_, index_) => index_ !== index));
+    setValue('imageFiles', imageFiles.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true });
   };
 
   const removeExistingImage = (index: number) => {
-    setExistingImages(previous => previous.filter((_, index_) => index_ !== index));
+    setValue('existingImages', existingImages.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true });
   };
 
   const removeVideo = () => {
-    setVideoFile(null);
-    setExistingVideo(null);
+    setValue('videoFile', null, { shouldDirty: true, shouldValidate: true });
+    setValue('existingVideo', null, { shouldDirty: true, shouldValidate: true });
   };
 
   const setCoverPhoto = (previewIndex: number) => {
     if (previewIndex === 0)
       return;
     if (previewIndex < existingImages.length) {
-      setExistingImages((previous) => {
-        const next = [...previous];
-        const [cover] = next.splice(previewIndex, 1);
-        next.unshift(cover);
-        return next;
-      });
+      const next = [...existingImages];
+      const [cover] = next.splice(previewIndex, 1);
+      next.unshift(cover);
+      setValue('existingImages', next, { shouldDirty: true, shouldValidate: true });
     }
     else {
       const newIndex = previewIndex - existingImages.length;
-      setImageFiles((previous) => {
-        const next = [...previous];
-        const [cover] = next.splice(newIndex, 1);
-        next.unshift(cover);
-        return next;
-      });
+      const next = [...imageFiles];
+      const [cover] = next.splice(newIndex, 1);
+      next.unshift(cover);
+      setValue('imageFiles', next, { shouldDirty: true, shouldValidate: true });
     }
   };
 
   const totalPhotos = imageFiles.length + existingImages.length;
-  const hasVideo = !!videoFile || !!existingVideo;
 
   async function performSubmit(values: ListingFormValues) {
     setSubmitting(true);
@@ -294,20 +300,20 @@ function CreateListing() {
         ? Number(values.weight) as CreateListingPayload['weight']
         : null;
       const newImageItems = await Promise.all(
-        imageFiles.map(async (file, index) => {
+        values.imageFiles.map(async (file, index) => {
           const { data } = await uploadFile(file);
           return { fileId: data.id, sortOrder: index };
         }),
       );
 
       let newVideoFileId: string | null = null;
-      if (videoFile) {
-        const { data } = await uploadFile(videoFile);
+      if (values.videoFile) {
+        const { data } = await uploadFile(values.videoFile);
         newVideoFileId = data.id;
       }
 
       if (isEditing) {
-        const existingImageItems = existingImages.map((img, index) => ({
+        const existingImageItems = values.existingImages.map((img, index) => ({
           fileId: img.fileId,
           sortOrder: index,
         }));
@@ -315,10 +321,10 @@ function CreateListing() {
           ...existingImageItems,
           ...newImageItems.map((item, index) => ({
             fileId: item.fileId,
-            sortOrder: existingImages.length + index,
+            sortOrder: values.existingImages.length + index,
           })),
         ];
-        const videoFileId = newVideoFileId ?? existingVideo?.fileId ?? null;
+        const videoFileId = newVideoFileId ?? values.existingVideo?.fileId ?? null;
         const media = [
           ...allImageItems,
           ...(videoFileId ? [{ fileId: videoFileId, sortOrder: allImageItems.length }] : []),
@@ -387,11 +393,11 @@ function CreateListing() {
     if (!user)
       return;
 
-    if (totalPhotos === 0) {
+    if (values.imageFiles.length + values.existingImages.length === 0) {
       toast({ title: 'At least 1 photo is required', variant: 'destructive' });
       return;
     }
-    if (!hasVideo) {
+    if (!values.videoFile && !values.existingVideo) {
       toast({
         description: 'Please upload 1 video of the item.',
         title: 'A video is required',
@@ -422,8 +428,8 @@ function CreateListing() {
   };
 
   const allPreviews = [
-    ...existingImages.map(img => ({ type: 'existing' as const, url: img.url })),
-    ...imageFiles.map((file, index) => ({
+    ...formValues.existingImages.map(img => ({ type: 'existing' as const, url: img.url })),
+    ...formValues.imageFiles.map((file, index) => ({
       index,
       type: 'new' as const,
       url: URL.createObjectURL(file),
@@ -431,8 +437,8 @@ function CreateListing() {
   ];
 
   const videoPreviewUrl = useMemo(
-    () => videoFile ? URL.createObjectURL(videoFile) : (existingVideo?.url ?? null),
-    [existingVideo, videoFile],
+    () => formValues.videoFile ? URL.createObjectURL(formValues.videoFile) : (formValues.existingVideo?.url ?? null),
+    [formValues.existingVideo, formValues.videoFile],
   );
 
   if (authLoading || loadingListing)
@@ -530,12 +536,19 @@ function CreateListing() {
                   hover:border-primary hover:text-primary
                 "
                 >
-                  <input
-                    onChange={handleAddImages}
-                    accept="image/*"
-                    multiple
-                    type="file"
-                    className="hidden"
+                  <Controller
+                    name="imageFiles"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        onChange={event => handleAddImages(event, field.value, field.onChange)}
+                        ref={field.ref}
+                        accept="image/*"
+                        multiple
+                        type="file"
+                        className="hidden"
+                      />
+                    )}
                   />
                   {allPreviews.length > 0
                     ? (
@@ -607,11 +620,18 @@ function CreateListing() {
                       hover:border-primary hover:text-primary
                     "
                     >
-                      <input
-                        onChange={handleAddVideo}
-                        accept="video/*"
-                        type="file"
-                        className="hidden"
+                      <Controller
+                        name="videoFile"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            onChange={event => handleAddVideo(event, field.onChange)}
+                            ref={field.ref}
+                            accept="video/*"
+                            type="file"
+                            className="hidden"
+                          />
+                        )}
                       />
                       <VideoIcon className="h-5 w-5" />
                       <span className="mt-1 text-[10px]">Add video</span>

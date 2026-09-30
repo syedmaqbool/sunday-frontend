@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   Eye,
@@ -10,7 +11,7 @@ import {
   Tag,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -26,11 +27,10 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const keywordSchema = z
-  .string()
-  .trim()
-  .min(2, 'Min 2 characters')
-  .max(60, 'Max 60 characters');
+const keywordSchema = z.object({
+  draft: z.string().trim().min(2, 'Min 2 characters').max(60, 'Max 60 characters'),
+});
+type KeywordFormValues = z.infer<typeof keywordSchema>;
 
 // System-level rules are hardcoded — not stored in backend
 const SYSTEM_RULES: Array<{
@@ -63,19 +63,17 @@ const SYSTEM_RULES: Array<{
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function FlagKeywords() {
-  const [draft, setDraft] = useState('');
+  const form = useForm<KeywordFormValues>({
+    defaultValues: { draft: '' },
+    resolver: zodResolver(keywordSchema),
+  });
+  const draft = form.watch('draft');
 
   const { data: keywords = [], isLoading } = useQuery(getFlagKeywordsOptions());
   const updateKeywords = useUpdateFlagKeywordsMutation();
 
-  const handleAdd = () => {
-    const parsed = keywordSchema.safeParse(draft);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-
-    const lower = parsed.data.toLowerCase();
+  const handleAdd = form.handleSubmit(({ draft: submittedDraft }) => {
+    const lower = submittedDraft.toLowerCase();
 
     if (keywords.includes(lower)) {
       toast.error('That keyword already exists');
@@ -86,10 +84,12 @@ function FlagKeywords() {
       onError: (error: any) => showErrorToast(error, 'Failed to add keyword'),
       onSuccess: () => {
         toast.success('Keyword added');
-        setDraft('');
+        form.reset({ draft: '' });
       },
     });
-  };
+  }, (errors) => {
+    toast.error(errors.draft?.message ?? 'Enter a valid keyword.');
+  });
 
   const handleDelete = (keyword: string) => {
     updateKeywords.mutate(
@@ -116,21 +116,25 @@ function FlagKeywords() {
       {/* Add new keyword */}
       <Card>
         <CardContent className="p-5">
-          <div className="flex items-end gap-3">
+          <form onSubmit={handleAdd} className="flex items-end gap-3">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="keyword">Keyword or phrase</Label>
-              <Input
-                id="keyword"
-                onChange={event => setDraft(event.target.value)}
-                onKeyDown={event => event.key === 'Enter' && handleAdd()}
-                value={draft}
-                maxLength={60}
-                placeholder="e.g. cashapp"
+              <Controller
+                name="draft"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="keyword"
+                    maxLength={60}
+                    placeholder="e.g. cashapp"
+                  />
+                )}
               />
             </div>
             <Button
-              onClick={handleAdd}
               disabled={updateKeywords.isPending || !draft.trim()}
+              type="submit"
               className="gap-2"
             >
               {updateKeywords.isPending
@@ -142,7 +146,7 @@ function FlagKeywords() {
                   )}
               Add
             </Button>
-          </div>
+          </form>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             Matching is case-insensitive and applies to any message containing

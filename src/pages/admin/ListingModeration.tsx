@@ -1,6 +1,7 @@
 import type { AdminListing, ListingStatus } from '@/types/adminListing.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   CheckCircle,
@@ -16,7 +17,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/components/AdminListingFeedbackWidgets';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,6 +46,8 @@ import {
   useCreateAdminListingFeedbackMutation,
   useModerateListingMutation,
 } from '@/queries/adminListing.query';
+
+const listingFeedbackSchema = z.object({ feedback: z.string() });
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -149,7 +154,10 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
 function ListingModeration() {
   const [filter, setFilter] = useState<'all' | ListingStatus>('PENDING');
   const [reviewListing, setReviewListing] = useState<AdminListing | null>(null);
-  const [feedback, setFeedback] = useState('');
+  const feedbackForm = useForm<z.infer<typeof listingFeedbackSchema>>({
+    defaultValues: { feedback: '' },
+    resolver: zodResolver(listingFeedbackSchema),
+  });
 
   const { data: listings = [], isLoading } = useQuery(getAdminListingsOptions(filter));
   const createFeedback = useCreateAdminListingFeedbackMutation();
@@ -175,7 +183,7 @@ function ListingModeration() {
     }
 
     setReviewListing(pendingListings[currentReviewIndex + 1]);
-    setFeedback('');
+    feedbackForm.reset({ feedback: '' });
   };
 
   const handleModerate = async (
@@ -196,7 +204,7 @@ function ListingModeration() {
       await moderateListing.mutateAsync({ listingId: id, status });
       toast.success(`Listing ${status.toLowerCase()}`);
       setReviewListing(null);
-      setFeedback('');
+      feedbackForm.reset({ feedback: '' });
       goToNext();
     }
     catch (error: any) {
@@ -287,7 +295,7 @@ function ListingModeration() {
                           <Button
                             onClick={() => {
                               setReviewListing(listing);
-                              setFeedback('');
+                              feedbackForm.reset({ feedback: '' });
                             }}
                             size="sm"
                             variant="outline"
@@ -332,7 +340,14 @@ function ListingModeration() {
 
       {/* Full review modal */}
       <Dialog
-        onOpenChange={open => !open && setReviewListing(null)}
+        onOpenChange={(open) => {
+          if (open) {
+            return;
+          }
+
+          setReviewListing(null);
+          feedbackForm.reset({ feedback: '' });
+        }}
         open={!!reviewListing}
       >
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
@@ -463,11 +478,16 @@ function ListingModeration() {
                         New Feedback
                       </p>
                     </div>
-                    <Textarea
-                      onChange={event => setFeedback(event.target.value)}
-                      value={feedback}
-                      placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
-                      rows={3}
+                    <Controller
+                      name="feedback"
+                      control={feedbackForm.control}
+                      render={({ field }) => (
+                        <Textarea
+                          {...field}
+                          placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
+                          rows={3}
+                        />
+                      )}
                     />
                   </div>
 
@@ -475,14 +495,9 @@ function ListingModeration() {
                   <div className="flex gap-3">
                     {reviewListing.status !== 'APPROVED' && (
                       <Button
-                        onClick={() => {
-                          void handleModerate(
-                            reviewListing.id,
-                            'APPROVED',
-                            feedback || undefined,
-                          );
-                        }}
+                        onClick={() => feedbackForm.handleSubmit(values => handleModerate(reviewListing.id, 'APPROVED', values.feedback || undefined))()}
                         disabled={moderateListing.isPending || createFeedback.isPending}
+                        type="button"
                         className="flex-1 gap-2"
                       >
                         <CheckCircle className="h-4 w-4" />
@@ -492,14 +507,9 @@ function ListingModeration() {
                     )}
                     {reviewListing.status !== 'REJECTED' && (
                       <Button
-                        onClick={() => {
-                          void handleModerate(
-                            reviewListing.id,
-                            'REJECTED',
-                            feedback,
-                          );
-                        }}
+                        onClick={() => feedbackForm.handleSubmit(values => handleModerate(reviewListing.id, 'REJECTED', values.feedback))()}
                         disabled={moderateListing.isPending || createFeedback.isPending}
+                        type="button"
                         variant="destructive"
                         className="flex-1 gap-2"
                       >

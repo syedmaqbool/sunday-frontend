@@ -1,7 +1,10 @@
 import type { AdminUser } from '@/types/adminUser.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import AdminUsersTable, {
   joinedDate,
   statusBadge,
@@ -32,14 +35,18 @@ import {
   useUpdateUserRoleMutation,
 } from '@/queries/adminUsers.query';
 
-interface StaffFormState {
-  roleId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  phone: string;
-}
+const staffCreateFormSchema = z.object({
+  roleId: z.string().min(1, 'Select a staff role.'),
+  email: z.string().trim().email('Enter a valid email address.'),
+  firstName: z.string().trim().min(1, 'First name is required.'),
+  lastName: z.string().trim().min(1, 'Last name is required.'),
+  password: z.string().min(8, 'Temporary password must be at least 8 characters.'),
+  phone: z.string().trim().min(1, 'Phone is required.'),
+});
+const roleReassignFormSchema = z.object({ roleId: z.string().min(1, 'Select a target role.') });
+
+type StaffFormState = z.infer<typeof staffCreateFormSchema>;
+type RoleReassignFormValues = z.infer<typeof roleReassignFormSchema>;
 
 const EMPTY_FORM: StaffFormState = {
   roleId: '',
@@ -56,8 +63,8 @@ export default function StaffUsers() {
   const [status, setStatus] = useState<'ACTIVE' | 'ALL' | 'INACTIVE'>('ALL');
   const [createOpen, setCreateOpen] = useState(false);
   const [reassignUser, setReassignUser] = useState<AdminUser | null>(null);
-  const [form, setForm] = useState<StaffFormState>(EMPTY_FORM);
-  const [nextRoleId, setNextRoleId] = useState('');
+  const form = useForm<StaffFormState>({ defaultValues: EMPTY_FORM, resolver: zodResolver(staffCreateFormSchema) });
+  const roleForm = useForm<RoleReassignFormValues>({ defaultValues: { roleId: '' }, resolver: zodResolver(roleReassignFormSchema) });
   const deferredSearch = useDeferredValue(search);
 
   const { data: usersResponse, isLoading } = useQuery(
@@ -83,32 +90,19 @@ export default function StaffUsers() {
   const total = usersResponse?.pagination.total ?? 0;
 
   const resetCreateForm = () => {
-    setForm(EMPTY_FORM);
+    form.reset(EMPTY_FORM);
     setCreateOpen(false);
   };
 
-  const handleCreate = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.phone.trim()) {
-      toast.error('All staff fields are required.');
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.error('Temporary password must be at least 8 characters.');
-      return;
-    }
-    if (!form.roleId) {
-      toast.error('Select a staff role.');
-      return;
-    }
-
+  const handleCreate = async (values: StaffFormState) => {
     try {
       await createUser.mutateAsync({
-        roleId: form.roleId,
-        email: form.email.trim(),
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        password: form.password,
-        phone: form.phone.trim(),
+        roleId: values.roleId,
+        email: values.email,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        password: values.password,
+        phone: values.phone,
       });
       toast.success('Staff user created.');
       resetCreateForm();
@@ -119,20 +113,19 @@ export default function StaffUsers() {
     }
   };
 
-  const handleRoleReassign = async () => {
-    if (!reassignUser || !nextRoleId) {
-      toast.error('Select a target role.');
+  const handleRoleReassign = async (values: RoleReassignFormValues) => {
+    if (!reassignUser) {
       return;
     }
 
     try {
       await updateUserRole.mutateAsync({
-        roleId: nextRoleId,
+        roleId: values.roleId,
         userId: reassignUser.id,
       });
       toast.success('Staff role updated.');
       setReassignUser(null);
-      setNextRoleId('');
+      roleForm.reset({ roleId: '' });
     }
     catch (error: any) {
       showErrorToast(error, 'Failed to update staff role.');
@@ -195,7 +188,7 @@ export default function StaffUsers() {
                 <Button
                   onClick={() => {
                     setReassignUser(user);
-                    setNextRoleId(user.roleId ?? '');
+                    roleForm.reset({ roleId: user.roleId ?? '' });
                   }}
                   size="sm"
                   variant="outline"
@@ -231,26 +224,21 @@ export default function StaffUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="
-            grid gap-4
-            sm:grid-cols-2
-          "
+          <form
+            id="staff-create-form"
+            onSubmit={form.handleSubmit(handleCreate, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the staff fields.'))}
+            className="
+              grid gap-4
+              sm:grid-cols-2
+            "
           >
             <div className="space-y-2">
               <Label htmlFor="staff-first-name">First name</Label>
-              <Input
-                id="staff-first-name"
-                onChange={event => setForm(current => ({ ...current, firstName: event.target.value }))}
-                value={form.firstName}
-              />
+              <Controller name="firstName" control={form.control} render={({ field }) => <Input {...field} id="staff-first-name" />} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-last-name">Last name</Label>
-              <Input
-                id="staff-last-name"
-                onChange={event => setForm(current => ({ ...current, lastName: event.target.value }))}
-                value={form.lastName}
-              />
+              <Controller name="lastName" control={form.control} render={({ field }) => <Input {...field} id="staff-last-name" />} />
             </div>
             <div className="
               space-y-2
@@ -258,29 +246,15 @@ export default function StaffUsers() {
             "
             >
               <Label htmlFor="staff-email">Email</Label>
-              <Input
-                id="staff-email"
-                onChange={event => setForm(current => ({ ...current, email: event.target.value }))}
-                value={form.email}
-                type="email"
-              />
+              <Controller name="email" control={form.control} render={({ field }) => <Input {...field} id="staff-email" type="email" />} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-phone">Phone</Label>
-              <Input
-                id="staff-phone"
-                onChange={event => setForm(current => ({ ...current, phone: event.target.value }))}
-                value={form.phone}
-              />
+              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="staff-phone" />} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-password">Temporary password</Label>
-              <Input
-                id="staff-password"
-                onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
-                value={form.password}
-                type="password"
-              />
+              <Controller name="password" control={form.control} render={({ field }) => <Input {...field} id="staff-password" type="password" />} />
             </div>
             <div className="
               space-y-2
@@ -288,29 +262,32 @@ export default function StaffUsers() {
             "
             >
               <Label>Role</Label>
-              <Select
-                onValueChange={value => setForm(current => ({ ...current, roleId: value }))}
-                value={form.roleId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions.map(role => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="roleId"
+                control={form.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map(role => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
-          </div>
+          </form>
 
           <DialogFooter>
-            <Button onClick={resetCreateForm} variant="outline">
+            <Button onClick={resetCreateForm} type="button" variant="outline">
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={createUser.isPending}>
+            <Button disabled={createUser.isPending} form="staff-create-form" type="submit">
               {createUser.isPending ? 'Creating...' : 'Create staff user'}
             </Button>
           </DialogFooter>
@@ -324,7 +301,7 @@ export default function StaffUsers() {
           }
 
           setReassignUser(null);
-          setNextRoleId('');
+          roleForm.reset({ roleId: '' });
         }}
         open={!!reassignUser}
       >
@@ -341,7 +318,7 @@ export default function StaffUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <form id="staff-role-form" onSubmit={roleForm.handleSubmit(handleRoleReassign, errors => toast.error(Object.values(errors)[0]?.message ?? 'Select a target role.'))} className="space-y-4">
             <div className="space-y-2">
               <Label>Current role</Label>
               <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
@@ -351,32 +328,39 @@ export default function StaffUsers() {
 
             <div className="space-y-2">
               <Label>Target role</Label>
-              <Select onValueChange={setNextRoleId} value={nextRoleId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions.map(role => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="roleId"
+                control={roleForm.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map(role => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
-          </div>
+          </form>
 
           <DialogFooter>
             <Button
               onClick={() => {
                 setReassignUser(null);
-                setNextRoleId('');
+                roleForm.reset({ roleId: '' });
               }}
+              type="button"
               variant="outline"
             >
               Cancel
             </Button>
-            <Button onClick={handleRoleReassign} disabled={updateUserRole.isPending}>
+            <Button disabled={updateUserRole.isPending} form="staff-role-form" type="submit">
               {updateUserRole.isPending ? 'Saving...' : 'Confirm role'}
             </Button>
           </DialogFooter>

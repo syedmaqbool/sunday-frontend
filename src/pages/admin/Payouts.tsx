@@ -1,6 +1,7 @@
 import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowDownRight,
@@ -12,6 +13,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,6 +61,30 @@ import {
 
 export const SELLER_COMMISSION_SHARE_RATE = 5;
 
+const payoutFormSchema = z.object({
+  amount: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) > 0, 'Enter a valid amount.'),
+  method: z.enum(['bank_transfer', 'paypal', 'stripe', 'cash', 'other']),
+  notes: z.string(),
+  period_end: z.string().min(1, 'Period end is required.'),
+  period_start: z.string().min(1, 'Period start is required.'),
+  reference: z.string(),
+}).superRefine((values, context) => {
+  if (values.period_start && values.period_end && values.period_end < values.period_start) {
+    context.addIssue({ path: ['period_end'], code: z.ZodIssueCode.custom, message: 'Period end must be on or after period start.' });
+  }
+});
+
+type PayoutFormValues = z.infer<typeof payoutFormSchema>;
+
+const emptyPayoutForm: PayoutFormValues = {
+  amount: '',
+  method: 'bank_transfer',
+  notes: '',
+  period_end: '',
+  period_start: '',
+  reference: '',
+};
+
 function fmt(n: number) {
   return `Rs ${(Math.round(n * 100) / 100).toLocaleString('en-PK', {
     maximumFractionDigits: 2,
@@ -93,14 +120,7 @@ function Payouts() {
     name: string;
   } | null>(null);
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
-  const [form, setForm] = useState({
-    amount: '',
-    method: 'bank_transfer',
-    notes: '',
-    period_end: '',
-    period_start: '',
-    reference: '',
-  });
+  const form = useForm<PayoutFormValues>({ defaultValues: emptyPayoutForm, resolver: zodResolver(payoutFormSchema) });
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -289,7 +309,7 @@ function Payouts() {
     name: string;
   }) => {
     setActiveSeller(s);
-    setForm({
+    form.reset({
       amount: s.balance > 0 ? s.balance.toFixed(2) : '',
       method: 'bank_transfer',
       notes: '',
@@ -300,31 +320,20 @@ function Payouts() {
     setDialogOpen(true);
   };
 
-  const savePayout = async () => {
+  const savePayout = async (values: PayoutFormValues) => {
     if (!activeSeller)
       return;
-    const amount = Number(form.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast({ title: 'Enter a valid amount', variant: 'destructive' });
-      return;
-    }
-    if (!form.period_start || !form.period_end) {
-      toast({
-        title: 'Period start and end are required',
-        variant: 'destructive',
-      });
-      return;
-    }
+    const amount = Number(values.amount);
 
     try {
       await createSellerPayoutMutation.mutateAsync({
         sellerId: activeSeller.sellerId,
         amount,
-        method: form.method,
-        notes: form.notes || null,
-        periodEnd: form.period_end,
-        periodStart: form.period_start,
-        reference: form.reference,
+        method: values.method,
+        notes: values.notes || null,
+        periodEnd: values.period_end,
+        periodStart: values.period_start,
+        reference: values.reference,
       });
       toast({
         description: `${fmt(amount)} to ${activeSeller.name}`,
@@ -891,35 +900,43 @@ function Payouts() {
               {activeSeller ? `Paying ${activeSeller.name}` : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
+          <form onSubmit={form.handleSubmit(savePayout, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Invalid payout', variant: 'destructive' }))} className="grid gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="amount">Amount (PKR)</Label>
-                <Input
-                  id="amount"
-                  onChange={event => setForm({ ...form, amount: event.target.value })}
-                  value={form.amount}
-                  step="0.01"
-                  type="number"
+                <Controller
+                  name="amount"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="amount"
+                      step="0.01"
+                      type="number"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Method</Label>
-                <Select
-                  onValueChange={v => setForm({ ...form, method: v })}
-                  value={form.method}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bank_transfer">Bank transfer</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="stripe">Stripe</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="method"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -929,12 +946,16 @@ function Payouts() {
                   {' '}
                   <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="ps"
-                  onChange={event =>
-                    setForm({ ...form, period_start: event.target.value })}
-                  value={form.period_start}
-                  type="date"
+                <Controller
+                  name="period_start"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="ps"
+                      type="date"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-1.5">
@@ -943,49 +964,52 @@ function Payouts() {
                   {' '}
                   <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="pe"
-                  onChange={event =>
-                    setForm({ ...form, period_end: event.target.value })}
-                  value={form.period_end}
-                  type="date"
+                <Controller
+                  name="period_end"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="pe"
+                      type="date"
+                    />
+                  )}
                 />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ref">Reference</Label>
-              <Input
-                id="ref"
-                onChange={event =>
-                  setForm({ ...form, reference: event.target.value })}
-                value={form.reference}
-                placeholder="e.g. TX-2026-05-18-001"
+              <Controller
+                name="reference"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="ref"
+                    placeholder="e.g. TX-2026-05-18-001"
+                  />
+                )}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                onChange={event => setForm({ ...form, notes: event.target.value })}
-                value={form.notes}
-                rows={3}
-              />
+              <Controller name="notes" control={form.control} render={({ field }) => <Textarea {...field} id="notes" rows={3} />} />
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setDialogOpen(false)} variant="ghost">
-              Cancel
-            </Button>
-            <Button
-              onClick={savePayout}
-              disabled={createSellerPayoutMutation.isPending}
-            >
-              {createSellerPayoutMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save payout
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setDialogOpen(false)} type="button" variant="ghost">
+                Cancel
+              </Button>
+              <Button
+                disabled={createSellerPayoutMutation.isPending}
+                type="submit"
+              >
+                {createSellerPayoutMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save payout
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

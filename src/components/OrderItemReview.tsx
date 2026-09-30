@@ -29,10 +29,13 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 30 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+const reviewMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
 
 const orderReviewSchema = z.object({
   comment: z.string().max(500).optional(),
+  images: z.array(reviewMediaFileSchema),
   rating: z.number().min(1).max(5),
+  video: reviewMediaFileSchema.nullable(),
 });
 
 type OrderReviewFormValues = z.infer<typeof orderReviewSchema>;
@@ -47,8 +50,6 @@ export function OrderItemReview({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(0);
-  const [images, setImages] = useState<File[]>([]);
-  const [video, setVideo] = useState<File | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const imageInputReference = useRef<HTMLInputElement>(null);
   const videoInputReference = useRef<HTMLInputElement>(null);
@@ -63,20 +64,24 @@ export function OrderItemReview({
   const form = useForm<OrderReviewFormValues>({
     defaultValues: {
       comment: '',
+      images: [],
       rating: 0,
+      video: null,
     },
     mode: 'all',
     resolver: zodResolver(orderReviewSchema),
   });
-  const { control, handleSubmit, reset, watch } = form;
+  const { control, handleSubmit, reset, setValue, watch } = form;
   const rating = watch('rating');
+  const images = watch('images');
+  const video = watch('video');
 
   const { data: existingResponse, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
   const existing = (existingResponse?.data ?? []).find(
     review => review.listingId === listingId,
   ) ?? null;
 
-  const handleAddImages = (files: FileList | null) => {
+  const handleAddImages = (files: FileList | null, currentImages: File[], onChange: (files: File[]) => void) => {
     if (!files)
       return;
     const incoming = [...files];
@@ -92,18 +97,15 @@ export function OrderItemReview({
       }
       valid.push(f);
     }
-    setImages((previous) => {
-      const next = [...previous, ...valid].slice(0, MAX_IMAGES);
-      if (previous.length + valid.length > MAX_IMAGES) {
-        toast.error(`Max ${MAX_IMAGES} images`);
-      }
-      return next;
-    });
+    const next = [...currentImages, ...valid].slice(0, MAX_IMAGES);
+    if (currentImages.length + valid.length > MAX_IMAGES)
+      toast.error(`Max ${MAX_IMAGES} images`);
+    onChange(next);
     if (imageInputReference.current)
       imageInputReference.current.value = '';
   };
 
-  const handleAddVideo = (files: FileList | null) => {
+  const handleAddVideo = (files: FileList | null, onChange: (file: File) => void) => {
     if (!files || !files[0])
       return;
     const f = files[0];
@@ -115,7 +117,7 @@ export function OrderItemReview({
       toast.error('Video exceeds 30MB');
       return;
     }
-    setVideo(f);
+    onChange(f);
     setVideoPreviewUrl(URL.createObjectURL(f));
     if (videoInputReference.current)
       videoInputReference.current.value = '';
@@ -128,13 +130,13 @@ export function OrderItemReview({
       const imageUrls: string[] = [];
       let videoUrl: string | undefined;
 
-      for (const file of images) {
+      for (const file of values.images) {
         const { data } = await uploadFile(file);
         imageUrls.push(getUploadedFileUrl(data));
       }
 
-      if (video) {
-        const { data } = await uploadFile(video);
+      if (values.video) {
+        const { data } = await uploadFile(values.video);
         videoUrl = getUploadedFileUrl(data);
       }
 
@@ -153,8 +155,6 @@ export function OrderItemReview({
           onSuccess: () => {
             toast.success('Review submitted');
             setOpen(false);
-            setImages([]);
-            setVideo(null);
             setVideoPreviewUrl(null);
             reset();
           },
@@ -280,7 +280,7 @@ export function OrderItemReview({
                 <img src={url} alt="" className="h-full w-full object-cover" />
                 <button
                   onClick={() =>
-                    setImages(previous => previous.filter((_, index_) => index_ !== index))}
+                    setValue('images', images.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true })}
                   aria-label="Remove image"
                   type="button"
                   className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 text-foreground shadow"
@@ -303,7 +303,7 @@ export function OrderItemReview({
           />
           <button
             onClick={() => {
-              setVideo(null);
+              setValue('video', null, { shouldDirty: true, shouldValidate: true });
               setVideoPreviewUrl(null);
             }}
             aria-label="Remove video"
@@ -317,13 +317,22 @@ export function OrderItemReview({
 
       {/* Upload triggers */}
       <div className="flex flex-wrap gap-2">
-        <input
-          onChange={event => handleAddImages(event.target.files)}
-          ref={imageInputReference}
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          type="file"
-          className="hidden"
+        <Controller
+          name="images"
+          control={control}
+          render={({ field }) => (
+            <input
+              onChange={event => handleAddImages(event.target.files, field.value, field.onChange)}
+              ref={(element) => {
+                field.ref(element);
+                imageInputReference.current = element;
+              }}
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              type="file"
+              className="hidden"
+            />
+          )}
         />
         <Button
           onClick={() => imageInputReference.current?.click()}
@@ -339,12 +348,21 @@ export function OrderItemReview({
           {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
         </Button>
 
-        <input
-          onChange={event => handleAddVideo(event.target.files)}
-          ref={videoInputReference}
-          accept="video/mp4,video/webm,video/quicktime"
-          type="file"
-          className="hidden"
+        <Controller
+          name="video"
+          control={control}
+          render={({ field }) => (
+            <input
+              onChange={event => handleAddVideo(event.target.files, file => field.onChange(file))}
+              ref={(element) => {
+                field.ref(element);
+                videoInputReference.current = element;
+              }}
+              accept="video/mp4,video/webm,video/quicktime"
+              type="file"
+              className="hidden"
+            />
+          )}
         />
         <Button
           onClick={() => videoInputReference.current?.click()}

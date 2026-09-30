@@ -1,8 +1,11 @@
 import type { AdminPermissionName, AdminRole, AssignableAdminPermissionName } from '@/types/adminRole.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,14 +50,14 @@ interface EditableModule {
   permissions: Partial<Record<CrudAction, AssignableAdminPermissionName>>;
 }
 
-interface RoleDialogState {
-  name: string;
-  role: AdminRole | null;
-  selectedPermissions: Set<AssignableAdminPermissionName>;
-  unsupportedPermissions: string[];
-}
-
 const CRUD_ACTIONS: CrudAction[] = ['READ', 'CREATE', 'UPDATE', 'DELETE'];
+
+const roleFormSchema = z.object({
+  name: z.string().trim().min(1, 'Role name is required.').max(80),
+  selectedPermissions: z.array(z.string()),
+});
+
+type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 const MODULE_LABELS: Record<string, string> = {
   ANALYTICS: 'Analytics',
@@ -77,16 +80,18 @@ const MODULE_LABELS: Record<string, string> = {
 
 const SUPPORTED_MODULES = new Set(Object.keys(MODULE_LABELS));
 
-const EMPTY_ROLE_DIALOG: RoleDialogState = {
+const EMPTY_ROLE_FORM: RoleFormValues = {
   name: '',
-  role: null,
-  selectedPermissions: new Set<AssignableAdminPermissionName>(),
-  unsupportedPermissions: [],
+  selectedPermissions: [],
 };
 
 export default function RolesPermissions() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialog, setDialog] = useState<RoleDialogState>(EMPTY_ROLE_DIALOG);
+  const [editingRole, setEditingRole] = useState<AdminRole | null>(null);
+  const form = useForm<RoleFormValues>({
+    defaultValues: EMPTY_ROLE_FORM,
+    resolver: zodResolver(roleFormSchema),
+  });
   const { data: roles = [], isLoading: rolesLoading, refetch } = useQuery(getAdminRolesQueryOptions());
   const { data: permissions = [], isLoading: permissionsLoading } = useQuery(getAdminPermissionsQueryOptions());
 
@@ -99,6 +104,9 @@ export default function RolesPermissions() {
     () => buildEditableModules(permissions),
     [permissions],
   );
+  const unsupportedPermissions = editingRole?.permissions
+    .map(permission => permission.name)
+    .filter(name => !isEditablePermission(name, editableModules)) ?? [];
 
   const editablePermissionNames = useMemo(
     () => editableModules.flatMap(module =>
@@ -112,20 +120,18 @@ export default function RolesPermissions() {
     = createRole.isPending || updateRole.isPending || updateRolePermissions.isPending;
 
   const openCreateDialog = () => {
-    setDialog(EMPTY_ROLE_DIALOG);
+    setEditingRole(null);
+    form.reset(EMPTY_ROLE_FORM);
     setDialogOpen(true);
   };
 
   const openEditDialog = (role: AdminRole) => {
     const rolePermissionNames = role.permissions.map(permission => permission.name);
     const supported = rolePermissionNames.filter(name => isEditablePermission(name, editableModules));
-    const unsupported = rolePermissionNames.filter(name => !isEditablePermission(name, editableModules));
-
-    setDialog({
+    setEditingRole(role);
+    form.reset({
       name: role.name,
-      role,
-      selectedPermissions: new Set(normalizePermissions(supported)),
-      unsupportedPermissions: unsupported,
+      selectedPermissions: normalizePermissions(supported),
     });
     setDialogOpen(true);
   };
@@ -134,58 +140,8 @@ export default function RolesPermissions() {
     if (isSaving)
       return;
     setDialogOpen(false);
-    setDialog(EMPTY_ROLE_DIALOG);
-  };
-
-  const toggleSinglePermission = (permissionName: AssignableAdminPermissionName, checked: boolean) => {
-    setDialog((current) => {
-      const next = new Set(current.selectedPermissions);
-      if (checked)
-        next.add(permissionName);
-      else
-        next.delete(permissionName);
-
-      return {
-        ...current,
-        selectedPermissions: new Set(normalizePermissions([...next])),
-      };
-    });
-  };
-
-  const toggleModule = (module: EditableModule) => {
-    setDialog((current) => {
-      const next = new Set(current.selectedPermissions);
-      const modulePermissions = Object.values(module.permissions).filter(
-        (permission): permission is AssignableAdminPermissionName => permission !== undefined,
-      );
-      const allSelected = modulePermissions.every(permission => next.has(permission));
-
-      for (const permission of modulePermissions) {
-        if (allSelected)
-          next.delete(permission);
-        else
-          next.add(permission);
-      }
-
-      return {
-        ...current,
-        selectedPermissions: new Set(normalizePermissions([...next])),
-      };
-    });
-  };
-
-  const toggleAll = () => {
-    setDialog((current) => {
-      const allSelected = editablePermissionNames.every(permission =>
-        current.selectedPermissions.has(permission));
-
-      return {
-        ...current,
-        selectedPermissions: new Set(
-          allSelected ? [] : normalizePermissions(editablePermissionNames),
-        ),
-      };
-    });
+    setEditingRole(null);
+    form.reset(EMPTY_ROLE_FORM);
   };
 
   const handleDelete = async (role: AdminRole) => {
@@ -198,24 +154,22 @@ export default function RolesPermissions() {
     }
   };
 
-  const handleSave = async () => {
-    const trimmedName = dialog.name.trim();
-    const finalPermissions = normalizePermissions([...dialog.selectedPermissions]);
-
-    if (!trimmedName) {
-      toast.error('Role name is required.');
-      return;
-    }
+  const handleSave = form.handleSubmit(async ({ name, selectedPermissions }) => {
+    const trimmedName = name;
+    const finalPermissions = normalizePermissions(
+      selectedPermissions.filter((permission): permission is AssignableAdminPermissionName =>
+        isEditablePermission(permission, editableModules)),
+    );
 
     if (
       finalPermissions.length === 0
-      && (!dialog.role || dialog.unsupportedPermissions.length === 0)
+      && (!editingRole || unsupportedPermissions.length === 0)
     ) {
       toast.error('Select at least one permission.');
       return;
     }
 
-    if (!dialog.role) {
+    if (!editingRole) {
       try {
         await createRole.mutateAsync({
           name: trimmedName,
@@ -230,14 +184,14 @@ export default function RolesPermissions() {
       return;
     }
 
-    const originalName = dialog.role.name;
-    const originalPermissions = dialog.role.permissions.map(permission => permission.name);
+    const originalName = editingRole.name;
+    const originalPermissions = editingRole.permissions.map(permission => permission.name);
     const originalEditablePermissions = originalPermissions.filter(name =>
       isEditablePermission(name, editableModules));
     const didNameChange = originalName !== trimmedName;
     const didPermissionsChange = !sameMembers(originalEditablePermissions, finalPermissions);
 
-    if (didPermissionsChange && dialog.unsupportedPermissions.length > 0) {
+    if (didPermissionsChange && unsupportedPermissions.length > 0) {
       toast.error('This role has permissions that cannot be changed with the current API contract.');
       return;
     }
@@ -247,7 +201,7 @@ export default function RolesPermissions() {
     try {
       if (didNameChange) {
         await updateRole.mutateAsync({
-          roleId: dialog.role.id,
+          roleId: editingRole.id,
           payload: { name: trimmedName },
         });
         didUpdateName = true;
@@ -255,7 +209,7 @@ export default function RolesPermissions() {
 
       if (didPermissionsChange) {
         await updateRolePermissions.mutateAsync({
-          roleId: dialog.role.id,
+          roleId: editingRole.id,
           payload: { permissions: finalPermissions },
         });
       }
@@ -269,7 +223,7 @@ export default function RolesPermissions() {
       }
       showErrorToast(error, 'Failed to update role.');
     }
-  };
+  }, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the role details.'));
 
   if (rolesLoading || permissionsLoading) {
     return (
@@ -380,146 +334,192 @@ export default function RolesPermissions() {
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {dialog.role ? 'Edit role' : 'Create role'}
+              {editingRole ? 'Edit role' : 'Create role'}
             </DialogTitle>
             <DialogDescription>
               Configure the role name and assign permissions by module.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="role-name">Role name</Label>
-              <Input
-                id="role-name"
-                onChange={event => setDialog(current => ({ ...current, name: event.target.value }))}
-                value={dialog.name}
-                maxLength={80}
+          <form onSubmit={handleSave}>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="role-name">Role name</Label>
+                <Controller
+                  name="name"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input {...field} id="role-name" maxLength={80} />
+                  )}
+                />
+              </div>
+
+              <Controller
+                name="selectedPermissions"
+                control={form.control}
+                render={({ field }) => {
+                  const selectedPermissionSet = new Set(field.value);
+                  const updatePermissions = (nextPermissions: string[]) =>
+                    field.onChange(normalizePermissionNames(nextPermissions));
+                  const handleToggleSingle = (permissionName: AssignableAdminPermissionName, checked: boolean) => {
+                    const next = new Set(field.value);
+                    if (checked)
+                      next.add(permissionName);
+                    else
+                      next.delete(permissionName);
+                    updatePermissions([...next]);
+                  };
+                  const handleToggleModule = (module: EditableModule) => {
+                    const next = new Set(field.value);
+                    const modulePermissions = Object.values(module.permissions).filter(
+                      (permission): permission is AssignableAdminPermissionName => permission !== undefined,
+                    );
+                    const allSelected = modulePermissions.every(permission => next.has(permission));
+                    for (const permission of modulePermissions) {
+                      if (allSelected)
+                        next.delete(permission);
+                      else
+                        next.add(permission);
+                    }
+                    updatePermissions([...next]);
+                  };
+                  const handleToggleAll = () => {
+                    const allSelected = editablePermissionNames.every(permission =>
+                      selectedPermissionSet.has(permission));
+                    field.onChange(allSelected ? [] : normalizePermissions(editablePermissionNames));
+                  };
+
+                  return (
+                    <>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
+                          <div>
+                            <p className="font-medium text-foreground">Roles & Permissions</p>
+                            <p className="text-sm text-muted-foreground">
+                              Toggle all editable permissions.
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleToggleAll}
+                            disabled={unsupportedPermissions.length > 0}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            {editablePermissionNames.every(permission =>
+                              selectedPermissionSet.has(permission))
+                              ? 'Uncheck all'
+                              : 'Check all'}
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {editableModules.map((module) => {
+                            const modulePermissions = Object.values(module.permissions).filter(
+                              (permission): permission is AssignableAdminPermissionName => permission !== undefined,
+                            );
+                            const allSelected = modulePermissions.every(permission =>
+                              selectedPermissionSet.has(permission));
+
+                            return (
+                              <div key={module.module} className="rounded-lg border border-border">
+                                <div className="
+                                  flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3
+                                  md:flex-row md:items-center md:justify-between
+                                "
+                                >
+                                  <div>
+                                    <p className="font-medium text-foreground">{module.label}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Select only the permissions this role should have.
+                                    </p>
+                                  </div>
+                                  <Button
+                                    onClick={() => handleToggleModule(module)}
+                                    disabled={unsupportedPermissions.length > 0}
+                                    size="sm"
+                                    type="button"
+                                    variant="outline"
+                                  >
+                                    {allSelected ? 'Uncheck' : 'Check'}
+                                  </Button>
+                                </div>
+
+                                <div className="
+                                  grid gap-3 p-4
+                                  sm:grid-cols-2
+                                  lg:grid-cols-4
+                                "
+                                >
+                                  {CRUD_ACTIONS.map((action) => {
+                                    const permissionName = module.permissions[action];
+                                    const checked = permissionName
+                                      ? selectedPermissionSet.has(permissionName)
+                                      : false;
+
+                                    return (
+                                      <label
+                                        key={action}
+                                        className={cn(
+                                          'flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm',
+                                          !permissionName && 'opacity-50',
+                                        )}
+                                      >
+                                        <Checkbox
+                                          onCheckedChange={value =>
+                                            permissionName && handleToggleSingle(permissionName, value === true)}
+                                          checked={checked}
+                                          disabled={!permissionName || unsupportedPermissions.length > 0}
+                                        />
+                                        <span>{action}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {unsupportedPermissions.length > 0 && (
+                        <div className="space-y-3 rounded-lg border border-dashed border-border p-4">
+                          <div>
+                            <p className="font-medium text-foreground">Other permissions</p>
+                            <p className="text-sm text-muted-foreground">
+                              These permissions are preserved and cannot be edited here. Permission changes are
+                              disabled for this role until the API contract supports them.
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {unsupportedPermissions.map(permission => (
+                              <Badge key={permission} variant="outline">
+                                {permission}
+                              </Badge>
+                            ))}
+                          </div>
+                          {field.value.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              This role will keep only the read-only permissions above unless you add editable permissions.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  );
+                }}
               />
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
-                <div>
-                  <p className="font-medium text-foreground">Roles & Permissions</p>
-                  <p className="text-sm text-muted-foreground">
-                    Toggle all editable permissions.
-                  </p>
-                </div>
-                <Button
-                  onClick={toggleAll}
-                  disabled={dialog.unsupportedPermissions.length > 0}
-                  size="sm"
-                  variant="outline"
-                >
-                  {editablePermissionNames.every(permission =>
-                    dialog.selectedPermissions.has(permission))
-                    ? 'Uncheck all'
-                    : 'Check all'}
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {editableModules.map((module) => {
-                  const modulePermissions = Object.values(module.permissions).filter(
-                    (permission): permission is AssignableAdminPermissionName => permission !== undefined,
-                  );
-                  const allSelected = modulePermissions.every(permission =>
-                    dialog.selectedPermissions.has(permission));
-
-                  return (
-                    <div key={module.module} className="rounded-lg border border-border">
-                      <div className="
-                        flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3
-                        md:flex-row md:items-center md:justify-between
-                      "
-                      >
-                        <div>
-                          <p className="font-medium text-foreground">{module.label}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Select only the permissions this role should have.
-                          </p>
-                        </div>
-                        <Button
-                          onClick={() => toggleModule(module)}
-                          disabled={dialog.unsupportedPermissions.length > 0}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {allSelected ? 'Uncheck' : 'Check'}
-                        </Button>
-                      </div>
-
-                      <div className="
-                        grid gap-3 p-4
-                        sm:grid-cols-2
-                        lg:grid-cols-4
-                      "
-                      >
-                        {CRUD_ACTIONS.map((action) => {
-                          const permissionName = module.permissions[action];
-                          const checked = permissionName
-                            ? dialog.selectedPermissions.has(permissionName)
-                            : false;
-
-                          return (
-                            <label
-                              key={action}
-                              className={cn(
-                                'flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm',
-                                !permissionName && 'opacity-50',
-                              )}
-                            >
-                              <Checkbox
-                                onCheckedChange={value =>
-                                  permissionName && toggleSinglePermission(permissionName, value === true)}
-                                checked={checked}
-                                disabled={!permissionName || dialog.unsupportedPermissions.length > 0}
-                              />
-                              <span>{action}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {dialog.unsupportedPermissions.length > 0 && (
-              <div className="space-y-3 rounded-lg border border-dashed border-border p-4">
-                <div>
-                  <p className="font-medium text-foreground">Other permissions</p>
-                  <p className="text-sm text-muted-foreground">
-                    These permissions are preserved and cannot be edited here. Permission changes are
-                    disabled for this role until the API contract supports them.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {dialog.unsupportedPermissions.map(permission => (
-                    <Badge key={permission} variant="outline">
-                      {permission}
-                    </Badge>
-                  ))}
-                </div>
-                {dialog.selectedPermissions.size === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    This role will keep only the read-only permissions above unless you add editable permissions.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button onClick={closeDialog} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save role'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={closeDialog} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button disabled={isSaving} type="submit">
+                {isSaving ? 'Saving...' : 'Save role'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

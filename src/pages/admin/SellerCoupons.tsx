@@ -2,9 +2,12 @@ import type { AdminUser } from '@/types/adminUser.type';
 
 import type { PaginatedResponse } from '@/types/response.type';
 import type { CreateSellerCouponPayload, SellerCoupon, SellerCouponRedemption } from '@/types/sellerCoupon.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -97,7 +100,7 @@ function adaptCoupon(c: SellerCoupon, sellerName?: string | null): SellerCouponD
   };
 }
 
-function formToPayload(form: typeof emptyForm): CreateSellerCouponPayload {
+function formToPayload(form: SellerCouponFormValues): CreateSellerCouponPayload {
   return {
     listingId: form.scope === 'item_based' ? form.listing_id || null : null,
     sellerId: form.seller_id,
@@ -127,12 +130,44 @@ const emptyForm = {
   starts_at: '',
 };
 
+const sellerCouponFormSchema = z.object({
+  code: z.string().trim().min(1, 'Code is required.'),
+  discount_type: z.enum(['fixed', 'percentage']),
+  discount_value: z.string().refine((value) => {
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0;
+  }, 'Discount value must be greater than zero.'),
+  expires_at: z.string(),
+  listing_id: z.string(),
+  max_uses: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Max uses must be a positive whole number.'),
+  min_order_amount: z.string().refine(value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), 'Minimum order must be zero or greater.'),
+  per_user_limit: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Per-user limit must be a positive whole number.'),
+  scope: z.enum(['item_based', 'seller_wide']),
+  seller_id: z.string().min(1, 'Choose a seller.'),
+  starts_at: z.string(),
+}).superRefine((values, context) => {
+  const discountValue = Number(values.discount_value);
+  if (values.discount_type === 'percentage' && discountValue > 100) {
+    context.addIssue({ path: ['discount_value'], code: z.ZodIssueCode.custom, message: 'Percentage discount cannot exceed 100.' });
+  }
+  if (values.scope === 'item_based' && !values.listing_id)
+    context.addIssue({ path: ['listing_id'], code: z.ZodIssueCode.custom, message: 'Choose a listing for an item-based coupon.' });
+  if (values.starts_at && values.expires_at && new Date(values.expires_at) <= new Date(values.starts_at))
+    context.addIssue({ path: ['expires_at'], code: z.ZodIssueCode.custom, message: 'Expiry must be after the start date.' });
+});
+
+type SellerCouponFormValues = z.infer<typeof sellerCouponFormSchema>;
+
 // ── Component ─────────────────────────────────────────────────────────────────
 function SellerCoupons() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const form = useForm<SellerCouponFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(sellerCouponFormSchema),
+  });
+  const formValues = form.watch();
   const [redemptionsFor, setRedemptionsFor]
     = useState<SellerCouponDisplay | null>(null);
   const [redemptions, setRedemptions] = useState<SellerCouponRedemption[]>([]);
@@ -166,8 +201,8 @@ function SellerCoupons() {
 
   // Listings for selected seller (item_based scope only)
   const { data: listingsRaw } = useQuery(getAdminSellerListingsOptions(
-    form.seller_id,
-    !!form.seller_id && form.scope === 'item_based',
+    formValues.seller_id,
+    !!formValues.seller_id && formValues.scope === 'item_based',
   ));
 
   const listings: ListingOption[] = useMemo(
@@ -183,7 +218,7 @@ function SellerCoupons() {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const resetForm = () => {
-    setForm(emptyForm);
+    form.reset(emptyForm);
     setEditingId(null);
   };
 
@@ -195,7 +230,7 @@ function SellerCoupons() {
   // openEdit — no extra API call, listingId already in coupon
   const openEdit = (c: SellerCouponDisplay) => {
     setEditingId(c.id);
-    setForm({
+    form.reset({
       code: c.code,
       discount_type: c.discount_type,
       discount_value: String(c.discount_value),
@@ -211,26 +246,10 @@ function SellerCoupons() {
     setDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!form.code.trim() || !form.seller_id || !form.discount_value) {
-      toast({
-        description: 'Code, seller and discount value are required.',
-        title: 'Missing fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (form.scope === 'item_based' && !form.listing_id) {
-      toast({
-        description: 'Item-based coupons need one listing.',
-        title: 'Select a listing',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleSave = async (values: SellerCouponFormValues) => {
     setSaving(true);
     try {
-      const payload = formToPayload(form);
+      const payload = formToPayload(values);
       if (editingId) {
         await updateCoupon.mutateAsync({ id: editingId, payload });
         toast({ title: 'Coupon updated' });
@@ -427,66 +446,74 @@ function SellerCoupons() {
               {editingId ? 'Edit Coupon' : 'Create Seller Coupon'}
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-2">
+          <form onSubmit={form.handleSubmit(handleSave, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Check coupon fields', variant: 'destructive' }))} className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Code</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, code: event.target.value.toUpperCase() })}
-                  value={form.code}
-                  placeholder="SELLER10"
-                  className="uppercase"
-                />
+                <Controller name="code" control={form.control} render={({ field }) => <Input {...field} onChange={event => field.onChange(event.target.value.toUpperCase())} placeholder="SELLER10" className="uppercase" />} />
               </div>
               <div className="space-y-2">
                 <Label>Assign to seller</Label>
-                <Select
-                  onValueChange={v =>
-                    setForm({ ...form, listing_id: '', seller_id: v })}
-                  value={form.seller_id}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose seller" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sellers.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.full_name || s.id.slice(0, 8)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="seller_id"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select
+                      onValueChange={(v) => {
+                        field.onChange(v);
+                        form.setValue('listing_id', '');
+                      }}
+                      value={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose seller" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sellers.map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.full_name || s.id.slice(0, 8)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Discount type</Label>
-                <Select
-                  onValueChange={v =>
-                    setForm({ ...form, discount_type: v as DiscountType })}
-                  value={form.discount_type}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed (Rs)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="discount_type"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="fixed">Fixed (Rs)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Value</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, discount_value: event.target.value })}
-                  value={form.discount_value}
-                  placeholder={
-                    form.discount_type === 'percentage' ? '10' : '500'
-                  }
-                  type="number"
+                <Controller
+                  name="discount_value"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      placeholder={
+                        formValues.discount_type === 'percentage' ? '10' : '500'
+                      }
+                      type="number"
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -494,83 +521,63 @@ function SellerCoupons() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Min order (Rs)</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, min_order_amount: event.target.value })}
-                  value={form.min_order_amount}
-                  placeholder="0"
-                  type="number"
-                />
+                <Controller name="min_order_amount" control={form.control} render={({ field }) => <Input {...field} placeholder="0" type="number" />} />
               </div>
               <div className="space-y-2">
                 <Label>Max uses</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, max_uses: event.target.value })}
-                  value={form.max_uses}
-                  placeholder="∞"
-                  type="number"
-                />
+                <Controller name="max_uses" control={form.control} render={({ field }) => <Input {...field} placeholder="∞" type="number" />} />
               </div>
               <div className="space-y-2">
                 <Label>Per user limit</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, per_user_limit: event.target.value })}
-                  value={form.per_user_limit}
-                  placeholder="∞"
-                  type="number"
-                />
+                <Controller name="per_user_limit" control={form.control} render={({ field }) => <Input {...field} placeholder="∞" type="number" />} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Starts at</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, starts_at: event.target.value })}
-                  value={form.starts_at}
-                  type="datetime-local"
-                />
+                <Controller name="starts_at" control={form.control} render={({ field }) => <Input {...field} type="datetime-local" />} />
               </div>
               <div className="space-y-2">
                 <Label>Expires at</Label>
-                <Input
-                  onChange={event =>
-                    setForm({ ...form, expires_at: event.target.value })}
-                  value={form.expires_at}
-                  type="datetime-local"
-                />
+                <Controller name="expires_at" control={form.control} render={({ field }) => <Input {...field} type="datetime-local" />} />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Scope</Label>
-              <Select
-                onValueChange={v =>
-                  setForm({ ...form, listing_id: '', scope: v as Scope })}
-                value={form.scope}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="seller_wide">
-                    All items from this seller
-                  </SelectItem>
-                  <SelectItem value="item_based">
-                    One specific listing
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="scope"
+                control={form.control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      form.setValue('listing_id', '');
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="seller_wide">
+                        All items from this seller
+                      </SelectItem>
+                      <SelectItem value="item_based">
+                        One specific listing
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Single listing select — backend supports one listingId only */}
-            {form.scope === 'item_based' && (
+            {formValues.scope === 'item_based' && (
               <div className="space-y-2">
                 <Label>Applicable listing</Label>
-                {form.seller_id
+                {formValues.seller_id
                   ? (listings.length === 0
                       ? (
                           <p className="text-xs text-muted-foreground">
@@ -578,21 +585,24 @@ function SellerCoupons() {
                           </p>
                         )
                       : (
-                          <Select
-                            onValueChange={v => setForm({ ...form, listing_id: v })}
-                            value={form.listing_id}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a listing" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {listings.map(l => (
-                                <SelectItem key={l.id} value={l.id}>
-                                  {l.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Controller
+                            name="listing_id"
+                            control={form.control}
+                            render={({ field }) => (
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choose a listing" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {listings.map(l => (
+                                    <SelectItem key={l.id} value={l.id}>
+                                      {l.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
                         ))
                   : (
                       <p className="text-xs text-muted-foreground">
@@ -602,7 +612,7 @@ function SellerCoupons() {
               </div>
             )}
 
-            <Button onClick={handleSave} disabled={saving}>
+            <Button disabled={saving} type="submit">
               {saving
                 ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -615,7 +625,7 @@ function SellerCoupons() {
                         'Create Coupon'
                       ))}
             </Button>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 

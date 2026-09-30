@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Check,
@@ -16,7 +17,10 @@ import {
   Sun,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -75,14 +79,33 @@ const FITS = [
 
 const STEPS = ['Category', 'Style', 'Brands', 'Fit', 'Budget'];
 
+const preferencesFormSchema = z.object({
+  brands: z.array(z.string()).min(1, 'Choose at least one brand.'),
+  budgetRange: z.tuple([z.number().min(0), z.number().min(0)]).refine(([minimum, maximum]) => maximum >= minimum, 'Maximum budget must be greater than minimum budget.'),
+  categories: z.array(z.string()).min(1, 'Choose at least one category.'),
+  preferredFit: z.enum(['slim', 'regular', 'relaxed', 'oversized']),
+  styles: z.array(z.string()).min(1, 'Choose at least one style.'),
+});
+
+type PreferencesFormValues = z.infer<typeof preferencesFormSchema>;
+
+const emptyPreferencesForm: PreferencesFormValues = {
+  brands: [],
+  budgetRange: [50, 500],
+  categories: [],
+  preferredFit: 'regular',
+  styles: [],
+};
+
+function toggleSelection(current: string[], value: string) {
+  return current.includes(value) ? current.filter(item => item !== value) : [...current, value];
+}
+
 function Preferences() {
   const [step, setStep] = useState(0);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedFit, setSelectedFit] = useState('regular');
-  const [budgetRange, setBudgetRange] = useState([50, 500]);
   const [brandSearch, setBrandSearch] = useState('');
+  const form = useForm<PreferencesFormValues>({ defaultValues: emptyPreferencesForm, resolver: zodResolver(preferencesFormSchema) });
+  const formValues = form.watch();
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -103,12 +126,14 @@ function Preferences() {
       return;
     }
 
-    setSelectedCategories(savedPrefs.categories || []);
-    setSelectedStyles(savedPrefs.styles || []);
-    setSelectedBrands(savedPrefs.brands || []);
-    setSelectedFit(savedPrefs.preferredFit || 'regular');
-    setBudgetRange([savedPrefs.budgetMin || 50, savedPrefs.budgetMax || 500]);
-  }, [savedPrefs]);
+    form.reset({
+      brands: savedPrefs.brands || [],
+      budgetRange: [savedPrefs.budgetMin || 50, savedPrefs.budgetMax || 500],
+      categories: savedPrefs.categories || [],
+      preferredFit: (savedPrefs.preferredFit || 'regular') as PreferencesFormValues['preferredFit'],
+      styles: savedPrefs.styles || [],
+    });
+  }, [savedPrefs, form]);
 
   // ── 3. SEARCH FILTERED BRANDS ──────────────────────────────────────────────
   const filteredBrands = useMemo(
@@ -120,48 +145,31 @@ function Preferences() {
   );
 
   // ── 4. TOGGLE LOGICS ───────────────────────────────────────────────────────
-  const toggleCategory = (value: string) =>
-    setSelectedCategories(previous =>
-      previous.includes(value) ? previous.filter(c => c !== value) : [...previous, value],
-    );
-
-  const toggleStyle = (id: string) =>
-    setSelectedStyles(previous =>
-      previous.includes(id) ? previous.filter(s => s !== id) : [...previous, id],
-    );
-
-  const toggleBrand = (brandName: string) =>
-    setSelectedBrands(previous =>
-      previous.includes(brandName)
-        ? previous.filter(b => b !== brandName)
-        : [...previous, brandName],
-    );
-
   // Validation before allowing the user to click 'Continue'
   const canProceed = () => {
     if (step === 0)
-      return selectedCategories.length > 0;
+      return formValues.categories.length > 0;
     if (step === 1)
-      return selectedStyles.length > 0;
+      return formValues.styles.length > 0;
     if (step === 2)
-      return selectedBrands.length > 0;
+      return formValues.brands.length > 0;
     return true;
   };
 
   // ── 5. FINISH & PUT PAYLOAD HANDLER ────────────────────────────────────────
-  const handleFinish = () => {
+  const handleFinish = (values: PreferencesFormValues) => {
     if (!user)
       return;
 
     // Naye backend API spec key-names ke mutabik direct payload execute hoga
     savePreferences({
-      brands: selectedBrands,
-      budgetMax: budgetRange[1],
-      budgetMin: budgetRange[0],
-      categories: selectedCategories,
+      brands: values.brands,
+      budgetMax: values.budgetRange[1],
+      budgetMin: values.budgetRange[0],
+      categories: values.categories,
       onboardingCompleted: true,
-      preferredFit: selectedFit,
-      styles: selectedStyles,
+      preferredFit: values.preferredFit,
+      styles: values.styles,
     });
   };
 
@@ -232,56 +240,63 @@ function Preferences() {
                     <p className="mt-1 text-muted-foreground">
                       Pick the categories you're interested in
                     </p>
-                    <div className="
-                      mt-6 grid grid-cols-2 gap-4
-                      md:grid-cols-3
-                    "
-                    >
-                      {categories.map((c) => {
-                        const selected = selectedCategories.includes(c.value);
-                        return (
-                          <motion.button
-                            key={c.id}
-                            onClick={() => toggleCategory(c.value)}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            className={`
-                              relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors
-                              ${
-                          selected
-                            ? 'border-primary bg-primary/5 shadow-lg'
-                            : `
-                              border-border bg-card
-                              hover:border-muted-foreground/30
-                            `
-                          }
-                            `}
-                          >
-                            {/* Backend handles icon as emoji string structure */}
-                            <div
-                              className={`
-                                flex h-14 w-14 items-center justify-center rounded-full text-3xl
-                                ${selected ? 'bg-primary/10' : 'bg-muted'}
-                              `}
-                            >
-                              {c.icon}
-                            </div>
-                            <span className="font-heading text-base font-bold text-foreground">
-                              {c.label}
-                            </span>
-                            {selected && (
-                              <motion.div
-                                animate={{ scale: 1 }}
-                                initial={{ scale: 0 }}
-                                className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                    <Controller
+                      name="categories"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="
+                          mt-6 grid grid-cols-2 gap-4
+                          md:grid-cols-3
+                        "
+                        >
+                          {categories.map((c) => {
+                            const selected = field.value.includes(c.value);
+                            return (
+                              <motion.button
+                                key={c.id}
+                                onClick={() => field.onChange(toggleSelection(field.value, c.value))}
+                                type="button"
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                className={`
+                                  relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors
+                                  ${
+                              selected
+                                ? 'border-primary bg-primary/5 shadow-lg'
+                                : `
+                                  border-border bg-card
+                                  hover:border-muted-foreground/30
+                                `
+                              }
+                                `}
                               >
-                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                              </motion.div>
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                                {/* Backend handles icon as emoji string structure */}
+                                <div
+                                  className={`
+                                    flex h-14 w-14 items-center justify-center rounded-full text-3xl
+                                    ${selected ? 'bg-primary/10' : 'bg-muted'}
+                                  `}
+                                >
+                                  {c.icon}
+                                </div>
+                                <span className="font-heading text-base font-bold text-foreground">
+                                  {c.label}
+                                </span>
+                                {selected && (
+                                  <motion.div
+                                    animate={{ scale: 1 }}
+                                    initial={{ scale: 0 }}
+                                    className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                                  >
+                                    <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                  </motion.div>
+                                )}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    />
                   </StepWrapper>
                 )}
 
@@ -297,59 +312,66 @@ function Preferences() {
                     <p className="mt-1 text-muted-foreground">
                       Select all that resonate with you
                     </p>
-                    <div className="
-                      mt-6 grid grid-cols-2 gap-4
-                      md:grid-cols-3
-                    "
-                    >
-                      {STYLES.map((s) => {
-                        const selected = selectedStyles.includes(s.id);
-                        const Icon = s.icon;
-                        return (
-                          <motion.button
-                            key={s.id}
-                            onClick={() => toggleStyle(s.id)}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            className={`
-                              relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors
-                              ${
-                          selected
-                            ? 'border-primary bg-primary/5 shadow-lg'
-                            : `
-                              border-border bg-card
-                              hover:border-muted-foreground/30
-                            `
-                          }
-                            `}
-                          >
-                            <div
-                              className={`
-                                flex h-14 w-14 items-center justify-center rounded-full
-                                ${selected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
-                              `}
-                            >
-                              <Icon className="h-7 w-7" />
-                            </div>
-                            <span className="font-heading text-base font-bold text-foreground">
-                              {s.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {s.desc}
-                            </span>
-                            {selected && (
-                              <motion.div
-                                animate={{ scale: 1 }}
-                                initial={{ scale: 0 }}
-                                className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                    <Controller
+                      name="styles"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="
+                          mt-6 grid grid-cols-2 gap-4
+                          md:grid-cols-3
+                        "
+                        >
+                          {STYLES.map((s) => {
+                            const selected = field.value.includes(s.id);
+                            const Icon = s.icon;
+                            return (
+                              <motion.button
+                                key={s.id}
+                                onClick={() => field.onChange(toggleSelection(field.value, s.id))}
+                                type="button"
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                className={`
+                                  relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-colors
+                                  ${
+                              selected
+                                ? 'border-primary bg-primary/5 shadow-lg'
+                                : `
+                                  border-border bg-card
+                                  hover:border-muted-foreground/30
+                                `
+                              }
+                                `}
                               >
-                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                              </motion.div>
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                                <div
+                                  className={`
+                                    flex h-14 w-14 items-center justify-center rounded-full
+                                    ${selected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+                                  `}
+                                >
+                                  <Icon className="h-7 w-7" />
+                                </div>
+                                <span className="font-heading text-base font-bold text-foreground">
+                                  {s.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {s.desc}
+                                </span>
+                                {selected && (
+                                  <motion.div
+                                    animate={{ scale: 1 }}
+                                    initial={{ scale: 0 }}
+                                    className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                                  >
+                                    <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                  </motion.div>
+                                )}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    />
                   </StepWrapper>
                 )}
 
@@ -374,43 +396,50 @@ function Preferences() {
                         className="pl-9"
                       />
                     </div>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      {filteredBrands.length === 0
-                        ? (
-                            <p className="text-sm text-muted-foreground">
-                              No brands match your search.
-                            </p>
-                          )
-                        : (
-                            filteredBrands.map((brand) => {
-                              const selected = selectedBrands.includes(brand.name);
-                              return (
-                                <motion.button
-                                  key={brand.id}
-                                  onClick={() => toggleBrand(brand.name)}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className={`
-                                    rounded-full border-2 px-5 py-2.5 text-sm font-medium transition-colors
-                                    ${
-                                selected
-                                  ? 'border-primary bg-primary text-primary-foreground'
-                                  : `
-                                    border-border bg-card text-foreground
-                                    hover:border-muted-foreground/40
-                                  `
-                                }
-                                  `}
-                                >
-                                  {selected && (
-                                    <Check className="mr-1.5 inline h-3.5 w-3.5" />
-                                  )}
-                                  {brand.name}
-                                </motion.button>
-                              );
-                            })
-                          )}
-                    </div>
+                    <Controller
+                      name="brands"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          {filteredBrands.length === 0
+                            ? (
+                                <p className="text-sm text-muted-foreground">
+                                  No brands match your search.
+                                </p>
+                              )
+                            : (
+                                filteredBrands.map((brand) => {
+                                  const selected = field.value.includes(brand.name);
+                                  return (
+                                    <motion.button
+                                      key={brand.id}
+                                      onClick={() => field.onChange(toggleSelection(field.value, brand.name))}
+                                      type="button"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      className={`
+                                        rounded-full border-2 px-5 py-2.5 text-sm font-medium transition-colors
+                                        ${
+                                    selected
+                                      ? 'border-primary bg-primary text-primary-foreground'
+                                      : `
+                                        border-border bg-card text-foreground
+                                        hover:border-muted-foreground/40
+                                      `
+                                    }
+                                      `}
+                                    >
+                                      {selected && (
+                                        <Check className="mr-1.5 inline h-3.5 w-3.5" />
+                                      )}
+                                      {brand.name}
+                                    </motion.button>
+                                  );
+                                })
+                              )}
+                        </div>
+                      )}
+                    />
                   </StepWrapper>
                 )}
 
@@ -426,61 +455,68 @@ function Preferences() {
                     <p className="mt-1 text-muted-foreground">
                       Your preferred silhouette
                     </p>
-                    <div className="
-                      mt-6 grid grid-cols-2 gap-4
-                      md:grid-cols-4
-                    "
-                    >
-                      {FITS.map((fit) => {
-                        const isSelected = selectedFit === fit.id;
-                        return (
-                          <motion.button
-                            key={fit.id}
-                            onClick={() => setSelectedFit(fit.id)}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            className={`
-                              flex flex-col items-center gap-2 rounded-xl border-2 p-6 text-center transition-colors
-                              ${
-                          isSelected
-                            ? 'border-primary bg-primary/5'
-                            : `
-                              border-border bg-card
-                              hover:border-muted-foreground/30
-                            `
-                          }
-                            `}
-                          >
-                            <div
-                              className={`
-                                flex h-16 items-center justify-center text-4xl
-                                ${isSelected ? 'text-primary' : 'text-muted-foreground'}
-                              `}
-                            >
-                              {fit.id === 'slim' && '╏'}
-                              {fit.id === 'regular' && '▯'}
-                              {fit.id === 'relaxed' && '▭'}
-                              {fit.id === 'oversized' && '⬜'}
-                            </div>
-                            <span className="font-heading text-base font-bold text-foreground">
-                              {fit.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {fit.desc}
-                            </span>
-                            {isSelected && (
-                              <motion.div
-                                animate={{ scale: 1 }}
-                                initial={{ scale: 0 }}
-                                className="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                    <Controller
+                      name="preferredFit"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="
+                          mt-6 grid grid-cols-2 gap-4
+                          md:grid-cols-4
+                        "
+                        >
+                          {FITS.map((fit) => {
+                            const isSelected = field.value === fit.id;
+                            return (
+                              <motion.button
+                                key={fit.id}
+                                onClick={() => field.onChange(fit.id)}
+                                type="button"
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                className={`
+                                  flex flex-col items-center gap-2 rounded-xl border-2 p-6 text-center transition-colors
+                                  ${
+                              isSelected
+                                ? 'border-primary bg-primary/5'
+                                : `
+                                  border-border bg-card
+                                  hover:border-muted-foreground/30
+                                `
+                              }
+                                `}
                               >
-                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                              </motion.div>
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                                <div
+                                  className={`
+                                    flex h-16 items-center justify-center text-4xl
+                                    ${isSelected ? 'text-primary' : 'text-muted-foreground'}
+                                  `}
+                                >
+                                  {fit.id === 'slim' && '╏'}
+                                  {fit.id === 'regular' && '▯'}
+                                  {fit.id === 'relaxed' && '▭'}
+                                  {fit.id === 'oversized' && '⬜'}
+                                </div>
+                                <span className="font-heading text-base font-bold text-foreground">
+                                  {fit.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {fit.desc}
+                                </span>
+                                {isSelected && (
+                                  <motion.div
+                                    animate={{ scale: 1 }}
+                                    initial={{ scale: 0 }}
+                                    className="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                                  >
+                                    <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                  </motion.div>
+                                )}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    />
                   </StepWrapper>
                 )}
 
@@ -500,21 +536,27 @@ function Preferences() {
                       <div className="flex items-center justify-between">
                         <span className="font-heading text-3xl font-bold text-primary">
                           Rs
-                          {budgetRange[0]}
+                          {formValues.budgetRange[0]}
                         </span>
                         <span className="text-muted-foreground">—</span>
                         <span className="font-heading text-3xl font-bold text-primary">
                           Rs
-                          {budgetRange[1]}
+                          {formValues.budgetRange[1]}
                         </span>
                       </div>
-                      <Slider
-                        onValueChange={setBudgetRange}
-                        value={budgetRange}
-                        max={5000}
-                        min={0}
-                        step={25}
-                        className="py-4"
+                      <Controller
+                        name="budgetRange"
+                        control={form.control}
+                        render={({ field }) => (
+                          <Slider
+                            onValueChange={values => field.onChange([values[0], values[1]])}
+                            value={[field.value[0], field.value[1]]}
+                            max={5000}
+                            min={0}
+                            step={25}
+                            className="py-4"
+                          />
+                        )}
                       />
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Rs0</span>
@@ -550,7 +592,7 @@ function Preferences() {
                       </Button>
                     )
                   : (
-                      <Button onClick={handleFinish} disabled={saving}>
+                      <Button onClick={form.handleSubmit(handleFinish, errors => toast.error(Object.values(errors)[0]?.message ?? 'Complete the required preferences.'))} disabled={saving}>
                         {saving ? 'Saving...' : 'Finish'}
                         {' '}
                         <Sparkles className="ml-1 h-4 w-4" />

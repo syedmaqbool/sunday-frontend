@@ -1,3 +1,4 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -8,8 +9,10 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +43,24 @@ interface ComplaintActionsProps {
   orderItemId: string;
 }
 
+const complaintFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
+const raiseComplaintSchema = z.object({
+  evidenceFiles: z.array(complaintFileSchema).min(1, 'Please attach at least one photo.'),
+  reason: z.string().trim().min(1, 'Please describe the issue.'),
+});
+const returnProofSchema = z.object({
+  carrier: z.string().trim().min(1, 'Please enter the carrier.'),
+  expectedDate: z.string().min(1, 'Please select the expected delivery date.').refine(value => value >= new Date().toISOString().slice(0, 10), 'Expected delivery date cannot be in the past.'),
+  proofFiles: z.array(complaintFileSchema).min(1, 'Please upload return proof photo(s).'),
+  tracking: z.string().trim().min(1, 'Please enter the tracking number.'),
+});
+
+type RaiseComplaintFormValues = z.infer<typeof raiseComplaintSchema>;
+type ReturnProofFormValues = z.infer<typeof returnProofSchema>;
+
+const emptyRaiseComplaintForm: RaiseComplaintFormValues = { evidenceFiles: [], reason: '' };
+const emptyReturnProofForm: ReturnProofFormValues = { carrier: '', expectedDate: '', proofFiles: [], tracking: '' };
+
 async function uploadMediaFiles(files: File[]) {
   const urls: string[] = [];
   for (const file of files) {
@@ -59,55 +80,22 @@ export function ComplaintActions({
   const [returnOpen, setReturnOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const [reason, setReason] = useState('');
-  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-
-  const [proofFiles, setProofFiles] = useState<File[]>([]);
-  const [carrier, setCarrier] = useState('');
-  const [tracking, setTracking] = useState('');
-  const [expectedDate, setExpectedDate] = useState('');
+  const raiseForm = useForm<RaiseComplaintFormValues>({ defaultValues: emptyRaiseComplaintForm, resolver: zodResolver(raiseComplaintSchema) });
+  const returnForm = useForm<ReturnProofFormValues>({ defaultValues: emptyReturnProofForm, resolver: zodResolver(returnProofSchema) });
 
   const { data: complaint, refetch } = useQuery(getComplaintDetailsOptions(orderId, orderItemId));
 
   const { data: originalShipment } = useQuery(getOrderShipmentOptions(orderId, orderItemId));
 
-  useEffect(() => {
-    if (raiseOpen) {
-      return;
-    }
-
-    setReason('');
-    setEvidenceFiles([]);
-  }, [raiseOpen]);
-
-  useEffect(() => {
-    if (returnOpen) {
-      return;
-    }
-
-    setProofFiles([]);
-    setCarrier('');
-    setTracking('');
-    setExpectedDate('');
-  }, [returnOpen]);
-
-  const handleRaise = async () => {
-    if (!reason.trim()) {
-      toast.error('Please describe the issue');
-      return;
-    }
-    if (evidenceFiles.length === 0) {
-      toast.error('Please attach at least one photo');
-      return;
-    }
+  const handleRaise = async (values: RaiseComplaintFormValues) => {
     setBusy(true);
     try {
-      const urls = await uploadMediaFiles(evidenceFiles);
+      const urls = await uploadMediaFiles(values.evidenceFiles);
       await createComplaint({
         orderId,
         orderItemId,
         evidenceUrls: urls,
-        reason: reason.trim(),
+        reason: values.reason,
       });
       toast.success('Return request submitted for admin review.');
       setRaiseOpen(false);
@@ -122,33 +110,17 @@ export function ComplaintActions({
     }
   };
 
-  const handleReturnProof = async () => {
+  const handleReturnProof = async (values: ReturnProofFormValues) => {
     if (!complaint)
       return;
-    if (!carrier.trim()) {
-      toast.error('Please enter the carrier');
-      return;
-    }
-    if (!tracking.trim()) {
-      toast.error('Please enter the tracking number');
-      return;
-    }
-    if (!expectedDate) {
-      toast.error('Please select the expected delivery date');
-      return;
-    }
-    if (proofFiles.length === 0) {
-      toast.error('Please upload return proof photo(s)');
-      return;
-    }
     setBusy(true);
     try {
-      const urls = await uploadMediaFiles(proofFiles);
+      const urls = await uploadMediaFiles(values.proofFiles);
       await submitReturnProof(complaint.id, {
-        expectedReturnDate: new Date(expectedDate).toISOString(),
-        returnCarrier: carrier.trim(),
+        expectedReturnDate: new Date(values.expectedDate).toISOString(),
+        returnCarrier: values.carrier,
         returnProofUrls: urls,
-        returnTracking: tracking.trim(),
+        returnTracking: values.tracking,
       });
       toast.success('Return proof uploaded. Seller has been notified.');
       setReturnOpen(false);
@@ -208,7 +180,14 @@ export function ComplaintActions({
           )}
         </div>
 
-        <Dialog onOpenChange={setReturnOpen} open={returnOpen}>
+        <Dialog
+          onOpenChange={(open) => {
+            setReturnOpen(open);
+            if (!open)
+              returnForm.reset(emptyReturnProofForm);
+          }}
+          open={returnOpen}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-heading">
@@ -221,7 +200,7 @@ export function ComplaintActions({
                 at least one shipment photo. All fields are required.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3">
+            <form onSubmit={returnForm.handleSubmit(handleReturnProof, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the return shipment fields.'))} className="space-y-3">
               {originalShipment?.expectedDelivery && (
                 <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
                   Original shipment ETA was
@@ -241,12 +220,16 @@ export function ComplaintActions({
                     {' '}
                     <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="return-carrier"
-                    onChange={event => setCarrier(event.target.value)}
-                    value={carrier}
-                    placeholder="e.g. PostNet"
-                    required
+                  <Controller
+                    name="carrier"
+                    control={returnForm.control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="return-carrier"
+                        placeholder="e.g. PostNet"
+                      />
+                    )}
                   />
                 </div>
                 <div>
@@ -255,12 +238,16 @@ export function ComplaintActions({
                     {' '}
                     <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="return-tracking"
-                    onChange={event => setTracking(event.target.value)}
-                    value={tracking}
-                    placeholder="Tracking number"
-                    required
+                  <Controller
+                    name="tracking"
+                    control={returnForm.control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="return-tracking"
+                        placeholder="Tracking number"
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -270,13 +257,17 @@ export function ComplaintActions({
                   {' '}
                   <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="return-expected-date"
-                  onChange={event => setExpectedDate(event.target.value)}
-                  value={expectedDate}
-                  min={minimumExpectedDate}
-                  required
-                  type="date"
+                <Controller
+                  name="expectedDate"
+                  control={returnForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="return-expected-date"
+                      min={minimumExpectedDate}
+                      type="date"
+                    />
+                  )}
                 />
               </div>
               <div>
@@ -285,33 +276,29 @@ export function ComplaintActions({
                   {' '}
                   <span className="text-destructive">*</span>
                 </Label>
-                <FilePicker
-                  id="return-proof"
-                  onChange={setProofFiles}
-                  files={proofFiles}
-                  label=""
-                />
+                <Controller name="proofFiles" control={returnForm.control} render={({ field }) => <FilePicker id="return-proof" onChange={field.onChange} files={field.value} label="" />} />
               </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={() => setReturnOpen(false)}
-                disabled={busy}
-                variant="ghost"
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleReturnProof} disabled={busy}>
-                {busy
-                  ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Truck className="mr-2 h-4 w-4" />
-                    )}
-                Mark as Return In Transit
-              </Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button
+                  onClick={() => setReturnOpen(false)}
+                  disabled={busy}
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+                <Button disabled={busy} type="submit">
+                  {busy
+                    ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )
+                    : (
+                        <Truck className="mr-2 h-4 w-4" />
+                      )}
+                  Mark as Return In Transit
+                </Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </>
@@ -334,7 +321,14 @@ export function ComplaintActions({
         Inadequate Quality
       </Button>
 
-      <Dialog onOpenChange={setRaiseOpen} open={raiseOpen}>
+      <Dialog
+        onOpenChange={(open) => {
+          setRaiseOpen(open);
+          if (!open)
+            raiseForm.reset(emptyRaiseComplaintForm);
+        }}
+        open={raiseOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
@@ -349,43 +343,44 @@ export function ComplaintActions({
               involved.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={raiseForm.handleSubmit(handleRaise, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the complaint fields.'))} className="space-y-3">
             <div>
               <Label htmlFor="complaint-reason">What's wrong?</Label>
-              <Textarea
-                id="complaint-reason"
-                onChange={event => setReason(event.target.value)}
-                value={reason}
-                placeholder="Describe the quality issue (damage, fake, not as described, etc.)"
-                rows={4}
+              <Controller
+                name="reason"
+                control={raiseForm.control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    id="complaint-reason"
+                    placeholder="Describe the quality issue (damage, fake, not as described, etc.)"
+                    rows={4}
+                  />
+                )}
               />
             </div>
-            <FilePicker
-              id="complaint-evidence"
-              onChange={setEvidenceFiles}
-              files={evidenceFiles}
-              label="Evidence photos"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => setRaiseOpen(false)}
-              disabled={busy}
-              variant="ghost"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleRaise} disabled={busy}>
-              {busy
-                ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )
-                : (
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                  )}
-              Submit for review
-            </Button>
-          </DialogFooter>
+            <Controller name="evidenceFiles" control={raiseForm.control} render={({ field }) => <FilePicker id="complaint-evidence" onChange={field.onChange} files={field.value} label="Evidence photos" />} />
+            <DialogFooter>
+              <Button
+                onClick={() => setRaiseOpen(false)}
+                disabled={busy}
+                type="button"
+                variant="ghost"
+              >
+                Cancel
+              </Button>
+              <Button disabled={busy} type="submit">
+                {busy
+                  ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <AlertTriangle className="mr-2 h-4 w-4" />
+                    )}
+                Submit for review
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

@@ -1,8 +1,11 @@
 import type { HeroImageValue } from '@/types/adminSiteSettings.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import heroFallback from '@/assets/hero-fashion.jpg';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +48,27 @@ const DEFAULTS: HeroImageValue = {
   subtitleColor: '',
   url: '',
 };
+
+const heroImageFormSchema = z.object({
+  alt: z.string(),
+  badgeIconUrl: z.string(),
+  badgeText: z.string(),
+  headlineLine1: z.string(),
+  headlineLine1Color: z.string(),
+  headlineLine2: z.string(),
+  headlineLine2Color: z.string(),
+  mobileUrl: z.string(),
+  primaryCtaBg: z.string(),
+  primaryCtaLabel: z.string(),
+  primaryCtaTextColor: z.string(),
+  secondaryCtaBorderColor: z.string(),
+  secondaryCtaLabel: z.string(),
+  secondaryCtaTextColor: z.string(),
+  siteLogoUrl: z.string(),
+  subtitle: z.string(),
+  subtitleColor: z.string(),
+  url: z.string(),
+});
 
 const COLOR_PALETTE = [
   '#FFFFFF',
@@ -146,7 +170,8 @@ function SiteSettings() {
   const mobileInputReference = useRef<HTMLInputElement>(null);
   const badgeInputReference = useRef<HTMLInputElement>(null); // ← NEW
   const [uploading, setUploading] = useState<'badge' | 'desktop' | 'logo' | 'mobile' | null>(null);
-  const [form, setForm] = useState<HeroImageValue>({ ...DEFAULTS });
+  const form = useForm<HeroImageValue>({ defaultValues: DEFAULTS, resolver: zodResolver(heroImageFormSchema) });
+  const formValues = form.watch();
 
   const { data, isLoading } = useQuery(getHeroImageQueryOptions());
   const updateHero = useUpdateHeroImageMutation();
@@ -154,8 +179,8 @@ function SiteSettings() {
   const logoInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setForm({ ...DEFAULTS, ...data });
-  }, [data]);
+    form.reset({ ...DEFAULTS, ...data });
+  }, [data, form]);
 
   const save = (next: HeroImageValue) => {
     updateHero.mutate(next, {
@@ -186,8 +211,8 @@ function SiteSettings() {
                 : variant === 'logo'
                   ? 'siteLogoUrl'
                   : 'url';
-          const next = { ...form, [key]: getUploadedFileUrl(asset) };
-          setForm(next);
+          const next = { ...form.getValues(), [key]: getUploadedFileUrl(asset) };
+          form.setValue(key, getUploadedFileUrl(asset), { shouldDirty: true, shouldValidate: true });
           save(next);
         }
         catch (error: any) {
@@ -198,10 +223,8 @@ function SiteSettings() {
         }
       };
 
-  const update
-    = (k: keyof HeroImageValue) =>
-      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-        setForm(f => ({ ...f, [k]: event.target.value }));
+  const updateValue = (key: keyof HeroImageValue, value: string) =>
+    form.setValue(key, value, { shouldDirty: true, shouldValidate: true });
 
   return (
     <div className="space-y-6">
@@ -223,7 +246,7 @@ function SiteSettings() {
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               )
             : (
-                <>
+                <form onSubmit={form.handleSubmit(save)} className="space-y-4">
                   {/* ── Banner images ── */}
                   <div className="
                     grid gap-6
@@ -235,32 +258,33 @@ function SiteSettings() {
                       <Label>Desktop banner</Label>
                       <div className="overflow-hidden rounded-md border border-border">
                         <img
-                          src={form.url || heroFallback}
+                          src={formValues.url || heroFallback}
                           alt="Desktop hero preview"
                           className="aspect-[16/9] w-full object-cover"
                         />
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <input onChange={handleUpload('desktop')} ref={desktopInputReference} accept="image/*" type="file" className="hidden" />
-                        <Button onClick={() => desktopInputReference.current?.click()} disabled={uploading === 'desktop'} className="gap-2">
+                        <Button onClick={() => desktopInputReference.current?.click()} disabled={uploading === 'desktop'} type="button" className="gap-2">
                           {uploading === 'desktop' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           {uploading === 'desktop' ? 'Uploading...' : 'Upload desktop image'}
                         </Button>
-                        {form.url && (
+                        {formValues.url && (
                           <Button
                             onClick={() => {
-                              const n = { ...form, url: '' };
-                              setForm(n);
+                              const n = { ...form.getValues(), url: '' };
+                              updateValue('url', '');
                               save(n);
                             }}
                             disabled={updateHero.isPending}
+                            type="button"
                             variant="outline"
                           >
                             Reset
                           </Button>
                         )}
                       </div>
-                      <Input onChange={update('url')} value={form.url ?? ''} placeholder="Or paste a desktop image URL" />
+                      <Controller name="url" control={form.control} render={({ field }) => <Input {...field} placeholder="Or paste a desktop image URL" />} />
                     </div>
 
                     {/* Mobile */}
@@ -268,32 +292,33 @@ function SiteSettings() {
                       <Label>Mobile banner</Label>
                       <div className="overflow-hidden rounded-md border border-border bg-muted">
                         <img
-                          src={form.mobileUrl || form.url || heroFallback}
+                          src={formValues.mobileUrl || formValues.url || heroFallback}
                           alt="Mobile hero preview"
                           className="aspect-[9/16] max-h-80 w-full object-cover"
                         />
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <input onChange={handleUpload('mobile')} ref={mobileInputReference} accept="image/*" type="file" className="hidden" />
-                        <Button onClick={() => mobileInputReference.current?.click()} disabled={uploading === 'mobile'} className="gap-2">
+                        <Button onClick={() => mobileInputReference.current?.click()} disabled={uploading === 'mobile'} type="button" className="gap-2">
                           {uploading === 'mobile' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           {uploading === 'mobile' ? 'Uploading...' : 'Upload mobile image'}
                         </Button>
-                        {form.mobileUrl && (
+                        {formValues.mobileUrl && (
                           <Button
                             onClick={() => {
-                              const n = { ...form, mobileUrl: '' };
-                              setForm(n);
+                              const n = { ...form.getValues(), mobileUrl: '' };
+                              updateValue('mobileUrl', '');
                               save(n);
                             }}
                             disabled={updateHero.isPending}
+                            type="button"
                             variant="outline"
                           >
                             Reset
                           </Button>
                         )}
                       </div>
-                      <Input onChange={update('mobileUrl')} value={form.mobileUrl ?? ''} placeholder="Or paste a mobile image URL" />
+                      <Controller name="mobileUrl" control={form.control} render={({ field }) => <Input {...field} placeholder="Or paste a mobile image URL" />} />
                       <p className="text-xs text-muted-foreground">Falls back to desktop banner if not set. Recommended 1080×1920.</p>
                     </div>
                   </div>
@@ -315,25 +340,26 @@ function SiteSettings() {
                         <Label>Site logo (Navbar)</Label>
                         <div className="flex items-center gap-4">
                           <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
-                            {form.siteLogoUrl
-                              ? <img src={form.siteLogoUrl} alt="Site logo" className="h-full w-full object-contain p-1" />
+                            {formValues.siteLogoUrl
+                              ? <img src={formValues.siteLogoUrl} alt="Site logo" className="h-full w-full object-contain p-1" />
                               : <span className="text-xs text-muted-foreground">No logo</span>}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <input onChange={handleUpload('logo')} ref={logoInputReference} accept="image/*" type="file" className="hidden" />
-                            <Button onClick={() => logoInputReference.current?.click()} disabled={uploading === 'logo'} size="sm" className="gap-2">
+                            <Button onClick={() => logoInputReference.current?.click()} disabled={uploading === 'logo'} size="sm" type="button" className="gap-2">
                               {uploading === 'logo' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                               {uploading === 'logo' ? 'Uploading...' : 'Upload logo'}
                             </Button>
-                            {form.siteLogoUrl && (
+                            {formValues.siteLogoUrl && (
                               <Button
                                 onClick={() => {
-                                  const n = { ...form, siteLogoUrl: '' };
-                                  setForm(n);
+                                  const n = { ...form.getValues(), siteLogoUrl: '' };
+                                  updateValue('siteLogoUrl', '');
                                   save(n);
                                 }}
                                 disabled={updateHero.isPending}
                                 size="sm"
+                                type="button"
                                 variant="outline"
                               >
                                 Remove
@@ -356,9 +382,9 @@ function SiteSettings() {
                         <Label>Badge icon (replaces badge text when uploaded)</Label>
                         <div className="flex items-center gap-4">
                           <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
-                            {form.badgeIconUrl
+                            {formValues.badgeIconUrl
                               ? (
-                                  <img src={form.badgeIconUrl} alt="Badge icon" className="h-full w-full object-contain" />
+                                  <img src={formValues.badgeIconUrl} alt="Badge icon" className="h-full w-full object-contain" />
                                 )
                               : (
                                   <span className="text-xs text-muted-foreground">No icon</span>
@@ -366,19 +392,20 @@ function SiteSettings() {
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <input onChange={handleUpload('badge')} ref={badgeInputReference} accept="image/*" type="file" className="hidden" />
-                            <Button onClick={() => badgeInputReference.current?.click()} disabled={uploading === 'badge'} size="sm" className="gap-2">
+                            <Button onClick={() => badgeInputReference.current?.click()} disabled={uploading === 'badge'} size="sm" type="button" className="gap-2">
                               {uploading === 'badge' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                               {uploading === 'badge' ? 'Uploading...' : 'Upload icon'}
                             </Button>
-                            {form.badgeIconUrl && (
+                            {formValues.badgeIconUrl && (
                               <Button
                                 onClick={() => {
-                                  const n = { ...form, badgeIconUrl: '' };
-                                  setForm(n);
+                                  const n = { ...form.getValues(), badgeIconUrl: '' };
+                                  updateValue('badgeIconUrl', '');
                                   save(n);
                                 }}
                                 disabled={updateHero.isPending}
                                 size="sm"
+                                type="button"
                                 variant="outline"
                               >
                                 Remove icon
@@ -392,22 +419,22 @@ function SiteSettings() {
                       {/* Badge text */}
                       <div className="space-y-2">
                         <Label htmlFor="badge">Badge text (used when no icon is uploaded)</Label>
-                        <Input id="badge" onChange={update('badgeText')} value={form.badgeText ?? ''} />
+                        <Controller name="badgeText" control={form.control} render={({ field }) => <Input {...field} id="badge" />} />
                       </div>
                     </div>
 
                     {/* Headline line 1 */}
                     <div className="space-y-2">
                       <Label htmlFor="t1">Headline — line 1</Label>
-                      <Input id="t1" onChange={update('headlineLine1')} value={form.headlineLine1 ?? ''} />
-                      <ColorPicker onChange={c => setForm(f => ({ ...f, headlineLine1Color: c }))} value={form.headlineLine1Color ?? ''} />
+                      <Controller name="headlineLine1" control={form.control} render={({ field }) => <Input {...field} id="t1" />} />
+                      <Controller name="headlineLine1Color" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                     </div>
 
                     {/* Headline line 2 */}
                     <div className="space-y-2">
                       <Label htmlFor="t2">Headline — line 2 (italic accent)</Label>
-                      <Input id="t2" onChange={update('headlineLine2')} value={form.headlineLine2 ?? ''} />
-                      <ColorPicker onChange={c => setForm(f => ({ ...f, headlineLine2Color: c }))} value={form.headlineLine2Color ?? ''} />
+                      <Controller name="headlineLine2" control={form.control} render={({ field }) => <Input {...field} id="t2" />} />
+                      <Controller name="headlineLine2Color" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                     </div>
 
                     {/* Subtitle */}
@@ -417,22 +444,22 @@ function SiteSettings() {
                     "
                     >
                       <Label htmlFor="sub">Subtitle</Label>
-                      <Textarea id="sub" onChange={update('subtitle')} value={form.subtitle ?? ''} rows={3} />
-                      <ColorPicker onChange={c => setForm(f => ({ ...f, subtitleColor: c }))} value={form.subtitleColor ?? ''} />
+                      <Controller name="subtitle" control={form.control} render={({ field }) => <Textarea {...field} id="sub" rows={3} />} />
+                      <Controller name="subtitleColor" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                     </div>
 
                     {/* Primary CTA ← NEW: bg + text color pickers */}
                     <div className="space-y-2">
                       <Label htmlFor="cta1">Primary button label</Label>
-                      <Input id="cta1" onChange={update('primaryCtaLabel')} value={form.primaryCtaLabel ?? ''} />
+                      <Controller name="primaryCtaLabel" control={form.control} render={({ field }) => <Input {...field} id="cta1" />} />
                       <div className="flex items-center gap-3 pt-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Background</span>
-                          <ColorPicker onChange={c => setForm(f => ({ ...f, primaryCtaBg: c }))} value={form.primaryCtaBg ?? ''} />
+                          <Controller name="primaryCtaBg" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Text</span>
-                          <ColorPicker onChange={c => setForm(f => ({ ...f, primaryCtaTextColor: c }))} value={form.primaryCtaTextColor ?? ''} />
+                          <Controller name="primaryCtaTextColor" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                         </div>
                       </div>
                     </div>
@@ -440,26 +467,26 @@ function SiteSettings() {
                     {/* Secondary CTA ← NEW: border + text color pickers */}
                     <div className="space-y-2">
                       <Label htmlFor="cta2">Secondary button label</Label>
-                      <Input id="cta2" onChange={update('secondaryCtaLabel')} value={form.secondaryCtaLabel ?? ''} />
+                      <Controller name="secondaryCtaLabel" control={form.control} render={({ field }) => <Input {...field} id="cta2" />} />
                       <div className="flex items-center gap-3 pt-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Border</span>
-                          <ColorPicker onChange={c => setForm(f => ({ ...f, secondaryCtaBorderColor: c }))} value={form.secondaryCtaBorderColor ?? ''} />
+                          <Controller name="secondaryCtaBorderColor" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Text</span>
-                          <ColorPicker onChange={c => setForm(f => ({ ...f, secondaryCtaTextColor: c }))} value={form.secondaryCtaTextColor ?? ''} />
+                          <Controller name="secondaryCtaTextColor" control={form.control} render={({ field }) => <ColorPicker onChange={field.onChange} value={field.value} />} />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={() => save(form)} disabled={updateHero.isPending}>
+                    <Button disabled={updateHero.isPending} type="submit">
                       {updateHero.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save changes'}
                     </Button>
                   </div>
-                </>
+                </form>
               )}
         </CardContent>
       </Card>

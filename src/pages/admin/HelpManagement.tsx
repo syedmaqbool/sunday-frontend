@@ -266,11 +266,14 @@ function HelpManagement() {
   // ── Category dialog ──
   const [catOpen, setCatOpen] = useState(false);
   const [catEdit, setCatEdit] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState({ key: '', blurb: '', icon: 'BookOpen', label: '', sort_order: 0 });
+  const catForm = useForm<z.infer<typeof categorySchema>>({
+    defaultValues: { key: '', blurb: '', icon: 'BookOpen', label: '', sort_order: 0 },
+    resolver: zodResolver(categorySchema),
+  });
 
   const openCategoryDialog = (c: Category | null) => {
     setCatEdit(c);
-    setCatForm(
+    catForm.reset(
       c
         ? { key: c.key, blurb: c.blurb, icon: c.icon, label: c.label, sort_order: c.sort_order }
         : { key: '', blurb: '', icon: 'BookOpen', label: '', sort_order: categories.length },
@@ -278,27 +281,23 @@ function HelpManagement() {
     setCatOpen(true);
   };
 
-  const saveCategory = () => {
-    const parsed = categorySchema.safeParse(catForm);
-    if (!parsed.success)
-      return toast.error(parsed.error.issues[0].message);
-
+  const saveCategory = (values: z.infer<typeof categorySchema>) => {
     let next: Category[];
     if (catEdit) {
       next = categories.map(c =>
-        c.key === catEdit.key ? { ...c, ...parsed.data } : c,
+        c.key === catEdit.key ? { ...c, ...values } : c,
       );
     }
     else {
-      if (categories.some(c => c.key === parsed.data.key))
+      if (categories.some(c => c.key === values.key))
         return toast.error('That key already exists');
       const newCategory: Category = {
-        key: parsed.data.key,
+        key: values.key,
         active: true,
-        blurb: parsed.data.blurb,
-        icon: parsed.data.icon,
-        label: parsed.data.label,
-        sort_order: parsed.data.sort_order,
+        blurb: values.blurb,
+        icon: values.icon,
+        label: values.label,
+        sort_order: values.sort_order,
       };
       next = [...categories, newCategory];
     }
@@ -328,16 +327,19 @@ function HelpManagement() {
   // ── FAQ dialog ──
   const [faqOpen, setFaqOpen] = useState(false);
   const [faqEdit, setFaqEdit] = useState<Faq | null>(null);
-  const [faqForm, setFaqForm] = useState({
-    answer: '',
-    category_key: '',
-    question: '',
-    sort_order: 0,
+  const faqForm = useForm<z.infer<typeof faqSchema>>({
+    defaultValues: {
+      answer: '',
+      category_key: '',
+      question: '',
+      sort_order: 0,
+    },
+    resolver: zodResolver(faqSchema),
   });
 
   const openFaqDialog = (f: Faq | null) => {
     setFaqEdit(f);
-    setFaqForm(
+    faqForm.reset(
       f
         ? {
             answer: f.answer,
@@ -355,25 +357,21 @@ function HelpManagement() {
     setFaqOpen(true);
   };
 
-  const saveFaq = () => {
-    const parsed = faqSchema.safeParse(faqForm);
-    if (!parsed.success)
-      return toast.error(parsed.error.issues[0].message);
-
+  const saveFaq = (values: z.infer<typeof faqSchema>) => {
     let next: Faq[];
     if (faqEdit) {
       next = faqs.map(f =>
-        f.id === faqEdit.id ? { ...f, ...parsed.data } : f,
+        f.id === faqEdit.id ? { ...f, ...values } : f,
       );
     }
     else {
       const newFaq: Faq = {
         id: `faq-${Date.now()}`,
-        answer: parsed.data.answer,
-        category_key: parsed.data.category_key,
+        answer: values.answer,
+        category_key: values.category_key,
         published: true,
-        question: parsed.data.question,
-        sort_order: parsed.data.sort_order,
+        question: values.question,
+        sort_order: values.sort_order,
       };
       next = [...faqs, newFaq];
     }
@@ -818,74 +816,57 @@ function HelpManagement() {
               {catEdit ? 'Edit category' : 'Add category'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={catForm.handleSubmit(saveCategory, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the category fields.'))} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Key</Label>
-                <Input
-                  onChange={event =>
-                    setCatForm({
-                      ...catForm,
-                      key: event.target.value.toLowerCase(),
-                    })}
-                  value={catForm.key}
-                  disabled={!!catEdit}
-                  placeholder="e.g. shipping"
+                <Controller
+                  name="key"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={event => field.onChange(event.target.value.toLowerCase())}
+                      disabled={!!catEdit}
+                      placeholder="e.g. shipping"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>Label</Label>
-                <Input
-                  onChange={event =>
-                    setCatForm({ ...catForm, label: event.target.value })}
-                  value={catForm.label}
-                />
+                <Controller name="label" control={catForm.control} render={({ field }) => <Input {...field} />} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Blurb</Label>
-              <Input
-                onChange={event =>
-                  setCatForm({ ...catForm, blurb: event.target.value })}
-                value={catForm.blurb}
-              />
+              <Controller name="blurb" control={catForm.control} render={({ field }) => <Input {...field} />} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Icon</Label>
-                <IconSelect
-                  onChange={v => setCatForm({ ...catForm, icon: v })}
-                  value={catForm.icon}
-                />
+                <Controller name="icon" control={catForm.control} render={({ field }) => <IconSelect onChange={field.onChange} value={field.value} />} />
               </div>
               <div className="space-y-1.5">
                 <Label>Sort order</Label>
-                <Input
-                  onChange={event =>
-                    setCatForm({
-                      ...catForm,
-                      sort_order: Number(event.target.value) || 0,
-                    })}
-                  value={catForm.sort_order}
-                  type="number"
-                />
+                <Controller name="sort_order" control={catForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Number(event.target.value) || 0)} ref={field.ref} value={field.value} type="number" />} />
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setCatOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button
-              onClick={saveCategory}
-              disabled={updateCategories.isPending}
-            >
-              {updateCategories.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setCatOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button
+                disabled={updateCategories.isPending}
+                type="submit"
+              >
+                {updateCategories.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -895,69 +876,52 @@ function HelpManagement() {
           <DialogHeader>
             <DialogTitle>{faqEdit ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={faqForm.handleSubmit(saveFaq, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the FAQ fields.'))} className="space-y-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select
-                onValueChange={v =>
-                  setFaqForm({ ...faqForm, category_key: v })}
-                value={faqForm.category_key}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => (
-                    <SelectItem key={c.key} value={c.key}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="category_key"
+                control={faqForm.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(c => (
+                        <SelectItem key={c.key} value={c.key}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Question</Label>
-              <Input
-                onChange={event =>
-                  setFaqForm({ ...faqForm, question: event.target.value })}
-                value={faqForm.question}
-                maxLength={200}
-              />
+              <Controller name="question" control={faqForm.control} render={({ field }) => <Input {...field} maxLength={200} />} />
             </div>
             <div className="space-y-1.5">
               <Label>Answer</Label>
-              <Textarea
-                onChange={event =>
-                  setFaqForm({ ...faqForm, answer: event.target.value })}
-                value={faqForm.answer}
-                maxLength={2000}
-                rows={6}
-              />
+              <Controller name="answer" control={faqForm.control} render={({ field }) => <Textarea {...field} maxLength={2000} rows={6} />} />
             </div>
             <div className="space-y-1.5">
               <Label>Sort order</Label>
-              <Input
-                onChange={event =>
-                  setFaqForm({
-                    ...faqForm,
-                    sort_order: Number(event.target.value) || 0,
-                  })}
-                value={faqForm.sort_order}
-                type="number"
-              />
+              <Controller name="sort_order" control={faqForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Number(event.target.value) || 0)} ref={field.ref} value={field.value} type="number" />} />
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setFaqOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={saveFaq} disabled={updateFaqs.isPending}>
-              {updateFaqs.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setFaqOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button disabled={updateFaqs.isPending} type="submit">
+                {updateFaqs.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -969,11 +933,11 @@ function HelpManagement() {
               {tutEdit ? 'Edit tutorial' : 'Add tutorial'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={tutForm.handleSubmit(saveTutorial, () => toast.error('Please correct the highlighted tutorial fields.'))} className="space-y-3">
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div className="space-y-1.5">
                 <Label>Title</Label>
-                <Input {...tutForm.register('title')} />
+                <Controller name="title" control={tutForm.control} render={({ field }) => <Input {...field} />} />
                 {tutForm.formState.errors.title?.message && (
                   <p className="text-sm text-destructive">
                     {tutForm.formState.errors.title.message}
@@ -1015,7 +979,7 @@ function HelpManagement() {
                     .
                   </span>
                   <div className="min-w-0 flex-1">
-                    <Input {...tutForm.register(`steps.${index}.value`)} />
+                    <Controller name={`steps.${index}.value`} control={tutForm.control} render={({ field }) => <Input {...field} />} />
                     {tutForm.formState.errors.steps?.[index]?.value?.message && (
                       <p className="mt-1 text-sm text-destructive">
                         {tutForm.formState.errors.steps[index]?.value?.message}
@@ -1034,6 +998,7 @@ function HelpManagement() {
                       tutorialSteps.remove(index);
                     }}
                     size="icon"
+                    type="button"
                     variant="ghost"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1076,14 +1041,8 @@ function HelpManagement() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  {...tutForm.register('ctaLabel')}
-                  placeholder="CTA label, e.g. Start browsing"
-                />
-                <Input
-                  {...tutForm.register('ctaTo')}
-                  placeholder="/listings"
-                />
+                <Controller name="ctaLabel" control={tutForm.control} render={({ field }) => <Input {...field} placeholder="CTA label, e.g. Start browsing" />} />
+                <Controller name="ctaTo" control={tutForm.control} render={({ field }) => <Input {...field} placeholder="/listings" />} />
               </div>
               {tutForm.formState.errors.ctaTo?.message && (
                 <p className="text-sm text-destructive">
@@ -1091,23 +1050,21 @@ function HelpManagement() {
                 </p>
               )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setTutOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button
-              onClick={tutForm.handleSubmit(saveTutorial, () => {
-                toast.error('Please correct the highlighted tutorial fields.');
-              })}
-              disabled={createTutorial.isPending || updateTutorial.isPending}
-            >
-              {(createTutorial.isPending || updateTutorial.isPending) && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setTutOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button
+                disabled={createTutorial.isPending || updateTutorial.isPending}
+                type="submit"
+              >
+                {(createTutorial.isPending || updateTutorial.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -196,6 +196,7 @@ export default antfu(
       'unicorn/consistent-boolean-name': 'off',
       'unicorn/expiring-todo-comments': 'off',
       'unicorn/filename-case': 'off',
+      'unicorn/max-nested-calls': 'off',
       'unicorn/name-replacements': [
         'error',
       ],

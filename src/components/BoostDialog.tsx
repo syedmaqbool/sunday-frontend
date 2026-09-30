@@ -1,4 +1,5 @@
 import type { BoostPackage, BoostPlacement } from '@/hooks/useBoosts';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import {
@@ -13,7 +14,9 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -75,6 +78,35 @@ const RATE_PER_EURO: Record<
   TRENDING: { clicks: 18, impressions: 420 },
 };
 
+const campaignSchema = z.object({
+  endDate: z.date(),
+  goal: z.enum(['clicks', 'impressions']),
+  placement: z.enum(['FOR_YOU', 'SEARCH']),
+  startDate: z.date(),
+}).superRefine(({ endDate, startDate }, context) => {
+  if (endDate <= startDate) {
+    context.addIssue({
+      path: ['endDate'],
+      code: z.ZodIssueCode.custom,
+      message: 'End date must be after start date',
+    });
+  }
+  if (startDate < new Date(new Date().setHours(0, 0, 0, 0))) {
+    context.addIssue({
+      path: ['startDate'],
+      code: z.ZodIssueCode.custom,
+      message: 'Start date cannot be in the past',
+    });
+  }
+});
+
+const packageSelectionSchema = z.object({
+  packageIds: z.array(z.string()).min(1, 'Select at least one package'),
+});
+
+type CampaignFormValues = z.infer<typeof campaignSchema>;
+type PackageSelectionFormValues = z.infer<typeof packageSelectionSchema>;
+
 interface Props {
   listingId: string;
   listingTitle: string;
@@ -84,20 +116,35 @@ interface Props {
 function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [initialCampaignDates] = useState(() => {
+    const startDate = new Date();
+    return { endDate: addDays(startDate, 7), startDate };
+  });
 
-  // Packages tab state
-  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const packageForm = useForm<PackageSelectionFormValues>({
+    defaultValues: { packageIds: [] },
+    resolver: zodResolver(packageSelectionSchema),
+  });
   const { data: packagesResponse, isLoading } = useQuery(getBoostPackagesOptions());
   const packages = useMemo(() => packagesResponse?.data ?? [], [packagesResponse?.data]);
 
-  // Custom campaign tab state
-  const [placement, setPlacement] = useState<BoostPlacement>('FOR_YOU');
-  const [startDate, setStartDate] = useState<Date>(() => new Date());
-  const [endDate, setEndDate] = useState<Date>(() => addDays(new Date(), 7));
+  const campaignForm = useForm<CampaignFormValues>({
+    defaultValues: {
+      ...initialCampaignDates,
+      goal: 'impressions',
+      placement: 'FOR_YOU',
+    },
+    resolver: zodResolver(campaignSchema),
+  });
+  const [placement, startDate, endDate, goal] = campaignForm.watch([
+    'placement',
+    'startDate',
+    'endDate',
+    'goal',
+  ]);
+  const selected = packageForm.watch('packageIds');
   const dailyRate
-    = SUGGESTED_DAILY_RATE[placement as Exclude<BoostPlacement, 'TRENDING'>]
-      ?? 200;
-  const [goal, setGoal] = useState<'clicks' | 'impressions'>('impressions');
+    = SUGGESTED_DAILY_RATE[placement] ?? 200;
 
   const days = Math.max(1, differenceInCalendarDays(endDate, startDate) + 1);
   const budget = dailyRate * days;
@@ -108,22 +155,66 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     = budget > 0 && estImpressions > 0 ? (budget / estImpressions) * 1000 : 0;
   const cpc = estClicks > 0 ? budget / estClicks : 0;
 
-  const togglePackage = (id: string) => {
-    setSelected((previous) => {
-      const next = new Set(previous);
-      if (next.has(id))
-        next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const packagesTotal = packages
-    .filter(p => selected.has(p.id))
+    .filter(p => selected.includes(p.id))
     .reduce((sum, p) => sum + Number(p.price), 0);
 
   const purchasePackages = useBoostWithPackageMutation();
   const purchaseCampaign = useBoostWithCampaignMutation();
+
+  const launchCampaign = ({ endDate: campaignEndDate, placement: campaignPlacement, startDate: campaignStartDate }: CampaignFormValues) => {
+    if (!user) {
+      toast.error('Not authenticated');
+      return;
+    }
+    purchaseCampaign.mutate(
+      {
+        listingId,
+        paymentStatus: 'MOCK',
+        placement: campaignPlacement,
+        endsAt: campaignEndDate.toISOString(),
+        startsAt: campaignStartDate.toISOString(),
+      },
+      {
+        onError: (error: any) => showErrorToast(error, 'Failed to launch campaign'),
+        onSuccess: () => {
+          trackEvent('boost_purchased', {
+            currency: 'PKR',
+            listing_id: listingId,
+            placement: campaignPlacement,
+            type: 'campaign',
+            value: budget,
+          });
+          toast.success('Campaign launched! (Mock payment)');
+          setOpen(false);
+        },
+      },
+    );
+  };
+
+  const purchaseSelectedPackages = ({ packageIds }: PackageSelectionFormValues) => {
+    if (!user) {
+      toast.error('Not authenticated');
+      return;
+    }
+    purchasePackages.mutate(
+      { listingId, packageIds, paymentStatus: 'MOCK' },
+      {
+        onError: (error: any) => showErrorToast(error, 'Failed to activate boost'),
+        onSuccess: () => {
+          trackEvent('boost_purchased', {
+            currency: 'PKR',
+            listing_id: listingId,
+            type: 'package',
+            value: packagesTotal,
+          });
+          toast.success('Boost activated! (Mock payment)');
+          packageForm.reset({ packageIds: [] });
+          setOpen(false);
+        },
+      },
+    );
+  };
 
   const grouped = useMemo(() => {
     const g: Record<BoostPlacement, BoostPackage[]> = {
@@ -168,438 +259,420 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
           </TabsList>
 
           {/* CUSTOM CAMPAIGN */}
-          <TabsContent value="campaign" className="space-y-5 pt-4">
-            {/* Placement */}
-            <div className="space-y-2">
-              <Label>Placement</Label>
-              <RadioGroup
-                onValueChange={v => setPlacement(v as BoostPlacement)}
-                value={placement}
-                className="grid grid-cols-2 gap-2"
-              >
-                {(Object.keys(placementMeta) as BoostPlacement[])
-                  .filter(p => p !== 'TRENDING')
-                  .map((p) => {
-                    const M = placementMeta[p];
-                    const Icon = M.icon;
-                    return (
+          <TabsContent value="campaign" className="pt-4">
+            <form
+              onSubmit={campaignForm.handleSubmit(launchCampaign, () => toast.error('Please check the campaign dates'))}
+              className="space-y-5"
+            >
+              {/* Placement */}
+              <div className="space-y-2">
+                <Label>Placement</Label>
+                <Controller
+                  name="placement"
+                  control={campaignForm.control}
+                  render={({ field }) => (
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      {(Object.keys(placementMeta) as BoostPlacement[])
+                        .filter(p => p !== 'TRENDING')
+                        .map((p) => {
+                          const M = placementMeta[p];
+                          const Icon = M.icon;
+                          return (
+                            <Label
+                              key={p}
+                              htmlFor={`pl-${p}`}
+                              className={cn(
+                                `
+                                  flex cursor-pointer flex-col items-center gap-1.5 rounded-md border border-border bg-background p-3 text-center text-xs transition-all
+                                  hover:border-primary/50
+                                `,
+                                field.value === p && 'border-primary bg-primary/5',
+                              )}
+                            >
+                              <RadioGroupItem
+                                id={`pl-${p}`}
+                                value={p}
+                                className="sr-only"
+                              />
+                              <Icon className={cn('h-4 w-4', M.color)} />
+                              <span className="font-medium text-foreground">
+                                {M.label}
+                              </span>
+                            </Label>
+                          );
+                        })}
+                    </RadioGroup>
+                  )}
+                />
+              </div>
+
+              {/* Date range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Start date</Label>
+                  <Controller
+                    name="startDate"
+                    control={campaignForm.control}
+                    render={({ field }) => (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {format(field.value, 'PPP')}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-auto p-0">
+                          <Calendar
+                            onSelect={(d) => {
+                              if (!d)
+                                return;
+                              field.onChange(d);
+                              if (endDate <= d)
+                                campaignForm.setValue('endDate', addDays(d, 7));
+                            }}
+                            disabled={d =>
+                              d < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                            mode="single"
+                            selected={field.value}
+                            className={cn('pointer-events-auto p-3')}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End date</Label>
+                  <Controller
+                    name="endDate"
+                    control={campaignForm.control}
+                    render={({ field }) => (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {format(field.value, 'PPP')}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-auto p-0">
+                          <Calendar
+                            onSelect={field.onChange}
+                            disabled={d => d <= startDate}
+                            initialFocus
+                            mode="single"
+                            selected={field.value}
+                            className={cn('pointer-events-auto p-3')}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  />
+                </div>
+              </div>
+              <p className="-mt-2 text-xs text-muted-foreground">
+                Duration:
+                {' '}
+                <span className="font-medium text-foreground">
+                  {days}
+                  {' '}
+                  day
+                  {days > 1 ? 's' : ''}
+                </span>
+              </p>
+
+              {/* Goal */}
+              <div className="space-y-2">
+                <Label>Optimize for</Label>
+                <Controller
+                  name="goal"
+                  control={campaignForm.control}
+                  render={({ field }) => (
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="grid grid-cols-2 gap-2"
+                    >
                       <Label
-                        key={p}
-                        htmlFor={`pl-${p}`}
+                        htmlFor="g-imp"
                         className={cn(
                           `
-                            flex cursor-pointer flex-col items-center gap-1.5 rounded-md border border-border bg-background p-3 text-center text-xs transition-all
+                            flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 text-sm transition-all
                             hover:border-primary/50
                           `,
-                          placement === p && 'border-primary bg-primary/5',
+                          field.value === 'impressions' && 'border-primary bg-primary/5',
                         )}
                       >
                         <RadioGroupItem
-                          id={`pl-${p}`}
-                          value={p}
+                          id="g-imp"
+                          value="impressions"
                           className="sr-only"
                         />
-                        <Icon className={cn('h-4 w-4', M.color)} />
-                        <span className="font-medium text-foreground">
-                          {M.label}
-                        </span>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Impressions</span>
                       </Label>
-                    );
-                  })}
-              </RadioGroup>
-            </div>
-
-            {/* Date range */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Start date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(startDate, 'PPP')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-auto p-0">
-                    <Calendar
-                      onSelect={(d) => {
-                        if (!d)
-                          return;
-                        setStartDate(d);
-                        if (endDate <= d)
-                          setEndDate(addDays(d, 7));
-                      }}
-                      disabled={d =>
-                        d < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                      mode="single"
-                      selected={startDate}
-                      className={cn('pointer-events-auto p-3')}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>End date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(endDate, 'PPP')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-auto p-0">
-                    <Calendar
-                      onSelect={d => d && setEndDate(d)}
-                      disabled={d => d <= startDate}
-                      initialFocus
-                      mode="single"
-                      selected={endDate}
-                      className={cn('pointer-events-auto p-3')}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <p className="-mt-2 text-xs text-muted-foreground">
-              Duration:
-              {' '}
-              <span className="font-medium text-foreground">
-                {days}
-                {' '}
-                day
-                {days > 1 ? 's' : ''}
-              </span>
-            </p>
-
-            {/* Goal */}
-            <div className="space-y-2">
-              <Label>Optimize for</Label>
-              <RadioGroup
-                onValueChange={v => setGoal(v as any)}
-                value={goal}
-                className="grid grid-cols-2 gap-2"
-              >
-                <Label
-                  htmlFor="g-imp"
-                  className={cn(
-                    `
-                      flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 text-sm transition-all
-                      hover:border-primary/50
-                    `,
-                    goal === 'impressions' && 'border-primary bg-primary/5',
+                      <Label
+                        htmlFor="g-clk"
+                        className={cn(
+                          `
+                            flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 text-sm transition-all
+                            hover:border-primary/50
+                          `,
+                          field.value === 'clicks' && 'border-primary bg-primary/5',
+                        )}
+                      >
+                        <RadioGroupItem
+                          id="g-clk"
+                          value="clicks"
+                          className="sr-only"
+                        />
+                        <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Clicks</span>
+                      </Label>
+                    </RadioGroup>
                   )}
-                >
-                  <RadioGroupItem
-                    id="g-imp"
-                    value="impressions"
-                    className="sr-only"
-                  />
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Impressions</span>
-                </Label>
-                <Label
-                  htmlFor="g-clk"
-                  className={cn(
-                    `
-                      flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 text-sm transition-all
-                      hover:border-primary/50
-                    `,
-                    goal === 'clicks' && 'border-primary bg-primary/5',
-                  )}
-                >
-                  <RadioGroupItem
-                    id="g-clk"
-                    value="clicks"
-                    className="sr-only"
-                  />
-                  <MousePointerClick className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Clicks</span>
-                </Label>
-              </RadioGroup>
-            </div>
+                />
+              </div>
 
-            {/* Budget (fixed by placement) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Total budget</Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    Fixed Rs
-                    {' '}
-                    {dailyRate}
-                    /day for
-                    {' '}
-                    {placementMeta[placement].label}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold">
-                    Rs
-                    {' '}
-                    {budget.toLocaleString()}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Rs
-                    {' '}
-                    {dailyRate}
-                    {' '}
-                    ×
-                    {' '}
-                    {days}
-                    {' '}
-                    day
-                    {days > 1 ? 's' : ''}
-                  </p>
+              {/* Budget (fixed by placement) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Total budget</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Fixed Rs
+                      {' '}
+                      {dailyRate}
+                      /day for
+                      {' '}
+                      {placementMeta[placement].label}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold">
+                      Rs
+                      {' '}
+                      {budget.toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Rs
+                      {' '}
+                      {dailyRate}
+                      {' '}
+                      ×
+                      {' '}
+                      {days}
+                      {' '}
+                      day
+                      {days > 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Estimates */}
-            <Card className="bg-muted/30 p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">
-                Estimated reach
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className={cn(goal === 'impressions' && 'text-primary')}>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Eye className="h-3.5 w-3.5" />
-                    {' '}
-                    Impressions
-                  </div>
-                  <p className="font-heading text-2xl font-bold">
-                    {estImpressions.toLocaleString()}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    CPM ≈ Rs
-                    {' '}
-                    {cpm.toFixed(2)}
-                  </p>
-                </div>
-                <div className={cn(goal === 'clicks' && 'text-primary')}>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MousePointerClick className="h-3.5 w-3.5" />
-                    {' '}
-                    Clicks
-                  </div>
-                  <p className="font-heading text-2xl font-bold">
-                    {estClicks.toLocaleString()}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    CPC ≈ Rs
-                    {' '}
-                    {cpc.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                Estimates based on recent
-                {' '}
-                {placementMeta[placement].label}
-                {' '}
-                performance.
-              </p>
-            </Card>
-
-            <div className="flex items-center justify-between border-t border-border pt-4">
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  You'll be charged
+              {/* Estimates */}
+              <Card className="bg-muted/30 p-4">
+                <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">
+                  Estimated reach
                 </p>
-                <p className="font-heading text-2xl font-bold text-foreground">
-                  Rs
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={cn(goal === 'impressions' && 'text-primary')}>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Eye className="h-3.5 w-3.5" />
+                      {' '}
+                      Impressions
+                    </div>
+                    <p className="font-heading text-2xl font-bold">
+                      {estImpressions.toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      CPM ≈ Rs
+                      {' '}
+                      {cpm.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className={cn(goal === 'clicks' && 'text-primary')}>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MousePointerClick className="h-3.5 w-3.5" />
+                      {' '}
+                      Clicks
+                    </div>
+                    <p className="font-heading text-2xl font-bold">
+                      {estClicks.toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      CPC ≈ Rs
+                      {' '}
+                      {cpc.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Estimates based on recent
                   {' '}
-                  {budget.toFixed(2)}
+                  {placementMeta[placement].label}
+                  {' '}
+                  performance.
                 </p>
+              </Card>
+
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    You'll be charged
+                  </p>
+                  <p className="font-heading text-2xl font-bold text-foreground">
+                    Rs
+                    {' '}
+                    {budget.toFixed(2)}
+                  </p>
+                </div>
+                <Button
+                  disabled={purchaseCampaign.isPending || budget <= 0}
+                  type="submit"
+                  className="gap-1"
+                >
+                  {purchaseCampaign.isPending
+                    ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )
+                    : (
+                        <Rocket className="h-4 w-4" />
+                      )}
+                  Launch Campaign (Mock)
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  if (!user) {
-                    toast.error('Not authenticated');
-                    return;
-                  }
-                  if (budget <= 0) {
-                    toast.error('Budget must be greater than 0');
-                    return;
-                  }
-                  if (endDate <= startDate) {
-                    toast.error('End date must be after start date');
-                    return;
-                  }
-                  purchaseCampaign.mutate(
-                    {
-                      listingId,
-                      paymentStatus: 'MOCK',
-                      placement: placement as 'FOR_YOU' | 'SEARCH',
-                      endsAt: endDate.toISOString(),
-                      startsAt: startDate.toISOString(),
-                    },
-                    {
-                      onError: (error: any) => showErrorToast(error, 'Failed to launch campaign'),
-                      onSuccess: () => {
-                        trackEvent('boost_purchased', {
-                          currency: 'PKR',
-                          listing_id: listingId,
-                          placement,
-                          type: 'campaign',
-                          value: budget,
-                        });
-                        toast.success('Campaign launched! (Mock payment)');
-                        setOpen(false);
-                      },
-                    },
-                  );
-                }}
-                disabled={purchaseCampaign.isPending || budget <= 0}
-                className="gap-1"
-              >
-                {purchaseCampaign.isPending
-                  ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Rocket className="h-4 w-4" />
-                    )}
-                Launch Campaign (Mock)
-              </Button>
-            </div>
+            </form>
           </TabsContent>
 
           {/* PACKAGES */}
-          <TabsContent value="packages" className="space-y-4 pt-4">
-            {isLoading
-              ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                )
-              : (
-                  (Object.keys(grouped) as BoostPlacement[])
-                    .filter(p => p !== 'TRENDING')
-                    .map((p) => {
-                      const items = grouped[p];
-                      if (items.length === 0)
-                        return null;
-                      const M = placementMeta[p];
-                      const Icon = M.icon;
-                      return (
-                        <div key={p}>
-                          <h3 className="mb-3 flex items-center gap-2 font-heading text-base font-semibold text-foreground">
-                            <Icon className={cn('h-4 w-4', M.color)} />
-                            {' '}
-                            {M.label}
-                          </h3>
-                          <div className="
-                            grid gap-2
-                            sm:grid-cols-2
-                          "
-                          >
-                            {items.map((package_) => {
-                              const isSelected = selected.has(package_.id);
-                              return (
-                                <Card
-                                  key={package_.id}
-                                  onClick={() => togglePackage(package_.id)}
-                                  className={cn(
-                                    `
-                                      cursor-pointer p-3 transition-all
-                                      hover:border-primary/50
-                                    `,
-                                    isSelected && 'border-primary bg-primary/5',
-                                  )}
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-medium text-foreground">
-                                        {package_.name}
-                                      </p>
-                                      <p className="mt-0.5 text-xs text-muted-foreground">
-                                        {package_.durationDays}
-                                        {' '}
-                                        days
-                                      </p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-1.5">
-                                      <Badge variant="secondary">
-                                        Rs
-                                        {' '}
-                                        {Number(package_.price).toFixed(2)}
-                                      </Badge>
-                                      {isSelected && (
-                                        <Check className="h-4 w-4 text-primary" />
-                                      )}
-                                    </div>
-                                  </div>
-                                </Card>
-                              );
-                            })}
+          <TabsContent value="packages" className="pt-4">
+            <form
+              onSubmit={packageForm.handleSubmit(purchaseSelectedPackages, () => toast.error('Select at least one package'))}
+              className="space-y-4"
+            >
+              <Controller
+                name="packageIds"
+                control={packageForm.control}
+                render={({ field }) => (
+                  <div className="space-y-4">
+                    {isLoading
+                      ? (
+                          <div className="flex justify-center py-12">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                           </div>
-                        </div>
-                      );
-                    })
+                        )
+                      : (Object.keys(grouped) as BoostPlacement[])
+                          .filter(p => p !== 'TRENDING')
+                          .map((p) => {
+                            const items = grouped[p];
+                            if (items.length === 0)
+                              return null;
+                            const M = placementMeta[p];
+                            const Icon = M.icon;
+                            return (
+                              <div key={p}>
+                                <h3 className="mb-3 flex items-center gap-2 font-heading text-base font-semibold text-foreground">
+                                  <Icon className={cn('h-4 w-4', M.color)} />
+                                  {' '}
+                                  {M.label}
+                                </h3>
+                                <div className="
+                                  grid gap-2
+                                  sm:grid-cols-2
+                                "
+                                >
+                                  {items.map((package_) => {
+                                    const isSelected = field.value.includes(package_.id);
+                                    return (
+                                      <Card
+                                        key={package_.id}
+                                        onClick={() => field.onChange(
+                                          isSelected
+                                            ? field.value.filter(id => id !== package_.id)
+                                            : [...field.value, package_.id],
+                                        )}
+                                        className={cn(
+                                          `
+                                            cursor-pointer p-3 transition-all
+                                            hover:border-primary/50
+                                          `,
+                                          isSelected && 'border-primary bg-primary/5',
+                                        )}
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-medium text-foreground">
+                                              {package_.name}
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                              {package_.durationDays}
+                                              {' '}
+                                              days
+                                            </p>
+                                          </div>
+                                          <div className="flex shrink-0 items-center gap-1.5">
+                                            <Badge variant="secondary">
+                                              Rs
+                                              {' '}
+                                              {Number(package_.price).toFixed(2)}
+                                            </Badge>
+                                            {isSelected && (
+                                              <Check className="h-4 w-4 text-primary" />
+                                            )}
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                  </div>
                 )}
+              />
 
-            <div className="flex items-center justify-between border-t border-border pt-4">
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Total (
-                  {selected.size}
-                  {' '}
-                  selected)
-                </p>
-                <p className="font-heading text-2xl font-bold text-foreground">
-                  Rs
-                  {' '}
-                  {packagesTotal.toFixed(2)}
-                </p>
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Total (
+                    {selected.length}
+                    {' '}
+                    selected)
+                  </p>
+                  <p className="font-heading text-2xl font-bold text-foreground">
+                    Rs
+                    {' '}
+                    {packagesTotal.toFixed(2)}
+                  </p>
+                </div>
+                <Button
+                  disabled={selected.length === 0 || purchasePackages.isPending}
+                  type="submit"
+                  className="gap-1"
+                >
+                  {purchasePackages.isPending
+                    ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )
+                    : (
+                        <Rocket className="h-4 w-4" />
+                      )}
+                  Activate Boost (Mock)
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  if (!user) {
-                    toast.error('Not authenticated');
-                    return;
-                  }
-                  purchasePackages.mutate(
-                    {
-                      listingId,
-                      packageIds: [...selected],
-                      paymentStatus: 'MOCK',
-                    },
-                    {
-                      onError: (error: any) => showErrorToast(error, 'Failed to activate boost'),
-                      onSuccess: () => {
-                        trackEvent('boost_purchased', {
-                          currency: 'PKR',
-                          listing_id: listingId,
-                          type: 'package',
-                          value: packagesTotal,
-                        });
-                        toast.success('Boost activated! (Mock payment)');
-                        setSelected(new Set());
-                        setOpen(false);
-                      },
-                    },
-                  );
-                }}
-                disabled={selected.size === 0 || purchasePackages.isPending}
-                className="gap-1"
-              >
-                {purchasePackages.isPending
-                  ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Rocket className="h-4 w-4" />
-                    )}
-                Activate Boost (Mock)
-              </Button>
-            </div>
+            </form>
           </TabsContent>
         </Tabs>
 

@@ -1,7 +1,10 @@
 import type { TaxSetting } from '@/types/taxSetting.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,12 +35,28 @@ import {
   useUpdateTaxSettingMutation,
 } from '@/queries/adminTaxSettings.query';
 
+const taxFormSchema = z.object({
+  active: z.boolean(),
+  name: z.string().trim().min(1, 'Provide a name.'),
+  rate: z.string().trim().min(1, 'Provide a rate.').refine((value) => {
+    const rate = Number(value);
+    return Number.isFinite(rate) && rate >= 0 && rate <= 100;
+  }, 'Rate must be between 0 and 100.'),
+});
+
+type TaxFormValues = z.infer<typeof taxFormSchema>;
+
+const emptyTaxForm: TaxFormValues = { active: true, name: '', rate: '' };
+
 function TaxSettings() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaxSetting | null>(null);
-  const [form, setForm] = useState({ active: true, name: '', rate: '' });
   const [saving, setSaving] = useState(false);
+  const form = useForm<TaxFormValues>({
+    defaultValues: emptyTaxForm,
+    resolver: zodResolver(taxFormSchema),
+  });
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const { data: taxes = [], isLoading } = useQuery(getTaxSettingsOptions());
@@ -58,44 +77,35 @@ function TaxSettings() {
   // ── Dialog helpers ─────────────────────────────────────────────────────────
   const openNew = () => {
     setEditing(null);
-    setForm({ active: true, name: '', rate: '' });
+    form.reset(emptyTaxForm);
     setOpen(true);
   };
 
   const openEdit = (t: TaxSetting) => {
     setEditing(t);
-    setForm({ active: t.active, name: t.name, rate: String(t.rate) });
+    form.reset({ active: t.active, name: t.name, rate: String(t.rate) });
     setOpen(true);
   };
 
   // ── Save ───────────────────────────────────────────────────────────────────
-  const handleSave = async () => {
-    const rate = Number(form.rate);
-    if (!form.name.trim() || Number.isNaN(rate) || rate < 0 || rate > 100) {
-      toast({
-        description: 'Provide a name and rate between 0 and 100.',
-        title: 'Invalid input',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  const handleSave = async (values: TaxFormValues) => {
+    const rate = Number(values.rate);
     setSaving(true);
     try {
-      if (form.active)
+      if (values.active)
         await deactivateAll(editing?.id);
 
       if (editing) {
         await updateTax.mutateAsync({
           resourceId: editing.id,
-          payload: { active: form.active, name: form.name.trim(), rate },
+          payload: { active: values.active, name: values.name, rate },
         });
         toast({ title: 'Tax updated' });
       }
       else {
         await createTax.mutateAsync({
-          active: form.active,
-          name: form.name.trim(),
+          active: values.active,
+          name: values.name,
           rate,
         });
         toast({ title: 'Tax created' });
@@ -227,42 +237,31 @@ function TaxSettings() {
               {editing ? 'Edit Tax Rate' : 'Add Tax Rate'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSave, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Invalid input', variant: 'destructive' }))} className="space-y-4">
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input
-                onChange={event => setForm({ ...form, name: event.target.value })}
-                value={form.name}
-                placeholder="VAT"
-              />
+              <Controller name="name" control={form.control} render={({ field }) => <Input {...field} placeholder="VAT" />} />
             </div>
             <div className="space-y-2">
               <Label>Rate (%)</Label>
-              <Input
-                onChange={event => setForm({ ...form, rate: event.target.value })}
-                value={form.rate}
-                type="number"
-              />
+              <Controller name="rate" control={form.control} render={({ field }) => <Input {...field} type="number" />} />
             </div>
             <div className="flex items-center justify-between">
               <Label>Active</Label>
-              <Switch
-                onCheckedChange={v => setForm({ ...form, active: v })}
-                checked={form.active}
-              />
+              <Controller name="active" control={form.control} render={({ field }) => <Switch onCheckedChange={field.onChange} checked={field.value} />} />
             </div>
             <p className="text-xs text-muted-foreground">
               Only one tax rate can be active at a time.
             </p>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setOpen(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button disabled={saving} type="submit">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

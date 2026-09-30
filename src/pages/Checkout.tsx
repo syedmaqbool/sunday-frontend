@@ -66,7 +66,6 @@ function Checkout() {
   const [placing, setPlacing] = useState(false);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
   const [manualPaymentOpen, setManualPaymentOpen] = useState(false);
-  const [pendingShipping, setPendingShipping] = useState<ShippingFormValues | null>(null);
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
@@ -198,13 +197,12 @@ function Checkout() {
     setAppliedDiscount(null);
   };
 
-  const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async (shipping) => {
+  const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async () => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    setPendingShipping(shipping);
     setManualPaymentError(null);
     setManualPaymentOpen(true);
   };
@@ -218,8 +216,9 @@ function Checkout() {
     senderAccountNumber: string;
     senderAccountTitle: string;
   }) => {
-    if (placing || !pendingShipping)
+    if (placing)
       return;
+    const shipping = shippingSchema.parse(shippingForm.getValues());
 
     setPlacing(true);
     setManualPaymentError(null);
@@ -230,12 +229,12 @@ function Checkout() {
         listingIds,
         senderAccountNumber,
         senderAccountTitle,
-        shippingAddress: pendingShipping.address,
-        shippingCity: pendingShipping.city,
-        shippingFirstName: pendingShipping.firstName,
-        shippingLastName: pendingShipping.lastName,
-        shippingPhone: pendingShipping.phone,
-        shippingPostal: pendingShipping.postal,
+        shippingAddress: shipping.address,
+        shippingCity: shipping.city,
+        shippingFirstName: shipping.firstName,
+        shippingLastName: shipping.lastName,
+        shippingPhone: shipping.phone,
+        shippingPostal: shipping.postal,
         ...(validAppliedDiscount?.source === 'platform' && { discountCode: validAppliedDiscount.code }),
         ...(validAppliedDiscount?.source === 'seller' && { sellerCouponCode: validAppliedDiscount.code }),
       });

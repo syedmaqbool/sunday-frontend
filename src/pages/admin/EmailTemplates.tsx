@@ -1,8 +1,11 @@
 import type { EmailTemplateAPI } from '@/types/adminSettings.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Mail, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,38 +30,46 @@ const PLACEHOLDERS: Record<string, string[]> = {
   shipping_notification: ['{{buyer_name}}', '{{order_id}}', '{{item_title}}'],
 };
 
+const emailTemplatesFormSchema = z.object({
+  templates: z.array(z.object({
+    key: z.string(),
+    id: z.string(),
+    body: z.string(),
+    subject: z.string(),
+  })),
+});
+
+type EmailTemplatesFormValues = z.infer<typeof emailTemplatesFormSchema>;
+
 function EmailTemplates() {
   const { toast } = useToast();
 
   const { data: settings, isLoading } = useQuery(getAdminSettingsOptions());
   const updateTemplates = useUpdateEmailTemplatesMutation();
 
-  const [localTemplates, setLocalTemplates] = useState<EmailTemplateAPI[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const form = useForm<EmailTemplatesFormValues>({
+    defaultValues: { templates: [] },
+    resolver: zodResolver(emailTemplatesFormSchema),
+  });
+  const { reset } = form;
 
   // Sync from server once on first load
-  if (!initialized && settings?.emailTemplates?.length) {
-    setLocalTemplates(settings.emailTemplates);
+  useEffect(() => {
+    if (!(!initialized && settings?.emailTemplates?.length)) {
+      return;
+    }
+
+    reset({ templates: settings.emailTemplates });
     setInitialized(true);
-  }
+  }, [initialized, reset, settings?.emailTemplates]);
 
-  const templates = localTemplates;
+  const templates = form.watch('templates');
 
-  const updateField = (
-    id: string,
-    field: keyof EmailTemplateAPI,
-    value: string,
-  ) => {
-    setLocalTemplates(previous =>
-      previous.map(t => (t.id === id ? { ...t, [field]: value } : t)),
-    );
-  };
-
-  const save = (tpl: EmailTemplateAPI) => {
+  const save = (tpl: EmailTemplateAPI, allTemplates: EmailTemplateAPI[]) => {
     setSavingId(tpl.id);
-    const nextTemplates = templates.map(t => (t.id === tpl.id ? tpl : t));
-    updateTemplates.mutate(nextTemplates, {
+    updateTemplates.mutate(allTemplates, {
       onError: (error: any) => {
         toast(getErrorToastOptions(error));
         setSavingId(null);
@@ -114,7 +125,7 @@ function EmailTemplates() {
       </div>
 
       <div className="space-y-6">
-        {templates.map((tpl) => {
+        {templates.map((tpl, index) => {
           const placeholders = PLACEHOLDERS[tpl.key] ?? [];
           const isSaving = savingId === tpl.id;
           return (
@@ -133,53 +144,62 @@ function EmailTemplates() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    onChange={event =>
-                      updateField(tpl.id, 'subject', event.target.value)}
-                    value={tpl.subject}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Body</Label>
-                  <Textarea
-                    onChange={event =>
-                      updateField(tpl.id, 'body', event.target.value)}
-                    value={tpl.body}
-                    rows={10}
-                    className="font-mono text-sm"
-                  />
-                </div>
-                {placeholders.length > 0 && (
-                  <div className="rounded-md border border-border bg-muted/40 p-3">
-                    <p className="mb-2 text-xs font-medium text-foreground">
-                      Available placeholders:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {placeholders.map(p => (
-                        <code
-                          key={p}
-                          className="rounded bg-background px-2 py-0.5 text-xs text-primary"
-                        >
-                          {p}
-                        </code>
-                      ))}
-                    </div>
+                <form
+                  onSubmit={form.handleSubmit((values) => {
+                    const template = values.templates[index];
+                    if (template)
+                      save(template as EmailTemplateAPI, values.templates as EmailTemplateAPI[]);
+                  })}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <Controller name={`templates.${index}.subject`} control={form.control} render={({ field }) => <Input {...field} />} />
                   </div>
-                )}
-                <div className="flex justify-end">
-                  <Button onClick={() => save(tpl)} disabled={isSaving}>
-                    {isSaving
-                      ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )
-                      : (
-                          <Save className="mr-2 h-4 w-4" />
-                        )}
-                    Save Changes
-                  </Button>
-                </div>
+                  <div className="space-y-2">
+                    <Label>Body</Label>
+                    <Controller
+                      name={`templates.${index}.body`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <Textarea
+                          {...field}
+                          rows={10}
+                          className="font-mono text-sm"
+                        />
+                      )}
+                    />
+                  </div>
+                  {placeholders.length > 0 && (
+                    <div className="rounded-md border border-border bg-muted/40 p-3">
+                      <p className="mb-2 text-xs font-medium text-foreground">
+                        Available placeholders:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {placeholders.map(p => (
+                          <code
+                            key={p}
+                            className="rounded bg-background px-2 py-0.5 text-xs text-primary"
+                          >
+                            {p}
+                          </code>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <Button disabled={isSaving} type="submit">
+                      {isSaving
+                        ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )
+                        : (
+                            <Save className="mr-2 h-4 w-4" />
+                          )}
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
           );

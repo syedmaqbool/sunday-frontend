@@ -1,7 +1,10 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, PackageCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { ComplaintDetailsView } from '@/components/ComplaintDetailsView';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +26,19 @@ import {
   provideReturnAddress,
 } from '@/services/complaints.service';
 
+const returnAddressSchema = z.object({
+  address: z.string().trim().min(1, 'Street address is required.'),
+  city: z.string().trim().min(1, 'City is required.'),
+  name: z.string().trim().min(1, 'Recipient name is required.'),
+  notes: z.string(),
+  phone: z.string(),
+  postal: z.string(),
+});
+
+type ReturnAddressFormValues = z.infer<typeof returnAddressSchema>;
+
+const emptyReturnAddressForm: ReturnAddressFormValues = { address: '', city: '', name: '', notes: '', phone: '', postal: '' };
+
 export function SellerComplaintBadge({
   orderId,
   orderItemId,
@@ -33,12 +49,7 @@ export function SellerComplaintBadge({
   const queryClient = useQueryClient();
   const [addressOpen, setAddressOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [postal, setPostal] = useState('');
-  const [phone, setPhone] = useState('');
-  const [notes, setNotes] = useState('');
+  const form = useForm<ReturnAddressFormValues>({ defaultValues: emptyReturnAddressForm, resolver: zodResolver(returnAddressSchema) });
 
   const { data: complaint, refetch } = useQuery(getComplaintDetailsOptions(orderId, orderItemId));
 
@@ -48,31 +59,29 @@ export function SellerComplaintBadge({
       return;
     }
 
-    setName(complaint.returnAddressRecipient ?? '');
-    setAddress(complaint.returnAddress ?? '');
-    setCity(complaint.returnAddressCity ?? '');
-    setPostal(complaint.returnAddressPostal ?? '');
-    setPhone(complaint.returnAddressPhone ?? '');
-    setNotes(complaint.returnInstructions ?? '');
-  }, [addressOpen, complaint]);
+    form.reset({
+      address: complaint.returnAddress ?? '',
+      city: complaint.returnAddressCity ?? '',
+      name: complaint.returnAddressRecipient ?? '',
+      notes: complaint.returnInstructions ?? '',
+      phone: complaint.returnAddressPhone ?? '',
+      postal: complaint.returnAddressPostal ?? '',
+    });
+  }, [addressOpen, complaint, form]);
 
   if (!complaint)
     return null;
 
-  const saveAddress = async () => {
-    if (!address.trim() || !city.trim() || !name.trim()) {
-      toast.error('Recipient name, address and city are required');
-      return;
-    }
+  const saveAddress = async (values: ReturnAddressFormValues) => {
     setBusy(true);
     try {
       await provideReturnAddress(complaint.id, {
-        returnAddress: address.trim(),
-        returnAddressCity: city.trim() || undefined,
-        returnAddressPhone: phone.trim() || undefined,
-        returnAddressPostal: postal.trim() || undefined,
-        returnAddressRecipient: name.trim(),
-        returnInstructions: notes.trim() || undefined,
+        returnAddress: values.address,
+        returnAddressCity: values.city || undefined,
+        returnAddressPhone: values.phone.trim() || undefined,
+        returnAddressPostal: values.postal.trim() || undefined,
+        returnAddressRecipient: values.name,
+        returnInstructions: values.notes.trim() || undefined,
       });
       toast.success('Return address shared with the buyer.');
       setAddressOpen(false);
@@ -167,87 +176,68 @@ export function SellerComplaintBadge({
               buyer will see this immediately.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={form.handleSubmit(saveAddress, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the return address.'))} className="space-y-3">
             <div>
               <Label htmlFor="ret-name">Recipient name *</Label>
-              <Input
-                id="ret-name"
-                onChange={event => setName(event.target.value)}
-                value={name}
-                maxLength={100}
-              />
+              <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="ret-name" maxLength={100} />} />
             </div>
             <div>
               <Label htmlFor="ret-address">Street address *</Label>
-              <Input
-                id="ret-address"
-                onChange={event => setAddress(event.target.value)}
-                value={address}
-                maxLength={200}
-              />
+              <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="ret-address" maxLength={200} />} />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="ret-city">City *</Label>
-                <Input
-                  id="ret-city"
-                  onChange={event => setCity(event.target.value)}
-                  value={city}
-                  maxLength={80}
-                />
+                <Controller name="city" control={form.control} render={({ field }) => <Input {...field} id="ret-city" maxLength={80} />} />
               </div>
               <div>
                 <Label htmlFor="ret-postal">Postal code</Label>
-                <Input
-                  id="ret-postal"
-                  onChange={event => setPostal(event.target.value)}
-                  value={postal}
-                  maxLength={20}
-                />
+                <Controller name="postal" control={form.control} render={({ field }) => <Input {...field} id="ret-postal" maxLength={20} />} />
               </div>
             </div>
             <div>
               <Label htmlFor="ret-phone">Phone</Label>
-              <Input
-                id="ret-phone"
-                onChange={event => setPhone(event.target.value)}
-                value={phone}
-                maxLength={30}
-              />
+              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="ret-phone" maxLength={30} />} />
             </div>
             <div>
               <Label htmlFor="ret-notes">
                 Instructions for the buyer (optional)
               </Label>
-              <Textarea
-                id="ret-notes"
-                onChange={event => setNotes(event.target.value)}
-                value={notes}
-                maxLength={300}
-                placeholder="e.g. Please use a tracked courier and message me the tracking number."
-                rows={2}
+              <Controller
+                name="notes"
+                control={form.control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    id="ret-notes"
+                    maxLength={300}
+                    placeholder="e.g. Please use a tracked courier and message me the tracking number."
+                    rows={2}
+                  />
+                )}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => setAddressOpen(false)}
-              disabled={busy}
-              variant="ghost"
-            >
-              Cancel
-            </Button>
-            <Button onClick={saveAddress} disabled={busy}>
-              {busy
-                ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )
-                : (
-                    <MapPin className="mr-2 h-4 w-4" />
-                  )}
-              Share with buyer
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                onClick={() => setAddressOpen(false)}
+                disabled={busy}
+                type="button"
+                variant="ghost"
+              >
+                Cancel
+              </Button>
+              <Button disabled={busy} type="submit">
+                {busy
+                  ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <MapPin className="mr-2 h-4 w-4" />
+                    )}
+                Share with buyer
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

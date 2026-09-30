@@ -29,6 +29,8 @@ import { useUpdateProfileMutation } from '@/queries/myProfile.query';
 import { uploadProfileFile } from '@/services/profile.service';
 
 const profileSchema = z.object({
+  imageId: z.string().nullable(),
+  avatarUrl: z.string(),
   bio: z.string().trim().max(280).optional().or(z.literal('')),
   fullName: z.string().trim().max(80).optional().or(z.literal('')),
   location: z.string().trim().max(80).optional().or(z.literal('')),
@@ -47,13 +49,10 @@ export function EditProfileDialog({ profile }: Props) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const [avatarUrl, setAvatarUrl] = useState(profile?.image?.url ?? '');
-  const [imageId, setImageId] = useState<string | null>(
-    profile?.image?.id ?? null,
-  );
-
   const form = useForm<ProfileFormValues>({
     defaultValues: {
+      imageId: profile?.image?.id ?? null,
+      avatarUrl: profile?.image?.url ?? '',
       bio: profile?.bio ?? '',
       fullName: profile?.fullName ?? '',
       location: profile?.location ?? '',
@@ -65,6 +64,7 @@ export function EditProfileDialog({ profile }: Props) {
   const { control, formState: { errors }, handleSubmit, reset, watch } = form;
   const fullName = watch('fullName') ?? '';
   const bio = watch('bio') ?? '';
+  const avatarUrl = watch('avatarUrl');
 
   const updateProfile = useUpdateProfileMutation();
   useEffect(() => {
@@ -72,13 +72,13 @@ export function EditProfileDialog({ profile }: Props) {
       return;
 
     reset({
+      imageId: profile?.image?.id ?? null,
+      avatarUrl: profile?.image?.url ?? '',
       bio: profile?.bio ?? '',
       fullName: profile?.fullName ?? '',
       location: profile?.location ?? '',
       phone: profile?.phone ?? '',
     });
-    setAvatarUrl(profile?.image?.url ?? '');
-    setImageId(profile?.image?.id ?? null);
   }, [open, profile, reset]);
 
   const initials = (fullName || 'U')
@@ -88,7 +88,7 @@ export function EditProfileDialog({ profile }: Props) {
     .toUpperCase()
     .slice(0, 2);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>, onImageIdChange: (imageId: string) => void) => {
     const file = event.target.files?.[0];
 
     if (!file)
@@ -104,8 +104,8 @@ export function EditProfileDialog({ profile }: Props) {
     try {
       const response = await uploadProfileFile(file);
 
-      setAvatarUrl('url' in response.data ? response.data.url : URL.createObjectURL(file));
-      setImageId(response.data.id);
+      form.setValue('avatarUrl', 'url' in response.data ? response.data.url : URL.createObjectURL(file), { shouldDirty: true, shouldValidate: true });
+      onImageIdChange(response.data.id);
 
       toast.success('Photo uploaded');
     }
@@ -121,7 +121,7 @@ export function EditProfileDialog({ profile }: Props) {
     const payload: UpdateProfilePayload = {
       bio: values.bio,
       fullName: values.fullName,
-      image: imageId,
+      image: values.imageId,
       location: values.location,
       phone: values.phone,
       whatsappTransactionalNotificationsEnabled: true,
@@ -156,22 +156,31 @@ export function EditProfileDialog({ profile }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(save, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))} className="space-y-4 py-2">
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 border-2 border-primary">
-              <AvatarImage src={avatarUrl || undefined} />
+              <Controller name="avatarUrl" control={control} render={({ field }) => <AvatarImage src={field.value || undefined} />} />
               <AvatarFallback className="bg-primary/10 text-xl font-bold text-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1">
-              <input
-                onChange={handleAvatarUpload}
-                ref={fileInputReference}
-                accept="image/*"
-                type="file"
-                className="hidden"
+              <Controller
+                name="imageId"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    onChange={event => handleAvatarUpload(event, field.onChange)}
+                    ref={(element) => {
+                      field.ref(element);
+                      fileInputReference.current = element;
+                    }}
+                    accept="image/*"
+                    type="file"
+                    className="hidden"
+                  />
+                )}
               />
 
               <Button
@@ -196,8 +205,8 @@ export function EditProfileDialog({ profile }: Props) {
               {avatarUrl && (
                 <Button
                   onClick={() => {
-                    setAvatarUrl('');
-                    setImageId(null);
+                    form.setValue('avatarUrl', '', { shouldDirty: true, shouldValidate: true });
+                    form.setValue('imageId', null, { shouldDirty: true, shouldValidate: true });
                   }}
                   size="sm"
                   type="button"
@@ -289,26 +298,25 @@ export function EditProfileDialog({ profile }: Props) {
             </div>
           </div>
 
-        </div>
+          <DialogFooter>
+            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              Cancel
+            </Button>
 
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant="outline">
-            Cancel
-          </Button>
-
-          <Button
-            onClick={handleSubmit(save, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))}
-            disabled={updateProfile.isPending || uploading}
-          >
-            {updateProfile.isPending
-              ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )
-              : (
-                  'Save'
-                )}
-          </Button>
-        </DialogFooter>
+            <Button
+              disabled={updateProfile.isPending || uploading}
+              type="submit"
+            >
+              {updateProfile.isPending
+                ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )
+                : (
+                    'Save'
+                  )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

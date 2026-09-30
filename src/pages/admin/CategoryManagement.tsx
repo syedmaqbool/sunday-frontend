@@ -1,8 +1,11 @@
 import type { Category, Subcategory } from '@/types/adminCategory.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -34,19 +37,18 @@ import {
 } from '@/queries/categoryManagement.query';
 
 // ── Form types ────────────────────────────────────────────────────────────────
-interface CatForm {
-  icon: string;
-  label: string;
-  sortOrder: number;
-  value: string; // immutable after create — disabled in edit mode
-}
-interface SubForm {
-  categoryId: string;
-  icon: string;
-  label: string;
-  sortOrder: number;
-  value: string; // immutable after create — disabled in edit mode
-}
+const categoryFormSchema = z.object({
+  icon: z.string(),
+  label: z.string().trim().min(1, 'Label is required.'),
+  sortOrder: z.number().int().min(0),
+  value: z.string().trim().min(1, 'Value is required.'),
+});
+const subcategoryFormSchema = categoryFormSchema.extend({
+  categoryId: z.string().min(1, 'Choose a parent category.'),
+});
+
+type CatForm = z.infer<typeof categoryFormSchema>;
+type SubForm = z.infer<typeof subcategoryFormSchema>;
 
 const emptyCat: CatForm = { icon: '📦', label: '', sortOrder: 0, value: '' };
 const emptySub: SubForm = {
@@ -81,16 +83,16 @@ function CategoryManagement() {
   // ── Category dialog state ──────────────────────────────────────────────────
   const [catOpen, setCatOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
-  const [catForm, setCatForm] = useState<CatForm>(emptyCat);
+  const catForm = useForm<CatForm>({ defaultValues: emptyCat, resolver: zodResolver(categoryFormSchema) });
 
   const openNewCat = () => {
     setEditingCat(null);
-    setCatForm(emptyCat);
+    catForm.reset(emptyCat);
     setCatOpen(true);
   };
   const openEditCat = (cat: Category) => {
     setEditingCat(cat);
-    setCatForm({
+    catForm.reset({
       icon: cat.icon,
       label: cat.label,
       sortOrder: cat.sortOrder,
@@ -99,20 +101,16 @@ function CategoryManagement() {
     setCatOpen(true);
   };
 
-  const handleSaveCat = () => {
-    if (!catForm.label.trim() || !catForm.value.trim()) {
-      toast({ title: 'Label and value are required', variant: 'destructive' });
-      return;
-    }
+  const handleSaveCat = (values: CatForm) => {
     if (editingCat) {
       // value is immutable — never send it in update
       updateCat.mutate(
         {
           id: editingCat.id,
           payload: {
-            icon: catForm.icon,
-            label: catForm.label.trim(),
-            sortOrder: catForm.sortOrder,
+            icon: values.icon,
+            label: values.label,
+            sortOrder: values.sortOrder,
           },
         },
         {
@@ -127,10 +125,10 @@ function CategoryManagement() {
     else {
       createCat.mutate(
         {
-          icon: catForm.icon,
-          label: catForm.label.trim(),
-          sortOrder: catForm.sortOrder,
-          value: catForm.value.trim(),
+          icon: values.icon,
+          label: values.label,
+          sortOrder: values.sortOrder,
+          value: values.value,
         },
         {
           onError: (error: any) => toast(getErrorToastOptions(error)),
@@ -153,16 +151,16 @@ function CategoryManagement() {
   // ── Subcategory dialog state ───────────────────────────────────────────────
   const [subOpen, setSubOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<Subcategory | null>(null);
-  const [subForm, setSubForm] = useState<SubForm>(emptySub);
+  const subForm = useForm<SubForm>({ defaultValues: emptySub, resolver: zodResolver(subcategoryFormSchema) });
 
   const openNewSub = () => {
     setEditingSub(null);
-    setSubForm({ ...emptySub, categoryId: categories[0]?.id ?? '' });
+    subForm.reset({ ...emptySub, categoryId: categories[0]?.id ?? '' });
     setSubOpen(true);
   };
   const openEditSub = (sub: Subcategory) => {
     setEditingSub(sub);
-    setSubForm({
+    subForm.reset({
       categoryId: sub.categoryId,
       icon: sub.icon,
       label: sub.label,
@@ -172,24 +170,17 @@ function CategoryManagement() {
     setSubOpen(true);
   };
 
-  const handleSaveSub = () => {
-    if (!subForm.label.trim() || !subForm.value.trim() || !subForm.categoryId) {
-      toast({
-        title: 'Category, label and value are required',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleSaveSub = (values: SubForm) => {
     if (editingSub) {
       // value is immutable — never send it in update
       updateSub.mutate(
         {
           id: editingSub.id,
           payload: {
-            categoryId: subForm.categoryId,
-            icon: subForm.icon,
-            label: subForm.label.trim(),
-            sortOrder: subForm.sortOrder,
+            categoryId: values.categoryId,
+            icon: values.icon,
+            label: values.label,
+            sortOrder: values.sortOrder,
           },
         },
         {
@@ -204,11 +195,11 @@ function CategoryManagement() {
     else {
       createSub.mutate(
         {
-          categoryId: subForm.categoryId,
-          icon: subForm.icon,
-          label: subForm.label.trim(),
-          sortOrder: subForm.sortOrder,
-          value: subForm.value.trim(),
+          categoryId: values.categoryId,
+          icon: values.icon,
+          label: values.label,
+          sortOrder: values.sortOrder,
+          value: values.value,
         },
         {
           onError: (error: any) => toast(getErrorToastOptions(error)),
@@ -386,7 +377,7 @@ function CategoryManagement() {
         onOpenChange={(o) => {
           setCatOpen(o);
           if (!o) {
-            setCatForm(emptyCat);
+            catForm.reset(emptyCat);
             setEditingCat(null);
           }
         }}
@@ -398,7 +389,7 @@ function CategoryManagement() {
               {editingCat ? 'Edit Category' : 'Add Category'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={catForm.handleSubmit(handleSaveCat)} className="space-y-4">
             <div className="
               grid gap-4
               sm:grid-cols-2
@@ -406,17 +397,21 @@ function CategoryManagement() {
             >
               <div className="space-y-2">
                 <Label>Label</Label>
-                <Input
-                  onChange={(event) => {
-                    const label = event.target.value;
-                    setCatForm(f => ({
-                      ...f,
-                      label,
-                      value: f.value || autoSlug(label),
-                    }));
-                  }}
-                  value={catForm.label}
-                  placeholder="e.g. Women"
+                <Controller
+                  name="label"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={(event) => {
+                        field.onChange(event);
+                        const value = catForm.getValues('value');
+                        if (!editingCat && !value)
+                          catForm.setValue('value', autoSlug(event.target.value));
+                      }}
+                      placeholder="e.g. Women"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-2">
@@ -428,15 +423,17 @@ function CategoryManagement() {
                     </span>
                   )}
                 </Label>
-                <Input
-                  onChange={event =>
-                    setCatForm(f => ({
-                      ...f,
-                      value: event.target.value.toLowerCase(),
-                    }))}
-                  value={catForm.value}
-                  disabled={!!editingCat}
-                  placeholder="e.g. women"
+                <Controller
+                  name="value"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={event => field.onChange(event.target.value.toLowerCase())}
+                      disabled={!!editingCat}
+                      placeholder="e.g. women"
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -447,35 +444,22 @@ function CategoryManagement() {
             >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
-                <Input
-                  onChange={event =>
-                    setCatForm(f => ({ ...f, icon: event.target.value }))}
-                  value={catForm.icon}
-                  placeholder="📦"
-                />
+                <Controller name="icon" control={catForm.control} render={({ field }) => <Input {...field} placeholder="📦" />} />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
-                <Input
-                  onChange={event =>
-                    setCatForm(f => ({
-                      ...f,
-                      sortOrder: parseInt(event.target.value) || 0,
-                    }))}
-                  value={catForm.sortOrder}
-                  type="number"
-                />
+                <Controller name="sortOrder" control={catForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))} ref={field.ref} value={field.value} type="number" />} />
               </div>
             </div>
-          </div>
-          <Button
-            onClick={handleSaveCat}
-            disabled={busy}
-            className="mt-4 w-full"
-          >
-            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingCat ? 'Save Changes' : 'Create Category'}
-          </Button>
+            <Button
+              disabled={busy}
+              type="submit"
+              className="mt-4 w-full"
+            >
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingCat ? 'Save Changes' : 'Create Category'}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -484,7 +468,7 @@ function CategoryManagement() {
         onOpenChange={(o) => {
           setSubOpen(o);
           if (!o) {
-            setSubForm(emptySub);
+            subForm.reset(emptySub);
             setEditingSub(null);
           }
         }}
@@ -496,25 +480,27 @@ function CategoryManagement() {
               {editingSub ? 'Edit Subcategory' : 'Add Subcategory'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={subForm.handleSubmit(handleSaveSub)} className="space-y-4">
             <div className="space-y-2">
               <Label>Parent Category</Label>
-              <Select
-                onValueChange={v =>
-                  setSubForm(f => ({ ...f, categoryId: v }))}
-                value={subForm.categoryId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="categoryId"
+                control={subForm.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="
               grid gap-4
@@ -523,17 +509,21 @@ function CategoryManagement() {
             >
               <div className="space-y-2">
                 <Label>Label</Label>
-                <Input
-                  onChange={(event) => {
-                    const label = event.target.value;
-                    setSubForm(f => ({
-                      ...f,
-                      label,
-                      value: f.value || autoSlug(label),
-                    }));
-                  }}
-                  value={subForm.label}
-                  placeholder="e.g. Shoes"
+                <Controller
+                  name="label"
+                  control={subForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={(event) => {
+                        field.onChange(event);
+                        const value = subForm.getValues('value');
+                        if (!editingSub && !value)
+                          subForm.setValue('value', autoSlug(event.target.value));
+                      }}
+                      placeholder="e.g. Shoes"
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-2">
@@ -545,15 +535,17 @@ function CategoryManagement() {
                     </span>
                   )}
                 </Label>
-                <Input
-                  onChange={event =>
-                    setSubForm(f => ({
-                      ...f,
-                      value: event.target.value.toLowerCase(),
-                    }))}
-                  value={subForm.value}
-                  disabled={!!editingSub}
-                  placeholder="e.g. shoes"
+                <Controller
+                  name="value"
+                  control={subForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={event => field.onChange(event.target.value.toLowerCase())}
+                      disabled={!!editingSub}
+                      placeholder="e.g. shoes"
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -564,35 +556,22 @@ function CategoryManagement() {
             >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
-                <Input
-                  onChange={event =>
-                    setSubForm(f => ({ ...f, icon: event.target.value }))}
-                  value={subForm.icon}
-                  placeholder="📦"
-                />
+                <Controller name="icon" control={subForm.control} render={({ field }) => <Input {...field} placeholder="📦" />} />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
-                <Input
-                  onChange={event =>
-                    setSubForm(f => ({
-                      ...f,
-                      sortOrder: parseInt(event.target.value) || 0,
-                    }))}
-                  value={subForm.sortOrder}
-                  type="number"
-                />
+                <Controller name="sortOrder" control={subForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))} ref={field.ref} value={field.value} type="number" />} />
               </div>
             </div>
-          </div>
-          <Button
-            onClick={handleSaveSub}
-            disabled={busy}
-            className="mt-4 w-full"
-          >
-            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingSub ? 'Save Changes' : 'Create Subcategory'}
-          </Button>
+            <Button
+              disabled={busy}
+              type="submit"
+              className="mt-4 w-full"
+            >
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingSub ? 'Save Changes' : 'Create Subcategory'}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

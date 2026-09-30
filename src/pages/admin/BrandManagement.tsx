@@ -1,8 +1,11 @@
 import type { Brand } from '@/types/brand.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,11 +28,13 @@ import {
   useUpdateBrandMutation,
 } from '@/queries/adminBrands.query';
 
-interface BrandForm {
-  active: boolean;
-  name: string;
-  sort_order: number;
-}
+const brandFormSchema = z.object({
+  active: z.boolean(),
+  name: z.string().trim().min(1, 'Name is required'),
+  sort_order: z.number().int().min(0),
+});
+
+type BrandForm = z.infer<typeof brandFormSchema>;
 
 const emptyForm: BrandForm = {
   active: true,
@@ -46,11 +51,14 @@ function BrandManagement() {
 
   const { toast } = useToast();
 
-  const [form, setForm] = useState<BrandForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState('');
+  const form = useForm<BrandForm>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(brandFormSchema),
+  });
 
   const filtered = useMemo(
     () =>
@@ -60,10 +68,7 @@ function BrandManagement() {
     [brands, search],
   );
 
-  const handleSave = async () => {
-    if (!form.name.trim())
-      return;
-
+  const handleSave = async (values: BrandForm) => {
     setBusy(true);
 
     try {
@@ -71,9 +76,9 @@ function BrandManagement() {
         await updateBrand.mutateAsync({
           brandId: editingId,
           payload: {
-            active: form.active,
-            name: form.name,
-            sortOrder: form.sort_order,
+            active: values.active,
+            name: values.name,
+            sortOrder: values.sort_order,
           },
         });
 
@@ -83,9 +88,9 @@ function BrandManagement() {
       }
       else {
         await createBrand.mutateAsync({
-          active: form.active,
-          name: form.name,
-          sortOrder: form.sort_order,
+          active: values.active,
+          name: values.name,
+          sortOrder: values.sort_order,
         });
 
         toast({
@@ -94,7 +99,7 @@ function BrandManagement() {
       }
 
       setDialogOpen(false);
-      setForm(emptyForm);
+      form.reset(emptyForm);
       setEditingId(null);
     }
     catch (error: any) {
@@ -118,7 +123,7 @@ function BrandManagement() {
   };
 
   const openEdit = (b: Brand) => {
-    setForm({
+    form.reset({
       active: b.active,
       name: b.name,
       sort_order: b.sortOrder,
@@ -151,7 +156,7 @@ function BrandManagement() {
               setDialogOpen(o);
 
               if (!o) {
-                setForm(emptyForm);
+                form.reset(emptyForm);
                 setEditingId(null);
               }
             }}
@@ -171,55 +176,50 @@ function BrandManagement() {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Name</Label>
-                  <Input
-                    onChange={event =>
-                      setForm({
-                        ...form,
-                        name: event.target.value,
-                      })}
-                    value={form.name}
-                    placeholder="e.g. Nike"
-                  />
+                  <Controller name="name" control={form.control} render={({ field }) => <Input {...field} placeholder="e.g. Nike" />} />
+                  {form.formState.errors.name?.message && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label>Sort Order</Label>
-                  <Input
-                    onChange={event =>
-                      setForm({
-                        ...form,
-                        sort_order: parseInt(event.target.value) || 0,
-                      })}
-                    value={form.sort_order}
-                    type="number"
+                  <Controller
+                    name="sort_order"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Input
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))}
+                        ref={field.ref}
+                        value={field.value}
+                        type="number"
+                      />
+                    )}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Active</Label>
-                  <Switch
-                    onCheckedChange={v =>
-                      setForm({
-                        ...form,
-                        active: v,
-                      })}
-                    checked={form.active}
+                  <Controller
+                    name="active"
+                    control={form.control}
+                    render={({ field }) => <Switch onCheckedChange={field.onChange} checked={field.value} />}
                   />
                 </div>
-              </div>
 
-              <Button
-                onClick={handleSave}
-                disabled={busy}
-                className="mt-4 w-full"
-              >
-                {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button
+                  disabled={busy}
+                  type="submit"
+                  className="mt-4 w-full"
+                >
+                  {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
-                {editingId ? 'Save Changes' : 'Create Brand'}
-              </Button>
+                  {editingId ? 'Save Changes' : 'Create Brand'}
+                </Button>
+              </form>
             </DialogContent>
           </Dialog>
         </CardHeader>

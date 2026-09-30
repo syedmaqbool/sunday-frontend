@@ -1,3 +1,4 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRightLeft,
@@ -8,7 +9,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { ReviewForm } from '@/components/ReviewForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,12 +57,26 @@ interface ReceivedOffersProps {
 
 type SortOption = 'newest' | 'price_desc';
 
+const counterOfferSchema = z.object({
+  counterAmount: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) > 0, 'Counter price must be greater than zero.'),
+});
+
+type CounterOfferFormValues = z.infer<typeof counterOfferSchema>;
+
 export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const { user } = useAuth();
   const [counterDialog, setCounterDialog] = useState<any | null>(null);
-  const [counterAmount, setCounterAmount] = useState('');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const form = useForm<CounterOfferFormValues>({
+    defaultValues: { counterAmount: '' },
+    resolver: zodResolver(counterOfferSchema),
+  });
+
+  const closeCounterDialog = () => {
+    setCounterDialog(null);
+    form.reset({ counterAmount: '' });
+  };
 
   const { data: receivedResponse, isLoading } = useQuery(getReceivedOffersOptions(user?.id, listingId));
   const received = (receivedResponse?.data ?? []).filter(
@@ -180,8 +197,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                             toast.info(
                               'Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.',
                             );
-                            setCounterDialog(null);
-                            setCounterAmount('');
+                            closeCounterDialog();
                           },
                         },
                       )}
@@ -194,7 +210,10 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                     Accept
                   </Button>
                   <Button
-                    onClick={() => setCounterDialog(offer)}
+                    onClick={() => {
+                      form.reset({ counterAmount: '' });
+                      setCounterDialog(offer);
+                    }}
                     size="sm"
                     variant="outline"
                     className="gap-1"
@@ -214,8 +233,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
                           onError: (error: unknown) => showErrorToast(error, 'Failed to reject offer'),
                           onSuccess: () => {
                             toast.success('Offer rejected');
-                            setCounterDialog(null);
-                            setCounterAmount('');
+                            closeCounterDialog();
                           },
                         },
                       )}
@@ -270,7 +288,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
       </div>
 
       <Dialog
-        onOpenChange={open => !open && setCounterDialog(null)}
+        onOpenChange={open => !open && closeCounterDialog()}
         open={!!counterDialog}
       >
         <DialogContent className="max-w-sm">
@@ -284,41 +302,42 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
               {counterDialog?.amount.toLocaleString()}
             </p>
           </DialogHeader>
-          <div className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit((values) => {
+              if (!counterDialog)
+                return;
+              respondToOffer.mutate(
+                { id: counterDialog.id, action: 'counter', counterAmount: Number(values.counterAmount) },
+                {
+                  onError: (error: unknown) => showErrorToast(error, 'Failed to counter offer'),
+                  onSuccess: () => {
+                    toast.success('Offer countered');
+                    closeCounterDialog();
+                  },
+                },
+              );
+            }, errors => toast.error(Object.values(errors)[0]?.message ?? 'Enter a valid counter price.'))}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label>Your counter price (PKR)</Label>
-              <Input
-                onChange={event => setCounterAmount(event.target.value)}
-                value={counterAmount}
-                min="1"
-                placeholder={`e.g. ${counterDialog?.listingPrice}`}
-                step="0.01"
-                type="number"
+              <Controller
+                name="counterAmount"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    min="1"
+                    placeholder={`e.g. ${counterDialog?.listingPrice}`}
+                    step="0.01"
+                    type="number"
+                  />
+                )}
               />
             </div>
             <Button
-              onClick={() =>
-                counterDialog
-                && respondToOffer.mutate(
-                  {
-                    id: counterDialog.id,
-                    action: 'counter',
-                    counterAmount: Number(counterAmount),
-                  },
-                  {
-                    onError: (error: unknown) => showErrorToast(error, 'Failed to counter offer'),
-                    onSuccess: () => {
-                      toast.success('Offer countered');
-                      setCounterDialog(null);
-                      setCounterAmount('');
-                    },
-                  },
-                )}
-              disabled={
-                !counterAmount
-                || Number(counterAmount) <= 0
-                || respondToOffer.isPending
-              }
+              disabled={respondToOffer.isPending}
+              type="submit"
               className="w-full"
             >
               {respondToOffer.isPending && (
@@ -326,7 +345,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
               )}
               Send Counter Offer
             </Button>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
     </>

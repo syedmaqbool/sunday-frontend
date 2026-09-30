@@ -1,5 +1,6 @@
 import type { Complaint, ComplaintStatus } from '@/types/complaint.type';
 import type { Order, OrderItem } from '@/types/order.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
@@ -23,8 +24,10 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import BankDetailsModal from '@/components/BankDetailsModal';
 import { ComplaintActions } from '@/components/ComplaintActions';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
@@ -84,6 +87,35 @@ import {
   updateItemStatus,
   uploadShippingProof,
 } from '@/services/myOrders.service';
+
+const shipmentProofFileSchema = z.custom<File>(
+  value => typeof File !== 'undefined' && value instanceof File,
+  'Please upload a proof image',
+);
+
+const shipmentFormSchema = z.object({
+  expectedDate: z.date().optional(),
+  method: z.string().min(1, 'Please select a shipping method'),
+  proofFile: shipmentProofFileSchema.nullable(),
+  tracking: z.string().trim().min(1, 'Please enter a tracking number').max(100),
+}).superRefine((values, context) => {
+  if (!values.expectedDate) {
+    context.addIssue({
+      path: ['expectedDate'],
+      code: z.ZodIssueCode.custom,
+      message: 'Please select an expected delivery date',
+    });
+  }
+  if (!values.proofFile) {
+    context.addIssue({
+      path: ['proofFile'],
+      code: z.ZodIssueCode.custom,
+      message: 'Please upload a proof image',
+    });
+  }
+});
+
+type ShipmentFormValues = z.infer<typeof shipmentFormSchema>;
 
 const SHIPPING_METHODS = [
   'PostNet',
@@ -789,42 +821,31 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
   // const updateStatus = useUpdateOrderItemStatusMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [method, setMethod] = useState('');
-  const [tracking, setTracking] = useState('');
-  const [expectedDate, setExpectedDate] = useState<Date | undefined>(undefined);
-  const [proofFile, setProofFile] = useState<File | null>(null);
+  const shipmentForm = useForm<ShipmentFormValues>({
+    defaultValues: { expectedDate: undefined, method: '', proofFile: null, tracking: '' },
+    resolver: zodResolver(shipmentFormSchema),
+  });
   const [proofPreview, setProofPreview] = useState<string | null>(null);
 
   const resetForm = () => {
-    setMethod('');
-    setTracking('');
-    setExpectedDate(undefined);
-    setProofFile(null);
+    shipmentForm.reset({ expectedDate: undefined, method: '', proofFile: null, tracking: '' });
     setProofPreview(null);
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files[0];
+  const handleFileChange = (file: File | undefined, onChange: (file: File | null) => void) => {
     if (!file)
       return;
     if (!file.type.startsWith('image/'))
       return toast.error('Please select an image file');
     if (file.size > 5 * 1024 * 1024)
       return toast.error('Image must be under 5MB');
-    setProofFile(file);
+    onChange(file);
     setProofPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async () => {
-    if (!method)
-      return toast.error('Please select a shipping method');
-    if (!tracking.trim())
-      return toast.error('Please enter a tracking number');
-    if (!expectedDate)
-      return toast.error('Please select an expected delivery date');
-    if (!proofFile)
-      return toast.error('Please upload a proof image');
-
+  const handleSubmit = async ({ expectedDate, method, proofFile, tracking }: ShipmentFormValues) => {
+    if (!proofFile || !expectedDate)
+      return;
     setBusy(true);
     try {
       // 1. Upload proof image
@@ -835,7 +856,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
         expectedDelivery: expectedDate.toISOString(),
         shippingMethod: method,
         status: 'SHIPPED',
-        trackingNumber: tracking.trim(),
+        trackingNumber: tracking,
       });
 
       // 3. Upload shipping proof URL
@@ -992,121 +1013,155 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
               Provide shipment details so the buyer knows what to expect.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Shipping method *</Label>
-              <Select onValueChange={setMethod} value={method}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a courier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SHIPPING_METHODS.map(m => (
-                    <SelectItem key={m} value={m}>
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <form
+            onSubmit={shipmentForm.handleSubmit(
+              handleSubmit,
+              (errors) => {
+                const firstError = Object.values(errors)[0];
+                toast.error(firstError?.message ?? 'Please complete the shipment details');
+              },
+            )}
+            className="space-y-4"
+          >
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Shipping method *</Label>
+                <Controller
+                  name="method"
+                  control={shipmentForm.control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a courier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHIPPING_METHODS.map(m => (
+                          <SelectItem key={m} value={m}>
+                            {m}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tracking number</Label>
+                <Controller
+                  name="tracking"
+                  control={shipmentForm.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      maxLength={100}
+                      placeholder="e.g. CG1234567890"
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Expected delivery date *</Label>
+                <Controller
+                  name="expectedDate"
+                  control={shipmentForm.control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !field.value && 'text-muted-foreground',
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? format(field.value, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-auto p-0">
+                        <Calendar
+                          onSelect={field.onChange}
+                          disabled={d =>
+                            d < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          mode="single"
+                          selected={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Proof of shipment image *</Label>
+                <Controller
+                  name="proofFile"
+                  control={shipmentForm.control}
+                  render={({ field }) => proofPreview
+                    ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={proofPreview}
+                            alt="Preview"
+                            className="h-32 w-32 rounded-md border border-border object-cover"
+                          />
+                          <button
+                            onClick={() => {
+                              field.onChange(null);
+                              shipmentForm.clearErrors('proofFile');
+                              setProofPreview(null);
+                            }}
+                            type="button"
+                            className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )
+                    : (
+                        <label className="
+                          flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground
+                          hover:bg-muted/50
+                        "
+                        >
+                          <Upload className="h-4 w-4" />
+                          Upload receipt or parcel photo
+                          <input
+                            onChange={event => handleFileChange(event.target.files?.[0], field.onChange)}
+                            accept="image/*"
+                            type="file"
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                />
+                <p className="text-xs text-muted-foreground">
+                  JPEG/PNG/WebP, max 5MB.
+                </p>
+              </div>
+              <SellerShipmentNotice />
             </div>
-            <div className="space-y-1.5">
-              <Label>Tracking number</Label>
-              <Input
-                onChange={event => setTracking(event.target.value)}
-                value={tracking}
-                maxLength={100}
-                placeholder="e.g. CG1234567890"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Expected delivery date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !expectedDate && 'text-muted-foreground',
+            <DialogFooter>
+              <Button
+                onClick={() => setDialogOpen(false)}
+                disabled={busy}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={busy} type="submit" className="gap-1.5">
+                {busy
+                  ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <Truck className="h-4 w-4" />
                     )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {expectedDate ? format(expectedDate, 'PPP') : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar
-                    onSelect={setExpectedDate}
-                    disabled={d =>
-                      d < new Date(new Date().setHours(0, 0, 0, 0))}
-                    initialFocus
-                    mode="single"
-                    selected={expectedDate}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Proof of shipment image *</Label>
-              {proofPreview
-                ? (
-                    <div className="relative inline-block">
-                      <img
-                        src={proofPreview}
-                        alt="Preview"
-                        className="h-32 w-32 rounded-md border border-border object-cover"
-                      />
-                      <button
-                        onClick={() => {
-                          setProofFile(null);
-                          setProofPreview(null);
-                        }}
-                        type="button"
-                        className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )
-                : (
-                    <label className="
-                      flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground
-                      hover:bg-muted/50
-                    "
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload receipt or parcel photo
-                      <input
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        type="file"
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-              <p className="text-xs text-muted-foreground">
-                JPEG/PNG/WebP, max 5MB.
-              </p>
-            </div>
-            <SellerShipmentNotice />
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => setDialogOpen(false)}
-              disabled={busy}
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={busy} className="gap-1.5">
-              {busy
-                ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )
-                : (
-                    <Truck className="h-4 w-4" />
-                  )}
-              Confirm Shipment
-            </Button>
-          </DialogFooter>
+                Confirm Shipment
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </Card>

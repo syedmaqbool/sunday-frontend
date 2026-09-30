@@ -3,8 +3,9 @@ import type {
   Complaint,
   ComplaintStatus,
 } from '@/types/complaint.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -15,8 +16,10 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,6 +62,8 @@ const STATUS_LABEL: Record<ComplaintStatus, string> = {
 };
 
 type StatusFilter = 'all' | ComplaintStatus;
+
+const complaintAdminNotesSchema = z.object({ notes: z.string() });
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -278,11 +283,15 @@ function ComplaintDetailDialog({
   onClose: () => void;
   onUpdate: (id: string, status: AdminComplaintStatus, notes?: string) => void;
 }) {
-  const [notes, setNotes] = useState(complaint?.adminNotes ?? '');
+  const form = useForm<z.infer<typeof complaintAdminNotesSchema>>({
+    defaultValues: { notes: complaint?.adminNotes ?? '' },
+    resolver: zodResolver(complaintAdminNotesSchema),
+  });
+  const { reset } = form;
 
   useEffect(() => {
-    setNotes(complaint?.adminNotes ?? '');
-  }, [complaint?.id, complaint?.adminNotes]);
+    reset({ notes: complaint?.adminNotes ?? '' });
+  }, [complaint?.id, complaint?.adminNotes, reset]);
 
   if (!complaint)
     return null;
@@ -529,41 +538,50 @@ function ComplaintDetailDialog({
             <Label htmlFor="admin-notes">
               Admin notes (visible to buyer &amp; seller)
             </Label>
-            <Textarea
-              id="admin-notes"
-              onChange={event => setNotes(event.target.value)}
-              value={notes}
-              placeholder="Explain your decision. This message will be shown to both buyer and seller."
-              rows={3}
+            <Controller
+              name="notes"
+              control={form.control}
+              render={({ field }) => (
+                <Textarea
+                  {...field}
+                  id="admin-notes"
+                  placeholder="Explain your decision. This message will be shown to both buyer and seller."
+                  rows={3}
+                />
+              )}
             />
           </div>
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
           <Button
-            onClick={() => onUpdate(complaint.id, 'RETURN_APPROVED', notes)}
+            onClick={() => form.handleSubmit(values => onUpdate(complaint.id, 'RETURN_APPROVED', values.notes))()}
             disabled={isPending}
+            type="button"
             variant="outline"
           >
             Approve return
           </Button>
           <Button
-            onClick={() => onUpdate(complaint.id, 'RETURN_RECEIVED', notes)}
+            onClick={() => form.handleSubmit(values => onUpdate(complaint.id, 'RETURN_RECEIVED', values.notes))()}
             disabled={isPending}
+            type="button"
             variant="outline"
           >
             Mark return received
           </Button>
           <Button
-            onClick={() => onUpdate(complaint.id, 'REFUNDED', notes)}
+            onClick={() => form.handleSubmit(values => onUpdate(complaint.id, 'REFUNDED', values.notes))()}
             disabled={isPending}
+            type="button"
             variant="outline"
           >
             Complete · Refund buyer
           </Button>
           <Button
-            onClick={() => onUpdate(complaint.id, 'REJECTED', notes)}
+            onClick={() => form.handleSubmit(values => onUpdate(complaint.id, 'REJECTED', values.notes))()}
             disabled={isPending}
+            type="button"
             variant="ghost"
           >
             Reject return request

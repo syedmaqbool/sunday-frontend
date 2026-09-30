@@ -1,6 +1,7 @@
 import type { BoostPackage, BoostPlacement, ListingBoost } from '@/types/boost.type';
-import { useQuery } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   Loader2,
@@ -12,7 +13,9 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -69,16 +72,18 @@ const placementMeta: Record<
 
 // ─── Package Form ─────────────────────────────────────────────────────────────
 
-interface PackageFormState {
-  id?: string;
-  active: boolean;
-  credits: number;
-  description: string;
-  durationDays: number;
-  name: string;
-  placement: BoostPlacement;
-  price: number;
-}
+const packageFormSchema = z.object({
+  id: z.string().optional(),
+  active: z.boolean(),
+  credits: z.number().int().min(0),
+  description: z.string(),
+  durationDays: z.number().int().min(1, 'Duration must be at least 1 day.'),
+  name: z.string().trim().min(1, 'Name is required.'),
+  placement: z.enum(['FOR_YOU', 'SEARCH', 'TRENDING']),
+  price: z.number().min(0, 'Price cannot be negative.'),
+});
+
+type PackageFormState = z.infer<typeof packageFormSchema>;
 
 const emptyPackage: PackageFormState = {
   active: true,
@@ -104,140 +109,121 @@ function PackageDialog({
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<PackageFormState>(initial ?? emptyPackage);
+  const form = useForm<PackageFormState>({
+    defaultValues: initial ?? emptyPackage,
+    resolver: zodResolver(packageFormSchema),
+  });
+  const formValues = form.watch();
 
-  const handleSave = () => {
-    if (!form.name.trim()) {
-      toast.error('Name is required');
-      return;
-    }
-    if (form.durationDays < 1) {
-      toast.error('Duration must be at least 1 day');
-      return;
-    }
-    if (form.price < 0) {
-      toast.error('Price cannot be negative');
-      return;
-    }
-
+  const handleSave = (values: PackageFormState) => {
     const package_: BoostPackage = {
-      id: form.id ?? (crypto.randomUUID()),
-      active: form.active,
-      credits: form.credits,
-      description: form.description.trim(),
-      durationDays: form.durationDays,
-      name: form.name.trim(),
-      placement: form.placement,
-      price: form.price,
+      id: values.id ?? (crypto.randomUUID()),
+      active: values.active,
+      credits: values.credits,
+      description: values.description.trim(),
+      durationDays: values.durationDays,
+      name: values.name,
+      placement: values.placement,
+      price: values.price,
     };
 
-    const updated = form.id
-      ? allPackages.map(p => (p.id === form.id ? package_ : p))
+    const updated = values.id
+      ? allPackages.map(p => (p.id === values.id ? package_ : p))
       : [package_, ...allPackages];
 
     onSave(updated);
     setOpen(false);
-    if (!form.id)
-      setForm(emptyPackage);
+    if (!values.id)
+      form.reset(emptyPackage);
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen)
+          form.reset(initial ?? emptyPackage);
+      }}
+      open={open}
+    >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {form.id ? 'Edit boost package' : 'New boost package'}
+            {formValues.id ? 'Edit boost package' : 'New boost package'}
           </DialogTitle>
           <DialogDescription>
             Quick à la carte boost shown to sellers.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleSave, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the form fields.'))} className="space-y-4">
           <div className="space-y-2">
             <Label>Name</Label>
-            <Input
-              onChange={event => setForm({ ...form, name: event.target.value })}
-              value={form.name}
-              placeholder="Trending Boost — 7 days"
-            />
+            <Controller name="name" control={form.control} render={({ field }) => <Input {...field} placeholder="Trending Boost — 7 days" />} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Placement</Label>
-              <Select
-                onValueChange={v =>
-                  setForm({ ...form, placement: v as BoostPlacement })}
-                value={form.placement}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TRENDING">Trending Now</SelectItem>
-                  <SelectItem value="FOR_YOU">Picked for You</SelectItem>
-                  <SelectItem value="SEARCH">Search &amp; Browse</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="placement"
+                control={form.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TRENDING">Trending Now</SelectItem>
+                      <SelectItem value="FOR_YOU">Picked for You</SelectItem>
+                      <SelectItem value="SEARCH">Search &amp; Browse</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label>Active</Label>
               <div className="flex h-10 items-center">
-                <Switch
-                  onCheckedChange={v => setForm({ ...form, active: v })}
-                  checked={form.active}
-                />
+                <Controller name="active" control={form.control} render={({ field }) => <Switch onCheckedChange={field.onChange} checked={field.value} />} />
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Duration (days)</Label>
-              <Input
-                onChange={event =>
-                  setForm({
-                    ...form,
-                    durationDays: Math.max(1, Number(event.target.value) || 1),
-                  })}
-                value={form.durationDays}
-                min={1}
-                type="number"
+              <Controller
+                name="durationDays"
+                control={form.control}
+                render={({ field }) => (
+                  <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.max(1, Number(event.target.value) || 1))} ref={field.ref} value={field.value} min={1} type="number" />
+                )}
               />
             </div>
             <div className="space-y-2">
               <Label>Price (PKR)</Label>
-              <Input
-                onChange={event =>
-                  setForm({
-                    ...form,
-                    price: Math.max(0, Number(event.target.value) || 0),
-                  })}
-                value={form.price}
-                min={0}
-                step={1}
-                type="number"
+              <Controller
+                name="price"
+                control={form.control}
+                render={({ field }) => (
+                  <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.max(0, Number(event.target.value) || 0))} ref={field.ref} value={field.value} min={0} step={1} type="number" />
+                )}
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea
-              onChange={event =>
-                setForm({ ...form, description: event.target.value })}
-              value={form.description}
-              rows={3}
-            />
+            <Controller name="description" control={form.control} render={({ field }) => <Textarea {...field} rows={3} />} />
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant="outline">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button disabled={isPending} type="submit">
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

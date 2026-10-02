@@ -230,6 +230,11 @@ function CreateListing() {
       : null);
   }, [existingListing, user, navigate, reset, setValue]);
 
+  useEffect(() => {
+    if (isEditing && !loadingListing && !existingListing)
+      navigate('/my-listings', { replace: true });
+  }, [existingListing, isEditing, loadingListing, navigate]);
+
   const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>, currentFiles: File[], onChange: (files: File[]) => void) => {
     const files = [...event_.target.files || []];
     const total = currentFiles.length + existingImages.length + files.length;

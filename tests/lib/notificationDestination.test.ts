@@ -46,4 +46,40 @@ describe('getNotificationDestinationPath', () => {
       section: 'detail',
     }))).toBeNull();
   });
+
+  it('opens seller listing notifications in the exact listing editor', () => {
+    for (const type of [
+      'LISTING_APPROVED',
+      'LISTING_FEEDBACK_ADDED',
+      'LISTING_NEEDS_REVISION',
+      'LISTING_REJECTED',
+    ] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'listing 1',
+          resource: 'listing',
+          section: 'editor',
+        }),
+        type,
+      })).toBe('/edit-listing/listing%201');
+    }
+  });
+
+  it('opens admin listing submissions in moderation with URL-backed selection state', () => {
+    expect(getNotificationDestinationPath({
+      ...notification({
+        resourceId: 'listing-1',
+        resource: 'listing',
+        section: 'moderation',
+      }, 'ADMIN'),
+      type: 'LISTING_SUBMITTED',
+    })).toBe('/admin/listings?listing=listing-1&status=PENDING');
+  });
+
+  it('falls back to the seller listing list when the listing editor target is missing', () => {
+    expect(getNotificationDestinationPath(notification({
+      resource: 'listing',
+      section: 'editor',
+    }))).toBe('/my-listings');
+  });
 });

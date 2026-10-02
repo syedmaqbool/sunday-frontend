@@ -16,8 +16,9 @@ import {
   Weight,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/components/AdminListingFeedbackWidgets';
@@ -48,6 +49,7 @@ import {
 } from '@/queries/adminListing.query';
 
 const listingFeedbackSchema = z.object({ feedback: z.string() });
+const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD'] as const;
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -152,14 +154,22 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
 }
 
 function ListingModeration() {
-  const [filter, setFilter] = useState<'all' | ListingStatus>('PENDING');
-  const [reviewListing, setReviewListing] = useState<AdminListing | null>(null);
+  const [searchParameters, setSearchParameters] = useSearchParams();
+  const requestedFilter = searchParameters.get('status');
+  const filter: 'all' | ListingStatus = requestedFilter
+    && LISTING_FILTERS.includes(requestedFilter as (typeof LISTING_FILTERS)[number])
+    ? requestedFilter as 'all' | ListingStatus
+    : 'PENDING';
+  const requestedListingId = searchParameters.get('listing');
   const feedbackForm = useForm<z.infer<typeof listingFeedbackSchema>>({
     defaultValues: { feedback: '' },
     resolver: zodResolver(listingFeedbackSchema),
   });
 
   const { data: listings = [], isLoading } = useQuery(getAdminListingsOptions(filter));
+  const reviewListing = requestedListingId
+    ? listings.find(listing => listing.id === requestedListingId) ?? null
+    : null;
   const createFeedback = useCreateAdminListingFeedbackMutation();
   const moderateListing = useModerateListingMutation();
 
@@ -176,15 +186,33 @@ function ListingModeration() {
   const currentReviewIndex = reviewListing
     ? pendingListings.findIndex(l => l.id === reviewListing.id)
     : -1;
+  const updateReviewSelection = (listingId: string | null, nextFilter = filter) => {
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.set('status', nextFilter);
+    if (listingId)
+      nextParameters.set('listing', listingId);
+    else
+      nextParameters.delete('listing');
+    setSearchParameters(nextParameters);
+  };
   const goToNext = () => {
     if (!(currentReviewIndex >= 0
       && currentReviewIndex < pendingListings.length - 1)) {
       return;
     }
 
-    setReviewListing(pendingListings[currentReviewIndex + 1]);
+    updateReviewSelection(pendingListings[currentReviewIndex + 1].id);
     feedbackForm.reset({ feedback: '' });
   };
+
+  useEffect(() => {
+    if (isLoading || !requestedListingId || reviewListing)
+      return;
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('listing');
+    setSearchParameters(nextParameters, { replace: true });
+  }, [isLoading, requestedListingId, reviewListing, searchParameters, setSearchParameters]);
 
   const handleModerate = async (
     id: string,
@@ -203,7 +231,7 @@ function ListingModeration() {
 
       await moderateListing.mutateAsync({ listingId: id, status });
       toast.success(`Listing ${status.toLowerCase()}`);
-      setReviewListing(null);
+      updateReviewSelection(null);
       feedbackForm.reset({ feedback: '' });
       goToNext();
     }
@@ -224,7 +252,7 @@ function ListingModeration() {
           </p>
         </div>
         <Select
-          onValueChange={v => setFilter(v as 'all' | ListingStatus)}
+          onValueChange={v => updateReviewSelection(null, v as 'all' | ListingStatus)}
           value={filter}
         >
           <SelectTrigger className="w-[160px]">
@@ -294,7 +322,7 @@ function ListingModeration() {
                         <div className="flex shrink-0 gap-2">
                           <Button
                             onClick={() => {
-                              setReviewListing(listing);
+                              updateReviewSelection(listing.id);
                               feedbackForm.reset({ feedback: '' });
                             }}
                             size="sm"
@@ -345,7 +373,7 @@ function ListingModeration() {
             return;
           }
 
-          setReviewListing(null);
+          updateReviewSelection(null);
           feedbackForm.reset({ feedback: '' });
         }}
         open={!!reviewListing}

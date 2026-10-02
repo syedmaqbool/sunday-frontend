@@ -26,5 +26,16 @@ export function getNotificationDestinationPath(notification: Notification): stri
     return `${path}${parameters.toString() ? `?${parameters.toString()}` : ''}`;
   }
 
+  if (destination.resource === 'listing' && destination.section === 'editor') {
+    return resourceId ? `/edit-listing/${encodeURIComponent(resourceId)}` : '/my-listings';
+  }
+
+  if (destination.resource === 'listing' && destination.section === 'moderation') {
+    if (resourceId)
+      parameters.set('listing', resourceId);
+    parameters.set('status', 'PENDING');
+    return `/admin/listings?${parameters.toString()}`;
+  }
+
   return null;
 }

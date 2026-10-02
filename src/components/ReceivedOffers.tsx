@@ -8,8 +8,9 @@ import {
   Star,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { ReviewForm } from '@/components/ReviewForm';
@@ -35,6 +36,7 @@ import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyReviewedOfferIdsOptions,
+  getReceivedOfferSelectionOptions,
   getReceivedOffersOptions,
   useRespondToOfferMutation,
 } from '@/queries/offers.query';
@@ -53,6 +55,7 @@ function statusBadge(s: string) {
 
 interface ReceivedOffersProps {
   listingId?: string;
+  selectedOfferId?: string | null;
 }
 
 type SortOption = 'newest' | 'price_desc';
@@ -63,8 +66,9 @@ const counterOfferSchema = z.object({
 
 type CounterOfferFormValues = z.infer<typeof counterOfferSchema>;
 
-export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
+export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersProps = {}) {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [counterDialog, setCounterDialog] = useState<any | null>(null);
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -82,6 +86,28 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
   const received = (receivedResponse?.data ?? []).filter(
     offer => !listingId || offer.listingId === listingId,
   );
+  const { data: selectedOfferResponse, isLoading: loadingSelectedOffer } = useQuery(
+    getReceivedOfferSelectionOptions(selectedOfferId ?? null, user?.id),
+  );
+  const selectedOffer = selectedOfferResponse?.data.find(offer => offer.id === selectedOfferId);
+  const offersToDisplay = selectedOffer && received.every(offer => offer.id !== selectedOffer.id)
+    ? [...received, selectedOffer]
+    : received;
+
+  useEffect(() => {
+    if (
+      !selectedOfferId
+      || isLoading
+      || loadingSelectedOffer
+      || receivedResponse?.data?.some(offer => offer.id === selectedOfferId && (!listingId || offer.listingId === listingId))
+      || selectedOffer
+    ) {
+      return;
+    }
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('offer');
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [isLoading, listingId, loadingSelectedOffer, receivedResponse?.data, searchParams, selectedOffer, selectedOfferId, setSearchParams]);
 
   const { data: myReviewsResponse } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
   const myReviews = new Set((myReviewsResponse?.data ?? [])
@@ -98,7 +124,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
     );
   }
 
-  if (received.length === 0) {
+  if (offersToDisplay.length === 0) {
     return (
       <div className="py-12 text-center text-muted-foreground">
         No offers received yet
@@ -106,7 +132,7 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
     );
   }
 
-  const sortedOffers = received.toSorted((a, b) => {
+  const sortedOffers = offersToDisplay.toSorted((a, b) => {
     if (sortBy === 'price_desc')
       return b.amount - a.amount;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -139,7 +165,11 @@ export function ReceivedOffers({ listingId }: ReceivedOffersProps = {}) {
       </div>
       <div className="space-y-3">
         {sortedOffers.map(offer => (
-          <Card key={offer.id}>
+          <Card
+            key={offer.id}
+            data-testid={offer.id === selectedOfferId ? 'selected-offer' : undefined}
+            className={offer.id === selectedOfferId ? 'ring-2 ring-primary' : undefined}
+          >
             <CardContent className="
               flex flex-col gap-4 p-4
               sm:flex-row sm:items-center

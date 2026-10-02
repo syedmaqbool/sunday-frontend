@@ -25,7 +25,39 @@ export const offersQueryKey = {
     [...offersQueryKey.all(), 'received', 'list', userId ?? null, listingId ?? 'all'] as const,
   reviewedIds: (userId?: string) =>
     [...offersQueryKey.all(), 'reviewed-ids', 'list', userId ?? null] as const,
+  selection: (offerId: string, recipient: 'BUYER' | 'SELLER', userId?: string) =>
+    [...offersQueryKey.all(), 'selection', 'detail', recipient, offerId, userId ?? null] as const,
 };
+
+function getOfferSelectionOptions(
+  offerId: string | null,
+  recipient: 'BUYER' | 'SELLER',
+  userId?: string,
+) {
+  const listOffers = recipient === 'BUYER' ? listMyOffers : listReceivedOffers;
+
+  return queryOptions({
+    enabled: !!userId && !!offerId,
+    queryFn: async () => {
+      let page = 1;
+      do {
+        const response = await listOffers({ page, size: 100 });
+        if (response.data.some(offer => offer.id === offerId) || !response.pagination.nextPage)
+          return response;
+        page = response.pagination.nextPage;
+      } while (true);
+    },
+    queryKey: offersQueryKey.selection(offerId ?? '', recipient, userId),
+  });
+}
+
+export function getSentOfferSelectionOptions(offerId: string | null, userId?: string) {
+  return getOfferSelectionOptions(offerId, 'BUYER', userId);
+}
+
+export function getReceivedOfferSelectionOptions(offerId: string | null, userId?: string) {
+  return getOfferSelectionOptions(offerId, 'SELLER', userId);
+}
 
 export function getBuyerListingOffersOptions(listingId: string, userId?: string) {
   return queryOptions({

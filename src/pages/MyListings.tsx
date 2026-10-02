@@ -11,7 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
@@ -68,6 +68,9 @@ function isReadOnlyStatus(status: MyListing['status']) {
 function MyListings() {
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedOfferId = searchParams.get('offer');
+  const selectedTab = searchParams.get('tab') === 'offers' ? 'offers' : 'approved';
 
   const { data: listingsResponse, isLoading } = useQuery(getMyListingsOptions(!!user));
   const listings = listingsResponse?.data ?? [];
@@ -331,7 +334,18 @@ function MyListings() {
                   </div>
                 )
               : (
-                  <Tabs defaultValue="approved" className="mt-6">
+                  <Tabs
+                    onValueChange={(value) => {
+                      const nextSearchParams = new URLSearchParams(searchParams);
+                      if (value === 'offers')
+                        nextSearchParams.set('tab', value);
+                      else
+                        nextSearchParams.delete('tab');
+                      setSearchParams(nextSearchParams);
+                    }}
+                    value={selectedTab}
+                    className="mt-6"
+                  >
                     <TabsList>
                       <TabsTrigger value="approved">
                         Approved (
@@ -417,7 +431,7 @@ function MyListings() {
                     </TabsContent>
 
                     <TabsContent value="offers" className="mt-4">
-                      <ReceivedOffers />
+                      <ReceivedOffers selectedOfferId={selectedOfferId} />
                     </TabsContent>
                   </Tabs>
                 ))}

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, MessageSquare, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { ReviewForm } from '@/components/ReviewForm';
@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyReviewedOfferIdsOptions,
+  getSentOfferSelectionOptions,
   getSentOffersOptions,
 } from '@/queries/offers.query';
 
@@ -32,6 +33,8 @@ function statusBadge(s: string) {
 function MyOffers() {
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedOfferId = searchParams.get('offer');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,6 +44,30 @@ function MyOffers() {
 
   const { data: sentResponse, isLoading: loadingSent } = useQuery(getSentOffersOptions(user?.id));
   const sent = sentResponse?.data ?? [];
+  const { data: selectedOfferResponse, isLoading: loadingSelectedOffer } = useQuery(
+    getSentOfferSelectionOptions(selectedOfferId, user?.id),
+  );
+  const selectedOffer = selectedOfferResponse?.data.find(offer => offer.id === selectedOfferId);
+  const offersToDisplay = selectedOffer && sent.every(offer => offer.id !== selectedOffer.id)
+    ? [...sent, selectedOffer]
+    : sent;
+
+  useEffect(() => {
+    if (
+      authLoading
+      || !user
+      || !selectedOfferId
+      || loadingSent
+      || loadingSelectedOffer
+      || sentResponse?.data?.some(offer => offer.id === selectedOfferId)
+      || selectedOffer
+    ) {
+      return;
+    }
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('offer');
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [authLoading, loadingSelectedOffer, loadingSent, searchParams, selectedOffer, selectedOfferId, sentResponse?.data, setSearchParams, user]);
 
   const { data: myReviewsResponse } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
   const myReviews = new Set((myReviewsResponse?.data ?? [])
@@ -80,7 +107,7 @@ function MyOffers() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               )
-            : (sent.length === 0
+            : (offersToDisplay.length === 0
                 ? (
                     <div className="flex flex-col items-center rounded-xl border border-dashed bg-card py-16 text-center">
                       <MessageSquare className="h-10 w-10 text-muted-foreground" />
@@ -94,13 +121,15 @@ function MyOffers() {
                   )
                 : (
                     <div className="space-y-3">
-                      {sent.map(offer => (
+                      {offersToDisplay.map(offer => (
                         <Card
                           key={offer.id}
-                          className="
+                          data-testid={offer.id === selectedOfferId ? 'selected-offer' : undefined}
+                          className={`
                             overflow-hidden transition-all
                             hover:shadow-sm
-                          "
+                            ${offer.id === selectedOfferId ? 'ring-2 ring-primary' : ''}
+                          `}
                         >
                           <CardContent className="
                             flex flex-col gap-4 p-4

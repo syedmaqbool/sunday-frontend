@@ -82,4 +82,50 @@ describe('getNotificationDestinationPath', () => {
       section: 'editor',
     }))).toBe('/my-listings');
   });
+
+  it('opens seller notifications in received offers with the exact offer selected', () => {
+    for (const type of ['OFFER_CREATED', 'OFFER_WITHDRAWN'] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'offer 1',
+          recipient: 'SELLER',
+          resource: 'offer',
+          section: 'received',
+        }),
+        type,
+      })).toBe('/my-listings?offer=offer+1&tab=offers');
+    }
+  });
+
+  it('opens buyer notifications in sent offers with the exact offer selected', () => {
+    for (const type of [
+      'OFFER_ACCEPTED',
+      'OFFER_REJECTED',
+      'OFFER_COUNTERED',
+      'OFFER_EXPIRED',
+    ] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'offer-1',
+          recipient: 'BUYER',
+          resource: 'offer',
+          section: 'sent',
+        }),
+        type,
+      })).toBe('/my-offers?offer=offer-1');
+    }
+  });
+
+  it('opens the appropriate offer list when an older notification has no offer identifier', () => {
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'SELLER',
+      resource: 'offer',
+      section: 'received',
+    }))).toBe('/my-listings?tab=offers');
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'BUYER',
+      resource: 'offer',
+      section: 'sent',
+    }))).toBe('/my-offers');
+  });
 });

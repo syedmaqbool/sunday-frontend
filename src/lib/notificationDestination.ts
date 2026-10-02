@@ -37,5 +37,23 @@ export function getNotificationDestinationPath(notification: Notification): stri
     return `/admin/listings?${parameters.toString()}`;
   }
 
+  if (destination.resource === 'offer') {
+    const received = destination.section === 'received' || destination.recipient === 'SELLER';
+    const sent = destination.section === 'sent' || destination.recipient === 'BUYER';
+
+    if (received) {
+      if (resourceId)
+        parameters.set('offer', resourceId);
+      parameters.set('tab', 'offers');
+      return `/my-listings?${parameters.toString()}`;
+    }
+
+    if (sent) {
+      if (resourceId)
+        parameters.set('offer', resourceId);
+      return `/my-offers${parameters.toString() ? `?${parameters.toString()}` : ''}`;
+    }
+  }
+
   return null;
 }

@@ -30,6 +30,14 @@ export function getNotificationDestinationPath(notification: Notification): stri
     return resourceId ? `/edit-listing/${encodeURIComponent(resourceId)}` : '/my-listings';
   }
 
+  if (destination.resource === 'listing' && destination.section === 'detail') {
+    return resourceId ? `/listing/${encodeURIComponent(resourceId)}` : '/listings';
+  }
+
+  if (destination.resource === 'listing' && destination.section === 'list') {
+    return '/listings';
+  }
+
   if (destination.resource === 'listing' && destination.section === 'moderation') {
     if (resourceId)
       parameters.set('listing', resourceId);

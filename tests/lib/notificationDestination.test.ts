@@ -42,8 +42,8 @@ describe('getNotificationDestinationPath', () => {
   it('does not route unsupported destinations', () => {
     expect(getNotificationDestinationPath(notification({
       resourceId: 'listing-1',
-      resource: 'listing',
-      section: 'detail',
+      resource: 'report',
+      section: 'list',
     }))).toBeNull();
   });
 
@@ -74,6 +74,30 @@ describe('getNotificationDestinationPath', () => {
       }, 'ADMIN'),
       type: 'LISTING_SUBMITTED',
     })).toBe('/admin/listings?listing=listing-1&status=PENDING');
+  });
+
+  it('opens the reservation listing for both participants for every reservation notification', () => {
+    for (const type of ['RESERVATION_CREATED', 'RESERVATION_EXPIRED', 'RESERVATION_CANCELLED'] as const) {
+      for (const recipient of ['BUYER', 'SELLER'] as const) {
+        expect(getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'listing 1',
+            recipient,
+            resource: 'listing',
+            section: 'detail',
+          }),
+          type,
+        })).toBe('/listing/listing%201');
+      }
+    }
+  });
+
+  it('falls back to the listings page when a reservation listing identifier is missing', () => {
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'BUYER',
+      resource: 'listing',
+      section: 'list',
+    }))).toBe('/listings');
   });
 
   it('falls back to the seller listing list when the listing editor target is missing', () => {

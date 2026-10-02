@@ -2,7 +2,7 @@ import type { Notification } from '@/types/notification.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -29,13 +29,23 @@ vi.mock('@/services/notification.service', () => ({
 
 function LocationObserver() {
   const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     timeline.push('navigate');
   }, [location.pathname, location.search]);
-  return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
+  return (
+    <>
+      <output data-testid="location">{`${location.pathname}${location.search}`}</output>
+      <button onClick={() => navigate(-1)} type="button">Back</button>
+    </>
+  );
 }
 
-function makeNotification(audience: Notification['audience'], destination: Notification['destination']): Notification {
+function makeNotification(
+  audience: Notification['audience'],
+  destination: Notification['destination'],
+  type: Notification['type'] = audience === 'ADMIN' ? 'SUPPORT_TICKET_REPLIED' : 'MESSAGE_RECEIVED',
+): Notification {
   return {
     id: 'notification-1',
     entityId: null,
@@ -46,14 +56,14 @@ function makeNotification(audience: Notification['audience'], destination: Notif
     entityType: null,
     metadata: {},
     title: 'New message',
-    type: audience === 'ADMIN' ? 'SUPPORT_TICKET_REPLIED' : 'MESSAGE_RECEIVED',
+    type,
     readAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
 }
 
-function renderBell(notification: Notification) {
+function renderBell(notification: Notification, initialEntry = '/') {
   listNotifications.mockResolvedValue({
     data: [notification],
     message: 'ok',
@@ -64,7 +74,7 @@ function renderBell(notification: Notification) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/']}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={[initialEntry]}>
         <Routes>
           <Route
             element={(
@@ -125,5 +135,21 @@ describe('notificationBell destination navigation', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('opens a reservation listing with a refresh-safe URL and browser back returns to the previous page', async () => {
+    markNotificationRead.mockResolvedValue({ data: {}, statusCode: 200 });
+    renderBell(makeNotification('USER', {
+      resourceId: 'listing-1',
+      recipient: 'BUYER',
+      resource: 'listing',
+      section: 'detail',
+    }, 'RESERVATION_CREATED'), '/my-offers');
+
+    fireEvent.click(await screen.findByRole('button', { name: /New message/ }));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/my-offers'));
   });
 });

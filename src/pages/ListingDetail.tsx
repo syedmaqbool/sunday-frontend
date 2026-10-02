@@ -12,7 +12,7 @@ import {
   Weight,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { toast } from 'sonner';
 import Footer from '@/components/Footer';
@@ -264,26 +264,7 @@ function ListingDetail() {
   }
 
   if (!listing) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="container flex flex-1 flex-col items-center justify-center py-20">
-          <h1 className="font-heading text-3xl font-bold text-foreground">
-            Listing not found
-          </h1>
-          <Link
-            to="/listings"
-            className="
-              mt-4 text-primary
-              hover:underline
-            "
-          >
-            Back to browse
-          </Link>
-        </main>
-        <Footer />
-      </div>
-    );
+    return <Navigate replace to="/listings" />;
   }
 
   return (

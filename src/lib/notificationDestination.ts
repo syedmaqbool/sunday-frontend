@@ -1,0 +1,30 @@
+import type { Notification } from '@/types/notification.type';
+
+export function getNotificationDestinationPath(notification: Notification): string | null {
+  const destination = notification.destination;
+  if (!destination)
+    return null;
+
+  const resourceId = destination.resourceId;
+  const parameters = new URLSearchParams();
+  const focusedChild = destination.focusedChild;
+
+  if (destination.resource === 'conversation' && destination.section === 'messages') {
+    if (resourceId)
+      parameters.set('conversation', resourceId);
+    if (focusedChild?.resource === 'message')
+      parameters.set('message', focusedChild.resourceId);
+    return `/messages${parameters.toString() ? `?${parameters.toString()}` : ''}`;
+  }
+
+  if (destination.resource === 'supportTicket' && destination.section === 'messages') {
+    if (resourceId)
+      parameters.set('ticket', resourceId);
+    if (focusedChild?.resource === 'supportTicketMessage')
+      parameters.set('message', focusedChild.resourceId);
+    const path = notification.audience === 'ADMIN' ? '/admin/support' : '/support';
+    return `${path}${parameters.toString() ? `?${parameters.toString()}` : ''}`;
+  }
+
+  return null;
+}

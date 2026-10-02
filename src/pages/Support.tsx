@@ -104,6 +104,7 @@ function Support() {
 
   const navigate = useNavigate();
   const [searchParameters, setSearchParameters] = useSearchParams();
+  const focusedMessageId = searchParameters.get('message');
   const queryClient = useQueryClient();
 
   const [activeTicket, setActiveTicket] = useState<string | null>(
@@ -142,7 +143,25 @@ function Support() {
   const { data: ticketsResponse, isLoading: ticketsLoading }
     = useQuery(getSupportTicketsOptions());
 
-  const tickets = ticketsResponse?.data ?? [];
+  const tickets = useMemo(() => ticketsResponse?.data ?? [], [ticketsResponse?.data]);
+
+  useEffect(() => {
+    const ticketId = searchParameters.get('ticket');
+    setActiveTicket(ticketId);
+    setTab(ticketId ? 'chat' : 'tickets');
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (ticketsLoading || !activeTicket || tickets.some(ticket => ticket.id === activeTicket))
+      return;
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('ticket');
+    nextParameters.delete('message');
+    setActiveTicket(null);
+    setTab('tickets');
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeTicket, searchParameters, setSearchParameters, tickets, ticketsLoading]);
 
   // GET messages
   const { data: messagesResponse, isLoading: messagesLoading }
@@ -151,10 +170,26 @@ function Support() {
   const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse]);
 
   useEffect(() => {
-    messagesEndReference.current?.scrollIntoView({
-      behavior: 'smooth',
-    });
-  }, [messages]);
+    if (!activeTicket || messagesLoading || !focusedMessageId)
+      return;
+
+    const focusedMessage = messages.find(message => message.id === focusedMessageId);
+    if (focusedMessage) {
+      const focusedMessageElement = document.querySelector<HTMLDivElement>(`#support-message-${CSS.escape(focusedMessage.id)}`);
+      focusedMessageElement?.focus({ preventScroll: true });
+      focusedMessageElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('message');
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeTicket, focusedMessageId, messages, messagesLoading, searchParameters, setSearchParameters]);
+
+  useEffect(() => {
+    if (!focusedMessageId)
+      messagesEndReference.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [focusedMessageId, messages]);
 
   // CREATE ticket
   const createTicket = useCreateSupportTicketMutation();
@@ -481,8 +516,11 @@ function Support() {
                                   return (
                                     <div
                                       key={m.id}
+                                      id={`support-message-${m.id}`}
+                                      tabIndex={-1}
                                       className={`
                                         flex
+                                        ${focusedMessageId === m.id ? 'rounded-lg ring-2 ring-primary ring-offset-2' : ''}
                                         ${
                                     isMine ? 'justify-end' : 'justify-start'
                                     }

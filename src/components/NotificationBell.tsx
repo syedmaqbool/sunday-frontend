@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+import { getNotificationDestinationPath } from '@/lib/notificationDestination';
 import { cn } from '@/lib/utilities';
 import {
   getNotificationsOptions,
@@ -28,6 +30,7 @@ interface NotificationBellProps {
 
 function NotificationBell({ audience, className }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery(getNotificationsOptions());
 
@@ -64,8 +67,9 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
       await markRead(n.id);
     }
 
-    // navigation intentionally removed
-    // backend currently does not provide link field
+    const path = getNotificationDestinationPath(n);
+    if (path)
+      navigate(path);
 
     setOpen(false);
   };

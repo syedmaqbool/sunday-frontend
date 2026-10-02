@@ -43,12 +43,13 @@ function Messages() {
   const { loading: authLoading, user } = useAuth();
 
   const navigate = useNavigate();
-  const [searchParameters] = useSearchParams();
+  const [searchParameters, setSearchParameters] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [activeConvo, setActiveConvo] = useState<string | null>(
     searchParameters.get('conversation'),
   );
+  const focusedMessageId = searchParameters.get('message');
 
   const messagesEndReference = useRef<HTMLDivElement>(null);
   const messageForm = useForm<MessageFormValues>({
@@ -70,13 +71,56 @@ function Messages() {
 
   const { data: conversationsResponse, isLoading: convosLoading }
     = useQuery(getConversationsOptions());
-  const conversations = conversationsResponse?.data ?? [];
+  const conversations = useMemo(() => conversationsResponse?.data ?? [], [conversationsResponse?.data]);
+
+  useEffect(() => {
+    setActiveConvo(searchParameters.get('conversation'));
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (convosLoading || !activeConvo || conversations.some(conversation => conversation.id === activeConvo))
+      return;
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('conversation');
+    nextParameters.delete('message');
+    setActiveConvo(null);
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeConvo, conversations, convosLoading, searchParameters, setSearchParameters]);
 
   /* FETCH MESSAGES */
 
   const { data: messagesResponse, isLoading: msgsLoading }
     = useQuery(getConversationMessagesOptions(activeConvo || undefined));
   const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse?.data]);
+
+  useEffect(() => {
+    if (!activeConvo || msgsLoading || !focusedMessageId)
+      return;
+
+    const focusedMessage = messages.find(message => message.id === focusedMessageId);
+    if (focusedMessage) {
+      const focusedMessageElement = document.querySelector<HTMLDivElement>(`#conversation-message-${CSS.escape(focusedMessage.id)}`);
+      focusedMessageElement?.focus({ preventScroll: true });
+      focusedMessageElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('message');
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeConvo, focusedMessageId, messages, msgsLoading, searchParameters, setSearchParameters]);
+
+  const selectConversation = (conversationId: string | null) => {
+    setActiveConvo(conversationId);
+    const nextParameters = new URLSearchParams(searchParameters);
+    if (conversationId)
+      nextParameters.set('conversation', conversationId);
+    else
+      nextParameters.delete('conversation');
+    nextParameters.delete('message');
+    setSearchParameters(nextParameters);
+  };
 
   /* SEND MESSAGE */
 
@@ -158,10 +202,9 @@ function Messages() {
   /* AUTO SCROLL */
 
   useEffect(() => {
-    messagesEndReference.current?.scrollIntoView({
-      behavior: 'smooth',
-    });
-  }, [messages]);
+    if (!focusedMessageId)
+      messagesEndReference.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [focusedMessageId, messages]);
 
   if (authLoading)
     return null;
@@ -222,7 +265,7 @@ function Messages() {
                             return (
                               <button
                                 key={conversation.id}
-                                onClick={() => setActiveConvo(conversation.id)}
+                                onClick={() => selectConversation(conversation.id)}
                                 className={`
                                   w-full border-b p-3 text-left transition-colors
                                   hover:bg-accent/50
@@ -281,7 +324,7 @@ function Messages() {
 
                     <div className="flex items-center gap-3 border-b p-3">
                       <Button
-                        onClick={() => setActiveConvo(null)}
+                        onClick={() => selectConversation(null)}
                         size="icon"
                         variant="ghost"
                         className="md:hidden"
@@ -325,8 +368,11 @@ function Messages() {
                                     return (
                                       <div
                                         key={message.id}
+                                        id={`conversation-message-${message.id}`}
+                                        tabIndex={-1}
                                         className={`
                                           flex
+                                          ${focusedMessageId === message.id ? 'rounded-lg ring-2 ring-primary ring-offset-2' : ''}
                                           ${
                                       isMine ? 'justify-end' : 'justify-start'
                                       }

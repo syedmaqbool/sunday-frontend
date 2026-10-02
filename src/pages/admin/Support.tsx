@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -78,7 +79,9 @@ const replySchema = z.object({
 type ReplyFormValues = z.infer<typeof replySchema>;
 
 function AdminSupport() {
-  const [activeTicket, setActiveTicket] = useState<string | null>(null);
+  const [searchParameters, setSearchParameters] = useSearchParams();
+  const [activeTicket, setActiveTicket] = useState<string | null>(searchParameters.get('ticket'));
+  const focusedMessageId = searchParameters.get('message');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const messagesEndReference = useRef<HTMLDivElement>(null);
   const replyForm = useForm<ReplyFormValues>({
@@ -101,8 +104,52 @@ function AdminSupport() {
       : allTickets.filter(t => t.status === statusFilter);
 
   useEffect(() => {
-    messagesEndReference.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    setActiveTicket(searchParameters.get('ticket'));
+  }, [searchParameters]);
+
+  useEffect(() => {
+    if (ticketsLoading || !activeTicket || allTickets.some(ticket => ticket.id === activeTicket))
+      return;
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('ticket');
+    nextParameters.delete('message');
+    setActiveTicket(null);
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeTicket, allTickets, searchParameters, setSearchParameters, ticketsLoading]);
+
+  useEffect(() => {
+    if (!activeTicket || msgsLoading || !focusedMessageId)
+      return;
+
+    const focusedMessage = messages.find(message => message.id === focusedMessageId);
+    if (focusedMessage) {
+      const focusedMessageElement = document.querySelector<HTMLDivElement>(`#admin-support-message-${CSS.escape(focusedMessage.id)}`);
+      focusedMessageElement?.focus({ preventScroll: true });
+      focusedMessageElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('message');
+    setSearchParameters(nextParameters, { replace: true });
+  }, [activeTicket, focusedMessageId, messages, msgsLoading, searchParameters, setSearchParameters]);
+
+  useEffect(() => {
+    if (!focusedMessageId)
+      messagesEndReference.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [focusedMessageId, messages]);
+
+  const selectTicket = (ticketId: string | null) => {
+    setActiveTicket(ticketId);
+    const nextParameters = new URLSearchParams(searchParameters);
+    if (ticketId)
+      nextParameters.set('ticket', ticketId);
+    else
+      nextParameters.delete('ticket');
+    nextParameters.delete('message');
+    setSearchParameters(nextParameters);
+  };
 
   const activeTicketData = allTickets.find(t => t.id === activeTicket);
 
@@ -199,7 +246,7 @@ function AdminSupport() {
                           return (
                             <button
                               key={t.id}
-                              onClick={() => setActiveTicket(t.id)}
+                              onClick={() => selectTicket(t.id)}
                               className={`
                                 w-full border-b border-border p-3 text-left transition-colors
                                 hover:bg-accent/50
@@ -257,7 +304,7 @@ function AdminSupport() {
                 <>
                   <div className="flex items-center gap-3 border-b border-border p-3">
                     <Button
-                      onClick={() => setActiveTicket(null)}
+                      onClick={() => selectTicket(null)}
                       size="icon"
                       variant="ghost"
                       className="md:hidden"
@@ -309,8 +356,11 @@ function AdminSupport() {
                               return (
                                 <div
                                   key={m.id}
+                                  id={`admin-support-message-${m.id}`}
+                                  tabIndex={-1}
                                   className={`
                                     flex
+                                    ${focusedMessageId === m.id ? 'rounded-lg ring-2 ring-primary ring-offset-2' : ''}
                                     ${isAdmin ? 'justify-end' : 'justify-start'}
                                   `}
                                 >

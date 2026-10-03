@@ -2,6 +2,7 @@ import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.typ
 import type {
   CreateComplaintData,
   GetAdminComplaintsData,
+  GetAdminComplaintsResponses,
   GetMyComplaintsResponses,
   ProvideComplaintReturnAddressData,
   UpdateAdminComplaintStatusData,
@@ -9,6 +10,7 @@ import type {
 } from '@/types/generated-api';
 
 export type Complaint = ApiResponseItem<GetMyComplaintsResponses>;
+export type AdminComplaint = ApiResponseItem<GetAdminComplaintsResponses>;
 export type ComplaintStatus = Complaint['status'];
 export type AdminComplaintStatus = ApiRequestBody<UpdateAdminComplaintStatusData>['status'];
 export type UpdateComplaintStatusPayload = ApiRequestBody<UpdateAdminComplaintStatusData>;

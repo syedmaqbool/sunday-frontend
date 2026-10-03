@@ -1,4 +1,5 @@
 import type { AdminOrder, AdminOrderDetail } from '@/types/adminOrder.type';
+import type { AdminComplaint } from '@/types/complaint.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -6,6 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
 const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
+const adminComplaintService = vi.hoisted(() => ({ listAdminComplaints: vi.fn() }));
+const access = vi.hoisted(() => ({ permissions: new Set<string>(['COMPLAINTS_READ']) }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
   AdminManualPaymentReviewDialog: ({ orderId, submissionId, onClose }: { orderId: string | null; submissionId?: string | null; onClose: () => void }) => orderId && submissionId
@@ -20,7 +23,12 @@ vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
 }));
 
 vi.mock('@/hooks/useAccessControl', () => ({
-  useAccessControl: () => ({ can: () => true }),
+  useAccessControl: () => ({ can: (permission: string) => access.permissions.has(permission) || permission === 'ORDERS_UPDATE' }),
+}));
+
+vi.mock('@/services/complain.service', () => ({
+  listAdminComplaints: adminComplaintService.listAdminComplaints,
+  updateComplaintStatus: vi.fn(),
 }));
 
 vi.mock('@/queries/adminOrders.query', () => ({
@@ -150,7 +158,46 @@ beforeEach(() => {
   orders.detail = null;
   orders.detailError = null;
   orders.listParameters = [];
+  adminComplaintService.listAdminComplaints.mockClear();
+  access.permissions = new Set(['COMPLAINTS_READ']);
+  adminComplaintService.listAdminComplaints.mockResolvedValue({
+    data: [],
+    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 0 },
+  });
 });
+
+function makeComplaint(orderId: string, orderItemId: string, listingId: string, status: AdminComplaint['status'] = 'RAISED'): AdminComplaint {
+  return {
+    id: `complaint-${orderItemId}`,
+    buyerId: 'buyer-id',
+    listingId,
+    orderId,
+    orderItemId,
+    sellerId: 'seller-id',
+    adminNotes: 'Please review the return.',
+    buyerFullName: 'Jane Buyer',
+    evidenceUrls: ['https://cdn.example.test/evidence.png'],
+    expectedReturnDate: null,
+    listingTitle: 'Example item',
+    reason: 'The item arrived damaged.',
+    resolverFullName: null,
+    returnAddress: null,
+    returnAddressCity: null,
+    returnAddressPhone: null,
+    returnAddressPostal: null,
+    returnAddressRecipient: null,
+    returnCarrier: null,
+    returnInstructions: null,
+    returnProofUrls: ['https://cdn.example.test/return-proof.png'],
+    returnTracking: null,
+    sellerFullName: 'Example Seller',
+    status,
+    resolvedAt: null,
+    resolvedBy: null,
+    createdAt: '2026-09-08T00:00:00.000Z',
+    updatedAt: '2026-09-09T00:00:00.000Z',
+  };
+}
 
 describe('admin order number search', () => {
   it('sends the order number search with list parameters, shows the short ID, and combines it with status filters', async () => {
@@ -239,6 +286,109 @@ describe('admin orders manual review filter', () => {
     expect(screen.queryByText('Already approved')).not.toBeInTheDocument();
     expect(screen.getByText('MASKED-9012')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Review payment' })).toBeInTheDocument();
+  });
+});
+
+describe('admin order complaints', () => {
+  it('does not request or show complaint data without COMPLAINTS_READ', async () => {
+    access.permissions.delete('COMPLAINTS_READ');
+    const order = makeOrder('SUBMITTED', 'Delivered order');
+    order.items[0].status = 'DELIVERED';
+    orders.current = [order];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('delivered')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View complaint details' })).not.toBeInTheDocument();
+    expect(adminComplaintService.listAdminComplaints).not.toHaveBeenCalled();
+  });
+
+  it('associates complaints with one exact item and shows source dialog details and active/closed variants', async () => {
+    const order = makeOrder('SUBMITTED', 'First complaint item');
+    order.id = 'complaint-order-id';
+    order.items[0].id = 'item-one';
+    order.items[0].orderId = order.id;
+    order.items[0].listingId = 'listing-one';
+    order.items.push(
+      { ...order.items[0], id: 'item-two', listingId: 'listing-two', title: 'No complaint item' },
+      { ...order.items[0], id: 'item-three', listingId: 'listing-three', title: 'Closed complaint item' },
+    );
+    orders.current = [order];
+    adminComplaintService.listAdminComplaints.mockResolvedValue({
+      data: [
+        makeComplaint(order.id, 'item-one', 'listing-one'),
+        makeComplaint(order.id, 'item-three', 'listing-three', 'RETURN_RECEIVED'),
+      ],
+      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 2 },
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const complaintButtons = await screen.findAllByRole('button', { name: 'View complaint details' });
+    expect(complaintButtons).toHaveLength(2);
+    expect(complaintButtons[0].firstElementChild).toHaveClass('bg-destructive');
+    expect(complaintButtons[1].firstElementChild).toHaveClass('bg-secondary');
+    const itemWithoutComplaint = screen.getByText('No complaint item').closest('tr');
+    expect(itemWithoutComplaint).not.toBeNull();
+    expect(within(itemWithoutComplaint!).queryByRole('button', { name: 'View complaint details' })).not.toBeInTheDocument();
+    expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledWith({
+      orderIds: [order.id],
+      page: 1,
+      size: 100,
+    });
+
+    fireEvent.click(complaintButtons[0]);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Order Complaint')).toBeInTheDocument();
+    expect(within(dialog).getByText('Complaint Raised')).toBeInTheDocument();
+    expect(within(dialog).getByText('The item arrived damaged.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Please review the return.')).toBeInTheDocument();
+    expect(within(dialog).getByAltText('Evidence 1')).toHaveAttribute('src', 'https://cdn.example.test/evidence.png');
+    expect(within(dialog).getByAltText('Return proof 1')).toHaveAttribute('src', 'https://cdn.example.test/return-proof.png');
+    expect(within(dialog).getByText(/Last updated/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /Open Complaints section/ })).toHaveAttribute('href', '/admin/complaints');
+  });
+
+  it('loads all complaint pages for the current order IDs', async () => {
+    const order = makeOrder('SUBMITTED', 'Paged complaints');
+    order.id = 'paged-order-id';
+    order.items[0].id = 'paged-item-one';
+    order.items[0].orderId = order.id;
+    order.items[0].listingId = 'paged-listing-one';
+    order.items.push({ ...order.items[0], id: 'paged-item-two', listingId: 'paged-listing-two' });
+    orders.current = [order];
+    adminComplaintService.listAdminComplaints.mockImplementation(async ({ page }: { page: number }) => ({
+      data: [makeComplaint(order.id, `paged-item-${page === 1 ? 'one' : 'two'}`, `paged-listing-${page === 1 ? 'one' : 'two'}`)],
+      pagination: { currentPage: page, lastPage: 2, nextPage: page === 1 ? 2 : null, perPage: 100, prevPage: page === 1 ? null : 1, total: 2 },
+    }));
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledTimes(2));
+    expect(adminComplaintService.listAdminComplaints).toHaveBeenNthCalledWith(2, {
+      orderIds: [order.id],
+      page: 2,
+      size: 100,
+    });
+    expect(await screen.findAllByRole('button', { name: 'View complaint details' })).toHaveLength(2);
   });
 });
 

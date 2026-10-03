@@ -1,9 +1,10 @@
 import type { AdminOrder, AdminOrderDetail, AdminOrderItem } from '@/types/adminOrder.type';
-import { useQuery } from '@tanstack/react-query';
+import type { AdminComplaint } from '@/types/complaint.type';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { HTTPError } from 'ky';
-import { ExternalLink, Loader2, Package, Search } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Loader2, MessageSquareWarning, Package, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
@@ -28,6 +29,9 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import {
+  getAdminComplaintsForOrdersOptions,
+} from '@/queries/adminComplaint.query';
 import {
   getAdminOrderOptions,
   getAdminOrdersOptions,
@@ -94,6 +98,21 @@ function rowFromOrderDetail(order: AdminOrderDetail, selectedItemId: string | nu
   };
 }
 
+const complaintStatusLabels: Record<AdminComplaint['status'], string> = {
+  RAISED: 'Complaint Raised',
+  REFUNDED: 'Completed (Refunded)',
+  REJECTED: 'Completed (Rejected)',
+  RETURN_ADDRESS_PROVIDED: 'Return Address Provided',
+  RETURN_APPROVED: 'Return Approved',
+  RETURN_IN_TRANSIT: 'Return In Transit',
+  RETURN_RECEIVED: 'Return Received',
+  UNDER_REVIEW: 'Under Review',
+};
+
+function isActiveComplaint(status: AdminComplaint['status']) {
+  return !['RETURN_RECEIVED', 'REFUNDED', 'REJECTED'].includes(status);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 function AdminOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -101,8 +120,10 @@ function AdminOrders() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Row | null>(null);
+  const [selectedComplaint, setSelectedComplaint] = useState<AdminComplaint | null>(null);
   const { can } = useAccessControl();
   const canReviewPayments = can('ORDERS_UPDATE');
+  const canReadComplaints = can('COMPLAINTS_READ');
 
   const { data: ordersResponse, isLoading } = useQuery(getAdminOrdersOptions({
     search: search.trim() || undefined,
@@ -112,6 +133,14 @@ function AdminOrders() {
   }));
   const { data: reservedResponse, isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
   const orders = ordersResponse?.data;
+  const orderIds = useMemo(() => orders?.map(order => order.id) ?? [], [orders]);
+  const {
+    data: complaintsResponse,
+    fetchNextPage: fetchNextComplaintsPage,
+    hasNextPage: hasNextComplaintsPage,
+    isFetchingNextPage: isFetchingNextComplaintsPage,
+  } = useInfiniteQuery(getAdminComplaintsForOrdersOptions(orderIds, canReadComplaints));
+  const complaints = complaintsResponse?.pages.flatMap(page => page.data) ?? [];
   const reservedListings = reservedResponse?.data ?? [];
   const selectedOrderId = searchParams.get('order');
   const selectedItemId = searchParams.get('item');
@@ -121,6 +150,11 @@ function AdminOrders() {
     ...getAdminOrderOptions(selectedOrderId ?? 'missing', Boolean(selectedOrderId)),
     retry: false,
   });
+
+  useEffect(() => {
+    if (hasNextComplaintsPage && !isFetchingNextComplaintsPage)
+      void fetchNextComplaintsPage();
+  }, [fetchNextComplaintsPage, hasNextComplaintsPage, isFetchingNextComplaintsPage]);
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
@@ -485,6 +519,9 @@ function AdminOrders() {
                             <TableBody>
                               {rows.map((r) => {
                                 const submission = latestManualPaymentSubmission(r.order);
+                                const complaint = canReadComplaints
+                                  ? complaints.find(item => item.orderItemId === r.item.id && item.listingId === r.item.listingId)
+                                  : undefined;
 
                                 return (
                                   <TableRow
@@ -500,10 +537,18 @@ function AdminOrders() {
                                     className="cursor-pointer"
                                   >
                                     <TableCell>
-                                      <span className="font-mono text-xs text-muted-foreground">
-                                        #
-                                        {r.orderId.slice(0, 8)}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono text-xs text-muted-foreground">
+                                          #
+                                          {r.orderId.slice(0, 8)}
+                                        </span>
+                                        {complaint && (
+                                          <ComplaintBadge
+                                            onClick={() => setSelectedComplaint(complaint)}
+                                            complaint={complaint}
+                                          />
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell className="font-medium">
                                       {r.item.title}
@@ -607,6 +652,10 @@ function AdminOrders() {
         }}
         row={selectedReviewOrderId ? null : selected}
       />
+      <ComplaintDialog
+        onClose={() => setSelectedComplaint(null)}
+        complaint={selectedComplaint}
+      />
       <AdminManualPaymentReviewDialog
         orderId={selectedReviewOrderId}
         submissionId={selectedPaymentSubmissionId}
@@ -622,6 +671,121 @@ function AdminOrders() {
         canReview={canReviewPayments}
       />
     </div>
+  );
+}
+
+function ComplaintBadge({ complaint, onClick }: { complaint: AdminComplaint; onClick: () => void }) {
+  return (
+    <button
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      aria-label="View complaint details"
+      title="View complaint details"
+      type="button"
+    >
+      <Badge variant={isActiveComplaint(complaint.status) ? 'destructive' : 'secondary'} className="gap-1">
+        <MessageSquareWarning className="h-3 w-3" />
+        Complaint
+      </Badge>
+    </button>
+  );
+}
+
+function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | null; onClose: () => void }) {
+  if (!complaint)
+    return null;
+
+  const active = isActiveComplaint(complaint.status);
+  return (
+    <Dialog onOpenChange={open => !open && onClose()} open>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 font-heading">
+            <AlertTriangle className={`
+              h-5 w-5
+              ${active ? 'text-destructive' : 'text-muted-foreground'}
+            `}
+            />
+            Order Complaint
+          </DialogTitle>
+          <DialogDescription>
+            Order #
+            {complaint.orderId.slice(0, 8)}
+            {' · raised '}
+            {format(new Date(complaint.createdAt), 'PPp')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Status</span>
+            <Badge variant={active ? 'destructive' : 'secondary'}>
+              {complaintStatusLabels[complaint.status]}
+            </Badge>
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Reason</p>
+            <p>{complaint.reason || '—'}</p>
+          </div>
+
+          {complaint.adminNotes && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Admin notes</p>
+              <p>{complaint.adminNotes}</p>
+            </div>
+          )}
+
+          {complaint.evidenceUrls.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Evidence</p>
+              <div className="flex flex-wrap gap-2">
+                {complaint.evidenceUrls.map((url, index) => (
+                  <a key={url} href={url} rel="noreferrer" target="_blank">
+                    <img src={url} alt={`Evidence ${index + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {complaint.returnProofUrls.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Return proof</p>
+              <div className="flex flex-wrap gap-2">
+                {complaint.returnProofUrls.map((url, index) => (
+                  <a key={url} href={url} rel="noreferrer" target="_blank">
+                    <img src={url} alt={`Return proof ${index + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t pt-3">
+            <span className="text-xs text-muted-foreground">
+              Last updated
+              {' '}
+              {format(new Date(complaint.updatedAt), 'PPp')}
+            </span>
+            <Link
+              onClick={onClose}
+              to="/admin/complaints"
+              className="
+                inline-flex items-center gap-1 text-xs text-primary
+                hover:underline
+              "
+            >
+              Open Complaints section
+              {' '}
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

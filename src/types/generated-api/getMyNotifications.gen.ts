@@ -12,6 +12,7 @@ export interface GetMyNotificationsData {
      * Number of records per page
      */
     size: number;
+    status?: 'READ' | 'UNREAD';
   };
   url: '/api/v1/me/notifications';
 }

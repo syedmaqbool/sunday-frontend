@@ -32,7 +32,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery(getNotificationsOptions());
+  const { data, isLoading } = useQuery(getNotificationsOptions('UNREAD'));
 
   const markReadMutation = useMarkNotificationReadMutation();
   const markAllMutation = useMarkAllNotificationsReadMutation();
@@ -42,7 +42,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
       !audience || notification.audience === audience.toUpperCase(),
   );
 
-  const unread = items.filter(n => !n.readAt).length;
+  const unread = items.length;
 
   const markRead = async (id: string) => {
     try {
@@ -138,7 +138,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
             : (items.length === 0
                 ? (
                     <p className="p-8 text-center text-sm text-muted-foreground">
-                      No notifications yet.
+                      No new notifications.
                     </p>
                   )
                 : (

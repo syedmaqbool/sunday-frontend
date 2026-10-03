@@ -1,3 +1,4 @@
+import type { NotificationReadStatus } from '@/types/notification.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tokenStorage } from '@/lib/tokenStorage';
 import {
@@ -8,17 +9,17 @@ import {
 
 export const notificationsQueryKey = {
   all: () => ['notifications'] as const,
-  list: () => [...notificationsQueryKey.all(), 'list'] as const,
+  list: (status?: NotificationReadStatus) => [...notificationsQueryKey.all(), 'list', status ?? 'ALL'] as const,
 };
 
-export function getNotificationsOptions() {
+export function getNotificationsOptions(status?: NotificationReadStatus) {
   return queryOptions({
     enabled: !!tokenStorage.getAccess(),
     queryFn: async () => {
-      const response = await listNotifications();
+      const response = await listNotifications(1, 20, status);
       return response;
     },
-    queryKey: notificationsQueryKey.list(),
+    queryKey: notificationsQueryKey.list(status),
   });
 }
 

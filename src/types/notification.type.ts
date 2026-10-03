@@ -1,4 +1,5 @@
 import type { ApiResponseItem } from './api.type';
-import type { GetMyNotificationsResponses } from '@/types/generated-api';
+import type { GetMyNotificationsData, GetMyNotificationsResponses } from '@/types/generated-api';
 
 export type Notification = ApiResponseItem<GetMyNotificationsResponses>;
+export type NotificationReadStatus = NonNullable<GetMyNotificationsData['query']['status']>;

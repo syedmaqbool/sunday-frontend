@@ -63,11 +63,12 @@ function makeNotification(
   };
 }
 
-function renderBell(notification: Notification, initialEntry = '/') {
+function renderBell(notification: Notification | null, initialEntry = '/') {
+  const notifications = notification ? [notification] : [];
   listNotifications.mockResolvedValue({
-    data: [notification],
+    data: notifications,
     message: 'ok',
-    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 20, prevPage: null, total: 1 },
+    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 20, prevPage: null, total: notifications.length },
     statusCode: 200,
   });
 
@@ -79,7 +80,7 @@ function renderBell(notification: Notification, initialEntry = '/') {
           <Route
             element={(
               <>
-                <NotificationBell audience={notification.audience.toLowerCase() as 'admin' | 'user'} />
+                <NotificationBell audience={(notification?.audience.toLowerCase() ?? 'user') as 'admin' | 'user'} />
                 <LocationObserver />
               </>
             )}
@@ -94,6 +95,22 @@ function renderBell(notification: Notification, initialEntry = '/') {
 afterEach(() => {
   vi.clearAllMocks();
   timeline.length = 0;
+});
+
+describe('notificationBell unread list', () => {
+  it('requests only unread notifications from the API', async () => {
+    renderBell(makeNotification('USER', null));
+
+    expect(await screen.findByRole('button', { name: /New message/ })).toBeInTheDocument();
+    expect(listNotifications).toHaveBeenCalledWith(1, 20, 'UNREAD');
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when there are no unread notifications', async () => {
+    renderBell(null);
+
+    expect(await screen.findByText('No new notifications.')).toBeInTheDocument();
+  });
 });
 
 describe('notificationBell destination navigation', () => {

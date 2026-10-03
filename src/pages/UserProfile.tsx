@@ -1300,9 +1300,9 @@ function ReturnStatusBadge({ status }: { status: ComplaintStatus }) {
   );
 }
 
-function ComplaintCard({ complaint }: { complaint: Complaint }) {
+function ComplaintCard({ complaint, selected = false }: { complaint: Complaint; selected?: boolean }) {
   return (
-    <Card>
+    <Card aria-current={selected ? 'true' : undefined} data-selected={selected || undefined} className={selected ? 'border-primary ring-2 ring-primary/20' : undefined}>
       <CardContent className="
         flex flex-col gap-3 p-4
         sm:flex-row
@@ -1353,9 +1353,27 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
   );
 }
 
-function ReturnsTab() {
+export function ReturnsTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: myReturns = [], isLoading: loadingMine } = useQuery(getMyRefundComplaintsOptions());
   const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery(getComplaintsAgainstMeOptions());
+  const selectedReturnsTab = searchParams.get('returnsTab') === 'returned-to-me' ? 'returned-to-me' : 'my-returns';
+  const selectedComplaintId = searchParams.get('complaint');
+
+  useEffect(() => {
+    if (loadingMine || loadingSeller || !selectedComplaintId)
+      return;
+
+    const complaints = selectedReturnsTab === 'my-returns' ? myReturns : returnedToMe;
+    if (complaints.some(complaint => complaint.id === selectedComplaintId))
+      return;
+
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('complaint');
+      return next;
+    }, { replace: true });
+  }, [loadingMine, loadingSeller, myReturns, returnedToMe, selectedComplaintId, selectedReturnsTab, setSearchParams]);
 
   if (loadingMine || loadingSeller) {
     return (
@@ -1366,7 +1384,17 @@ function ReturnsTab() {
   }
 
   return (
-    <Tabs defaultValue="my-returns">
+    <Tabs
+      onValueChange={(value) => {
+        setSearchParams((current) => {
+          const next = new URLSearchParams(current);
+          next.set('returnsTab', value);
+          next.delete('complaint');
+          return next;
+        });
+      }}
+      value={selectedReturnsTab}
+    >
       <TabsList>
         <TabsTrigger value="my-returns">
           My Returns (
@@ -1392,7 +1420,7 @@ function ReturnsTab() {
           : (
               <div className="space-y-3">
                 {myReturns.map(c => (
-                  <ComplaintCard key={c.id} complaint={c} />
+                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} />
                 ))}
               </div>
             )}
@@ -1410,7 +1438,7 @@ function ReturnsTab() {
           : (
               <div className="space-y-3">
                 {returnedToMe.map(c => (
-                  <ComplaintCard key={c.id} complaint={c} />
+                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} />
                 ))}
               </div>
             )}

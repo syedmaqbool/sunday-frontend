@@ -39,12 +39,12 @@ describe('getNotificationDestinationPath', () => {
     }, 'ADMIN'))).toBe('/admin/support');
   });
 
-  it('does not route unsupported destinations', () => {
+  it('falls back from a user report with no reported content to listings', () => {
     expect(getNotificationDestinationPath(notification({
       resourceId: 'listing-1',
       resource: 'report',
       section: 'list',
-    }))).toBeNull();
+    }))).toBe('/listings');
   });
 
   it('opens seller listing notifications in the exact listing editor', () => {
@@ -63,6 +63,91 @@ describe('getNotificationDestinationPath', () => {
         type,
       })).toBe('/edit-listing/listing%201');
     }
+  });
+
+  it('opens both complaint notification types in the recipient returns tab with the complaint selected', () => {
+    for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'complaint 1',
+          recipient: 'BUYER',
+          resource: 'complaint',
+          section: 'my-returns',
+        }),
+        type,
+      })).toBe('/profile?tab=returns&returnsTab=my-returns&complaint=complaint+1');
+
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'complaint-2',
+          recipient: 'SELLER',
+          resource: 'complaint',
+          section: 'returned-to-me',
+        }),
+        type,
+      })).toBe('/profile?tab=returns&returnsTab=returned-to-me&complaint=complaint-2');
+    }
+  });
+
+  it('opens admin report notifications with the report selected and falls back to the list without an id', () => {
+    for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'report 1',
+          recipient: 'ADMIN',
+          resource: 'report',
+          section: 'management',
+        }, 'ADMIN'),
+        type,
+      })).toBe('/admin/reports?report=report+1');
+    }
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'ADMIN',
+      resource: 'report',
+      section: 'list',
+    }, 'ADMIN'))).toBe('/admin/reports');
+  });
+
+  it('opens user report notifications on the reported listing, conversation message, or seller', () => {
+    for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'listing 1',
+          resource: 'listing',
+          section: 'detail',
+        }),
+        type,
+      })).toBe('/listing/listing%201');
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'conversation-1',
+          focusedChild: { resourceId: 'message-1', resource: 'message' },
+          resource: 'conversation',
+          section: 'messages',
+        }),
+        type,
+      })).toBe('/messages?conversation=conversation-1&message=message-1');
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'seller 1',
+          resource: 'seller',
+          section: 'listings',
+        }),
+        type,
+      })).toBe('/seller/seller%201');
+    }
+  });
+
+  it('falls back to the returns or report list when notification targets are missing', () => {
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'BUYER',
+      resource: 'complaint',
+      section: 'list',
+    }))).toBe('/profile?tab=returns&returnsTab=my-returns');
+    expect(getNotificationDestinationPath(notification({
+      resource: 'report',
+      section: 'list',
+    }))).toBe('/listings');
   });
 
   it('opens admin listing submissions in moderation with URL-backed selection state', () => {

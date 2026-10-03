@@ -38,6 +38,32 @@ export function getNotificationDestinationPath(notification: Notification): stri
     return '/listings';
   }
 
+  if (destination.resource === 'complaint') {
+    if (notification.audience === 'ADMIN')
+      return null;
+
+    parameters.set('tab', 'returns');
+    parameters.set('returnsTab', destination.recipient === 'SELLER' || destination.section === 'returned-to-me'
+      ? 'returned-to-me'
+      : 'my-returns');
+    if (resourceId)
+      parameters.set('complaint', resourceId);
+    return `/profile?${parameters.toString()}`;
+  }
+
+  if (destination.resource === 'report') {
+    if (notification.audience === 'ADMIN') {
+      if (resourceId)
+        parameters.set('report', resourceId);
+      return `/admin/reports${parameters.toString() ? `?${parameters.toString()}` : ''}`;
+    }
+    return '/listings';
+  }
+
+  if (destination.resource === 'seller') {
+    return resourceId ? `/seller/${encodeURIComponent(resourceId)}` : '/listings';
+  }
+
   if (destination.resource === 'listing' && destination.section === 'moderation') {
     if (resourceId)
       parameters.set('listing', resourceId);

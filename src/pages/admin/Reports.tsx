@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Flag, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -54,13 +54,26 @@ function targetLink(r: AdminReport) {
 
 function Reports() {
   const [filter, setFilter] = useState<'all' | ReportStatus>('OPEN');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedReportId = searchParams.get('report');
   const form = useForm<z.infer<typeof reportNotesSchema>>({
     defaultValues: { notes: {} },
     resolver: zodResolver(reportNotesSchema),
   });
 
-  const { data: reports = [], isLoading } = useQuery(getAdminReportsOptions(filter));
+  const { data: reports = [], isLoading } = useQuery(getAdminReportsOptions(selectedReportId ? 'all' : filter));
   const resolveReport = useResolveReportMutation();
+
+  useEffect(() => {
+    if (isLoading || !selectedReportId || reports.some(report => report.id === selectedReportId))
+      return;
+
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('report');
+      return next;
+    }, { replace: true });
+  }, [isLoading, reports, selectedReportId, setSearchParams]);
 
   const handleUpdate = (
     id: string,
@@ -86,8 +99,15 @@ function Reports() {
       </div>
 
       <Tabs
-        onValueChange={v => setFilter(v as 'all' | ReportStatus)}
-        value={filter}
+        onValueChange={(value) => {
+          setFilter(value as 'all' | ReportStatus);
+          setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.delete('report');
+            return next;
+          });
+        }}
+        value={selectedReportId ? 'all' : filter}
       >
         <TabsList>
           <TabsTrigger value="OPEN">Open</TabsTrigger>
@@ -117,7 +137,7 @@ function Reports() {
                     const link = targetLink(r);
                     const targetType = getTargetType(r);
                     return (
-                      <Card key={r.id}>
+                      <Card key={r.id} aria-current={r.id === selectedReportId ? 'true' : undefined} data-selected={r.id === selectedReportId || undefined} className={r.id === selectedReportId ? 'border-primary ring-2 ring-primary/20' : undefined}>
                         <CardContent className="space-y-3 p-4">
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant={STATUS_VARIANT[r.status]}>{formatEnumLabel(r.status)}</Badge>

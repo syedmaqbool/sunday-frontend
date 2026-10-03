@@ -36,6 +36,7 @@ import { ManualVerificationStatus } from '@/components/ManualVerificationStatus'
 import { SellerShipmentNotice } from '@/components/MarketplaceNotices';
 import Navbar from '@/components/Navbar';
 import { OrderItemReview } from '@/components/OrderItemReview';
+import { ReviewsList } from '@/components/ReviewsList';
 import { SellerComplaintBadge } from '@/components/SellerComplaintBadge';
 import { ShareProfileDialog } from '@/components/ShareProfileDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -491,6 +492,10 @@ function UserProfile() {
                       )
                     </TabsTrigger>
                     <TabsTrigger value="returns">Returns</TabsTrigger>
+                    <TabsTrigger value="reviews">
+                      Reviews
+                      {rating?.totalReviews ? ` (${rating.totalReviews})` : ''}
+                    </TabsTrigger>
                   </TabsList>
 
                   {/* Bought tab */}
@@ -571,6 +576,10 @@ function UserProfile() {
                   {/* Returns tab */}
                   <TabsContent value="returns" className="mt-4">
                     <ReturnsTab />
+                  </TabsContent>
+
+                  <TabsContent value="reviews" className="mt-4">
+                    <ReviewsList userId={user.id} limit={50} />
                   </TabsContent>
                 </Tabs>
               </>

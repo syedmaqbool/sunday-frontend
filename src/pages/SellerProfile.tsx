@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MapPin, Package, Phone, Star } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';
 import Navbar from '@/components/Navbar';
@@ -17,6 +17,11 @@ import {
 
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
+  const [searchParameters, setSearchParameters] = useSearchParams();
+  const focusedReviewId = searchParameters.get('review');
+  const selectedTab = searchParameters.get('tab') === 'reviews' || focusedReviewId
+    ? 'reviews'
+    : 'listings';
 
   const { data: profile, isLoading: profileLoading } = useQuery(getSellerProfileOptions(id));
 
@@ -39,27 +44,22 @@ function SellerProfile() {
   }
 
   if (!profile) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="container flex flex-1 flex-col items-center justify-center py-20">
-          <h1 className="font-heading text-3xl font-bold text-foreground">
-            Seller not found
-          </h1>
-          <Link
-            to="/listings"
-            className="
-              mt-4 text-primary
-              hover:underline
-            "
-          >
-            Back to browse
-          </Link>
-        </main>
-        <Footer />
-      </div>
-    );
+    return <Navigate replace to="/listings" />;
   }
+
+  const selectTab = (tab: string) => {
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.set('tab', tab);
+    if (tab !== 'reviews')
+      nextParameters.delete('review');
+    setSearchParameters(nextParameters);
+  };
+
+  const clearMissingReview = () => {
+    const nextParameters = new URLSearchParams(searchParameters);
+    nextParameters.delete('review');
+    setSearchParameters(nextParameters, { replace: true });
+  };
 
   const initials = (profile.fullName || 'S')
     .split(' ')
@@ -183,7 +183,7 @@ function SellerProfile() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="listings" className="mt-6">
+        <Tabs onValueChange={selectTab} value={selectedTab} className="mt-6">
           <TabsList>
             <TabsTrigger value="listings">
               Listings (
@@ -219,7 +219,12 @@ function SellerProfile() {
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4">
-            <ReviewsList userId={id!} limit={20} />
+            <ReviewsList
+              focusedReviewId={focusedReviewId}
+              userId={id!}
+              onFocusedReviewMissing={clearMissingReview}
+              limit={20}
+            />
           </TabsContent>
         </Tabs>
       </main>

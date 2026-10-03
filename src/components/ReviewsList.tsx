@@ -2,20 +2,42 @@ import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { getUserReviewsOptions } from '@/queries/review.query';
 
 interface ReviewsListProps {
+  focusedReviewId?: string | null;
   userId: string;
   limit?: number;
+  onFocusedReviewMissing?: () => void;
 }
 
-export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
+export function ReviewsList({
+  focusedReviewId,
+  userId,
+  limit = 10,
+  onFocusedReviewMissing,
+}: ReviewsListProps) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const focusedReviewReference = useRef<HTMLDivElement>(null);
 
-  const { data: reviewsResponse, isLoading } = useQuery(getUserReviewsOptions(userId, limit));
+  const { data: reviewsResponse, isFetching, isLoading } = useQuery(getUserReviewsOptions(userId, limit));
   const reviews = reviewsResponse?.data ?? [];
+  const focusedReview = reviews.find(review => review.id === focusedReviewId);
+
+  useEffect(() => {
+    if (!focusedReviewId || isLoading || isFetching || !reviewsResponse)
+      return;
+
+    if (focusedReview) {
+      focusedReviewReference.current?.focus({ preventScroll: true });
+      focusedReviewReference.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    onFocusedReviewMissing?.();
+  }, [focusedReview, focusedReviewId, isFetching, isLoading, onFocusedReviewMissing, reviewsResponse]);
 
   if (isLoading)
     return null;
@@ -59,6 +81,9 @@ export function ReviewsList({ userId, limit = 10 }: ReviewsListProps) {
         {reviews.map(review => (
           <div
             key={review.id}
+            id={`seller-review-${review.id}`}
+            ref={review.id === focusedReviewId ? focusedReviewReference : undefined}
+            tabIndex={-1}
             className="rounded-lg border border-border bg-secondary/50 p-3"
           >
             <div className="flex items-center justify-between">

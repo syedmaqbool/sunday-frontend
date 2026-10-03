@@ -138,6 +138,23 @@ describe('getNotificationDestinationPath', () => {
     }
   });
 
+  it('opens a review notification on the recipient seller profile with the review selected', () => {
+    expect(getNotificationDestinationPath(notification({
+      resourceId: 'seller 1',
+      focusedChild: { resourceId: 'review 1', resource: 'review' },
+      recipient: 'SELLER',
+      resource: 'seller',
+      section: 'reviews',
+    }))).toBe('/seller/seller%201?tab=reviews&review=review+1');
+
+    expect(getNotificationDestinationPath(notification({
+      resourceId: 'seller-1',
+      recipient: 'SELLER',
+      resource: 'seller',
+      section: 'reviews',
+    }))).toBe('/seller/seller-1?tab=reviews');
+  });
+
   it('falls back to the returns or report list when notification targets are missing', () => {
     expect(getNotificationDestinationPath(notification({
       recipient: 'BUYER',

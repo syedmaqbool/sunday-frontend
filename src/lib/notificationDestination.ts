@@ -61,7 +61,17 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'seller') {
-    return resourceId ? `/seller/${encodeURIComponent(resourceId)}` : '/listings';
+    if (!resourceId)
+      return '/listings';
+
+    if (destination.section === 'reviews') {
+      parameters.set('tab', 'reviews');
+      if (focusedChild?.resource === 'review')
+        parameters.set('review', focusedChild.resourceId);
+      return `/seller/${encodeURIComponent(resourceId)}?${parameters.toString()}`;
+    }
+
+    return `/seller/${encodeURIComponent(resourceId)}`;
   }
 
   if (destination.resource === 'listing' && destination.section === 'moderation') {

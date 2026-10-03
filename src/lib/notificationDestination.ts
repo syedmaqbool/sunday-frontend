@@ -63,5 +63,27 @@ export function getNotificationDestinationPath(notification: Notification): stri
     }
   }
 
+  else if (destination.resource === 'order') {
+    const recipient = destination.recipient;
+    if (recipient === 'BUYER' || (!recipient && notification.audience === 'USER' && destination.section === 'detail')) {
+      return resourceId ? `/order-confirmation/${encodeURIComponent(resourceId)}` : '/profile';
+    }
+    if (recipient === 'SELLER' || destination.section === 'sold') {
+      if (resourceId)
+        parameters.set('order', resourceId);
+      if (focusedChild?.resource === 'orderItem')
+        parameters.set('item', focusedChild.resourceId);
+      parameters.set('tab', 'sold');
+      return `/profile?${parameters.toString()}`;
+    }
+    if (recipient === 'ADMIN' || destination.section === 'management') {
+      if (resourceId)
+        parameters.set('order', resourceId);
+      if (focusedChild?.resource === 'orderItem')
+        parameters.set('item', focusedChild.resourceId);
+      return `/admin/orders${parameters.toString() ? `?${parameters.toString()}` : ''}`;
+    }
+  }
+
   return null;
 }

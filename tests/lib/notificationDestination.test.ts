@@ -140,6 +140,55 @@ describe('getNotificationDestinationPath', () => {
     }
   });
 
+  it('routes all order notification types to the recipient-specific order view', () => {
+    const sections = {
+      ADMIN: 'management',
+      BUYER: 'detail',
+      SELLER: 'sold',
+    } as const;
+
+    for (const type of ['ORDER_CREATED', 'ORDER_ITEM_SHIPPED', 'ORDER_ITEM_DELIVERED'] as const) {
+      for (const recipient of ['BUYER', 'SELLER', 'ADMIN'] as const) {
+        const audience = recipient === 'ADMIN' ? 'ADMIN' : 'USER';
+        const destination = {
+          resourceId: 'order-1',
+          focusedChild: { resourceId: 'item-1', resource: 'orderItem' },
+          recipient,
+          resource: 'order',
+          section: sections[recipient],
+        } as const;
+        const path = recipient === 'BUYER'
+          ? '/order-confirmation/order-1'
+          : (recipient === 'SELLER'
+              ? '/profile?order=order-1&item=item-1&tab=sold'
+              : '/admin/orders?order=order-1&item=item-1');
+
+        expect(getNotificationDestinationPath({
+          ...notification(destination, audience),
+          type,
+        })).toBe(path);
+      }
+    }
+  });
+
+  it('falls back to each recipient order list when an order identifier is missing', () => {
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'BUYER',
+      resource: 'order',
+      section: 'detail',
+    }))).toBe('/profile');
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'SELLER',
+      resource: 'order',
+      section: 'sold',
+    }))).toBe('/profile?tab=sold');
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'ADMIN',
+      resource: 'order',
+      section: 'management',
+    }, 'ADMIN'))).toBe('/admin/orders');
+  });
+
   it('opens the appropriate offer list when an older notification has no offer identifier', () => {
     expect(getNotificationDestinationPath(notification({
       recipient: 'SELLER',

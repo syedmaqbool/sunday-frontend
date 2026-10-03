@@ -1,11 +1,11 @@
-import type { AdminOrder } from '@/types/adminOrder.type';
+import type { AdminOrder, AdminOrderDetail } from '@/types/adminOrder.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
-const orders = vi.hoisted(() => ({ current: [] as AdminOrder[] }));
+const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
   AdminManualPaymentReviewDialog: () => null,
@@ -17,6 +17,11 @@ vi.mock('@/hooks/useAccessControl', () => ({
 }));
 
 vi.mock('@/queries/adminOrders.query', () => ({
+  getAdminOrderOptions: (orderId: string, isEnabled: boolean) => ({
+    enabled: isEnabled,
+    queryFn: async () => ({ data: orders.detail ?? orders.current.find(order => order.id === orderId) }),
+    queryKey: ['admin-orders', 'orders', 'detail', orderId],
+  }),
   getAdminOrdersOptions: () => ({
     queryFn: async () => ({ data: orders.current }),
     queryKey: ['admin-orders', 'orders', 'list'],
@@ -116,6 +121,11 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
   };
 }
 
+function BackButton() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(-1)}>Back</button>;
+}
+
 describe('admin orders manual review filter', () => {
   it('shows actionable manual submissions and hides already reviewed orders', async () => {
     orders.current = [
@@ -139,5 +149,63 @@ describe('admin orders manual review filter', () => {
     expect(screen.queryByText('Already approved')).not.toBeInTheDocument();
     expect(screen.getByText('MASKED-9012')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Review payment' })).toBeInTheDocument();
+  });
+});
+
+describe('admin order notification selection', () => {
+  it('loads selected orders outside the initial order list', async () => {
+    orders.current = [];
+    orders.detail = makeOrder('SUBMITTED', 'Older selected item') as unknown as AdminOrderDetail;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Older selected item')).toBeInTheDocument();
+  });
+
+  it('opens the order selected in the URL', async () => {
+    orders.current = [makeOrder('SUBMITTED', 'Selected order item')];
+    orders.detail = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Selected order item')).toBeInTheDocument();
+  });
+
+  it('closes the selected order when browser history removes its URL state', async () => {
+    orders.current = [makeOrder('SUBMITTED', 'Selected order item')];
+    orders.detail = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter
+          initialEntries={[
+            '/admin/orders',
+            '/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id',
+          ]}
+          initialIndex={1}
+        >
+          <BackButton />
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Back'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });

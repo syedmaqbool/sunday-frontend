@@ -12,6 +12,8 @@ export const myOrdersQueryKey = {
   detail: (orderId: string) => [...myOrdersQueryKey.all(), 'detail', orderId] as const,
   list: () => [...myOrdersQueryKey.all(), 'list'] as const,
   sales: () => [...myOrdersQueryKey.all(), 'sales', 'list'] as const,
+  salesOrder: (orderId: string, orderItemId?: string) =>
+    [...myOrdersQueryKey.all(), 'sales', 'order', orderId, orderItemId ?? null] as const,
 };
 
 export function getMyOrdersOptions() {
@@ -38,6 +40,27 @@ export function getMySalesOptions() {
       return listSales();
     },
     queryKey: myOrdersQueryKey.sales(),
+  });
+}
+
+export function getMySalesOrderOptions(orderId: string, orderItemId?: string) {
+  return queryOptions({
+    enabled: Boolean(orderId),
+    queryFn: async () => {
+      let page = 1;
+      let response = await listSales(page);
+
+      while (
+        page < response.pagination.lastPage
+        && response.data.every(item => !(item.orderId === orderId && (!orderItemId || item.id === orderItemId)))
+      ) {
+        response = await listSales(++page);
+      }
+
+      return response;
+    },
+    queryKey: myOrdersQueryKey.salesOrder(orderId, orderItemId),
+    retry: false,
   });
 }
 

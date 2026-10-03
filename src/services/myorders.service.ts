@@ -19,9 +19,9 @@ export function getOrder(orderId: string) {
     .json<Response<Order>>();
 }
 
-export function listSales() {
+export function listSales(page = 1) {
   return authInstance
-    .get('/api/v1/me/sales', { searchParams: { size: 100 } })
+    .get('/api/v1/me/sales', { searchParams: { page, size: 100 } })
     .json<PaginatedResponse<Sale>>();
 }
 

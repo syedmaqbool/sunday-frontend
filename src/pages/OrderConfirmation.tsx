@@ -95,6 +95,7 @@ function OrderConfirmation() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [resubmitting, setResubmitting] = useState(false);
+  const orderQueryEnabled = Boolean(id) && Boolean(user) && !authLoading;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -116,10 +117,17 @@ function OrderConfirmation() {
     isLoading,
   } = useQuery({
     ...getMyOrderOptions(id ?? ''),
-    enabled: Boolean(id) && Boolean(user) && !authLoading,
+    enabled: orderQueryEnabled,
     retry: false,
   });
   const order = orderResponse?.data;
+
+  useEffect(() => {
+    if (!orderQueryEnabled || isLoading || order)
+      return;
+    if (!error || (error instanceof HTTPError && error.response.status === 404))
+      navigate('/profile', { replace: true });
+  }, [error, isLoading, navigate, order, orderQueryEnabled]);
 
   const handleResubmit = async (values: {
     proofFileId: string;
@@ -237,7 +245,7 @@ function OrderConfirmation() {
         <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground">Order not found</h1>
           <p className="mt-2 text-muted-foreground">{error instanceof Error ? error.message : 'We couldn\'t find this order.'}</p>
-          <Button onClick={() => navigate('/listings')} className="mt-6">Continue shopping</Button>
+          <Button onClick={() => navigate('/profile')} className="mt-6">View your orders</Button>
         </main>
         <Footer />
       </div>

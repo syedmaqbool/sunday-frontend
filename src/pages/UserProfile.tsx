@@ -23,9 +23,9 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import BankDetailsModal from '@/components/BankDetailsModal';
@@ -79,6 +79,7 @@ import {
 import {
   getMyOrdersOptions,
   getMySalesOptions,
+  getMySalesOrderOptions,
   myOrdersQueryKey,
   useUpdateOrderItemStatusMutation,
 } from '@/queries/myOrders.query';
@@ -173,6 +174,7 @@ function statusBadge(status: OrderItem['status'], shippedAt?: string | null) {
 function UserProfile() {
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
@@ -181,6 +183,7 @@ function UserProfile() {
     = useQuery(getMyOrdersOptions());
   const { data: salesResponse, isLoading: salesLoading }
     = useQuery(getMySalesOptions());
+  const selectedSalesQuery = useQuery(getMySalesOrderOptions(searchParams.get('order') ?? '', searchParams.get('item') ?? undefined));
   const { data: rating } = useQuery(getSellerRatingOptions(user?.id));
 
   useEffect(() => {
@@ -188,12 +191,45 @@ function UserProfile() {
       navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
-  if (authLoading || !user)
-    return null;
-
   const isLoading = profileLoading || ordersLoading || salesLoading;
   const orders = ordersResponse?.data ?? [];
-  const sales = salesResponse?.data ?? [];
+  const sales = useMemo(() => salesResponse?.data ?? [], [salesResponse?.data]);
+  const profileTab = searchParams.get('tab') ?? 'bought';
+  const selectedOrderId = searchParams.get('order');
+  const selectedItemId = searchParams.get('item');
+  const salesWithSelectedOrder = useMemo(() => {
+    const selectedOrderSales = selectedSalesQuery.data?.data.filter(item => item.orderId === selectedOrderId) ?? [];
+    const existingSaleIds = new Set(sales.map(item => item.id));
+    return [...sales, ...selectedOrderSales.filter(item => !existingSaleIds.has(item.id))];
+  }, [sales, selectedOrderId, selectedSalesQuery.data]);
+  const selectedSale = salesWithSelectedOrder.find(item => item.orderId === selectedOrderId
+    && (!selectedItemId || item.id === selectedItemId))
+  ?? salesWithSelectedOrder.find(item => item.orderId === selectedOrderId);
+
+  useEffect(() => {
+    if (salesLoading || !selectedOrderId || selectedSalesQuery.isLoading || selectedSalesQuery.isError)
+      return;
+
+    const orderSales = salesWithSelectedOrder.filter(item => item.orderId === selectedOrderId);
+    if (orderSales.length === 0 || (selectedItemId && orderSales.every(item => item.id !== selectedItemId))) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        if (orderSales.length === 0)
+          next.delete('order');
+        next.delete('item');
+        next.set('tab', 'sold');
+        return next;
+      }, { replace: true });
+      return;
+    }
+
+    const saleId = selectedItemId ? selectedSale?.id : orderSales[0]?.id;
+    if (saleId)
+      document.querySelector(`[id="sold-order-item-${CSS.escape(saleId)}"]`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }, [salesLoading, salesWithSelectedOrder, selectedItemId, selectedOrderId, selectedSale, selectedSalesQuery.isError, selectedSalesQuery.isLoading, setSearchParams]);
+
+  if (authLoading || !user)
+    return null;
 
   const boughtCount = orders.reduce(
     (sum, o) => sum + o.items.reduce((s, it) => s + (it.quantity || 0), 0),
@@ -428,7 +464,21 @@ function UserProfile() {
                 </Card>
 
                 {/* Tabs */}
-                <Tabs defaultValue="bought" className="mt-6">
+                <Tabs
+                  onValueChange={(tab) => {
+                    setSearchParams((current) => {
+                      const next = new URLSearchParams(current);
+                      next.set('tab', tab);
+                      if (tab !== 'sold') {
+                        next.delete('order');
+                        next.delete('item');
+                      }
+                      return next;
+                    });
+                  }}
+                  value={profileTab}
+                  className="mt-6"
+                >
                   <TabsList>
                     <TabsTrigger value="bought">
                       Bought (
@@ -507,8 +557,12 @@ function UserProfile() {
                         )
                       : (
                           <div className="space-y-3">
-                            {sales.map(item => (
-                              <SoldOrderCard key={item.id} item={item} />
+                            {salesWithSelectedOrder.map(item => (
+                              <SoldOrderCard
+                                key={item.id}
+                                item={item}
+                                selected={item.id === selectedSale?.id}
+                              />
                             ))}
                           </div>
                         )}
@@ -816,7 +870,7 @@ function OrderCard({ order }: { order: Order }) {
 }
 
 // ── SoldOrderCard (seller view) ────────────────────────────────────────────────
-function SoldOrderCard({ item }: { item: OrderItem }) {
+function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean }) {
   const queryClient = useQueryClient();
   // const updateStatus = useUpdateOrderItemStatusMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -876,7 +930,7 @@ function SoldOrderCard({ item }: { item: OrderItem }) {
   };
 
   return (
-    <Card>
+    <Card id={`sold-order-item-${item.id}`} className={selected ? 'ring-2 ring-primary' : undefined}>
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="
           flex flex-col gap-4

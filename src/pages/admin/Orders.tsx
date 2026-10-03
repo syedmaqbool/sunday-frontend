@@ -1,10 +1,11 @@
-import type { AdminOrder, AdminOrderItem } from '@/types/adminOrder.type';
+import type { AdminOrder, AdminOrderDetail, AdminOrderItem } from '@/types/adminOrder.type';
 import { useQuery } from '@tanstack/react-query';
 
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
+import { HTTPError } from 'ky';
 import { ExternalLink, Loader2, Package } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import {
+  getAdminOrderOptions,
   getAdminOrdersOptions,
   getAdminReservedListingsOptions,
 } from '@/queries/adminOrders.query';
@@ -42,8 +44,8 @@ interface Row {
   city: string;
   created_at: string;
   effective: EffectiveStatus;
-  item: AdminOrderItem;
-  order: AdminOrder;
+  item: AdminOrderDetail['items'][number] | AdminOrderItem;
+  order: AdminOrder | AdminOrderDetail;
 }
 
 function dateFilterStart(filter: DateFilter) {
@@ -66,7 +68,7 @@ function effectiveStatus(status: AdminOrderItem['status']): EffectiveStatus {
   return 'delivered';
 }
 
-function latestManualPaymentSubmission(order: AdminOrder) {
+function latestManualPaymentSubmission(order: AdminOrder | AdminOrderDetail) {
   return [...order.manualPaymentSubmissions]
     .toSorted((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
 }
@@ -75,8 +77,25 @@ function hasActionableManualPayment(order: AdminOrder) {
   return latestManualPaymentSubmission(order)?.status === 'SUBMITTED';
 }
 
+function rowFromOrderDetail(order: AdminOrderDetail, selectedItemId: string | null): Row | null {
+  const item = order.items.find(orderItem => orderItem.id === selectedItemId) ?? order.items[0];
+  if (!item)
+    return null;
+
+  return {
+    orderId: order.id,
+    buyerName: [order.shippingFirstName, order.shippingLastName].filter(Boolean).join(' ') || '—',
+    city: order.shippingCity,
+    created_at: order.createdAt,
+    effective: effectiveStatus(item.status),
+    item,
+    order,
+  };
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 function AdminOrders() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selected, setSelected] = useState<Row | null>(null);
@@ -92,6 +111,12 @@ function AdminOrders() {
   const { data: reservedResponse, isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
   const orders = ordersResponse?.data;
   const reservedListings = reservedResponse?.data ?? [];
+  const selectedOrderId = searchParams.get('order');
+  const selectedItemId = searchParams.get('item');
+  const selectedOrderDetailQuery = useQuery({
+    ...getAdminOrderOptions(selectedOrderId ?? 'missing', Boolean(selectedOrderId)),
+    retry: false,
+  });
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
@@ -132,6 +157,71 @@ function AdminOrders() {
     }
     return flat;
   }, [orders, statusFilter, dateFilter]);
+
+  useEffect(() => {
+    if (isLoading)
+      return;
+    if (!selectedOrderId) {
+      setSelected(null);
+      return;
+    }
+
+    const matchingOrderRows = rows.filter(row => row.orderId === selectedOrderId);
+    if (matchingOrderRows.length > 0) {
+      const selectedRow = matchingOrderRows.find(row => row.item.id === selectedItemId)
+        ?? matchingOrderRows[0];
+      setSelected(selectedRow);
+
+      if (selectedItemId && matchingOrderRows.every(row => row.item.id !== selectedItemId)) {
+        setSearchParams((current) => {
+          const next = new URLSearchParams(current);
+          next.delete('item');
+          return next;
+        }, { replace: true });
+      }
+      return;
+    }
+
+    if (selectedOrderDetailQuery.isLoading)
+      return;
+
+    if (selectedOrderDetailQuery.isError) {
+      if (!(selectedOrderDetailQuery.error instanceof HTTPError)
+        || selectedOrderDetailQuery.error.response.status !== 404) {
+        return;
+      }
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('order');
+        next.delete('item');
+        return next;
+      }, { replace: true });
+      setSelected(null);
+      return;
+    }
+
+    const order = selectedOrderDetailQuery.data?.data;
+    const selectedRow = order ? rowFromOrderDetail(order, selectedItemId) : null;
+    if (!selectedRow) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('order');
+        next.delete('item');
+        return next;
+      }, { replace: true });
+      setSelected(null);
+      return;
+    }
+
+    setSelected(selectedRow);
+    if (selectedItemId && !order?.items.some(item => item.id === selectedItemId)) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('item');
+        return next;
+      }, { replace: true });
+    }
+  }, [isLoading, rows, selectedItemId, selectedOrderDetailQuery.data, selectedOrderDetailQuery.error, selectedOrderDetailQuery.isError, selectedOrderDetailQuery.isLoading, selectedOrderId, setSearchParams]);
 
   // KPI counts are returned with the generated order list response.
   const counts = useMemo(() => {
@@ -357,7 +447,14 @@ function AdminOrders() {
                                 return (
                                   <TableRow
                                     key={r.item.id}
-                                    onClick={() => setSelected(r)}
+                                    onClick={() => {
+                                      setSearchParams((current) => {
+                                        const next = new URLSearchParams(current);
+                                        next.set('order', r.orderId);
+                                        next.set('item', r.item.id);
+                                        return next;
+                                      });
+                                    }}
                                     className="cursor-pointer"
                                   >
                                     <TableCell className="font-medium">
@@ -445,7 +542,18 @@ function AdminOrders() {
             </Card>
           )}
 
-      <OrderDetailDialog onClose={() => setSelected(null)} row={selected} />
+      <OrderDetailDialog
+        onClose={() => {
+          setSelected(null);
+          setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.delete('order');
+            next.delete('item');
+            return next;
+          });
+        }}
+        row={selected}
+      />
       <AdminManualPaymentReviewDialog
         orderId={selectedReviewOrderId}
         onClose={() => setSelectedReviewOrderId(null)}

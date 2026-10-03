@@ -16,13 +16,14 @@ const {
   cancelOrderMock: vi.fn(),
   fetchMarketplaceListingMock: vi.fn(),
 }));
+const authState = vi.hoisted(() => ({ loading: false, user: { id: 'buyer-id' } as { id: string } | null }));
 
-const testState = { currentOrder: null as Order | null };
+const testState = { currentError: null as unknown, currentOrder: null as Order | null };
 
 vi.mock('@/components/Footer', () => ({ default: () => <footer /> }));
 vi.mock('@/components/Navbar', () => ({ default: () => <nav /> }));
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ loading: false, user: { id: 'buyer-id' } }),
+  useAuth: () => authState,
 }));
 vi.mock('@/contexts/CartContext', () => ({
   useCart: () => ({ addItem: addItemMock }),
@@ -38,7 +39,11 @@ vi.mock('@/queries/marketplace.query', () => ({
 }));
 vi.mock('@/queries/myOrders.query', () => ({
   getMyOrderOptions: () => ({
-    queryFn: async () => ({ data: testState.currentOrder }),
+    queryFn: async () => {
+      if (testState.currentError)
+        throw testState.currentError;
+      return { data: testState.currentOrder };
+    },
     queryKey: ['my-orders', 'detail', testState.currentOrder?.id],
   }),
   myOrdersQueryKey: {
@@ -152,6 +157,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/order-confirmation/order-id']}>
         <Routes>
           <Route element={<OrderConfirmation />} path="/order-confirmation/:id" />
+          <Route element={<div>Buyer order list</div>} path="/profile" />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -160,6 +166,9 @@ function renderPage() {
 
 describe('order confirmation manual actions', () => {
   beforeEach(() => {
+    authState.loading = false;
+    authState.user = { id: 'buyer-id' };
+    testState.currentError = null;
     testState.currentOrder = makeOrder();
     addItemMock.mockReset();
     cancelOrderMock.mockReset();
@@ -173,6 +182,38 @@ describe('order confirmation manual actions', () => {
     await screen.findByText('Payment pending verification');
 
     expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
+  });
+
+  it('returns to the buyer order list when the selected order is unavailable', async () => {
+    testState.currentError = new HTTPError(
+      new Response(null, { status: 404, statusText: 'Not Found' }),
+      new Request('https://example.test/order'),
+      testRequestOptions,
+    );
+    renderPage();
+
+    expect(await screen.findByText('Buyer order list')).toBeInTheDocument();
+  });
+
+  it('waits for authentication before applying the missing-order fallback', async () => {
+    authState.loading = true;
+    authState.user = null;
+    renderPage();
+
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
+    expect(screen.queryByText('Buyer order list')).not.toBeInTheDocument();
+  });
+
+  it('keeps the order error view open for a server error', async () => {
+    testState.currentError = new HTTPError(
+      new Response(null, { status: 500, statusText: 'Server Error' }),
+      new Request('https://example.test/order'),
+      testRequestOptions,
+    );
+    renderPage();
+
+    expect(await screen.findByText('Order not found')).toBeInTheDocument();
+    expect(screen.queryByText('Buyer order list')).not.toBeInTheDocument();
   });
 
   it('shows an animated clock while a submitted payment waits for admin approval', async () => {

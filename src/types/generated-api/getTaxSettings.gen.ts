@@ -56,7 +56,7 @@ export interface GetTaxSettingsResponses {
       rate: number;
       createdAt: string;
       updatedAt: string;
-    };
+    } | null;
     message: string;
     statusCode: 200;
   };

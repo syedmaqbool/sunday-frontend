@@ -63,6 +63,16 @@ export interface GetMyNotificationsResponses {
       userId: string | null;
       audience: 'ADMIN' | 'USER';
       body: string;
+      destination: {
+        resourceId?: string;
+        focusedChild?: {
+          resourceId: string;
+          resource: 'manualPaymentSubmission' | 'message' | 'orderItem' | 'review' | 'supportTicketMessage';
+        };
+        recipient?: 'ADMIN' | 'BUYER' | 'SELLER';
+        resource: 'complaint' | 'conversation' | 'listing' | 'offer' | 'order' | 'report' | 'seller' | 'supportTicket';
+        section: 'detail' | 'editor' | 'list' | 'listings' | 'management' | 'manual-payment-review' | 'messages' | 'moderation' | 'my-returns' | 'received' | 'returned-to-me' | 'reviews' | 'sent' | 'sold';
+      } | null;
       entityType: string | null;
       metadata: {
         [key: string]: unknown;

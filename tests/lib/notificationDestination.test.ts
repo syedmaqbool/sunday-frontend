@@ -17,15 +17,21 @@ describe('getNotificationDestinationPath', () => {
   });
 
   it('opens user and admin support tickets with their message focus', () => {
-    const destination = {
-      resourceId: 'ticket-1',
-      focusedChild: { resourceId: 'message-1', resource: 'supportTicketMessage' },
-      resource: 'supportTicket',
-      section: 'messages',
-    } as const;
+    const focusedChild = { resourceId: 'message-1', resource: 'supportTicketMessage' } as const;
 
-    expect(getNotificationDestinationPath(notification(destination))).toBe('/support?ticket=ticket-1&message=message-1');
-    expect(getNotificationDestinationPath(notification(destination, 'ADMIN'))).toBe('/admin/support?ticket=ticket-1&message=message-1');
+    expect(getNotificationDestinationPath(notification({
+      resourceId: 'ticket-1',
+      focusedChild,
+      resource: 'supportTicket',
+      section: 'detail',
+    }))).toBe('/support?ticket=ticket-1&message=message-1');
+    expect(getNotificationDestinationPath(notification({
+      resourceId: 'ticket-1',
+      focusedChild,
+      recipient: 'ADMIN',
+      resource: 'supportTicket',
+      section: 'management',
+    }, 'ADMIN'))).toBe('/admin/support?ticket=ticket-1&message=message-1');
   });
 
   it('falls back to the relevant list when the target is absent', () => {
@@ -34,8 +40,9 @@ describe('getNotificationDestinationPath', () => {
       section: 'messages',
     }))).toBe('/messages');
     expect(getNotificationDestinationPath(notification({
+      recipient: 'ADMIN',
       resource: 'supportTicket',
-      section: 'messages',
+      section: 'management',
     }, 'ADMIN'))).toBe('/admin/support');
   });
 
@@ -178,6 +185,16 @@ describe('getNotificationDestinationPath', () => {
     })).toBe('/admin/listings?listing=listing-1&status=PENDING');
   });
 
+  it('falls back to admin listing moderation when a submitted listing is missing', () => {
+    expect(getNotificationDestinationPath({
+      ...notification({
+        resource: 'listing',
+        section: 'list',
+      }, 'ADMIN'),
+      type: 'LISTING_SUBMITTED',
+    })).toBe('/admin/listings');
+  });
+
   it('opens the reservation listing for both participants for every reservation notification', () => {
     for (const type of ['RESERVATION_CREATED', 'RESERVATION_EXPIRED', 'RESERVATION_CANCELLED'] as const) {
       for (const recipient of ['BUYER', 'SELLER'] as const) {
@@ -203,6 +220,11 @@ describe('getNotificationDestinationPath', () => {
   });
 
   it('falls back to the seller listing list when the listing editor target is missing', () => {
+    expect(getNotificationDestinationPath(notification({
+      recipient: 'SELLER',
+      resource: 'listing',
+      section: 'list',
+    }))).toBe('/my-listings');
     expect(getNotificationDestinationPath(notification({
       resource: 'listing',
       section: 'editor',
@@ -287,8 +309,16 @@ describe('getNotificationDestinationPath', () => {
     expect(getNotificationDestinationPath(notification({
       recipient: 'ADMIN',
       resource: 'order',
-      section: 'management',
+      section: 'list',
     }, 'ADMIN'))).toBe('/admin/orders');
+  });
+
+  it('falls back to the user order list when the order recipient cannot be determined', () => {
+    expect(getNotificationDestinationPath(notification({
+      resourceId: 'order-1',
+      resource: 'order',
+      section: 'list',
+    }))).toBe('/profile');
   });
 
   it('opens buyer payment notifications at the identified order', () => {

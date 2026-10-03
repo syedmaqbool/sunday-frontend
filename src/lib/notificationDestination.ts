@@ -17,7 +17,7 @@ export function getNotificationDestinationPath(notification: Notification): stri
     return `/messages${parameters.toString() ? `?${parameters.toString()}` : ''}`;
   }
 
-  if (destination.resource === 'supportTicket' && destination.section === 'messages') {
+  if (destination.resource === 'supportTicket') {
     if (resourceId)
       parameters.set('ticket', resourceId);
     if (focusedChild?.resource === 'supportTicketMessage')
@@ -35,7 +35,9 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'listing' && destination.section === 'list') {
-    return '/listings';
+    if (notification.audience === 'ADMIN')
+      return '/admin/listings';
+    return destination.recipient === 'SELLER' ? '/my-listings' : '/listings';
   }
 
   if (destination.resource === 'complaint') {
@@ -129,6 +131,7 @@ export function getNotificationDestinationPath(notification: Notification): stri
         parameters.set('item', focusedChild.resourceId);
       return `/admin/orders${parameters.toString() ? `?${parameters.toString()}` : ''}`;
     }
+    return notification.audience === 'ADMIN' ? '/admin/orders' : '/profile';
   }
 
   return null;

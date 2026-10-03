@@ -579,7 +579,7 @@ function AdminOrders() {
             return next;
           });
         }}
-        row={selected}
+        row={selectedReviewOrderId ? null : selected}
       />
       <AdminManualPaymentReviewDialog
         orderId={selectedReviewOrderId}
@@ -587,6 +587,8 @@ function AdminOrders() {
         onClose={() => {
           setSearchParams((current) => {
             const next = new URLSearchParams(current);
+            next.delete('order');
+            next.delete('item');
             next.delete('paymentSubmission');
             return next;
           });

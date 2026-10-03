@@ -124,8 +124,9 @@ describe('notificationBell destination navigation', () => {
     renderBell(makeNotification('ADMIN', {
       resourceId: 'ticket-2',
       focusedChild: { resourceId: 'message-2', resource: 'supportTicketMessage' },
+      recipient: 'ADMIN',
       resource: 'supportTicket',
-      section: 'messages',
+      section: 'management',
     }));
 
     fireEvent.click(await screen.findByRole('button', { name: /New message/ }));

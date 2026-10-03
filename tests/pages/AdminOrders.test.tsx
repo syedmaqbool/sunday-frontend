@@ -203,8 +203,31 @@ describe('admin order notification selection', () => {
 
     expect(await screen.findByTestId('payment-review')).toHaveTextContent('SUBMITTED-order-id:SUBMITTED-submission-id');
     expect(screen.getByTestId('location')).toHaveTextContent('paymentSubmission=SUBMITTED-submission-id');
+    await screen.findAllByText('Payment review item');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Back'));
     await waitFor(() => expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument());
+  });
+
+  it('returns to the orders list without opening order details when the payment review closes', async () => {
+    orders.current = [makeOrder('SUBMITTED', 'Payment review item')];
+    orders.detail = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id']}>
+          <LocationCapture />
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findAllByText('Payment review item');
+    fireEvent.click(await screen.findByText('Close review'));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/orders$/));
+    expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('falls back to the orders list when the selected payment submission is missing', async () => {

@@ -73,10 +73,12 @@ function reviewStatusVariant(status: AdminManualPaymentSubmission['status']) {
 
 export function AdminManualPaymentReviewDialog({
   orderId,
+  submissionId,
   canReview,
   onClose,
 }: {
   orderId: string | null;
+  submissionId?: string | null;
   canReview: boolean;
   onClose: () => void;
 }) {
@@ -91,8 +93,10 @@ export function AdminManualPaymentReviewDialog({
   const orderQuery = useQuery(getAdminOrderOptions(orderId ?? 'missing', Boolean(orderId)));
   const order = orderQuery.data?.data;
   const currentSubmission = useMemo(
-    () => latestSubmission(order?.manualPaymentSubmissions ?? []),
-    [order?.manualPaymentSubmissions],
+    () => submissionId
+      ? order?.manualPaymentSubmissions.find(submission => submission.id === submissionId) ?? null
+      : latestSubmission(order?.manualPaymentSubmissions ?? []),
+    [order?.manualPaymentSubmissions, submissionId],
   );
   const proofQuery = useQuery(getAdminPaymentProofOptions(currentSubmission?.proofFileId));
   const approveMutation = useApproveAdminManualPaymentMutation();
@@ -229,7 +233,9 @@ export function AdminManualPaymentReviewDialog({
                 <div className="rounded-lg border border-border p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Current submission</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">
+                        {submissionId ? 'Selected submission' : 'Current submission'}
+                      </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         Submitted
                         {' '}

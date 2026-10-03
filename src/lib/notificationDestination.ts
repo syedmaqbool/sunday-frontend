@@ -68,6 +68,16 @@ export function getNotificationDestinationPath(notification: Notification): stri
     if (recipient === 'BUYER' || (!recipient && notification.audience === 'USER' && destination.section === 'detail')) {
       return resourceId ? `/order-confirmation/${encodeURIComponent(resourceId)}` : '/profile';
     }
+    if (recipient === 'ADMIN' && destination.section === 'manual-payment-review') {
+      const paymentSubmissionId = focusedChild?.resource === 'manualPaymentSubmission'
+        ? focusedChild.resourceId
+        : null;
+      if (!resourceId || !paymentSubmissionId)
+        return '/admin/orders';
+      parameters.set('order', resourceId);
+      parameters.set('paymentSubmission', paymentSubmissionId);
+      return `/admin/orders?${parameters.toString()}`;
+    }
     if (recipient === 'SELLER' || destination.section === 'sold') {
       if (resourceId)
         parameters.set('order', resourceId);

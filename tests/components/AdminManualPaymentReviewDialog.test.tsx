@@ -84,12 +84,13 @@ function makeOrder(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail 
   };
 }
 
-function renderDialog(canReview = true) {
+function renderDialog(canReview = true, submissionId?: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AdminManualPaymentReviewDialog
         orderId="order-id"
+        submissionId={submissionId}
         onClose={vi.fn()}
         canReview={canReview}
       />
@@ -117,6 +118,24 @@ describe('admin manual payment review dialog', () => {
     expect(await screen.findByText('123456789012')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByAltText('Submitted payment proof')).toHaveAttribute('src', 'blob:payment-proof'));
     expect(screen.getByText('Prior review information')).toBeInTheDocument();
+  });
+
+  it('shows the exact submission selected by the notification destination', async () => {
+    const order = makeOrder();
+    order.manualPaymentSubmissions.push({
+      ...order.manualPaymentSubmissions[0],
+      id: 'newer-submission-id',
+      proofFileId: 'newer-proof-id',
+      senderAccountNumber: '999988887777',
+      updatedAt: '2026-09-09T00:00:00.000Z',
+    });
+    state.order = order;
+
+    renderDialog(true, 'submission-id');
+
+    expect(await screen.findByText('123456789012')).toBeInTheDocument();
+    expect(screen.getByText('Selected submission')).toBeInTheDocument();
+    expect(screen.queryByText('999988887777')).not.toBeInTheDocument();
   });
 
   it('masks sender data and removes review actions without ORDERS_UPDATE', async () => {

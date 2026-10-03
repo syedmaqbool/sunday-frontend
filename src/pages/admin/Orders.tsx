@@ -99,7 +99,6 @@ function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selected, setSelected] = useState<Row | null>(null);
-  const [selectedReviewOrderId, setSelectedReviewOrderId] = useState<string | null>(null);
   const { can } = useAccessControl();
   const canReviewPayments = can('ORDERS_UPDATE');
 
@@ -113,6 +112,8 @@ function AdminOrders() {
   const reservedListings = reservedResponse?.data ?? [];
   const selectedOrderId = searchParams.get('order');
   const selectedItemId = searchParams.get('item');
+  const selectedPaymentSubmissionId = searchParams.get('paymentSubmission');
+  const selectedReviewOrderId = selectedPaymentSubmissionId ? selectedOrderId : null;
   const selectedOrderDetailQuery = useQuery({
     ...getAdminOrderOptions(selectedOrderId ?? 'missing', Boolean(selectedOrderId)),
     retry: false,
@@ -194,6 +195,7 @@ function AdminOrders() {
         const next = new URLSearchParams(current);
         next.delete('order');
         next.delete('item');
+        next.delete('paymentSubmission');
         return next;
       }, { replace: true });
       setSelected(null);
@@ -207,6 +209,7 @@ function AdminOrders() {
         const next = new URLSearchParams(current);
         next.delete('order');
         next.delete('item');
+        next.delete('paymentSubmission');
         return next;
       }, { replace: true });
       setSelected(null);
@@ -222,6 +225,25 @@ function AdminOrders() {
       }, { replace: true });
     }
   }, [isLoading, rows, selectedItemId, selectedOrderDetailQuery.data, selectedOrderDetailQuery.error, selectedOrderDetailQuery.isError, selectedOrderDetailQuery.isLoading, selectedOrderId, setSearchParams]);
+
+  useEffect(() => {
+    if (!selectedPaymentSubmissionId || !selectedOrderId || selectedOrderDetailQuery.isLoading)
+      return;
+    if (selectedOrderDetailQuery.isError)
+      return;
+
+    const order = selectedOrderDetailQuery.data?.data;
+    if (!order || order.manualPaymentSubmissions.some(submission => submission.id === selectedPaymentSubmissionId))
+      return;
+
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('order');
+      next.delete('item');
+      next.delete('paymentSubmission');
+      return next;
+    }, { replace: true });
+  }, [selectedOrderDetailQuery.data, selectedOrderDetailQuery.isError, selectedOrderDetailQuery.isLoading, selectedOrderId, selectedPaymentSubmissionId, setSearchParams]);
 
   // KPI counts are returned with the generated order list response.
   const counts = useMemo(() => {
@@ -497,7 +519,12 @@ function AdminOrders() {
                                                 <Button
                                                   onClick={(event) => {
                                                     event.stopPropagation();
-                                                    setSelectedReviewOrderId(r.orderId);
+                                                    setSearchParams((current) => {
+                                                      const next = new URLSearchParams(current);
+                                                      next.set('order', r.orderId);
+                                                      next.set('paymentSubmission', submission.id);
+                                                      return next;
+                                                    });
                                                   }}
                                                   size="sm"
                                                   variant="outline"
@@ -556,7 +583,14 @@ function AdminOrders() {
       />
       <AdminManualPaymentReviewDialog
         orderId={selectedReviewOrderId}
-        onClose={() => setSelectedReviewOrderId(null)}
+        submissionId={selectedPaymentSubmissionId}
+        onClose={() => {
+          setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.delete('paymentSubmission');
+            return next;
+          });
+        }}
         canReview={canReviewPayments}
       />
     </div>

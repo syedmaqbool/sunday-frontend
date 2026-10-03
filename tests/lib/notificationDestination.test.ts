@@ -189,6 +189,47 @@ describe('getNotificationDestinationPath', () => {
     }, 'ADMIN'))).toBe('/admin/orders');
   });
 
+  it('opens buyer payment notifications at the identified order', () => {
+    for (const type of [
+      'PAYMENT_REFUNDED',
+      'MANUAL_PAYMENT_APPROVED',
+      'MANUAL_PAYMENT_REJECTED',
+      'MANUAL_PAYMENT_RESUBMISSION_REQUESTED',
+      'MANUAL_PAYMENT_CANCELLED',
+      'MANUAL_PAYMENT_EXPIRED',
+    ] as const) {
+      expect(getNotificationDestinationPath({
+        ...notification({
+          resourceId: 'order-1',
+          recipient: 'BUYER',
+          resource: 'order',
+          section: 'detail',
+        }),
+        type,
+      })).toBe('/order-confirmation/order-1');
+    }
+  });
+
+  it('opens admin manual payment submissions at the exact order review', () => {
+    expect(getNotificationDestinationPath({
+      ...notification({
+        resourceId: 'order-1',
+        focusedChild: { resourceId: 'submission-1', resource: 'manualPaymentSubmission' },
+        recipient: 'ADMIN',
+        resource: 'order',
+        section: 'manual-payment-review',
+      }, 'ADMIN'),
+      type: 'MANUAL_PAYMENT_SUBMITTED',
+    })).toBe('/admin/orders?order=order-1&paymentSubmission=submission-1');
+  });
+
+  it('does not route payment notifications without a supported destination', () => {
+    expect(getNotificationDestinationPath({
+      ...notification(null),
+      type: 'PAYMENT_REFUND_REQUIRED',
+    })).toBeNull();
+  });
+
   it('opens the appropriate offer list when an older notification has no offer identifier', () => {
     expect(getNotificationDestinationPath(notification({
       recipient: 'SELLER',

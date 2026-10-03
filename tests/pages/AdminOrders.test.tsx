@@ -1,14 +1,21 @@
 import type { AdminOrder, AdminOrderDetail } from '@/types/adminOrder.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, useNavigate } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
-const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null }));
+const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
-  AdminManualPaymentReviewDialog: () => null,
+  AdminManualPaymentReviewDialog: ({ orderId, submissionId, onClose }: { orderId: string | null; submissionId?: string | null; onClose: () => void }) => orderId && submissionId
+    ? (
+        <div data-testid="payment-review">
+          {`${orderId}:${submissionId}`}
+          <button onClick={onClose}>Close review</button>
+        </div>
+      )
+    : null,
   maskSenderAccountNumber: (value: string) => `MASKED-${value.slice(-4)}`,
 }));
 
@@ -19,7 +26,11 @@ vi.mock('@/hooks/useAccessControl', () => ({
 vi.mock('@/queries/adminOrders.query', () => ({
   getAdminOrderOptions: (orderId: string, isEnabled: boolean) => ({
     enabled: isEnabled,
-    queryFn: async () => ({ data: orders.detail ?? orders.current.find(order => order.id === orderId) }),
+    queryFn: async () => {
+      if (orders.detailError)
+        throw orders.detailError;
+      return { data: orders.detail ?? orders.current.find(order => order.id === orderId) };
+    },
     queryKey: ['admin-orders', 'orders', 'detail', orderId],
   }),
   getAdminOrdersOptions: () => ({
@@ -126,6 +137,17 @@ function BackButton() {
   return <button onClick={() => navigate(-1)}>Back</button>;
 }
 
+function LocationCapture() {
+  const location = useLocation();
+  return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
+}
+
+beforeEach(() => {
+  orders.current = [];
+  orders.detail = null;
+  orders.detailError = null;
+});
+
 describe('admin orders manual review filter', () => {
   it('shows actionable manual submissions and hides already reviewed orders', async () => {
     orders.current = [
@@ -153,6 +175,77 @@ describe('admin orders manual review filter', () => {
 });
 
 describe('admin order notification selection', () => {
+  it('opens the exact payment submission selected in the URL and follows browser history', async () => {
+    const order = makeOrder('SUBMITTED', 'Payment review item');
+    order.manualPaymentSubmissions.push({
+      ...order.manualPaymentSubmissions[0],
+      id: 'newer-submission-id',
+      updatedAt: '2026-09-09T00:00:00.000Z',
+    });
+    orders.current = [order];
+    orders.detail = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter
+          initialEntries={[
+            '/admin/orders',
+            '/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id',
+          ]}
+          initialIndex={1}
+        >
+          <LocationCapture />
+          <BackButton />
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByTestId('payment-review')).toHaveTextContent('SUBMITTED-order-id:SUBMITTED-submission-id');
+    expect(screen.getByTestId('location')).toHaveTextContent('paymentSubmission=SUBMITTED-submission-id');
+    fireEvent.click(screen.getByText('Back'));
+    await waitFor(() => expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument());
+  });
+
+  it('falls back to the orders list when the selected payment submission is missing', async () => {
+    orders.current = [makeOrder('SUBMITTED', 'Payment review item')];
+    orders.detail = null;
+    orders.detailError = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=missing-submission']}>
+          <LocationCapture />
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/orders'));
+    await waitFor(() => expect(screen.getByTestId('location')).not.toHaveTextContent('paymentSubmission'));
+    expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location')).not.toHaveTextContent('paymentSubmission');
+    expect(screen.getByTestId('location')).not.toHaveTextContent('order=');
+  });
+
+  it('preserves the review selection when loading the order fails temporarily', async () => {
+    orders.current = [makeOrder('SUBMITTED', 'Payment review item')];
+    orders.detail = null;
+    orders.detailError = new Error('Network unavailable');
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id']}>
+          <LocationCapture />
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByTestId('payment-review')).toHaveTextContent('SUBMITTED-order-id:SUBMITTED-submission-id');
+    expect(screen.getByTestId('location')).toHaveTextContent('paymentSubmission=SUBMITTED-submission-id');
+  });
+
   it('loads selected orders outside the initial order list', async () => {
     orders.current = [];
     orders.detail = makeOrder('SUBMITTED', 'Older selected item') as unknown as AdminOrderDetail;

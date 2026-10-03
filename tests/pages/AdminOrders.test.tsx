@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
-const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null }));
+const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
   AdminManualPaymentReviewDialog: ({ orderId, submissionId, onClose }: { orderId: string | null; submissionId?: string | null; onClose: () => void }) => orderId && submissionId
@@ -33,10 +33,13 @@ vi.mock('@/queries/adminOrders.query', () => ({
     },
     queryKey: ['admin-orders', 'orders', 'detail', orderId],
   }),
-  getAdminOrdersOptions: () => ({
-    queryFn: async () => ({ data: orders.current }),
-    queryKey: ['admin-orders', 'orders', 'list'],
-  }),
+  getAdminOrdersOptions: (parameters: Record<string, unknown>) => {
+    orders.listParameters.push(parameters);
+    return {
+      queryFn: async () => ({ data: orders.current }),
+      queryKey: ['admin-orders', 'orders', 'list', parameters],
+    };
+  },
   getAdminReservedListingsOptions: () => ({
     queryFn: async () => ({ data: [] }),
     queryKey: ['admin-orders', 'reserved-listings', 'list'],
@@ -146,6 +149,71 @@ beforeEach(() => {
   orders.current = [];
   orders.detail = null;
   orders.detailError = null;
+  orders.listParameters = [];
+});
+
+describe('admin order number search', () => {
+  it('sends the order number search with list parameters, shows the short ID, and combines it with status filters', async () => {
+    const searchedOrder = makeOrder('SUBMITTED', 'Matching order');
+    searchedOrder.id = 'AbCd1234-1234-1234-1234-123456789012';
+    searchedOrder.items[0].orderId = searchedOrder.id;
+    const otherOrder = makeOrder('APPROVED', 'Different order');
+    otherOrder.id = 'Other000-1234-1234-1234-123456789012';
+    otherOrder.items[0].orderId = otherOrder.id;
+    orders.current = [searchedOrder, otherOrder];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const search = screen.getByRole('textbox', { name: 'Search by order #' });
+    await screen.findByText('Matching order');
+    expect(screen.getByRole('columnheader', { name: 'Order #' })).toBeInTheDocument();
+    expect(screen.getByText('#AbCd1234')).toBeInTheDocument();
+
+    const manualReviewTab = screen.getByRole('tab', { name: 'Manual review' });
+    fireEvent.mouseDown(manualReviewTab);
+    fireEvent.click(manualReviewTab);
+    fireEvent.change(search, { target: { value: '  # AbCd1234  ' } });
+
+    await waitFor(() => expect(orders.listParameters).toContainEqual(expect.objectContaining({
+      search: '# AbCd1234',
+      size: 100,
+      sortOrder: 'desc',
+      sortBy: 'createdAt',
+    })));
+    expect(await screen.findByText('Matching order')).toBeInTheDocument();
+    expect(screen.queryByText('Different order')).not.toBeInTheDocument();
+
+    const allOrdersTab = screen.getByRole('tab', { name: 'All' });
+    fireEvent.mouseDown(allOrdersTab);
+    fireEvent.click(allOrdersTab);
+    fireEvent.change(search, { target: { value: '' } });
+    await waitFor(() => expect(orders.listParameters).toContainEqual(expect.objectContaining({
+      search: undefined,
+      size: 100,
+    })));
+    expect(await screen.findByText('Different order')).toBeInTheDocument();
+  });
+
+  it('hides order number search while reserved listings are selected', async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const reservedTab = screen.getByRole('tab', { name: 'Reserved' });
+    fireEvent.mouseDown(reservedTab);
+    fireEvent.click(reservedTab);
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Search by order #' })).not.toBeInTheDocument());
+  });
 });
 
 describe('admin orders manual review filter', () => {

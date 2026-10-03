@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { HTTPError } from 'ky';
-import { ExternalLink, Loader2, Package } from 'lucide-react';
+import { ExternalLink, Loader2, Package, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -98,11 +99,13 @@ function AdminOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Row | null>(null);
   const { can } = useAccessControl();
   const canReviewPayments = can('ORDERS_UPDATE');
 
   const { data: ordersResponse, isLoading } = useQuery(getAdminOrdersOptions({
+    search: search.trim() || undefined,
     size: 100,
     sortOrder: 'desc',
     sortBy: 'createdAt',
@@ -358,6 +361,22 @@ function AdminOrders() {
             <TabsTrigger value="month">This month</TabsTrigger>
           </TabsList>
         </Tabs>
+        {statusFilter !== 'reserved' && (
+          <div className="
+            relative ml-auto w-full
+            sm:w-64
+          "
+          >
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              onChange={event => setSearch(event.target.value)}
+              value={search}
+              aria-label="Search by order #"
+              placeholder="Search by order #"
+              className="pl-9"
+            />
+          </div>
+        )}
       </div>
 
       {statusFilter === 'reserved'
@@ -452,6 +471,7 @@ function AdminOrders() {
                           <Table>
                             <TableHeader>
                               <TableRow>
+                                <TableHead>Order #</TableHead>
                                 <TableHead>Item</TableHead>
                                 <TableHead>Buyer</TableHead>
                                 <TableHead>Status</TableHead>
@@ -479,6 +499,12 @@ function AdminOrders() {
                                     }}
                                     className="cursor-pointer"
                                   >
+                                    <TableCell>
+                                      <span className="font-mono text-xs text-muted-foreground">
+                                        #
+                                        {r.orderId.slice(0, 8)}
+                                      </span>
+                                    </TableCell>
                                     <TableCell className="font-medium">
                                       {r.item.title}
                                     </TableCell>

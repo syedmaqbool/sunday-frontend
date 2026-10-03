@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import { setTimeout as delay } from 'node:timers/promises';
+import { infiniteQueryOptions, QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -56,7 +57,24 @@ function LocationObserver() {
   );
 }
 
-function renderSellerProfile(initialEntry: string, reviews = [review]) {
+function reviewPage(data: typeof review[], currentPage = 1, lastPage = 1) {
+  return {
+    data,
+    pagination: {
+      currentPage,
+      lastPage,
+      nextPage: currentPage < lastPage ? currentPage + 1 : null,
+      perPage: 20,
+      prevPage: currentPage > 1 ? currentPage - 1 : null,
+      total: lastPage * 20,
+    },
+  };
+}
+
+function renderSellerProfile(
+  initialEntry: string,
+  reviewPages: Array<Error | Promise<ReturnType<typeof reviewPage>> | ReturnType<typeof reviewPage>> = [reviewPage([review])],
+) {
   sellerProfileQueryMock.mockReturnValue(queryOptions({
     queryFn: async () => ({
       id: 'seller-1',
@@ -75,8 +93,21 @@ function renderSellerProfile(initialEntry: string, reviews = [review]) {
     queryFn: async () => [],
     queryKey: ['seller-listings'],
   }));
-  reviewsQueryMock.mockReturnValue(queryOptions({
-    queryFn: async () => ({ data: reviews }),
+  reviewsQueryMock.mockReturnValue(infiniteQueryOptions<
+    ReturnType<typeof reviewPage>,
+    Error,
+    import('@tanstack/react-query').InfiniteData<ReturnType<typeof reviewPage>>,
+    readonly ['seller-reviews'],
+    number
+  >({
+    getNextPageParam: page => page.pagination.nextPage ?? undefined,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const page = reviewPages[pageParam - 1];
+      if (page instanceof Error)
+        throw page;
+      return await page;
+    },
     queryKey: ['seller-reviews'],
   }));
 
@@ -112,10 +143,50 @@ describe('seller review notification routing', () => {
   });
 
   it('keeps Reviews selected and removes an unavailable review identifier', async () => {
-    renderSellerProfile('/seller/seller-1?tab=reviews&review=missing-review');
+    renderSellerProfile('/seller/seller-1?tab=reviews&review=missing-review', [reviewPage([])]);
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'));
     expect(await screen.findByRole('tab', { name: /Reviews/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('clears an unavailable review only after all review pages have loaded', async () => {
+    const lastReviewPage = (async () => {
+      await delay(200);
+      return reviewPage([], 2, 2);
+    })();
+    renderSellerProfile(
+      '/seller/seller-1?tab=reviews&review=missing-review',
+      [reviewPage([], 1, 2), lastReviewPage],
+    );
+
+    expect(await screen.findByText('No reviews yet')).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=missing-review');
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'));
+  });
+
+  it('loads later review pages until the selected review is found and focused', async () => {
+    const firstPage = Array.from({ length: 20 }, (_, index) => ({
+      ...review,
+      id: `recent-review-${index}`,
+    }));
+    renderSellerProfile(
+      '/seller/seller-1?tab=reviews&review=older-review',
+      [reviewPage(firstPage, 1, 2), reviewPage([{ ...review, id: 'older-review' }], 2, 2)],
+    );
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=older-review'));
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'seller-review-older-review'));
+    expect(document.activeElement).toHaveTextContent('Great seller');
+  });
+
+  it('preserves the selected review URL when a later page lookup fails', async () => {
+    renderSellerProfile(
+      '/seller/seller-1?tab=reviews&review=older-review',
+      [reviewPage([review], 1, 2), new Error('Review lookup failed')],
+    );
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=older-review'));
+    expect(await screen.findByText('Great seller')).toBeInTheDocument();
   });
 
   it('falls back to listings when the seller is unavailable', async () => {

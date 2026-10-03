@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
@@ -22,12 +22,20 @@ export function ReviewsList({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const focusedReviewReference = useRef<HTMLDivElement>(null);
 
-  const { data: reviewsResponse, isFetching, isLoading } = useQuery(getUserReviewsOptions(userId, limit));
-  const reviews = reviewsResponse?.data ?? [];
+  const {
+    data: reviewsResponse,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetching,
+    isLoading,
+  } = useInfiniteQuery(getUserReviewsOptions(userId, limit));
+  const reviewPages = reviewsResponse?.pages ?? [];
+  const reviews = reviewPages.flatMap(page => page.data);
   const focusedReview = reviews.find(review => review.id === focusedReviewId);
 
   useEffect(() => {
-    if (!focusedReviewId || isLoading || isFetching || !reviewsResponse)
+    if (!focusedReviewId || isLoading || isError || isFetching || !reviewsResponse)
       return;
 
     if (focusedReview) {
@@ -36,8 +44,13 @@ export function ReviewsList({
       return;
     }
 
+    if (hasNextPage) {
+      void fetchNextPage();
+      return;
+    }
+
     onFocusedReviewMissing?.();
-  }, [focusedReview, focusedReviewId, isFetching, isLoading, onFocusedReviewMissing, reviewsResponse]);
+  }, [fetchNextPage, focusedReview, focusedReviewId, hasNextPage, isError, isFetching, isLoading, onFocusedReviewMissing, reviewsResponse]);
 
   if (isLoading)
     return null;

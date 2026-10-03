@@ -1,5 +1,7 @@
-import type { CreateOfferReviewPayload, CreateReviewPayload } from '@/types/offer.type';
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
+import type { CreateOfferReviewPayload, CreateReviewPayload, Review } from '@/types/offer.type';
+import type { PaginatedResponse } from '@/types/response.type';
+import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sellerRatingQueryKey } from '@/queries/sellerRating.query';
 import {
   createOfferReview,
@@ -14,8 +16,8 @@ export const reviewQueryKey = {
   all: () => ['reviews'] as const,
   orderItem: (orderId: string, listingId: string, userId?: string) =>
     [...reviewQueryKey.all(), 'order-item', orderId, listingId, userId ?? null] as const,
-  userReviews: (userId: string) =>
-    [...reviewQueryKey.all(), 'user', 'list', userId] as const,
+  userReviews: (userId: string, limit: number) =>
+    [...reviewQueryKey.all(), 'user', 'list', userId, limit] as const,
 };
 
 export function getOrderItemReviewOptions(
@@ -32,10 +34,18 @@ export function getOrderItemReviewOptions(
 }
 
 export function getUserReviewsOptions(userId: string, limit = 10) {
-  return queryOptions({
+  return infiniteQueryOptions<
+    PaginatedResponse<Review>,
+    Error,
+    InfiniteData<PaginatedResponse<Review>>,
+    ReturnType<typeof reviewQueryKey.userReviews>,
+    number
+  >({
     enabled: !!userId,
-    queryFn: async () => await listReviews({ reviewedId: userId, page: 1, size: limit }),
-    queryKey: reviewQueryKey.userReviews(userId),
+    getNextPageParam: page => page.pagination.nextPage ?? undefined,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => await listReviews({ reviewedId: userId, page: pageParam, size: limit }),
+    queryKey: reviewQueryKey.userReviews(userId, limit),
   });
 }
 

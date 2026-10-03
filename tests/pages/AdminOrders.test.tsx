@@ -3,12 +3,16 @@ import type { AdminComplaint } from '@/types/complaint.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
 const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
 const adminComplaintService = vi.hoisted(() => ({ listAdminComplaints: vi.fn() }));
 const access = vi.hoisted(() => ({ permissions: new Set<string>(['COMPLAINTS_READ']) }));
+const cancelAdminOrderMutation = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
   AdminManualPaymentReviewDialog: ({ orderId, submissionId, onClose }: { orderId: string | null; submissionId?: string | null; onClose: () => void }) => orderId && submissionId
@@ -23,7 +27,7 @@ vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
 }));
 
 vi.mock('@/hooks/useAccessControl', () => ({
-  useAccessControl: () => ({ can: (permission: string) => access.permissions.has(permission) || permission === 'ORDERS_UPDATE' }),
+  useAccessControl: () => ({ can: (permission: string) => access.permissions.has(permission) }),
 }));
 
 vi.mock('@/services/complain.service', () => ({
@@ -52,6 +56,7 @@ vi.mock('@/queries/adminOrders.query', () => ({
     queryFn: async () => ({ data: [] }),
     queryKey: ['admin-orders', 'reserved-listings', 'list'],
   }),
+  useCancelAdminOrderMutation: () => cancelAdminOrderMutation,
 }));
 
 function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder {
@@ -159,6 +164,9 @@ beforeEach(() => {
   orders.detailError = null;
   orders.listParameters = [];
   adminComplaintService.listAdminComplaints.mockClear();
+  cancelAdminOrderMutation.mutateAsync.mockReset().mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
+  vi.mocked(toast.error).mockClear();
+  vi.mocked(toast.success).mockClear();
   access.permissions = new Set(['COMPLAINTS_READ']);
   adminComplaintService.listAdminComplaints.mockResolvedValue({
     data: [],
@@ -260,6 +268,94 @@ describe('admin order number search', () => {
     fireEvent.mouseDown(reservedTab);
     fireEvent.click(reservedTab);
     await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Search by order #' })).not.toBeInTheDocument());
+  });
+});
+
+describe('admin order cancellation', () => {
+  it('requires ORDERS_UPDATE and confirms through the admin action', async () => {
+    const order = makeOrder('APPROVED', 'Cancelable order item');
+    order.status = 'SHIPPED';
+    order.items[0].status = 'SHIPPED';
+    orders.current = [order];
+
+    const tree = (
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree);
+
+    fireEvent.click(await screen.findByText('Cancelable order item'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+
+    access.permissions.add('ORDERS_UPDATE');
+    rerender(tree);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel order' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
+
+    const confirmation = await screen.findByRole('alertdialog');
+    expect(within(confirmation).getByText('Cancel order #APPROVED?')).toBeInTheDocument();
+    expect(within(confirmation).getByText('The whole order will be marked cancelled and its sold items will be listed for sale again. This can\'t be undone.')).toBeInTheDocument();
+    expect(within(confirmation).getByRole('button', { name: 'Keep order' })).toBeInTheDocument();
+    expect(within(confirmation).getByRole('button', { name: 'Yes, cancel order' })).toBeInTheDocument();
+
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Yes, cancel order' }));
+    await waitFor(() => expect(cancelAdminOrderMutation.mutateAsync).toHaveBeenCalledWith(order.id));
+    expect(toast.success).toHaveBeenCalledWith('Order cancelled and items relisted');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('keeps the detail available after a failed cancellation and gives cancelled orders their own status', async () => {
+    const cancelledOrder = makeOrder('APPROVED', 'Cancelled shipped item');
+    cancelledOrder.id = 'cancelled-order-id';
+    cancelledOrder.status = 'CANCELLED';
+    cancelledOrder.items[0].id = 'cancelled-item-id';
+    cancelledOrder.items[0].orderId = cancelledOrder.id;
+    cancelledOrder.items[0].status = 'DELIVERED';
+    orders.current = [cancelledOrder];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Cancelled' }));
+    const cancelledRow = await screen.findByText('Cancelled shipped item');
+    expect(within(cancelledRow.closest('tr')!).getByText('cancelled')).toBeInTheDocument();
+    fireEvent.click(cancelledRow);
+    const detailDialog = await screen.findByRole('dialog');
+    expect(within(detailDialog).getByText('Order cancelled')).toBeInTheDocument();
+    expect(within(detailDialog).getByText('cancelled')).toBeInTheDocument();
+    expect(within(detailDialog).queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+  });
+
+  it('shows the API error and leaves the order open for retry', async () => {
+    access.permissions.add('ORDERS_UPDATE');
+    cancelAdminOrderMutation.mutateAsync.mockRejectedValue(new Error('Order cannot be cancelled'));
+    const order = makeOrder('SUBMITTED', 'Retryable item');
+    orders.current = [order];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByText('Retryable item'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Yes, cancel order' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not cancel order: Order cannot be cancelled'));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yes, cancel order' })).toBeInTheDocument();
   });
 });
 

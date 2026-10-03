@@ -5,6 +5,7 @@ import type {
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   approveAdminManualPayment,
+  cancelAdminOrder,
   getAdminOrder,
   getPaymentProofFile,
   listAdminOrders,
@@ -74,6 +75,15 @@ export function useApproveAdminManualPaymentMutation() {
 
   return useMutation({
     mutationFn: approveAdminManualPayment,
+    onSuccess: (_response, orderId) => invalidateAdminOrderQueries(queryClient, orderId),
+  });
+}
+
+export function useCancelAdminOrderMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: cancelAdminOrder,
     onSuccess: (_response, orderId) => invalidateAdminOrderQueries(queryClient, orderId),
   });
 }

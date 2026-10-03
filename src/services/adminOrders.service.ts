@@ -7,6 +7,7 @@ import type {
   ReservedListingParameters,
 } from '@/types/adminOrder.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
+import type { CancelAdminOrderResponse } from '@/types/generated-api';
 import { authInstance } from '@/services/ky.instance';
 
 export function listAdminOrders(
@@ -23,6 +24,12 @@ export function getAdminOrder(orderId: string) {
   return authInstance
     .get(`/api/v1/admin/orders/${orderId}`)
     .json<Response<AdminOrderDetail>>();
+}
+
+export function cancelAdminOrder(orderId: string) {
+  return authInstance
+    .post(`/api/v1/admin/orders/${orderId}/cancel`)
+    .json<CancelAdminOrderResponse>();
 }
 
 export function approveAdminManualPayment(orderId: string) {

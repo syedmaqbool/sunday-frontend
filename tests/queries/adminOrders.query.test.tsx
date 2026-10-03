@@ -6,15 +6,18 @@ import {
   adminOrdersQueryKey,
   getAdminOrdersOptions,
   useApproveAdminManualPaymentMutation,
+  useCancelAdminOrderMutation,
 } from '@/queries/adminOrders.query';
 
-const { approveAdminManualPaymentMock, listAdminOrdersMock } = vi.hoisted(() => ({
+const { approveAdminManualPaymentMock, cancelAdminOrderMock, listAdminOrdersMock } = vi.hoisted(() => ({
   approveAdminManualPaymentMock: vi.fn(),
+  cancelAdminOrderMock: vi.fn(),
   listAdminOrdersMock: vi.fn(),
 }));
 
 vi.mock('@/services/adminOrders.service', () => ({
   approveAdminManualPayment: approveAdminManualPaymentMock,
+  cancelAdminOrder: cancelAdminOrderMock,
   getAdminOrder: vi.fn(),
   getPaymentProofFile: vi.fn(),
   listAdminOrders: listAdminOrdersMock,
@@ -30,6 +33,13 @@ function MutationHarness({ onReady }: { onReady: (mutation: ReturnType<typeof us
   return null;
 }
 
+function CancelMutationHarness({ onReady }: { onReady: (mutation: ReturnType<typeof useCancelAdminOrderMutation>) => void }) {
+  const mutation = useCancelAdminOrderMutation();
+
+  useEffect(() => onReady(mutation), [mutation, onReady]);
+  return null;
+}
+
 describe('admin order query mutations', () => {
   beforeEach(() => {
     approveAdminManualPaymentMock.mockReset().mockResolvedValue({
@@ -38,6 +48,7 @@ describe('admin order query mutations', () => {
         status: 'APPROVED',
       },
     });
+    cancelAdminOrderMock.mockReset().mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
   });
 
   it('invalidates the owning admin order list and detail keys after approval', async () => {
@@ -55,6 +66,25 @@ describe('admin order query mutations', () => {
     await mutation!.mutateAsync('order-id');
 
     expect(approveAdminManualPaymentMock).toHaveBeenCalledWith('order-id', expect.anything());
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.all() });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.detail('order-id') });
+  });
+
+  it('calls the admin cancel service and invalidates the owning order list and detail keys', async () => {
+    const queryClient = new QueryClient();
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+    let mutation: ReturnType<typeof useCancelAdminOrderMutation> | undefined;
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CancelMutationHarness onReady={(value) => { mutation = value; }} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(mutation).toBeDefined());
+    await mutation!.mutateAsync('order-id');
+
+    expect(cancelAdminOrderMock).toHaveBeenCalledWith('order-id', expect.anything());
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.all() });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.detail('order-id') });
   });

@@ -7,7 +7,19 @@ import { HTTPError } from 'ky';
 import { AlertTriangle, ExternalLink, Loader2, MessageSquareWarning, Package, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,10 +48,11 @@ import {
   getAdminOrderOptions,
   getAdminOrdersOptions,
   getAdminReservedListingsOptions,
+  useCancelAdminOrderMutation,
 } from '@/queries/adminOrders.query';
 
 // ── Display types ─────────────────────────────────────────────────────────────
-type EffectiveStatus = 'delivered' | 'shipped' | 'sold';
+type EffectiveStatus = 'cancelled' | 'delivered' | 'shipped' | 'sold';
 type StatusFilter = 'all' | 'manual-review' | 'reserved' | EffectiveStatus;
 type DateFilter = '7d' | 'all' | 'month' | 'today';
 
@@ -65,7 +78,9 @@ function dateFilterStart(filter: DateFilter) {
 }
 
 // Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
-function effectiveStatus(status: AdminOrderItem['status']): EffectiveStatus {
+function effectiveStatus(status: AdminOrderItem['status'], orderStatus?: AdminOrder['status']): EffectiveStatus {
+  if (orderStatus === 'CANCELLED')
+    return 'cancelled';
   if (['AWAITING_PAYMENT', 'CANCELLED', 'CONFIRMED'].includes(status))
     return 'sold';
   if (status === 'SHIPPED')
@@ -92,7 +107,7 @@ function rowFromOrderDetail(order: AdminOrderDetail, selectedItemId: string | nu
     buyerName: [order.shippingFirstName, order.shippingLastName].filter(Boolean).join(' ') || '—',
     city: order.shippingCity,
     created_at: order.createdAt,
-    effective: effectiveStatus(item.status),
+    effective: effectiveStatus(item.status, order.status),
     item,
     order,
   };
@@ -172,7 +187,7 @@ function AdminOrders() {
           || '—';
 
       for (const item of o.items) {
-        const eff = effectiveStatus(item.status);
+        const eff = effectiveStatus(item.status, o.status);
         if (
           statusFilter !== 'all'
           && statusFilter !== 'reserved'
@@ -380,6 +395,7 @@ function AdminOrders() {
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="delivered">Delivered</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
             <TabsTrigger value="manual-review">Manual review</TabsTrigger>
             <TabsTrigger value="reserved">Reserved</TabsTrigger>
           </TabsList>
@@ -651,6 +667,7 @@ function AdminOrders() {
           });
         }}
         row={selectedReviewOrderId ? null : selected}
+        canCancel={canReviewPayments}
       />
       <ComplaintDialog
         onClose={() => setSelectedComplaint(null)}
@@ -791,16 +808,30 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
 
 // ── Detail dialog — no extra API calls, item already carries all display data ──
 function OrderDetailDialog({
+  canCancel,
   onClose,
   row,
 }: {
+  canCancel: boolean;
   onClose: () => void;
   row: Row | null;
 }) {
+  const cancelMutation = useCancelAdminOrderMutation();
+
   if (!row)
     return null;
 
   const { item, order } = row;
+  const cancelOrder = async () => {
+    try {
+      await cancelMutation.mutateAsync(order.id);
+      toast.success('Order cancelled and items relisted');
+      onClose();
+    }
+    catch (error) {
+      toast.error(`Could not cancel order: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
   const shippingAddr = [
     order.shippingAddress,
     order.shippingCity,
@@ -824,6 +855,42 @@ function OrderDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex justify-end">
+          {order.status === 'CANCELLED'
+            ? <Badge variant="secondary">Order cancelled</Badge>
+            : canCancel && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={cancelMutation.isPending}>
+                      {cancelMutation.isPending && <Loader2 className="animate-spin" />}
+                      Cancel order
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel order #{order.id.slice(0, 8)}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        The whole order will be marked cancelled and its sold items will be listed for sale again. This can&apos;t be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep order</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={cancelMutation.isPending}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          void cancelOrder();
+                        }}
+                      >
+                        Yes, cancel order
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+        </div>
+
         <div className="space-y-5">
           <div className="flex items-center gap-4">
             {item.imageUrl && (
@@ -836,9 +903,9 @@ function OrderDetailDialog({
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Badge
-                  variant={item.status === 'SHIPPED' ? 'default' : 'secondary'}
+                  variant={row.effective === 'shipped' ? 'default' : 'secondary'}
                 >
-                  {effectiveStatus(item.status)}
+                  {row.effective}
                 </Badge>
                 <Link
                   to={`/listing/${item.listingId}`}

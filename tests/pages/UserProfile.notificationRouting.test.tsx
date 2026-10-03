@@ -142,7 +142,7 @@ describe('own profile reviews', () => {
   it('shows the review count and current user reviews with the existing empty state', async () => {
     sellerRatingTotal.value = 2;
     reviewsOptionsMock.mockReturnValue(infiniteQueryOptions({
-      getNextPageParam: () => undefined,
+      getNextPageParam: () => null,
       initialPageParam: 1,
       queryFn: async () => ({ data: [], pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 50, prevPage: null, total: 0 } }),
       queryKey: ['own-reviews'],
@@ -158,7 +158,7 @@ describe('own profile reviews', () => {
   it('omits a zero review count from the tab label', async () => {
     sellerRatingTotal.value = 0;
     reviewsOptionsMock.mockReturnValue(infiniteQueryOptions({
-      getNextPageParam: () => undefined,
+      getNextPageParam: () => null,
       initialPageParam: 1,
       queryFn: async () => ({ data: [], pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 50, prevPage: null, total: 0 } }),
       queryKey: ['own-reviews'],

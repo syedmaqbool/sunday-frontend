@@ -1,6 +1,6 @@
 import type { AdminOrder, AdminOrderDetail, AdminOrderItem } from '@/types/adminOrder.type';
 import type { AdminComplaint } from '@/types/complaint.type';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { HTTPError } from 'ky';
@@ -140,12 +140,15 @@ function AdminOrders() {
   const canReviewPayments = can('ORDERS_UPDATE');
   const canReadComplaints = can('COMPLAINTS_READ');
 
-  const { data: ordersResponse, isLoading } = useQuery(getAdminOrdersOptions({
-    search: search.trim() || undefined,
-    size: 100,
-    sortOrder: 'desc',
-    sortBy: 'createdAt',
-  }));
+  const { data: ordersResponse, isLoading } = useQuery({
+    ...getAdminOrdersOptions({
+      search: search.trim() || undefined,
+      size: 100,
+      sortOrder: 'desc',
+      sortBy: 'createdAt',
+    }),
+    placeholderData: keepPreviousData,
+  });
   const { data: reservedResponse, isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
   const orders = ordersResponse?.data;
   const orderIds = useMemo(() => orders?.map(order => order.id) ?? [], [orders]);
@@ -154,6 +157,7 @@ function AdminOrders() {
     fetchNextPage: fetchNextComplaintsPage,
     hasNextPage: hasNextComplaintsPage,
     isFetchingNextPage: isFetchingNextComplaintsPage,
+    isFetchNextPageError: isFetchNextComplaintsPageError,
   } = useInfiniteQuery(getAdminComplaintsForOrdersOptions(orderIds, canReadComplaints));
   const complaints = complaintsResponse?.pages.flatMap(page => page.data) ?? [];
   const reservedListings = reservedResponse?.data ?? [];
@@ -167,9 +171,9 @@ function AdminOrders() {
   });
 
   useEffect(() => {
-    if (hasNextComplaintsPage && !isFetchingNextComplaintsPage)
+    if (hasNextComplaintsPage && !isFetchingNextComplaintsPage && !isFetchNextComplaintsPageError)
       void fetchNextComplaintsPage();
-  }, [fetchNextComplaintsPage, hasNextComplaintsPage, isFetchingNextComplaintsPage]);
+  }, [fetchNextComplaintsPage, hasNextComplaintsPage, isFetchNextComplaintsPageError, isFetchingNextComplaintsPage]);
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
@@ -308,6 +312,8 @@ function AdminOrders() {
 
     for (const o of orderList) {
       if (start && new Date(o.createdAt) < start)
+        continue;
+      if (o.status === 'CANCELLED')
         continue;
       sold += o.itemStatusCounts.confirmed;
       shipped += o.itemStatusCounts.shipped;
@@ -666,8 +672,8 @@ function AdminOrders() {
             return next;
           });
         }}
-        row={selectedReviewOrderId ? null : selected}
         canCancel={canReviewPayments}
+        row={selectedReviewOrderId ? null : selected}
       />
       <ComplaintDialog
         onClose={() => setSelectedComplaint(null)}
@@ -859,36 +865,43 @@ function OrderDetailDialog({
           {order.status === 'CANCELLED'
             ? <Badge variant="secondary">Order cancelled</Badge>
             : canCancel && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" disabled={cancelMutation.isPending}>
-                      {cancelMutation.isPending && <Loader2 className="animate-spin" />}
-                      Cancel order
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancel order #{order.id.slice(0, 8)}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        The whole order will be marked cancelled and its sold items will be listed for sale again. This can&apos;t be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep order</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        disabled={cancelMutation.isPending}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          void cancelOrder();
-                        }}
-                      >
-                        Yes, cancel order
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={cancelMutation.isPending} size="sm" variant="destructive">
+                    {cancelMutation.isPending && <Loader2 className="animate-spin" />}
+                    Cancel order
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Cancel order #
+                      {order.id.slice(0, 8)}
+                      ?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      The whole order will be marked cancelled and its sold items will be listed for sale again. This can&apos;t be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep order</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void cancelOrder();
+                      }}
+                      disabled={cancelMutation.isPending}
+                      className="
+                        bg-destructive text-destructive-foreground
+                        hover:bg-destructive/90
+                      "
+                    >
+                      Yes, cancel order
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
         </div>
 
         <div className="space-y-5">

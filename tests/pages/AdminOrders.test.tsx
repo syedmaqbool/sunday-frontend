@@ -10,7 +10,7 @@ import AdminOrders from '@/pages/admin/Orders';
 const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
 const adminComplaintService = vi.hoisted(() => ({ listAdminComplaints: vi.fn() }));
 const access = vi.hoisted(() => ({ permissions: new Set<string>(['COMPLAINTS_READ']) }));
-const cancelAdminOrderMutation = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
+const cancelAdminOrderMutation = vi.hoisted(() => ({ isPending: false, mutateAsync: vi.fn() }));
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
@@ -327,6 +327,7 @@ describe('admin order cancellation', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Cancelled' }));
     const cancelledRow = await screen.findByText('Cancelled shipped item');
+    expect(screen.getByText('Total items').nextElementSibling).toHaveTextContent('0');
     expect(within(cancelledRow.closest('tr')!).getByText('cancelled')).toBeInTheDocument();
     fireEvent.click(cancelledRow);
     const detailDialog = await screen.findByRole('dialog');
@@ -485,6 +486,35 @@ describe('admin order complaints', () => {
       size: 100,
     });
     expect(await screen.findAllByRole('button', { name: 'View complaint details' })).toHaveLength(2);
+  });
+
+  it('stops loading complaint pages after a later page fails', async () => {
+    const order = makeOrder('SUBMITTED', 'Failed complaint page');
+    order.items[0].listingId = 'failed-listing-one';
+    orders.current = [order];
+    adminComplaintService.listAdminComplaints.mockImplementation(async ({ page }: { page: number }) => {
+      if (page === 2) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        throw new Error('Complaint page failed');
+      }
+      return {
+        data: [makeComplaint(order.id, order.items[0].id, 'failed-listing-one')],
+        pagination: { currentPage: 1, lastPage: 2, nextPage: 2, perPage: 100, prevPage: null, total: 101 },
+      };
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole('button', { name: 'View complaint details' })).toBeInTheDocument();
+    await waitFor(() => expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledTimes(2));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledTimes(2);
   });
 });
 

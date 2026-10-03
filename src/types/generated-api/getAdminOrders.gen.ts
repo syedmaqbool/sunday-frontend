@@ -5,6 +5,7 @@ export interface GetAdminOrdersData {
   body?: never;
   query?: {
     page?: number;
+    search?: string;
     size?: number;
     sortOrder?: 'asc' | 'desc';
     status?: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';

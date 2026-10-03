@@ -12,12 +12,44 @@ export interface GetAdminComplaintsData {
      * Number of records per page
      */
     size: number;
+    /**
+     * Repeat this query parameter once per UUID, up to 100 values.
+     */
+    orderIds?: Array<string>;
     status?: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
   };
   url: '/api/v1/admin/complaints';
 }
 
 export interface GetAdminComplaintsErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
   /**
    * Default Response
    */

@@ -2,10 +2,11 @@ import type { CreateAdminUserInput } from '@/types/adminUser.type';
 import type { ApiRequestQuery } from '@/types/api.type';
 import type { GetAdminUsersData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createAdminUser, listAdminUsers, updateUserRole } from '@/services/user.service';
+import { createAdminUser, getAdminUserById, listAdminUsers, updateUserRole } from '@/services/user.service';
 
 export const adminUsersQueryKey = {
   all: () => ['admin-users'] as const,
+  detail: (userId: string) => [...adminUsersQueryKey.all(), 'detail', userId] as const,
   list: (parameters: AdminUsersParams = {}) =>
     [...adminUsersQueryKey.all(), 'list', parameters] as const,
 };
@@ -18,6 +19,19 @@ export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
       return listAdminUsers(parameters);
     },
     queryKey: adminUsersQueryKey.list(parameters),
+  });
+}
+
+export function getAdminUserByIdQueryOptions(userId: string | null) {
+  return queryOptions({
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      if (!userId)
+        throw new Error('A user must be selected before loading details.');
+
+      return getAdminUserById(userId);
+    },
+    queryKey: adminUsersQueryKey.detail(userId ?? ''),
   });
 }
 

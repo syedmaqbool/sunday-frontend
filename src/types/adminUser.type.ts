@@ -1,12 +1,14 @@
-import type { ApiRequestBody, ApiRequestQuery, ApiResponseItem } from './api.type';
+import type { ApiRequestBody, ApiRequestQuery, ApiResponseData, ApiResponseItem } from './api.type';
 import type {
   CreateAdminUserData,
+  GetAdminUserByIdResponses,
   GetAdminUsersData,
   GetAdminUsersResponses,
   UpdateAdminUserRoleData,
 } from '@/types/generated-api';
 
 export type AdminUser = ApiResponseItem<GetAdminUsersResponses>;
+export type AdminUserDetails = ApiResponseData<GetAdminUserByIdResponses>;
 export type AdminUserImage = AdminUser['image'];
 export type AdminUserStatus = AdminUser['status'];
 export type AdminUserRoleType = NonNullable<ApiRequestQuery<GetAdminUsersData>['roleType']>;

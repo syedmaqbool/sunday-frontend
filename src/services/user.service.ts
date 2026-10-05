@@ -1,5 +1,6 @@
 import type {
   AdminUser,
+  AdminUserDetails,
   AdminUsersParameters,
   CreateAdminUserInput,
   UpdateAdminUserRolePayload,
@@ -21,6 +22,12 @@ export function listAdminUsers(
       },
     })
     .json<PaginatedResponse<AdminUser>>();
+}
+
+export function getAdminUserById(userId: string) {
+  return authInstance
+    .get(`/api/v1/admin/users/${userId}`)
+    .json<Response<AdminUserDetails>>();
 }
 
 export function createAdminUser(payload: CreateAdminUserInput) {

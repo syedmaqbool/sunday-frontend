@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useState } from 'react';
+import AdminUserDetailsDialog from '@/components/admin/AdminUserDetailsDialog';
 import AdminUsersTable, {
+  fullName,
   joinedDate,
   statusBadge,
 } from '@/components/admin/AdminUsersTable';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { getAdminUsersQueryOptions } from '@/queries/adminUsers.query';
 
 export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'ACTIVE' | 'ALL' | 'INACTIVE'>('ALL');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   const { data, isLoading } = useQuery(
@@ -27,50 +31,74 @@ export default function UserManagement() {
   const total = data?.pagination.total ?? 0;
 
   return (
-    <AdminUsersTable
-      onPageChange={setPage}
-      onSearchChange={(value) => {
-        setPage(1);
-        setSearch(value);
-      }}
-      onStatusChange={(value) => {
-        setPage(1);
-        setStatus(value);
-      }}
-      columns={[
-        {
-          key: 'status',
-          label: 'Status',
-          render: user => statusBadge(user.status),
-        },
-        {
-          key: 'joined',
-          label: 'Joined',
-          render: user => (
-            <span className="text-sm text-muted-foreground">
-              {joinedDate(user.createdAt)}
-            </span>
-          ),
-        },
-        {
-          key: 'consent',
-          label: 'Marketing',
-          render: user => (
-            <Badge variant={user.marketingEmailConsent ? 'default' : 'secondary'}>
-              {user.marketingEmailConsent ? 'Subscribed' : 'Opted out'}
-            </Badge>
-          ),
-        },
-      ]}
-      emptyMessage="No platform users match these filters."
-      isLoading={isLoading}
-      page={page}
-      pageSize={20}
-      search={search}
-      status={status}
-      title="Platform Users"
-      total={total}
-      users={users}
-    />
+    <>
+      <AdminUsersTable
+        onPageChange={setPage}
+        onSearchChange={(value) => {
+          setPage(1);
+          setSearch(value);
+        }}
+        onStatusChange={(value) => {
+          setPage(1);
+          setStatus(value);
+        }}
+        columns={[
+          {
+            key: 'status',
+            label: 'Status',
+            render: user => statusBadge(user.status),
+          },
+          {
+            key: 'joined',
+            label: 'Joined',
+            render: user => (
+              <span className="text-sm text-muted-foreground">
+                {joinedDate(user.createdAt)}
+              </span>
+            ),
+          },
+          {
+            key: 'consent',
+            label: 'Marketing',
+            render: user => (
+              <Badge variant={user.marketingEmailConsent ? 'default' : 'secondary'}>
+                {user.marketingEmailConsent ? 'Subscribed' : 'Opted out'}
+              </Badge>
+            ),
+          },
+          {
+            key: 'actions',
+            className: 'text-right',
+            label: 'Actions',
+            render: user => (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setSelectedUserId(user.id)}
+                  aria-label={`View details for ${fullName(user)}`}
+                  size="sm"
+                  variant="outline"
+                >
+                  View details
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        emptyMessage="No platform users match these filters."
+        isLoading={isLoading}
+        page={page}
+        pageSize={20}
+        search={search}
+        status={status}
+        title="Platform Users"
+        total={total}
+        users={users}
+      />
+      <AdminUserDetailsDialog
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+        open={selectedUserId !== null}
+      />
+    </>
   );
 }

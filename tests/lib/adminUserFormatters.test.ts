@@ -15,6 +15,21 @@ describe('formatDateOrValue', () => {
     expect(formatDateOrValue('2026-01-05T12:30:00', 'MMM d, yyyy h:mm a')).toBe('Jan 5, 2026 12:30 PM');
   });
 
+  it('formats date-only strings as the same calendar day in timezones behind UTC', () => {
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+
+    try {
+      expect(formatDateOrValue('1994-06-17', 'MMM d, yyyy')).toBe('Jun 17, 1994');
+    }
+    finally {
+      if (originalTimeZone === undefined)
+        delete process.env.TZ;
+      else
+        process.env.TZ = originalTimeZone;
+    }
+  });
+
   it('returns invalid date strings unchanged', () => {
     expect(formatDateOrValue('date unavailable', 'MMM d, yyyy')).toBe('date unavailable');
   });

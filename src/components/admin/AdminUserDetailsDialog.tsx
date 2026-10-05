@@ -2,7 +2,7 @@ import type { AdminUserAuditEvent, UpdateAdminUserProfileInput, UpdateAdminUserS
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -90,19 +90,26 @@ export default function AdminUserDetailsDialog({
   const statusActionLabel = user?.status === 'ACTIVE' ? 'Suspend user' : 'Reactivate user';
   const statusConfirmLabel = user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
 
+  const profileFormUserIdReference = useRef<string | null>(null);
+
   useEffect(() => {
     setAuditPage(1);
+    profileFormUserIdReference.current = null;
   }, [userId]);
 
   useEffect(() => {
-    if (user) {
-      form.reset({
-        address: user.address,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      });
+    if (!user) {
+      return;
     }
-  }, [form, user]);
+
+    // Refetches of the same open user (for example after a status change) keep unsaved edits.
+    form.reset({
+      address: user.address,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    }, { keepDirtyValues: profileFormUserIdReference.current === userId });
+    profileFormUserIdReference.current = userId;
+  }, [form, user, userId]);
 
   const handleProfileSave = async (values: ProfileEditFormValues) => {
     if (!user || !userId)
@@ -271,7 +278,7 @@ export default function AdminUserDetailsDialog({
               {isAuditHistoryLoading && (
                 <div role="status" className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
                   <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                  Loading profile edit history…
+                  Loading user history…
                 </div>
               )}
 

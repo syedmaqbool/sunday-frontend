@@ -282,6 +282,54 @@ describe('admin user details dialog', () => {
     expect(within(history).getByText('Resulting status: Active')).toBeInTheDocument();
   });
 
+  it('keeps unsaved profile edits when the details refresh after a status change', async () => {
+    const inactiveDetailResponse = {
+      ...detailResponse,
+      data: { ...detailResponse.data, status: 'INACTIVE' },
+    };
+    userService.getAdminUserById.mockResolvedValue(inactiveDetailResponse).mockResolvedValueOnce(detailResponse);
+    userService.updateAdminUserStatus.mockResolvedValue({ data: { status: 'INACTIVE' }, message: 'User status updated', statusCode: 200 });
+    renderDialog();
+
+    const details = await screen.findByRole('dialog', { name: 'User details' });
+    fireEvent.change(await within(details).findByLabelText('First name'), { target: { value: 'Amina Noor' } });
+    fireEvent.click(within(details).getByRole('button', { name: 'Suspend user' }));
+    const confirmation = await screen.findByRole('dialog', { name: 'Suspend user' });
+    fireEvent.change(within(confirmation).getByLabelText('Reason'), { target: { value: 'Policy violation' } });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm suspension' }));
+
+    expect(await within(details).findByText('Inactive', { exact: true })).toBeInTheDocument();
+    expect(within(details).getByLabelText('First name')).toHaveValue('Amina Noor');
+    expect(within(details).getByLabelText('Last name')).toHaveValue('Raza');
+  });
+
+  it('discards unsaved profile edits when the dialog is reopened or another user is selected', async () => {
+    const otherDetailResponse = {
+      ...detailResponse,
+      data: { ...detailResponse.data, firstName: 'Bilal', lastName: 'Ahmed' },
+    };
+    userService.getAdminUserById.mockImplementation(async (userId: string) =>
+      userId === 'other-user-id' ? otherDetailResponse : detailResponse);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const renderWith = (userId: string | null) => (
+      <QueryClientProvider client={queryClient}>
+        <AdminUserDetailsDialog userId={userId} onClose={vi.fn()} open={userId !== null} />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(renderWith('user-id'));
+
+    fireEvent.change(await screen.findByLabelText('First name'), { target: { value: 'Amina Noor' } });
+    rerender(renderWith(null));
+    rerender(renderWith('user-id'));
+    await waitFor(() => expect(screen.getByLabelText('First name')).toHaveValue('Amina'));
+
+    fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Amina Noor' } });
+    rerender(renderWith(null));
+    rerender(renderWith('other-user-id'));
+    await waitFor(() => expect(screen.getByLabelText('First name')).toHaveValue('Bilal'));
+    expect(screen.getByLabelText('Last name')).toHaveValue('Ahmed');
+  });
+
   it('keeps the displayed status and history unchanged and shows an error when a transition fails', async () => {
     const failure = new Error('Request failed');
     userService.updateAdminUserStatus.mockRejectedValue(failure);

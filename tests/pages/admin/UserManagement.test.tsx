@@ -6,6 +6,7 @@ import UserManagement from '@/pages/admin/UserManagement';
 const userService = vi.hoisted(() => ({
   getAdminUserById: vi.fn(),
   createAdminUser: vi.fn(),
+  getAdminUserAuditHistory: vi.fn(),
   listAdminUsers: vi.fn(),
   updateUserRole: vi.fn(),
 }));
@@ -66,6 +67,12 @@ describe('platform Users details', () => {
   beforeEach(() => {
     userService.listAdminUsers.mockReset().mockResolvedValue(listResponse);
     userService.getAdminUserById.mockReset().mockResolvedValue(detailResponse);
+    userService.getAdminUserAuditHistory.mockReset().mockResolvedValue({
+      data: [],
+      message: 'Audit history loaded',
+      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 10, prevPage: null, total: 0 },
+      statusCode: 200,
+    });
   });
 
   it('opens the selected user details and closes the dialog', async () => {

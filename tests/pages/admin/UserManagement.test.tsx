@@ -74,7 +74,7 @@ describe('platform Users details', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'View details for Amina Raza' }));
 
     expect(await screen.findByRole('dialog', { name: 'User details' })).toBeInTheDocument();
-    expect(await screen.findByText('15 Garden Road')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Address')).toHaveValue('15 Garden Road');
     expect(userService.getAdminUserById).toHaveBeenCalledWith('user-id');
 
     fireEvent.click(screen.getByRole('button', { name: 'Close details' }));

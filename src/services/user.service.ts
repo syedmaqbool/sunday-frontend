@@ -8,6 +8,8 @@ import type {
   UpdateAdminUserProfileInput,
   UpdateAdminUserProfileResponse,
   UpdateAdminUserRolePayload,
+  UpdateAdminUserStatusInput,
+  UpdateAdminUserStatusResponse,
 } from '@/types/adminUser.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -64,4 +66,10 @@ export function updateAdminUserProfile(userId: string, payload: UpdateAdminUserP
   return authInstance
     .patch(`/api/v1/admin/users/${userId}`, { json: payload })
     .json<UpdateAdminUserProfileResponse>();
+}
+
+export function updateAdminUserStatus(userId: string, payload: UpdateAdminUserStatusInput) {
+  return authInstance
+    .patch(`/api/v1/admin/users/${userId}/status`, { json: payload })
+    .json<UpdateAdminUserStatusResponse>();
 }

@@ -2,6 +2,7 @@ import type {
   AdminUserAuditHistoryParameters,
   CreateAdminUserInput,
   UpdateAdminUserProfileInput,
+  UpdateAdminUserStatusInput,
 } from '@/types/adminUser.type';
 import type { ApiRequestQuery } from '@/types/api.type';
 import type { GetAdminUsersData } from '@/types/generated-api';
@@ -12,6 +13,7 @@ import {
   getAdminUserById,
   listAdminUsers,
   updateAdminUserProfile,
+  updateAdminUserStatus,
   updateUserRole,
 } from '@/services/user.service';
 
@@ -101,6 +103,18 @@ export function useUpdateAdminUserProfileMutation() {
         queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() }),
         queryClient.invalidateQueries({ queryKey: adminUserAuditHistoryQueryKey.all() }),
       ]);
+    },
+  });
+}
+
+export function useUpdateAdminUserStatusMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, payload }: { userId: string; payload: UpdateAdminUserStatusInput }) =>
+      updateAdminUserStatus(userId, payload),
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
     },
   });
 }

@@ -9,10 +9,15 @@ const userService = vi.hoisted(() => ({
   getAdminUserAuditHistory: vi.fn(),
   listAdminUsers: vi.fn(),
   updateAdminUserProfile: vi.fn(),
+  updateAdminUserStatus: vi.fn(),
   updateUserRole: vi.fn(),
 }));
 
 vi.mock('@/services/user.service', () => userService);
+
+const errorToast = vi.hoisted(() => vi.fn());
+
+vi.mock('@/lib/errorToast', () => ({ showErrorToast: errorToast }));
 
 const detailResponse = {
   data: {
@@ -57,6 +62,24 @@ const auditHistoryResponse = {
   statusCode: 200,
 };
 
+const statusAuditHistoryResponse = {
+  ...auditHistoryResponse,
+  data: [{
+    id: 'status-audit-id',
+    actor: {
+      id: 'admin-id',
+      email: 'admin@example.com',
+      firstName: 'Noor',
+      lastName: 'Khan',
+    },
+    changedFields: ['status'],
+    eventType: 'STATUS_CHANGED',
+    reason: 'Policy violation',
+    resultingStatus: 'INACTIVE',
+    createdAt: '2026-10-03T14:30:00.000Z',
+  }],
+};
+
 function renderDialog() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -70,6 +93,8 @@ describe('admin user details dialog', () => {
     userService.getAdminUserById.mockReset().mockResolvedValue(detailResponse);
     userService.getAdminUserAuditHistory.mockReset().mockResolvedValue(auditHistoryResponse);
     userService.updateAdminUserProfile.mockReset().mockResolvedValue(detailResponse);
+    userService.updateAdminUserStatus.mockReset();
+    errorToast.mockReset();
   });
 
   it('shows editable profile fields, read-only account details, and a profile image', async () => {
@@ -160,7 +185,7 @@ describe('admin user details dialog', () => {
     renderDialog();
 
     const dialog = await screen.findByRole('dialog', { name: 'User details' });
-    const history = await within(dialog).findByRole('region', { name: 'Profile edit history' });
+    const history = await within(dialog).findByRole('region', { name: 'Profile and status history' });
     expect(await within(history).findByText(/Edited by Noor Khan/)).toHaveTextContent(/Sep 12, 2026/);
     expect(within(history).getByText('Changed fields: First name, Address')).toBeInTheDocument();
     expect(within(history).queryByText(/old value|new value/i)).not.toBeInTheDocument();
@@ -170,5 +195,112 @@ describe('admin user details dialog', () => {
     await waitFor(() => expect(userService.getAdminUserAuditHistory).toHaveBeenCalledWith('user-id', { page: 2, size: 10 }));
     expect(await within(history).findByText('Page 2 of 2')).toBeInTheDocument();
     expect(within(history).getByText('Changed fields: Last name')).toBeInTheDocument();
+  });
+
+  it('requires a reason before suspending and refreshes the status and history after success', async () => {
+    const inactiveDetailResponse = {
+      ...detailResponse,
+      data: { ...detailResponse.data, status: 'INACTIVE' },
+    };
+    userService.getAdminUserById.mockResolvedValue(inactiveDetailResponse).mockResolvedValueOnce(detailResponse);
+    userService.getAdminUserAuditHistory.mockResolvedValue(statusAuditHistoryResponse).mockResolvedValueOnce(auditHistoryResponse);
+    const statusResponse = { data: { status: 'INACTIVE' }, message: 'User status updated', statusCode: 200 };
+    userService.updateAdminUserStatus.mockResolvedValue(statusResponse);
+
+    renderDialog();
+
+    const details = await screen.findByRole('dialog', { name: 'User details' });
+    expect(await within(details).findByRole('button', { name: 'Suspend user' })).toBeInTheDocument();
+    expect(within(details).queryByRole('button', { name: 'Reactivate user' })).not.toBeInTheDocument();
+    fireEvent.click(within(details).getByRole('button', { name: 'Suspend user' }));
+
+    const confirmation = await screen.findByRole('dialog', { name: 'Suspend user' });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm suspension' }));
+    expect(await within(confirmation).findByText('Reason is required.')).toBeInTheDocument();
+    fireEvent.change(within(confirmation).getByLabelText('Reason'), { target: { value: ' '.repeat(3) } });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm suspension' }));
+    expect(await within(confirmation).findByText('Reason is required.')).toBeInTheDocument();
+    expect(userService.updateAdminUserStatus).not.toHaveBeenCalled();
+
+    fireEvent.change(within(confirmation).getByLabelText('Reason'), { target: { value: '  Policy violation  ' } });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm suspension' }));
+
+    await waitFor(() => expect(userService.updateAdminUserStatus).toHaveBeenCalledWith('user-id', {
+      reason: 'Policy violation',
+      status: 'INACTIVE',
+    }));
+    expect(await within(details).findByText('Inactive', { exact: true })).toBeInTheDocument();
+    const history = await within(details).findByRole('region', { name: 'Profile and status history' });
+    expect(within(history).getByText(/Status changed by Noor Khan/)).toHaveTextContent(/Oct 3, 2026/);
+    expect(await within(history).findByText('Reason: Policy violation')).toBeInTheDocument();
+    expect(within(history).getByText('Resulting status: Inactive')).toBeInTheDocument();
+    expect(userService.getAdminUserById).toHaveBeenCalledTimes(2);
+    expect(userService.getAdminUserAuditHistory).toHaveBeenCalledTimes(2);
+  });
+
+  it('reactivates inactive users with a reason and shows the updated status event', async () => {
+    const inactiveDetailResponse = {
+      ...detailResponse,
+      data: { ...detailResponse.data, status: 'INACTIVE' },
+    };
+    const activeDetailResponse = {
+      ...detailResponse,
+      data: { ...detailResponse.data, status: 'ACTIVE' },
+    };
+    const reactivationHistoryResponse = {
+      ...statusAuditHistoryResponse,
+      data: [{
+        ...statusAuditHistoryResponse.data[0],
+        id: 'reactivation-audit-id',
+        reason: 'Appeal resolved',
+        resultingStatus: 'ACTIVE',
+      }],
+    };
+    userService.getAdminUserById.mockResolvedValue(activeDetailResponse).mockResolvedValueOnce(inactiveDetailResponse);
+    userService.getAdminUserAuditHistory.mockResolvedValue(reactivationHistoryResponse).mockResolvedValueOnce(auditHistoryResponse);
+    userService.updateAdminUserStatus.mockResolvedValue({ data: { status: 'ACTIVE' }, message: 'User status updated', statusCode: 200 });
+
+    renderDialog();
+
+    const details = await screen.findByRole('dialog', { name: 'User details' });
+    expect(await within(details).findByRole('button', { name: 'Reactivate user' })).toBeInTheDocument();
+    expect(within(details).queryByRole('button', { name: 'Suspend user' })).not.toBeInTheDocument();
+    fireEvent.click(within(details).getByRole('button', { name: 'Reactivate user' }));
+
+    const confirmation = await screen.findByRole('dialog', { name: 'Reactivate user' });
+    fireEvent.change(within(confirmation).getByLabelText('Reason'), { target: { value: 'Appeal resolved' } });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm reactivation' }));
+
+    await waitFor(() => expect(userService.updateAdminUserStatus).toHaveBeenCalledWith('user-id', {
+      reason: 'Appeal resolved',
+      status: 'ACTIVE',
+    }));
+    expect(await within(details).findByText('Active', { exact: true })).toBeInTheDocument();
+    const history = await within(details).findByRole('region', { name: 'Profile and status history' });
+    expect(within(history).getByText(/Status changed by Noor Khan/)).toHaveTextContent(/Oct 3, 2026/);
+    expect(await within(history).findByText('Reason: Appeal resolved')).toBeInTheDocument();
+    expect(within(history).getByText('Resulting status: Active')).toBeInTheDocument();
+  });
+
+  it('keeps the displayed status and history unchanged and shows an error when a transition fails', async () => {
+    const failure = new Error('Request failed');
+    userService.updateAdminUserStatus.mockRejectedValue(failure);
+    renderDialog();
+
+    const details = await screen.findByRole('dialog', { name: 'User details' });
+    fireEvent.click(await within(details).findByRole('button', { name: 'Suspend user' }));
+    const confirmation = await screen.findByRole('dialog', { name: 'Suspend user' });
+    fireEvent.change(within(confirmation).getByLabelText('Reason'), { target: { value: 'Policy violation' } });
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Confirm suspension' }));
+
+    await waitFor(() => expect(errorToast).toHaveBeenCalledWith(failure, 'Failed to suspend user.'));
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Cancel' }));
+    expect(within(details).getByText('Active', { exact: true })).toBeInTheDocument();
+    expect(userService.getAdminUserById).toHaveBeenCalledTimes(1);
+    expect(userService.getAdminUserAuditHistory).toHaveBeenCalledTimes(1);
+    const history = within(details).getByRole('region', { name: 'Profile and status history' });
+    expect(within(history).getByText('Changed fields: First name, Address')).toBeInTheDocument();
+    expect(within(history).queryByText('Reason: Policy violation')).not.toBeInTheDocument();
+    expect(confirmation).not.toBeInTheDocument();
   });
 });

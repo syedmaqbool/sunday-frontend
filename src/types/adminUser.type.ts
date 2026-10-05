@@ -15,6 +15,8 @@ import type {
   UpdateAdminUserProfileData,
   UpdateAdminUserProfileResponses,
   UpdateAdminUserRoleData,
+  UpdateAdminUserStatusData,
+  UpdateAdminUserStatusResponses,
 } from '@/types/generated-api';
 
 export type AdminUser = ApiResponseItem<GetAdminUsersResponses>;
@@ -25,6 +27,8 @@ export type AdminUserAuditEvent = ApiResponseItem<GetAdminUserAuditHistoryRespon
 export type AdminUserAuditHistoryResponse = ApiSuccessResponse<GetAdminUserAuditHistoryResponses>;
 export type AdminUserAuditHistoryParameters = Partial<ApiRequestQuery<GetAdminUserAuditHistoryData>>;
 export type UpdateAdminUserProfileResponse = ApiSuccessResponse<UpdateAdminUserProfileResponses>;
+export type UpdateAdminUserStatusInput = ApiRequestBody<UpdateAdminUserStatusData>;
+export type UpdateAdminUserStatusResponse = ApiSuccessResponse<UpdateAdminUserStatusResponses>;
 export type AdminUserRoleType = NonNullable<ApiRequestQuery<GetAdminUsersData>['roleType']>;
 export type CreateAdminUserInput = ApiRequestBody<CreateAdminUserData>;
 export type UpdateAdminUserProfileInput = ApiRequestBody<UpdateAdminUserProfileData>;

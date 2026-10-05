@@ -1,4 +1,4 @@
-import type { AdminUserAuditEvent, UpdateAdminUserProfileInput } from '@/types/adminUser.type';
+import type { AdminUserAuditEvent, UpdateAdminUserProfileInput, UpdateAdminUserStatusInput } from '@/types/adminUser.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminUserAuditHistoryQueryOptions,
   getAdminUserByIdQueryOptions,
   useUpdateAdminUserProfileMutation,
+  useUpdateAdminUserStatusMutation,
 } from '@/queries/adminUsers.query';
 
 const AUDIT_PAGE_SIZE = 10;
@@ -33,8 +35,12 @@ const profileEditFormSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required.'),
   lastName: z.string().trim().min(1, 'Last name is required.'),
 });
+const statusChangeFormSchema = z.object({
+  reason: z.string().trim().min(1, 'Reason is required.'),
+});
 
 type ProfileEditFormValues = z.infer<typeof profileEditFormSchema>;
+type StatusChangeFormValues = z.infer<typeof statusChangeFormSchema>;
 type ProfileEditControl = ReturnType<typeof useForm<ProfileEditFormValues>>['control'];
 
 const EMPTY_PROFILE: ProfileEditFormValues = {
@@ -60,11 +66,17 @@ export default function AdminUserDetailsDialog({
   open: boolean;
 }) {
   const [auditPage, setAuditPage] = useState(1);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const form = useForm<ProfileEditFormValues>({
     defaultValues: EMPTY_PROFILE,
     resolver: zodResolver(profileEditFormSchema),
   });
+  const statusForm = useForm<StatusChangeFormValues>({
+    defaultValues: { reason: '' },
+    resolver: zodResolver(statusChangeFormSchema),
+  });
   const updateProfile = useUpdateAdminUserProfileMutation();
+  const updateStatus = useUpdateAdminUserStatusMutation();
   const { data: detailResponse, isError, isLoading } = useQuery(getAdminUserByIdQueryOptions(userId));
   const {
     data: auditHistoryResponse,
@@ -75,6 +87,8 @@ export default function AdminUserDetailsDialog({
   const auditHistory = auditHistoryResponse?.data ?? [];
   const auditPagination = auditHistoryResponse?.pagination;
   const name = user ? [user.firstName, user.lastName].filter(Boolean).join(' ').trim() : '';
+  const statusActionLabel = user?.status === 'ACTIVE' ? 'Suspend user' : 'Reactivate user';
+  const statusConfirmLabel = user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
 
   useEffect(() => {
     setAuditPage(1);
@@ -121,6 +135,26 @@ export default function AdminUserDetailsDialog({
     }
   };
 
+  const handleStatusChange = async (values: StatusChangeFormValues) => {
+    if (!user || !userId)
+      return;
+
+    const payload: UpdateAdminUserStatusInput = {
+      reason: values.reason.trim(),
+      status: user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+    };
+
+    try {
+      await updateStatus.mutateAsync({ userId, payload });
+      setStatusDialogOpen(false);
+      statusForm.reset({ reason: '' });
+      toast.success(payload.status === 'INACTIVE' ? 'User suspended.' : 'User reactivated.');
+    }
+    catch (error) {
+      showErrorToast(error, payload.status === 'INACTIVE' ? 'Failed to suspend user.' : 'Failed to reactivate user.');
+    }
+  };
+
   return (
     <Dialog
       onOpenChange={(isOpen) => {
@@ -132,7 +166,7 @@ export default function AdminUserDetailsDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>User details</DialogTitle>
-          <DialogDescription>Update the user’s name or address and review profile edit history.</DialogDescription>
+          <DialogDescription>Update the user’s profile, manage account status, and review admin history.</DialogDescription>
         </DialogHeader>
 
         {isLoading && (
@@ -202,6 +236,18 @@ export default function AdminUserDetailsDialog({
                       {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                     </Badge>
                   </dd>
+                  <Button
+                    onClick={() => {
+                      statusForm.reset({ reason: '' });
+                      setStatusDialogOpen(true);
+                    }}
+                    disabled={updateStatus.isPending}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {statusActionLabel}
+                  </Button>
                 </div>
                 <DetailField
                   value={user.marketingEmailConsent ? 'Consented' : 'Not consented'}
@@ -218,8 +264,8 @@ export default function AdminUserDetailsDialog({
 
             <section aria-labelledby="profile-edit-history-heading" className="space-y-3 border-t border-border pt-5">
               <div>
-                <h3 id="profile-edit-history-heading" className="font-semibold text-foreground">Profile edit history</h3>
-                <p className="text-sm text-muted-foreground">Profile changes show the editor, time, and changed fields.</p>
+                <h3 id="profile-edit-history-heading" className="font-semibold text-foreground">Profile and status history</h3>
+                <p className="text-sm text-muted-foreground">Profile edits and status changes show the admin, time, and event details.</p>
               </div>
 
               {isAuditHistoryLoading && (
@@ -231,12 +277,12 @@ export default function AdminUserDetailsDialog({
 
               {isAuditHistoryError && (
                 <p role="alert" className="text-sm text-destructive">
-                  Unable to load profile edit history. Please try again.
+                  Unable to load user history. Please try again.
                 </p>
               )}
 
               {!isAuditHistoryLoading && !isAuditHistoryError && auditHistory.length === 0 && (
-                <p className="text-sm text-muted-foreground">No profile edits have been recorded.</p>
+                <p className="text-sm text-muted-foreground">No profile edits or status changes have been recorded.</p>
               )}
 
               {!isAuditHistoryLoading && !isAuditHistoryError && auditHistory.length > 0 && (
@@ -244,17 +290,36 @@ export default function AdminUserDetailsDialog({
                   {auditHistory.map(event => (
                     <li key={event.id} className="rounded-md border border-border p-3">
                       <p className="text-sm font-medium text-foreground">
-                        Edited by
+                        {event.eventType === 'STATUS_CHANGED' ? 'Status changed by' : 'Edited by'}
                         {' '}
                         {formatActorName(event)}
                         {' · '}
                         {formatAuditTimestamp(event.createdAt)}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Changed fields:
-                        {' '}
-                        {event.changedFields.map(field => AUDIT_FIELD_LABELS[field]).join(', ')}
-                      </p>
+                      {event.eventType === 'STATUS_CHANGED'
+                        ? (
+                            <>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Resulting status:
+                                {' '}
+                                {formatResultingStatus(event.resultingStatus)}
+                              </p>
+                              {event.reason && (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  Reason:
+                                  {' '}
+                                  {event.reason}
+                                </p>
+                              )}
+                            </>
+                          )
+                        : (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              Changed fields:
+                              {' '}
+                              {event.changedFields.map(field => AUDIT_FIELD_LABELS[field]).join(', ')}
+                            </p>
+                          )}
                     </li>
                   ))}
                 </ol>
@@ -304,6 +369,57 @@ export default function AdminUserDetailsDialog({
           )}
         </DialogFooter>
       </DialogContent>
+      <Dialog
+        onOpenChange={(isOpen) => {
+          setStatusDialogOpen(isOpen);
+          if (!isOpen)
+            statusForm.reset({ reason: '' });
+        }}
+        open={statusDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{statusActionLabel}</DialogTitle>
+            <DialogDescription>
+              Enter a reason for this status change. Admins can review the reason in user history.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form id="admin-user-status-form" onSubmit={statusForm.handleSubmit(handleStatusChange)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-user-status-reason">Reason</Label>
+              <Controller
+                name="reason"
+                control={statusForm.control}
+                render={({ field }) => <Textarea {...field} id="admin-user-status-reason" />}
+              />
+              {statusForm.formState.errors.reason?.message && (
+                <p role="alert" className="text-sm text-destructive">
+                  {statusForm.formState.errors.reason.message}
+                </p>
+              )}
+            </div>
+          </form>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setStatusDialogOpen(false);
+                statusForm.reset({ reason: '' });
+              }}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={updateStatus.isPending} form="admin-user-status-form" type="submit">
+              {updateStatus.isPending
+                ? `${statusActionLabel === 'Suspend user' ? 'Suspending' : 'Reactivating'}…`
+                : statusConfirmLabel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
@@ -364,4 +480,12 @@ function formatActorName(event: AdminUserAuditEvent) {
 function formatAuditTimestamp(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : format(date, 'MMM d, yyyy h:mm a');
+}
+
+function formatResultingStatus(value: AdminUserAuditEvent['resultingStatus']) {
+  if (value === 'ACTIVE')
+    return 'Active';
+  if (value === 'INACTIVE')
+    return 'Inactive';
+  return '—';
 }

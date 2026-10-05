@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAdminUserAuditHistory, updateAdminUserProfile } from '@/services/user.service';
+import { getAdminUserAuditHistory, updateAdminUserProfile, updateAdminUserStatus } from '@/services/user.service';
 
 const { getMock, patchMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
@@ -38,6 +38,17 @@ describe('admin user service', () => {
     await expect(updateAdminUserProfile('user-id', { firstName: 'Amina Noor' })).resolves.toBe(response);
     expect(patchMock).toHaveBeenCalledWith('/api/v1/admin/users/user-id', {
       json: { firstName: 'Amina Noor' },
+    });
+  });
+
+  it('sends the status and reason to the status endpoint and returns the raw response', async () => {
+    const response = { data: { status: 'INACTIVE' }, message: 'User status updated', statusCode: 200 };
+    const json = vi.fn().mockResolvedValue(response);
+    patchMock.mockReturnValue({ json });
+
+    await expect(updateAdminUserStatus('user-id', { reason: 'Policy violation', status: 'INACTIVE' })).resolves.toBe(response);
+    expect(patchMock).toHaveBeenCalledWith('/api/v1/admin/users/user-id/status', {
+      json: { reason: 'Policy violation', status: 'INACTIVE' },
     });
   });
 });

@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { joinFirstAndLastName } from '@/lib/adminUserFormatters';
 import { formatEnumLabel } from '@/lib/utilities';
 
 interface Column {
@@ -238,7 +239,7 @@ export default function AdminUsersTable({
 }
 
 export function fullName(user: AdminUser) {
-  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  const name = joinFirstAndLastName(user.firstName, user.lastName);
   return name || user.username || 'Unnamed user';
 }
 

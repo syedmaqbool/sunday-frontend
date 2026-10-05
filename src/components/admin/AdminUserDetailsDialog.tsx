@@ -1,7 +1,6 @@
 import type { AdminUserAuditEvent, UpdateAdminUserProfileInput, UpdateAdminUserStatusInput } from '@/types/adminUser.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -20,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDateOrValue, joinFirstAndLastName } from '@/lib/adminUserFormatters';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminUserAuditHistoryQueryOptions,
@@ -86,7 +86,7 @@ export default function AdminUserDetailsDialog({
   const user = detailResponse?.data;
   const auditHistory = auditHistoryResponse?.data ?? [];
   const auditPagination = auditHistoryResponse?.pagination;
-  const name = user ? [user.firstName, user.lastName].filter(Boolean).join(' ').trim() : '';
+  const name = user ? joinFirstAndLastName(user.firstName, user.lastName) : '';
   const statusActionLabel = user?.status === 'ACTIVE' ? 'Suspend user' : 'Reactivate user';
   const statusConfirmLabel = user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
 
@@ -469,17 +469,15 @@ function formatOptionalDate(value: string | null | undefined) {
   if (!value)
     return '—';
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, 'MMM d, yyyy');
+  return formatDateOrValue(value, 'MMM d, yyyy');
 }
 
 function formatActorName(event: AdminUserAuditEvent) {
-  return [event.actor.firstName, event.actor.lastName].filter(Boolean).join(' ').trim() || event.actor.email;
+  return joinFirstAndLastName(event.actor.firstName, event.actor.lastName) || event.actor.email;
 }
 
 function formatAuditTimestamp(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, 'MMM d, yyyy h:mm a');
+  return formatDateOrValue(value, 'MMM d, yyyy h:mm a');
 }
 
 function formatResultingStatus(value: AdminUserAuditEvent['resultingStatus']) {

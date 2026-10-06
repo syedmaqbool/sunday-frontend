@@ -13,11 +13,10 @@ export interface ManualVerificationCopy {
 }
 
 export function getManualVerificationState(
-  order: Pick<Order, 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>,
-  now = new Date(),
+  order: Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>,
 ): ManualVerificationState {
   if (order.status === 'CANCELLED')
-    return 'CANCELLED';
+    return order.cancellationReason === 'PAYMENT_EXPIRED' ? 'EXPIRED' : 'CANCELLED';
 
   const submissionStatus = order.manualPaymentSubmission?.status;
   if (submissionStatus === 'APPROVED')
@@ -27,11 +26,18 @@ export function getManualVerificationState(
   if (submissionStatus === 'RESUBMISSION_REQUESTED')
     return 'RESUBMISSION_REQUESTED';
 
-  if (order.expiresAt && new Date(order.expiresAt) <= now && order.paymentStatus !== 'PAID')
-    return 'EXPIRED';
-
   if (submissionStatus === 'SUBMITTED')
     return 'SUBMITTED';
+
+  if (
+    !order.manualPaymentSubmission
+    && order.status === 'AWAITING_PAYMENT'
+    && order.paymentStatus === 'PENDING'
+    && order.expiresAt
+    && new Date(order.expiresAt).getTime() <= Date.now()
+  ) {
+    return 'EXPIRED';
+  }
 
   return 'LEGACY';
 }
@@ -56,7 +62,7 @@ export function getManualVerificationCopy(
     }
     case 'EXPIRED': {
       return {
-        description: 'The payment review window for this order has expired.',
+        description: 'The payment deadline for this order has passed.',
         heading: 'Payment window expired',
         label: 'Expired',
       };
@@ -109,7 +115,7 @@ export function ManualVerificationStatus({
 }: {
   className?: string;
   compact?: boolean;
-  order: Pick<Order, 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>;
+  order: Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>;
 }) {
   const state = getManualVerificationState(order);
   if (state === 'LEGACY' || (state === 'CANCELLED' && !order.manualPaymentSubmission))
@@ -118,6 +124,7 @@ export function ManualVerificationStatus({
   const copy = getManualVerificationCopy(state);
   const reviewNote = order.manualPaymentSubmission?.reviewNote;
   const deadline = order.expiresAt ? new Date(order.expiresAt) : null;
+  const shouldShowDeadline = state === 'EXPIRED' || state === 'RESUBMISSION_REQUESTED';
 
   return (
     <div className={cn(compact ? 'space-y-1' : 'rounded-md border border-border bg-muted/30 p-4', className)}>
@@ -137,9 +144,13 @@ export function ManualVerificationStatus({
           {reviewNote}
         </p>
       )}
-      {deadline && state !== 'APPROVED' && state !== 'CANCELLED' && (
+      {deadline && shouldShowDeadline && (
         <p className="text-xs text-muted-foreground">
-          Payment review deadline:
+          {state === 'RESUBMISSION_REQUESTED'
+            ? 'Payment correction deadline:'
+            : state === 'EXPIRED'
+              ? 'Payment deadline:'
+              : 'Payment review deadline:'}
           {' '}
           {deadline.toLocaleString('en-GB', {
             dateStyle: 'medium',

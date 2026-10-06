@@ -464,8 +464,8 @@ function AdminOrders() {
                             </TableHeader>
                             <TableBody>
                               {reservedListings.map((l) => {
-                                const expiresAt = new Date(l.reservationExpiresAt);
-                                const isExpired = expiresAt.getTime() < Date.now();
+                                const expiresAt = l.reservationExpiresAt ? new Date(l.reservationExpiresAt) : null;
+                                const isExpired = expiresAt !== null && expiresAt.getTime() < Date.now();
                                 return (
                                   <TableRow key={l.reservationId}>
                                     <TableCell className="font-medium">
@@ -491,7 +491,7 @@ function AdminOrders() {
                                       <Badge
                                         variant={isExpired ? 'destructive' : 'secondary'}
                                       >
-                                        {format(expiresAt, 'MMM d, p')}
+                                        {expiresAt ? format(expiresAt, 'MMM d, p') : 'Awaiting admin review'}
                                       </Badge>
                                     </TableCell>
                                     <TableCell className="text-right font-medium">

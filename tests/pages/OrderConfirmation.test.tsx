@@ -11,10 +11,14 @@ const {
   addItemMock,
   cancelOrderMock,
   fetchMarketplaceListingMock,
+  resubmitManualPaymentMock,
+  uploadPaymentProofMock,
 } = vi.hoisted(() => ({
   addItemMock: vi.fn(),
   cancelOrderMock: vi.fn(),
   fetchMarketplaceListingMock: vi.fn(),
+  resubmitManualPaymentMock: vi.fn(),
+  uploadPaymentProofMock: vi.fn(),
 }));
 const authState = vi.hoisted(() => ({ loading: false, user: { id: 'buyer-id' } as { id: string } | null }));
 
@@ -31,8 +35,19 @@ vi.mock('@/contexts/CartContext', () => ({
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
 vi.mock('@/queries/checkout.query', () => ({
+  getPaymentInstructionsOptions: () => ({
+    queryFn: async () => ({
+      data: {
+        accountNumber: 'PK00 1234',
+        accountTitle: 'Sunday Store',
+        bankOrWalletLabel: 'Example Bank',
+      },
+    }),
+    queryKey: ['checkout', 'payment-instructions'],
+  }),
   useCancelOrderMutation: () => ({ mutateAsync: cancelOrderMock }),
-  useResubmitManualPaymentMutation: () => ({ mutateAsync: vi.fn() }),
+  useResubmitManualPaymentMutation: () => ({ mutateAsync: resubmitManualPaymentMock }),
+  useUploadPaymentProofMutation: () => ({ isPending: false, mutateAsync: uploadPaymentProofMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({
   fetchMarketplaceListing: fetchMarketplaceListingMock,
@@ -152,7 +167,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const page = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/order-confirmation/order-id']}>
         <Routes>
@@ -162,6 +177,7 @@ function renderPage() {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...page, queryClient };
 }
 
 describe('order confirmation manual actions', () => {
@@ -173,7 +189,10 @@ describe('order confirmation manual actions', () => {
     addItemMock.mockReset();
     cancelOrderMock.mockReset();
     fetchMarketplaceListingMock.mockReset();
+    resubmitManualPaymentMock.mockReset();
+    uploadPaymentProofMock.mockReset();
     fetchMarketplaceListingMock.mockResolvedValue({ id: 'listing-id', status: 'APPROVED' });
+    uploadPaymentProofMock.mockResolvedValue({ data: { id: 'proof-file-id' } });
   });
 
   it('does not render a retry control or start a gateway flow for a manual order', async () => {
@@ -225,6 +244,138 @@ describe('order confirmation manual actions', () => {
     expect(screen.getByLabelText('Payment awaiting admin approval')).toHaveClass('animate-spin');
   });
 
+  it('hides the payment deadline and cancellation while proof awaits admin review', async () => {
+    testState.currentOrder = makeOrder({
+      canCancel: true,
+      expiresAt: null,
+    });
+    renderPage();
+
+    await screen.findByText('Pending review');
+
+    expect(screen.queryByText(/payment review deadline/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+  });
+
+  it('opens the existing resubmission flow and refreshes the order after replacement proof', async () => {
+    const requestedSubmission = { ...makeOrder().manualPaymentSubmission!, status: 'RESUBMISSION_REQUESTED' as const };
+    testState.currentOrder = makeOrder({
+      canCancel: true,
+      canResubmit: true,
+      manualPaymentSubmission: requestedSubmission,
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    });
+    resubmitManualPaymentMock.mockImplementation(async () => {
+      testState.currentOrder = makeOrder({
+        canCancel: false,
+        canResubmit: false,
+        expiresAt: null,
+      });
+      return { data: { id: 'order-id' } };
+    });
+    const { queryClient } = renderPage();
+    const refetchQueries = vi.spyOn(queryClient, 'refetchQueries');
+
+    await screen.findByRole('heading', { name: 'Resubmission requested' });
+    expect(screen.getByText(/payment correction deadline/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    expect(await within(dialog).findByText('Sunday Store')).toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText('Sender account title/name'), { target: { value: 'Jane Buyer' } });
+    fireEvent.change(within(dialog).getByLabelText('Sender account number'), { target: { value: '123456789' } });
+    fireEvent.change(within(dialog).getByLabelText('Transaction screenshot'), {
+      target: { files: [new File(['proof'], 'proof.png', { type: 'image/png' })] },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Resubmit payment proof' }));
+
+    await waitFor(() => expect(resubmitManualPaymentMock).toHaveBeenCalledWith({
+      orderId: 'order-id',
+      payload: {
+        proofFileId: 'proof-file-id',
+        senderAccountNumber: '123456789',
+        senderAccountTitle: 'Jane Buyer',
+      },
+    }));
+    expect(refetchQueries).toHaveBeenCalledWith({ queryKey: ['my-orders', 'detail', 'order-id'] });
+    expect(await screen.findByText('Pending review')).toBeInTheDocument();
+  });
+
+  it('lets the buyer cancel during correction and shows the refreshed cancelled order', async () => {
+    testState.currentOrder = makeOrder({
+      canCancel: true,
+      canResubmit: true,
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    });
+    cancelOrderMock.mockImplementation(async () => {
+      testState.currentOrder = makeOrder({
+        canCancel: false,
+        cancellationReason: 'BUYER_CANCELLED',
+        canResubmit: false,
+        manualPaymentSubmission: {
+          ...makeOrder().manualPaymentSubmission!,
+          status: 'RESUBMISSION_REQUESTED',
+        },
+        paymentStatus: 'CANCELLED',
+        status: 'CANCELLED',
+      });
+      return { data: { restorableListingIds: [] } };
+    });
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Resubmission requested' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }));
+
+    await waitFor(() => expect(cancelOrderMock).toHaveBeenCalledWith('order-id'));
+    expect(await screen.findByRole('heading', { name: 'Order cancelled' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+  });
+
+  it('shows backend expiry and hides both correction actions after the correction window closes', async () => {
+    testState.currentOrder = makeOrder({
+      canCancel: false,
+      cancellationReason: 'PAYMENT_EXPIRED',
+      canResubmit: false,
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+      paymentStatus: 'CANCELLED',
+      status: 'CANCELLED',
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Payment window expired' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+  });
+
+  it('hides correction actions after the deadline while the backend capability flags remain true', async () => {
+    testState.currentOrder = makeOrder({
+      canCancel: true,
+      canResubmit: true,
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    });
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Resubmission requested' });
+
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+  });
+
   it('keeps historical orders viewable without gateway payment actions', async () => {
     testState.currentOrder = makeOrder({
       manualPaymentSubmission: null,
@@ -257,6 +408,12 @@ describe('order confirmation manual actions', () => {
   });
 
   it('confirms cancellation, restores returned listings, and refreshes the order', async () => {
+    testState.currentOrder = makeOrder({
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+    });
     cancelOrderMock.mockImplementation(async () => {
       testState.currentOrder = makeOrder({
         canCancel: false,
@@ -280,6 +437,12 @@ describe('order confirmation manual actions', () => {
   });
 
   it('refreshes stale state and keeps the confirmation open on a cancellation conflict', async () => {
+    testState.currentOrder = makeOrder({
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+    });
     const conflict = new HTTPError(
       new Response(null, { status: 409, statusText: 'Conflict' }),
       new Request('https://example.test/order'),

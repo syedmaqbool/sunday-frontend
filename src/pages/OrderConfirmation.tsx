@@ -38,6 +38,14 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function hasCorrectionDeadlinePassed(order: Order, currentTime: number) {
+  const correctionDeadline = order.manualPaymentSubmission?.status === 'RESUBMISSION_REQUESTED'
+    ? order.expiresAt
+    : null;
+
+  return correctionDeadline !== null && Date.parse(correctionDeadline) <= currentTime;
+}
+
 function getConfirmationCopy(order: Order): { description: string; heading: string } {
   if (order.status === 'CANCELLED' && order.paymentStatus === 'PAID') {
     return {
@@ -95,6 +103,7 @@ function OrderConfirmation() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [resubmitting, setResubmitting] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const orderQueryEnabled = Boolean(id) && Boolean(user) && !authLoading;
 
   useEffect(() => {
@@ -121,6 +130,37 @@ function OrderConfirmation() {
     retry: false,
   });
   const order = orderResponse?.data;
+  const correctionDeadlinePassed = order ? hasCorrectionDeadlinePassed(order, currentTime) : false;
+
+  useEffect(() => {
+    if (order?.manualPaymentSubmission?.status !== 'RESUBMISSION_REQUESTED' || !order.expiresAt)
+      return;
+
+    const currentTimestamp = Date.now();
+    const correctionDeadline = Date.parse(order.expiresAt);
+    setCurrentTime(currentTimestamp);
+    const remainingTime = correctionDeadline - currentTimestamp;
+    if (remainingTime <= 0)
+      return;
+
+    let timeoutId: ReturnType<typeof globalThis.setTimeout>;
+    const updateTimeAtDeadline = () => {
+      const updatedTimestamp = Date.now();
+      setCurrentTime(updatedTimestamp);
+      const timeUntilDeadline = correctionDeadline - updatedTimestamp;
+      if (timeUntilDeadline > 0) {
+        timeoutId = setTimeout(
+          updateTimeAtDeadline,
+          Math.min(timeUntilDeadline, 2_147_483_647),
+        );
+      }
+    };
+    timeoutId = setTimeout(
+      updateTimeAtDeadline,
+      Math.min(remainingTime, 2_147_483_647),
+    );
+    return () => clearTimeout(timeoutId);
+  }, [order]);
 
   useEffect(() => {
     if (!orderQueryEnabled || isLoading || order)
@@ -136,6 +176,11 @@ function OrderConfirmation() {
   }) => {
     if (!order || resubmitting)
       return;
+    if (hasCorrectionDeadlinePassed(order, Date.now())) {
+      setCurrentTime(Date.now());
+      setResubmitOpen(false);
+      return;
+    }
     setResubmitting(true);
     setResubmitError(null);
     try {
@@ -162,6 +207,11 @@ function OrderConfirmation() {
   const handleCancel = async () => {
     if (!order || cancelling)
       return;
+    if (hasCorrectionDeadlinePassed(order, Date.now())) {
+      setCurrentTime(Date.now());
+      setCancelOpen(false);
+      return;
+    }
     setCancelling(true);
     setCancelError(null);
     try {
@@ -365,7 +415,7 @@ function OrderConfirmation() {
                 lg:col-span-5
               "
               >
-                {order.canResubmit && (verificationState === 'REJECTED' || verificationState === 'RESUBMISSION_REQUESTED') && (
+                {order.canResubmit && !correctionDeadlinePassed && (verificationState === 'REJECTED' || verificationState === 'RESUBMISSION_REQUESTED') && (
                   <Button
                     onClick={() => {
                       setResubmitError(null);
@@ -377,7 +427,7 @@ function OrderConfirmation() {
                     Resubmit payment proof
                   </Button>
                 )}
-                {order.canCancel && !isCancelled && !isPaid && (
+                {order.canCancel && !correctionDeadlinePassed && verificationState !== 'SUBMITTED' && !isCancelled && !isPaid && (
                   <AlertDialog onOpenChange={setCancelOpen} open={cancelOpen}>
                     <AlertDialogTrigger asChild>
                       <Button type="button" variant="outline" className="w-full">Cancel order</Button>

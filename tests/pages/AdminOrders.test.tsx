@@ -8,6 +8,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrders from '@/pages/admin/Orders';
 
 const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
+const reservedListings = vi.hoisted(() => ({
+  current: [] as {
+    buyerId: string;
+    listingId: string;
+    reservationId: string;
+    sellerId: string;
+    buyerFullName: string;
+    price: number;
+    sellerFullName: string;
+    title: string;
+    reservationExpiresAt: string | null;
+  }[],
+}));
 const adminComplaintService = vi.hoisted(() => ({ listAdminComplaints: vi.fn() }));
 const access = vi.hoisted(() => ({ permissions: new Set<string>(['COMPLAINTS_READ']) }));
 const cancelAdminOrderMutation = vi.hoisted(() => ({ isPending: false, mutateAsync: vi.fn() }));
@@ -53,7 +66,7 @@ vi.mock('@/queries/adminOrders.query', () => ({
     };
   },
   getAdminReservedListingsOptions: () => ({
-    queryFn: async () => ({ data: [] }),
+    queryFn: async () => ({ data: reservedListings.current }),
     queryKey: ['admin-orders', 'reserved-listings', 'list'],
   }),
   useCancelAdminOrderMutation: () => cancelAdminOrderMutation,
@@ -163,6 +176,7 @@ beforeEach(() => {
   orders.detail = null;
   orders.detailError = null;
   orders.listParameters = [];
+  reservedListings.current = [];
   adminComplaintService.listAdminComplaints.mockClear();
   cancelAdminOrderMutation.mutateAsync.mockReset().mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
   vi.mocked(toast.error).mockClear();
@@ -268,6 +282,36 @@ describe('admin order number search', () => {
     fireEvent.mouseDown(reservedTab);
     fireEvent.click(reservedTab);
     await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Search by order #' })).not.toBeInTheDocument());
+  });
+
+  it('shows an awaiting-review state for a reserved listing without an expiry deadline', async () => {
+    reservedListings.current = [{
+      buyerId: 'buyer-id',
+      listingId: 'listing-id',
+      reservationId: 'reservation-id',
+      sellerId: 'seller-id',
+      buyerFullName: 'Jane Buyer',
+      price: 100,
+      sellerFullName: 'Example Seller',
+      title: 'Reserved item under review',
+      reservationExpiresAt: null,
+    }];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const reservedTab = screen.getByRole('tab', { name: 'Reserved' });
+    fireEvent.mouseDown(reservedTab);
+    fireEvent.click(reservedTab);
+
+    expect(await screen.findByText('Awaiting admin review')).toBeInTheDocument();
+    expect(screen.getByText('Reserved item under review')).toBeInTheDocument();
+    expect(screen.queryByText(/Jan 1, 1970/i)).not.toBeInTheDocument();
   });
 });
 

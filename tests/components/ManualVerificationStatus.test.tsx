@@ -6,8 +6,9 @@ import {
   ManualVerificationStatus,
 } from '@/components/ManualVerificationStatus';
 
-function order(overrides: Partial<Pick<Order, 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>> = {}) {
+function order(overrides: Partial<Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>> = {}) {
   return {
+    cancellationReason: null,
     manualPaymentSubmission: {
       id: 'submission-id',
       orderId: 'order-id',
@@ -31,22 +32,30 @@ describe('manual verification state', () => {
     ['APPROVED', 'APPROVED'],
     ['REJECTED', 'REJECTED'],
     ['RESUBMISSION_REQUESTED', 'RESUBMISSION_REQUESTED'],
-  ] as const)('recognizes the backend %s state', (status, expected) => {
+  ] as const)('uses the backend %s state when its previous deadline has elapsed', (status, expected) => {
     const baseSubmission = order().manualPaymentSubmission!;
     const testOrder = order({
       manualPaymentSubmission: { ...baseSubmission, status },
+      expiresAt: '2020-01-01T00:00:00.000Z',
     });
     const actualState = getManualVerificationState(testOrder);
 
     expect(actualState).toBe(expected);
   });
 
-  it('recognizes cancellation and expiry as distinct states', () => {
+  it('recognizes payment expiry from the backend cancellation reason', () => {
+    expect(getManualVerificationState(order({
+      cancellationReason: 'PAYMENT_EXPIRED',
+      status: 'CANCELLED',
+    }))).toBe('EXPIRED');
     expect(getManualVerificationState(order({ status: 'CANCELLED' }))).toBe('CANCELLED');
+  });
+
+  it('recognizes an unpaid order as expired when its deadline passed before backend cleanup', () => {
     expect(getManualVerificationState(order({
       manualPaymentSubmission: null,
       expiresAt: '2020-01-01T00:00:00.000Z',
-    }), new Date('2026-09-08T00:00:00.000Z'))).toBe('EXPIRED');
+    }))).toBe('EXPIRED');
   });
 
   it('keeps orders without a manual submission on the legacy path', () => {
@@ -74,10 +83,37 @@ describe('manualVerificationStatus', () => {
     expect(screen.queryByText(/private-proof-id/i)).not.toBeInTheDocument();
   });
 
-  it('shows the review deadline for an active pending submission', () => {
-    render(<ManualVerificationStatus order={order()} />);
+  it('shows awaiting review without a payment deadline after proof is submitted', () => {
+    render(<ManualVerificationStatus order={order({ expiresAt: '2020-01-01T00:00:00.000Z' })} />);
 
-    expect(screen.getByText(/payment review deadline/i)).toBeInTheDocument();
+    expect(screen.queryByText(/payment review deadline/i)).not.toBeInTheDocument();
     expect(screen.getByText('Pending review')).toBeInTheDocument();
+  });
+
+  it('shows the expired payment deadline before backend cleanup updates the order', () => {
+    render(
+      <ManualVerificationStatus order={order({
+        manualPaymentSubmission: null,
+        expiresAt: '2020-01-01T00:00:00.000Z',
+      })}
+      />,
+    );
+
+    expect(screen.getByText('Expired')).toBeInTheDocument();
+    expect(screen.getByText(/payment deadline:/i)).toBeInTheDocument();
+  });
+
+  it('shows the correction deadline when the backend requests resubmission', () => {
+    const submission = order().manualPaymentSubmission!;
+    render(
+      <ManualVerificationStatus order={order({
+        manualPaymentSubmission: { ...submission, status: 'RESUBMISSION_REQUESTED' },
+        expiresAt: '2099-01-01T00:00:00.000Z',
+      })}
+      />,
+    );
+
+    expect(screen.getByText('Resubmission requested')).toBeInTheDocument();
+    expect(screen.getByText(/payment correction deadline/i)).toBeInTheDocument();
   });
 });

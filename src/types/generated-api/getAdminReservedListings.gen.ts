@@ -119,7 +119,10 @@ export interface GetAdminReservedListingsResponses {
       price: number;
       sellerFullName: string;
       title: string;
-      reservationExpiresAt: string;
+      /**
+       * Null while submitted accepted-offer payment proof awaits admin review.
+       */
+      reservationExpiresAt: string | null;
     }>;
     message: string;
     pagination: {

@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MarketplaceListing } from '@/types/marketplace.type';
 import Checkout from '@/pages/Checkout';
+type CheckoutListing = Pick<MarketplaceListing, 'categoryValue' | 'id' | 'price' | 'title'>
+  & Partial<Pick<MarketplaceListing, 'reservedForCurrentUser' | 'reservedOfferId' | 'reservedUntil'>>;
 
 const { cartState, useQueryMock, validateDiscountMock, validateSellerCouponMock } = vi.hoisted(() => ({
   cartState: {
@@ -157,5 +160,26 @@ describe('checkout seller coupons', () => {
     expect(screen.queryByText('Coupon (on platform fee)')).not.toBeInTheDocument();
     expect(screen.queryByText('FEE20')).not.toBeInTheDocument();
     expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 600');
+  });
+});
+
+describe('checkout accepted offer deadline', () => {
+  it('prevents checkout when an accepted offer reservation deadline has passed', () => {
+    cartState.items = [{
+      listing: {
+        id: 'accepted-listing-id',
+        reservedOfferId: 'offer-id',
+        categoryValue: 'clothing',
+        price: 1000,
+        reservedForCurrentUser: true,
+        reservedUntil: '2000-01-01T00:00:00.000Z',
+        title: 'Accepted offer coat',
+      },
+    }] as Array<{ listing: CheckoutListing }>;
+
+    renderCheckout();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The payment deadline for this accepted offer has passed.');
+    expect(screen.getByRole('button', { name: 'Place Order' })).toBeDisabled();
   });
 });

@@ -4,18 +4,31 @@ import { format } from 'date-fns';
 import { Loader2, MessageSquare, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { ReviewForm } from '@/components/ReviewForm';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
+import { getMyOrdersOptions } from '@/queries/myOrders.query';
 import {
   getMyReviewedOfferIdsOptions,
   getSentOfferSelectionOptions,
   getSentOffersOptions,
+  useWithdrawOfferMutation,
 } from '@/queries/offers.query';
 
 function statusBadge(s: string) {
@@ -36,6 +49,7 @@ function MyOffers() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedOfferId = searchParams.get('offer');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
+  const [offerToCancel, setOfferToCancel] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user)
@@ -44,6 +58,13 @@ function MyOffers() {
 
   const { data: sentResponse, isLoading: loadingSent } = useQuery(getSentOffersOptions(user?.id));
   const sent = sentResponse?.data ?? [];
+  const {
+    data: ordersResponse,
+    isError: ordersFailed,
+    isFetching: refreshingOrders,
+    isLoading: loadingOrders,
+  } = useQuery(getMyOrdersOptions(!!user));
+  const withdrawOffer = useWithdrawOfferMutation(undefined, user?.id);
   const { data: selectedOfferResponse, isLoading: loadingSelectedOffer } = useQuery(
     getSentOfferSelectionOptions(selectedOfferId, user?.id),
   );
@@ -73,6 +94,12 @@ function MyOffers() {
   const myReviews = new Set((myReviewsResponse?.data ?? [])
     .map(review => review.offerId)
     .filter((offerId): offerId is string => offerId !== null));
+  const activeCheckoutOfferIds = new Set((ordersResponse?.data ?? [])
+    .flatMap(order => order.status === 'AWAITING_PAYMENT'
+      ? order.items
+          .filter(item => item.status === 'AWAITING_PAYMENT' && item.offerId)
+          .map(item => item.offerId!)
+      : []));
 
   if (authLoading)
     return null;
@@ -173,6 +200,16 @@ function MyOffers() {
                                 {offer.amount.toLocaleString()}
                               </p>
 
+                              {offer.status === 'ACCEPTED' && offer.reservedUntil && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Payment deadline:
+                                  {' '}
+                                  <time dateTime={offer.reservedUntil}>
+                                    {format(new Date(offer.reservedUntil), 'MMM d, yyyy h:mm a')}
+                                  </time>
+                                </p>
+                              )}
+
                               {offer.status === 'COUNTERED' && offer.counterAmount && (
                                 <div className="mt-2 max-w-md rounded border bg-muted/60 p-2">
                                   <p className="text-xs font-semibold text-foreground">
@@ -218,6 +255,22 @@ function MyOffers() {
                                   ✓ Reviewed
                                 </span>
                               )}
+                              {offer.status === 'ACCEPTED'
+                                && offer.reservedUntil
+                                && new Date(offer.reservedUntil).getTime() > Date.now()
+                                && !activeCheckoutOfferIds.has(offer.id)
+                                && !loadingOrders
+                                && !refreshingOrders
+                                && !ordersFailed && (
+                                <Button
+                                  onClick={() => setOfferToCancel(offer.id)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="mt-2.5 h-8 text-destructive"
+                                >
+                                  Cancel offer
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -226,6 +279,42 @@ function MyOffers() {
                   ))}
         </div>
       </main>
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open && !withdrawOffer.isPending)
+            setOfferToCancel(null);
+        }}
+        open={!!offerToCancel}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel accepted offer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cancelling releases the listing reservation. You will not be able to continue checkout for this offer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={withdrawOffer.isPending}>Keep offer</AlertDialogCancel>
+            <Button
+              onClick={() => {
+                if (!offerToCancel)
+                  return;
+                withdrawOffer.mutate(offerToCancel, {
+                  onError: (error: unknown) => showErrorToast(error, 'Failed to cancel offer'),
+                  onSuccess: () => {
+                    setOfferToCancel(null);
+                    toast.success('Offer cancelled and listing released');
+                  },
+                });
+              }}
+              disabled={withdrawOffer.isPending}
+              variant="destructive"
+            >
+              Confirm cancellation
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Footer />
     </div>
   );

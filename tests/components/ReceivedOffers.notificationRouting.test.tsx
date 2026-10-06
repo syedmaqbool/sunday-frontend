@@ -1,10 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { describe, expect, it, vi } from 'vitest';
 import { ReceivedOffers } from '@/components/ReceivedOffers';
 
-const { useQueryMock } = vi.hoisted(() => ({ useQueryMock: vi.fn() }));
+const { respondToOfferMock, useQueryMock } = vi.hoisted(() => ({
+  respondToOfferMock: vi.fn(),
+  useQueryMock: vi.fn(),
+}));
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
@@ -15,11 +19,13 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'seller-1' } }),
 }));
 
+vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn() } }));
+
 vi.mock('@/queries/offers.query', () => ({
   getMyReviewedOfferIdsOptions: () => ({ queryKey: ['offers', 'reviewed-ids'] }),
   getReceivedOfferSelectionOptions: () => ({ queryKey: ['offers', 'selection'] }),
   getReceivedOffersOptions: () => ({ queryKey: ['offers', 'received'] }),
-  useRespondToOfferMutation: () => ({ isPending: false, mutate: vi.fn() }),
+  useRespondToOfferMutation: () => ({ isPending: false, mutate: respondToOfferMock }),
 }));
 
 const receivedOffer = {
@@ -92,5 +98,16 @@ describe('received offer notification selection', () => {
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/my-listings?tab=offers'));
     expect(screen.queryByTestId('selected-offer')).not.toBeInTheDocument();
     expect(await screen.findByText('No offers received yet')).toBeInTheDocument();
+  });
+
+  it('confirms the buyer has 24 hours after the seller accepts', async () => {
+    renderOffers('/my-listings?tab=offers', [{ ...receivedOffer, status: 'PENDING' }]);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Accept' }));
+    const onSuccess = respondToOfferMock.mock.calls[0][1].onSuccess;
+    act(() => onSuccess({ data: { ...receivedOffer, status: 'ACCEPTED' } }));
+
+    expect(toast.info).toHaveBeenCalledWith('The buyer has 24 hours to submit payment proof.');
+    expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('6 hours'));
   });
 });

@@ -126,15 +126,19 @@ export function useAcceptCounterOfferMutation(listingId: string, userId?: string
   });
 }
 
-export function useWithdrawOfferMutation(listingId: string, userId?: string) {
+export function useWithdrawOfferMutation(listingId?: string, userId?: string) {
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: (offerId: string) => withdrawOffer(offerId),
     onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: offersQueryKey.buyerListing(listingId, userId),
+        queryKey: listingId
+          ? offersQueryKey.buyerListing(listingId, userId)
+          : offersQueryKey.all(),
       });
+      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
+      qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }

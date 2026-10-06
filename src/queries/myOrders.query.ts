@@ -16,8 +16,9 @@ export const myOrdersQueryKey = {
     [...myOrdersQueryKey.all(), 'sales', 'order', orderId, orderItemId ?? null] as const,
 };
 
-export function getMyOrdersOptions() {
+export function getMyOrdersOptions(enabled = true) {
   return queryOptions({
+    enabled,
     queryFn: async () => {
       return listOrders();
     },

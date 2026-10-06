@@ -69,6 +69,7 @@ function Checkout() {
   const [appliedDiscount, setAppliedDiscount]
     = useState<AppliedDiscount | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
   const { mutateAsync: validateDiscountCode } = useValidateDiscountMutation();
   const { mutateAsync: validateSellerCouponCode } = useValidateSellerCouponMutation();
@@ -92,9 +93,27 @@ function Checkout() {
   const discountCode = discountForm.watch('code');
   const listingIds = items.map(index => index.listing.id);
   const listingIdsKey = JSON.stringify(listingIds);
+  const hasAcceptedOfferReservation = items.some(({ listing }) =>
+    listing.reservedForCurrentUser && listing.reservedOfferId,
+  );
+  const hasExpiredAcceptedOffer = items.some(({ listing }) => {
+    if (!listing.reservedForCurrentUser || !listing.reservedOfferId)
+      return false;
+
+    const expiresAt = listing.reservedUntil ? new Date(listing.reservedUntil).getTime() : NaN;
+    return !Number.isFinite(expiresAt) || expiresAt <= currentTime;
+  });
   const validAppliedDiscount = appliedDiscount?.listingIdsKey === listingIdsKey
     ? appliedDiscount
     : null;
+
+  useEffect(() => {
+    if (!hasAcceptedOfferReservation)
+      return;
+
+    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [hasAcceptedOfferReservation]);
 
   useEffect(() => {
     if (items.length > 0) {
@@ -478,6 +497,7 @@ function Checkout() {
                           {listing.price.toLocaleString()}
                         </p>
                         <Button
+                          aria-label={`Remove ${listing.title} from cart`}
                           onClick={() => removeItem(listing.id)}
                           size="icon"
                           variant="ghost"
@@ -634,6 +654,11 @@ function Checkout() {
                   {finalPrice.toLocaleString()}
                 </span>
               </div>
+              {hasExpiredAcceptedOffer && (
+                <p role="alert" className="mb-3 text-sm text-destructive">
+                  The payment deadline for this accepted offer has passed. Remove the item from your cart to continue.
+                </p>
+              )}
               <Button
                 onClick={shippingForm.handleSubmit(handlePlaceOrder, () => {
                   toast({
@@ -642,7 +667,7 @@ function Checkout() {
                     variant: 'destructive',
                   });
                 })}
-                disabled={placing}
+                disabled={placing || hasExpiredAcceptedOffer}
                 size="lg"
                 className="w-full"
               >

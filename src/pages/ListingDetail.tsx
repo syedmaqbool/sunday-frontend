@@ -237,6 +237,13 @@ function ListingDetail() {
   const isReservedForMe = !!listing?.reservedForCurrentUser;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const countdown = useCountdown(isReserved ? listing?.reservedUntil : null);
+  const isAcceptedOfferReviewPending = isReserved
+    && !!listing?.reservedOfferId
+    && listing.reservedUntil === null;
+  const isAcceptedOfferPaymentWindowClosed = isReservedForMe
+    && !!listing?.reservedOfferId
+    && listing.reservedUntil !== null
+    && new Date(listing.reservedUntil).getTime() <= Date.now();
 
   const { data: reservedOfferAmount } = useQuery(getReservedOfferAmountOptions(
     listing?.reservedOfferId,
@@ -386,29 +393,51 @@ function ListingDetail() {
               >
                 {isReservedForMe
                   ? (
-                      <p>
-                        <span className="font-semibold text-primary">
-                          Reserved for you.
-                        </span>
-                        {' '}
-                        Complete your purchase within
-                        {' '}
-                        <span className="font-mono font-semibold text-foreground">
-                          {countdown}
-                        </span>
-                        .
-                      </p>
+                      isAcceptedOfferReviewPending
+                        ? (
+                            <p>
+                              Your payment proof is awaiting admin review. This listing will remain reserved during the review.
+                            </p>
+                          )
+                        : isAcceptedOfferPaymentWindowClosed
+                          ? (
+                              <p>
+                                The payment deadline has passed. This accepted offer is no longer available for checkout.
+                              </p>
+                            )
+                          : (
+                              <p>
+                                <span className="font-semibold text-primary">
+                                  Reserved for you.
+                                </span>
+                                {' '}
+                                Complete your purchase within
+                                {' '}
+                                <span className="font-mono font-semibold text-foreground">
+                                  {countdown}
+                                </span>
+                                .
+                              </p>
+                            )
                     )
                   : isOwner
                     ? (
-                        <p>
-                          Reserved for an approved buyer · expires in
-                          {' '}
-                          <span className="font-mono font-semibold text-foreground">
-                            {countdown}
-                          </span>
-                          .
-                        </p>
+                        isAcceptedOfferReviewPending
+                          ? (
+                              <p>
+                                The buyer's payment proof is awaiting admin review. This listing will remain reserved until the review is complete.
+                              </p>
+                            )
+                          : (
+                              <p>
+                                Reserved for an approved buyer · expires in
+                                {' '}
+                                <span className="font-mono font-semibold text-foreground">
+                                  {countdown}
+                                </span>
+                                .
+                              </p>
+                            )
                       )
                     : (
                         <p>
@@ -436,7 +465,7 @@ function ListingDetail() {
                       {' '}
                       Edit Listing
                     </Button>
-                    {isReserved && (
+                    {isReserved && !isAcceptedOfferReviewPending && (
                       <Button
                         onClick={() =>
                           cancelReservation.mutate(listing.id, {
@@ -505,7 +534,7 @@ function ListingDetail() {
                               listing,
                               isReservedForMe ? effectivePrice : undefined,
                             )}
-                          disabled={inCart || isReservedForOther}
+                          disabled={inCart || isReservedForOther || isAcceptedOfferPaymentWindowClosed}
                           size="lg"
                           className="min-w-0 flex-1 gap-2"
                         >
@@ -521,13 +550,17 @@ function ListingDetail() {
                                 ? (
                                     <>Currently Reserved</>
                                   )
-                                : (
-                                    <>
-                                      <ShoppingBag className="h-4 w-4" />
-                                      {' '}
-                                      {isReservedForMe ? 'Complete Purchase' : 'Add to Cart'}
-                                    </>
-                                  ))}
+                                : (isAcceptedOfferPaymentWindowClosed
+                                    ? (
+                                        <>Payment Window Closed</>
+                                      )
+                                    : (
+                                        <>
+                                          <ShoppingBag className="h-4 w-4" />
+                                          {' '}
+                                          {isReservedForMe ? 'Complete Purchase' : 'Add to Cart'}
+                                        </>
+                                      )))}
                         </Button>
                         {!isReserved && (
                           <MakeOfferButton

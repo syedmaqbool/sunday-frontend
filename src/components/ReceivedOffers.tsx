@@ -224,9 +224,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                           onError: (error: unknown) => showErrorToast(error, 'Failed to accept offer'),
                           onSuccess: () => {
                             toast.success('Offer accepted');
-                            toast.info(
-                              'Listing reserved for the buyer for 6 hours. They have until then to complete the purchase.',
-                            );
+                            toast.info('The buyer has 24 hours to submit payment proof.');
                             closeCounterDialog();
                           },
                         },

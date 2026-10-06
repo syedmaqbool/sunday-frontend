@@ -200,27 +200,25 @@ export default function Terms() {
               <p>
                 Buyers may place bids on listings, and buyers and sellers may
                 negotiate until a final price is agreed. If the seller accepts a
-                buyer’s offer, the offer shall be deemed binding, and an order
-                will be automatically created on the Platform. Upon acceptance,
-                the listing is marked as inactive and reserved for the buyer for
-                6 hours.
+                buyer’s offer or the buyer accepts a seller’s counteroffer, the
+                accepted offer shall be deemed binding. The listing is marked as
+                inactive and reserved for the buyer for 24 hours to submit
+                payment proof.
               </p>
               <p>
-                <strong>6.2 Checkout Requirement</strong>
+                <strong>6.2 Payment Proof Deadline</strong>
               </p>
               <p>
-                The buyer must complete checkout within six (6) hours of
-                acceptance. Failure to do so may result in:
+                The buyer must submit payment proof within twenty-four (24)
+                hours of acceptance. Timely proof keeps the listing reserved
+                while payment is reviewed. If proof is not submitted by the
+                deadline, the accepted offer expires and the listing becomes
+                available again.
               </p>
-              <ul className="list-disc space-y-1 pl-5">
-                <li>Cancellation of the transaction</li>
-                <li>Reactivation of the listing</li>
-                <li>Account review or restriction</li>
-              </ul>
               <p>
                 <strong>6.3 Order Confirmation</strong>
               </p>
-              <p>An order is confirmed only upon successful payment.</p>
+              <p>An order is confirmed only after an administrator approves the payment proof.</p>
             </div>
           </section>
 

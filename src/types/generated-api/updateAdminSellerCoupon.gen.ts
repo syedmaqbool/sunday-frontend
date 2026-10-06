@@ -11,9 +11,8 @@ export interface UpdateAdminSellerCouponData {
     code?: string;
     discountType?: 'FIXED' | 'PERCENTAGE';
     discountValue?: number;
-    maxUses?: number | null;
+    maxOrders?: number | null;
     minOrderAmount?: number;
-    perUserLimit?: number | null;
     scope?: 'ITEM_BASED' | 'SELLER_WIDE';
     expiresAt?: string | null;
     startsAt?: string | null;
@@ -150,12 +149,12 @@ export interface UpdateAdminSellerCouponResponses {
       sellerId: string;
       active: boolean;
       code: string;
-      currentUses: number;
+      currentOrders: number;
       discountType: 'FIXED' | 'PERCENTAGE';
       discountValue: number;
-      maxUses: number | null;
+      maxOrders: number | null;
       minOrderAmount: number;
-      perUserLimit: number | null;
+      reservedOrders: number;
       scope: 'ITEM_BASED' | 'SELLER_WIDE';
       expiresAt: string | null;
       startsAt: string | null;

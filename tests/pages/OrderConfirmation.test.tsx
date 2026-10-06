@@ -244,9 +244,9 @@ describe('order confirmation manual actions', () => {
     expect(screen.getByLabelText('Payment awaiting admin approval')).toHaveClass('animate-spin');
   });
 
-  it('hides the payment deadline and cancellation while proof awaits admin review', async () => {
+  it('hides the payment deadline and cancellation while accepted-offer proof awaits admin review', async () => {
     testState.currentOrder = makeOrder({
-      canCancel: true,
+      canCancel: false,
       expiresAt: null,
     });
     renderPage();
@@ -255,6 +255,16 @@ describe('order confirmation manual actions', () => {
 
     expect(screen.queryByText(/payment review deadline/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the review deadline and cancellation for an ordinary submitted order', async () => {
+    testState.currentOrder = makeOrder({ canCancel: true });
+    renderPage();
+
+    await screen.findByText('Pending review');
+
+    expect(screen.getByText(/payment review deadline/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel order' })).toBeInTheDocument();
   });
 
   it('opens the existing resubmission flow and refreshes the order after replacement proof', async () => {

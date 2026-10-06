@@ -427,7 +427,7 @@ function OrderConfirmation() {
                     Resubmit payment proof
                   </Button>
                 )}
-                {order.canCancel && !correctionDeadlinePassed && verificationState !== 'SUBMITTED' && !isCancelled && !isPaid && (
+                {order.canCancel && !correctionDeadlinePassed && !isCancelled && !isPaid && (
                   <AlertDialog onOpenChange={setCancelOpen} open={cancelOpen}>
                     <AlertDialogTrigger asChild>
                       <Button type="button" variant="outline" className="w-full">Cancel order</Button>

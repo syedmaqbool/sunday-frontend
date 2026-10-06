@@ -59,14 +59,17 @@ function useCountdown(target?: string | null) {
     return () => clearInterval(t);
   }, [target]);
   if (!target)
-    return null;
+    return { countdown: null, isExpired: false };
   const ms = new Date(target).getTime() - now;
   if (ms <= 0)
-    return '00:00:00';
+    return { countdown: '00:00:00', isExpired: true };
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return {
+    countdown: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+    isExpired: false,
+  };
 }
 
 function isVideoUrl(url: string) {
@@ -236,14 +239,13 @@ function ListingDetail() {
   const isReserved = listing?.status === 'RESERVED';
   const isReservedForMe = !!listing?.reservedForCurrentUser;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
-  const countdown = useCountdown(isReserved ? listing?.reservedUntil : null);
+  const { countdown, isExpired: isReservationExpired } = useCountdown(isReserved ? listing?.reservedUntil : null);
   const isAcceptedOfferReviewPending = isReserved
     && !!listing?.reservedOfferId
     && listing.reservedUntil === null;
   const isAcceptedOfferPaymentWindowClosed = isReservedForMe
     && !!listing?.reservedOfferId
-    && listing.reservedUntil !== null
-    && new Date(listing.reservedUntil).getTime() <= Date.now();
+    && isReservationExpired;
 
   const { data: reservedOfferAmount } = useQuery(getReservedOfferAmountOptions(
     listing?.reservedOfferId,

@@ -26,18 +26,18 @@ export function getManualVerificationState(
   if (submissionStatus === 'RESUBMISSION_REQUESTED')
     return 'RESUBMISSION_REQUESTED';
 
-  if (submissionStatus === 'SUBMITTED')
-    return 'SUBMITTED';
-
+  // Accepted-offer proof under review has no expiresAt; ordinary review windows still lapse.
   if (
-    !order.manualPaymentSubmission
-    && order.status === 'AWAITING_PAYMENT'
-    && order.paymentStatus === 'PENDING'
+    order.status === 'AWAITING_PAYMENT'
+    && order.paymentStatus !== 'PAID'
     && order.expiresAt
     && new Date(order.expiresAt).getTime() <= Date.now()
   ) {
     return 'EXPIRED';
   }
+
+  if (submissionStatus === 'SUBMITTED')
+    return 'SUBMITTED';
 
   return 'LEGACY';
 }
@@ -124,7 +124,7 @@ export function ManualVerificationStatus({
   const copy = getManualVerificationCopy(state);
   const reviewNote = order.manualPaymentSubmission?.reviewNote;
   const deadline = order.expiresAt ? new Date(order.expiresAt) : null;
-  const shouldShowDeadline = state === 'EXPIRED' || state === 'RESUBMISSION_REQUESTED';
+  const shouldShowDeadline = state !== 'APPROVED' && state !== 'CANCELLED';
 
   return (
     <div className={cn(compact ? 'space-y-1' : 'rounded-md border border-border bg-muted/30 p-4', className)}>

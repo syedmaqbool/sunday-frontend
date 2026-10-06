@@ -28,7 +28,6 @@ function order(overrides: Partial<Pick<Order, 'cancellationReason' | 'expiresAt'
 
 describe('manual verification state', () => {
   it.each([
-    ['SUBMITTED', 'SUBMITTED'],
     ['APPROVED', 'APPROVED'],
     ['REJECTED', 'REJECTED'],
     ['RESUBMISSION_REQUESTED', 'RESUBMISSION_REQUESTED'],
@@ -41,6 +40,14 @@ describe('manual verification state', () => {
     const actualState = getManualVerificationState(testOrder);
 
     expect(actualState).toBe(expected);
+  });
+
+  it('keeps accepted-offer proof pending review without a deadline', () => {
+    expect(getManualVerificationState(order({ expiresAt: null }))).toBe('SUBMITTED');
+  });
+
+  it('recognizes an ordinary submitted order as expired when its review window passed before backend cleanup', () => {
+    expect(getManualVerificationState(order({ expiresAt: '2020-01-01T00:00:00.000Z' }))).toBe('EXPIRED');
   });
 
   it('recognizes payment expiry from the backend cancellation reason', () => {
@@ -83,11 +90,18 @@ describe('manualVerificationStatus', () => {
     expect(screen.queryByText(/private-proof-id/i)).not.toBeInTheDocument();
   });
 
-  it('shows awaiting review without a payment deadline after proof is submitted', () => {
-    render(<ManualVerificationStatus order={order({ expiresAt: '2020-01-01T00:00:00.000Z' })} />);
+  it('shows awaiting review without a payment deadline after accepted-offer proof is submitted', () => {
+    render(<ManualVerificationStatus order={order({ expiresAt: null })} />);
 
-    expect(screen.queryByText(/payment review deadline/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/deadline/i)).not.toBeInTheDocument();
     expect(screen.getByText('Pending review')).toBeInTheDocument();
+  });
+
+  it('keeps the review deadline for an ordinary submitted order', () => {
+    render(<ManualVerificationStatus order={order()} />);
+
+    expect(screen.getByText('Pending review')).toBeInTheDocument();
+    expect(screen.getByText(/payment review deadline/i)).toBeInTheDocument();
   });
 
   it('shows the expired payment deadline before backend cleanup updates the order', () => {

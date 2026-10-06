@@ -8,10 +8,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';
 import Navbar from '@/components/Navbar';
+import SellerByline from '@/components/SellerByline';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -247,6 +248,7 @@ function Listings() {
             <div className="flex rounded-md border border-border">
               <Button
                 onClick={() => setView('grid')}
+                aria-label="Grid view"
                 size="icon"
                 variant={view === 'grid' ? 'secondary' : 'ghost'}
                 className="h-8 w-8 rounded-none rounded-l-md"
@@ -255,6 +257,7 @@ function Listings() {
               </Button>
               <Button
                 onClick={() => setView('list')}
+                aria-label="List view"
                 size="icon"
                 variant={view === 'list' ? 'secondary' : 'ghost'}
                 className="h-8 w-8 rounded-none rounded-r-md"
@@ -313,6 +316,7 @@ function Listings() {
                                 index={index}
                                 listing={l}
                                 sellerRating={sellerRatingsMap?.get(l.sellerId)}
+                                showSellerByline
                               />
                             ))}
                           </div>
@@ -324,34 +328,50 @@ function Listings() {
                               return (
                                 <div
                                   key={l.id}
-                                  className="flex gap-4 rounded-lg border border-border bg-card p-4"
+                                  className="group relative rounded-lg border border-border bg-card p-4"
                                 >
-                                  <img
-                                    src={mediaUrls[0]}
-                                    alt={l.title}
-                                    className="h-28 w-28 rounded-md object-cover"
+                                  <Link
+                                    aria-label={l.title}
+                                    to={`/listing/${l.id}`}
+                                    className="
+                                      absolute inset-0 z-10 block rounded-lg
+                                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+                                    "
                                   />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                      {l.brand}
-                                    </p>
-                                    <h3 className="text-sm font-semibold text-card-foreground">
-                                      {l.title}
-                                    </h3>
-                                    <p className="mt-1 text-sm font-bold text-card-foreground">
-                                      Rs
-                                      {' '}
-                                      {l.price.toLocaleString()}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Size
-                                      {' '}
-                                      {l.size}
-                                      {' '}
-                                      ·
-                                      {' '}
-                                      {formatEnumLabel(l.condition)}
-                                    </p>
+                                  <div className="pointer-events-none relative flex gap-4">
+                                    <img
+                                      src={mediaUrls[0]}
+                                      alt={l.title}
+                                      className="h-28 w-28 rounded-md object-cover"
+                                    />
+                                    <div className="flex-1">
+                                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                        {l.brand}
+                                      </p>
+                                      <h3 className="text-sm font-semibold text-card-foreground">
+                                        {l.title}
+                                      </h3>
+                                      <p className="mt-1 text-sm font-bold text-card-foreground">
+                                        Rs
+                                        {' '}
+                                        {l.price.toLocaleString()}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Size
+                                        {' '}
+                                        {l.size}
+                                        {' '}
+                                        ·
+                                        {' '}
+                                        {formatEnumLabel(l.condition)}
+                                      </p>
+                                      <SellerByline
+                                        sellerId={l.sellerId}
+                                        sellerName={l.seller?.fullName}
+                                        sellerNameClassName="text-card-foreground"
+                                        className="mt-1"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               );

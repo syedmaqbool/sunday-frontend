@@ -113,7 +113,8 @@ describe('listing seller navigation', () => {
     await screen.findByText(/ items/);
     expect(marketplaceListingsOptionsMock).toHaveBeenCalled();
     expect(screen.getByRole('main').textContent).toContain('Vintage Jacket');
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Rs 2,250 · Save Rs 250');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated Rs 2,250 with automatic seller coupon');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Save Rs 250 · Applied automatically at checkout');
     const sellerLink = await screen.findByRole('link', { name: 'Jamie Seller' });
     expect(sellerLink).toHaveAttribute('href', '/seller/seller-1');
     expect(screen.getByRole('link', { name: 'Vintage Jacket' })).toHaveAttribute('href', '/listing/listing-1');
@@ -131,7 +132,8 @@ describe('listing seller navigation', () => {
 
     const sellerLink = await screen.findByRole('link', { name: 'Jamie Seller' });
     const listingLink = screen.getByRole('link', { name: 'Vintage Jacket' });
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Rs 2,250 · Save Rs 250');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated Rs 2,250 with automatic seller coupon');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Save Rs 250 · Applied automatically at checkout');
     expect(sellerLink).toHaveAttribute('href', '/seller/seller-1');
     expect(listingLink).toHaveAttribute('href', '/listing/listing-1');
 

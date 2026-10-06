@@ -100,7 +100,7 @@ function ListingCard({
               {' '}
               {listing.price.toLocaleString()}
             </p>
-            <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} />
+            <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} status={listing.status} />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 Size

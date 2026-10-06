@@ -41,7 +41,7 @@ vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/components/ReviewForm', () => ({ ReviewForm: () => null }));
 
-const reservationDeadline = '2026-10-06T18:30:00.000Z';
+const reservationDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 function makePaginatedResponse(data: any[]) {
   return {

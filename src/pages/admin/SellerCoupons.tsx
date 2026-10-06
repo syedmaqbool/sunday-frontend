@@ -50,25 +50,6 @@ import { authInstance } from '@/services/ky.instance';
 type DiscountType = 'fixed' | 'percentage';
 type Scope = 'item_based' | 'seller_wide';
 
-interface SellerCouponDisplay {
-  id: string;
-  active: boolean;
-  code: string;
-  created_at: string;
-  current_uses: number;
-  discount_type: DiscountType;
-  discount_value: number;
-  expires_at: string | null;
-  listing_id?: string | null; // ← single listing (not array)
-  max_uses: number | null;
-  min_order_amount: number;
-  per_user_limit: number | null;
-  scope: Scope;
-  seller_id: string;
-  seller_name?: string | null;
-  starts_at: string | null;
-}
-
 interface SellerOption {
   id: string;
   full_name: string | null;
@@ -78,28 +59,7 @@ interface ListingOption {
   title: string;
 }
 
-// ── Adapters ─────────────────────────────────────────────────────────────────
-function adaptCoupon(c: SellerCoupon, sellerName?: string | null): SellerCouponDisplay {
-  return {
-    id: c.id,
-    active: c.active,
-    code: c.code,
-    created_at: c.createdAt,
-    current_uses: c.currentUses ?? 0,
-    discount_type: (c.discountType as string).toLowerCase() as DiscountType,
-    discount_value: Number(c.discountValue),
-    expires_at: c.expiresAt ?? null,
-    listing_id: c.listingId ?? null,
-    max_uses: c.maxUses ?? null,
-    min_order_amount: Number(c.minOrderAmount ?? 0),
-    per_user_limit: c.perUserLimit ?? null,
-    scope: (c.scope as string).toLowerCase() as Scope,
-    seller_id: c.sellerId,
-    seller_name: sellerName ?? null,
-    starts_at: c.startsAt ?? null,
-  };
-}
-
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function formToPayload(form: SellerCouponFormValues): CreateSellerCouponPayload {
   return {
     listingId: form.scope === 'item_based' ? form.listing_id || null : null,
@@ -107,9 +67,8 @@ function formToPayload(form: SellerCouponFormValues): CreateSellerCouponPayload 
     code: form.code.trim().toUpperCase(),
     discountType: form.discount_type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
     discountValue: Number(form.discount_value),
-    maxUses: form.max_uses ? Number(form.max_uses) : null,
+    maxOrders: form.max_orders ? Number(form.max_orders) : null,
     minOrderAmount: form.min_order_amount ? Number(form.min_order_amount) : 0,
-    perUserLimit: form.per_user_limit ? Number(form.per_user_limit) : null,
     scope: form.scope === 'item_based' ? 'ITEM_BASED' : 'SELLER_WIDE',
     expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     startsAt: form.starts_at ? new Date(form.starts_at).toISOString() : null,
@@ -122,9 +81,8 @@ const emptyForm = {
   discount_value: '',
   expires_at: '',
   listing_id: '', // ← single listing ID
-  max_uses: '',
+  max_orders: '',
   min_order_amount: '',
-  per_user_limit: '',
   scope: 'seller_wide' as Scope,
   seller_id: '',
   starts_at: '',
@@ -139,9 +97,8 @@ const sellerCouponFormSchema = z.object({
   }, 'Discount value must be greater than zero.'),
   expires_at: z.string(),
   listing_id: z.string(),
-  max_uses: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Max uses must be a positive whole number.'),
+  max_orders: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Max orders must be a positive whole number.'),
   min_order_amount: z.string().refine(value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), 'Minimum order must be zero or greater.'),
-  per_user_limit: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Per-user limit must be a positive whole number.'),
   scope: z.enum(['item_based', 'seller_wide']),
   seller_id: z.string().min(1, 'Choose a seller.'),
   starts_at: z.string(),
@@ -169,11 +126,11 @@ function SellerCoupons() {
   });
   const formValues = form.watch();
   const [redemptionsFor, setRedemptionsFor]
-    = useState<SellerCouponDisplay | null>(null);
+    = useState<SellerCoupon | null>(null);
   const [redemptions, setRedemptions] = useState<SellerCouponRedemption[]>([]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  const { data: couponsRaw = [], isLoading } = useQuery(getSellerCouponsOptions());
+  const { data: coupons = [], isLoading } = useQuery(getSellerCouponsOptions());
 
   const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
 
@@ -189,14 +146,6 @@ function SellerCoupons() {
   const sellerMap = useMemo(
     () => new Map(sellers.map(s => [s.id, s.full_name])),
     [sellers],
-  );
-
-  const coupons: SellerCouponDisplay[] = useMemo(
-    () =>
-      couponsRaw.map(c =>
-        adaptCoupon(c, sellerMap.get(c.sellerId)),
-      ),
-    [couponsRaw, sellerMap],
   );
 
   // Listings for selected seller (item_based scope only)
@@ -228,20 +177,19 @@ function SellerCoupons() {
   };
 
   // openEdit — no extra API call, listingId already in coupon
-  const openEdit = (c: SellerCouponDisplay) => {
+  const openEdit = (c: SellerCoupon) => {
     setEditingId(c.id);
     form.reset({
       code: c.code,
-      discount_type: c.discount_type,
-      discount_value: String(c.discount_value),
-      expires_at: c.expires_at ? c.expires_at.slice(0, 16) : '',
-      listing_id: c.listing_id ?? '',
-      max_uses: c.max_uses === null ? '' : String(c.max_uses),
-      min_order_amount: c.min_order_amount ? String(c.min_order_amount) : '',
-      per_user_limit: c.per_user_limit === null ? '' : String(c.per_user_limit),
-      scope: c.scope,
-      seller_id: c.seller_id,
-      starts_at: c.starts_at ? c.starts_at.slice(0, 16) : '',
+      discount_type: c.discountType === 'FIXED' ? 'fixed' : 'percentage',
+      discount_value: String(c.discountValue),
+      expires_at: c.expiresAt ? c.expiresAt.slice(0, 16) : '',
+      listing_id: c.listingId ?? '',
+      max_orders: c.maxOrders === null ? '' : String(c.maxOrders),
+      min_order_amount: c.minOrderAmount ? String(c.minOrderAmount) : '',
+      scope: c.scope === 'ITEM_BASED' ? 'item_based' : 'seller_wide',
+      seller_id: c.sellerId,
+      starts_at: c.startsAt ? c.startsAt.slice(0, 16) : '',
     });
     setDialogOpen(true);
   };
@@ -269,7 +217,7 @@ function SellerCoupons() {
     }
   };
 
-  const toggleActive = (c: SellerCouponDisplay) =>
+  const toggleActive = (c: SellerCoupon) =>
     updateCoupon.mutate({ id: c.id, payload: { active: !c.active } });
 
   const deleteCoupon = (id: string) => {
@@ -279,7 +227,7 @@ function SellerCoupons() {
     });
   };
 
-  const openRedemptions = async (c: SellerCouponDisplay) => {
+  const openRedemptions = async (c: SellerCoupon) => {
     setRedemptionsFor(c);
     try {
       const response = await authInstance
@@ -337,7 +285,7 @@ function SellerCoupons() {
                     <TableHead>Discount</TableHead>
                     <TableHead>Scope</TableHead>
                     <TableHead>Validity</TableHead>
-                    <TableHead>Uses</TableHead>
+                    <TableHead>Orders</TableHead>
                     <TableHead>Active</TableHead>
                     <TableHead className="w-32" />
                   </TableRow>
@@ -349,40 +297,39 @@ function SellerCoupons() {
                         {c.code}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {c.seller_name ?? '—'}
+                        {sellerMap.get(c.sellerId) ?? '—'}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {c.discount_type === 'percentage'
-                            ? `${c.discount_value}%`
-                            : `Rs ${c.discount_value.toLocaleString()}`}
+                          {c.discountType === 'PERCENTAGE'
+                            ? `${c.discountValue}%`
+                            : `Rs ${c.discountValue.toLocaleString()}`}
                         </Badge>
-                        {c.min_order_amount > 0 && (
+                        {c.minOrderAmount > 0 && (
                           <span className="ml-2 text-xs text-muted-foreground">
                             min Rs
                             {' '}
-                            {c.min_order_amount.toLocaleString()}
+                            {c.minOrderAmount.toLocaleString()}
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {c.scope === 'seller_wide'
+                        {c.scope === 'SELLER_WIDE'
                           ? 'All seller items'
                           : 'Specific item'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {c.starts_at
-                          ? new Date(c.starts_at).toLocaleDateString()
+                        {c.startsAt
+                          ? new Date(c.startsAt).toLocaleDateString()
                           : '—'}
                         {' → '}
-                        {c.expires_at
-                          ? new Date(c.expires_at).toLocaleDateString()
+                        {c.expiresAt
+                          ? new Date(c.expiresAt).toLocaleDateString()
                           : 'Never'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {c.current_uses}
-                        {c.max_uses === null ? '' : ` / ${c.max_uses}`}
-                        {c.per_user_limit ? ` · ${c.per_user_limit}/user` : ''}
+                        {`${c.currentOrders} completed + ${c.reservedOrders} pending / `}
+                        {c.maxOrders === null ? 'unlimited' : `${c.maxOrders} max`}
                       </TableCell>
                       <TableCell>
                         <Switch
@@ -402,6 +349,7 @@ function SellerCoupons() {
                         </Button>
                         <Button
                           onClick={() => openEdit(c)}
+                          aria-label={`Edit ${c.code}`}
                           size="icon"
                           variant="ghost"
                           className="h-7 w-7"
@@ -518,18 +466,14 @@ function SellerCoupons() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Min order (Rs)</Label>
                 <Controller name="min_order_amount" control={form.control} render={({ field }) => <Input {...field} placeholder="0" type="number" />} />
               </div>
               <div className="space-y-2">
-                <Label>Max uses</Label>
-                <Controller name="max_uses" control={form.control} render={({ field }) => <Input {...field} placeholder="∞" type="number" />} />
-              </div>
-              <div className="space-y-2">
-                <Label>Per user limit</Label>
-                <Controller name="per_user_limit" control={form.control} render={({ field }) => <Input {...field} placeholder="∞" type="number" />} />
+                <Label htmlFor="seller-coupon-max-orders">Max orders</Label>
+                <Controller name="max_orders" control={form.control} render={({ field }) => <Input {...field} id="seller-coupon-max-orders" placeholder="Unlimited" type="number" />} />
               </div>
             </div>
 

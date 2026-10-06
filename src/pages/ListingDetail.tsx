@@ -343,9 +343,7 @@ function ListingDetail() {
                   </p>
                 )}
 
-            {!listing.reservedOfferId && (
-              <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} />
-            )}
+            <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} status={listing.status} />
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">

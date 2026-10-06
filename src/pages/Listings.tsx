@@ -357,7 +357,7 @@ function Listings() {
                                         {' '}
                                         {l.price.toLocaleString()}
                                       </p>
-                                      <SellerCouponEstimateDisplay estimate={l.sellerCouponEstimate} />
+                                      <SellerCouponEstimateDisplay estimate={l.sellerCouponEstimate} status={l.status} />
                                       <p className="text-xs text-muted-foreground">
                                         Size
                                         {' '}

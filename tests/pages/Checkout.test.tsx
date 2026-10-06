@@ -253,6 +253,9 @@ describe('checkout', () => {
     await waitForCheckoutQuote();
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Automatic seller coupons')).not.toBeInTheDocument();
+    expect(screen.queryByText('Seller coupons')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Seller coupon:/)).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
 
     await submitCheckout();
@@ -260,6 +263,7 @@ describe('checkout', () => {
     expect(createCheckoutMock).toHaveBeenCalledWith(expect.objectContaining({
       listingIds: ['reserved-listing-id'],
     }));
+    expect(createCheckoutMock.mock.calls[0][0]).not.toHaveProperty('sellerCouponCode');
   });
 
   it('lets buyers remove other cart items and continue with the accepted offer', async () => {
@@ -364,6 +368,16 @@ describe('checkout', () => {
     expect(await screen.findByText('MARKET10')).toBeInTheDocument();
     expect(screen.getByLabelText('Automatic seller coupons')).toHaveTextContent('AUTO200');
     expect(screen.getByText('Seller coupons').parentElement).toHaveTextContent('−Rs 200');
+  });
+
+  it('omits seller coupons that the quote does not apply', async () => {
+    renderCheckout();
+    await waitForCheckoutQuote();
+
+    expect(screen.getByText('Seller coupons apply automatically. You can also enter a marketplace discount code.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Automatic seller coupons')).not.toBeInTheDocument();
+    expect(screen.queryByText('Seller coupons')).not.toBeInTheDocument();
+    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,200');
   });
 
   it('submits the quote revision and only the optional marketplace code', async () => {

@@ -105,8 +105,45 @@ describe('accepted offer deadline on listing detail', () => {
 
     renderListingDetail();
 
-    expect(await screen.findByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated price after seller coupon');
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Rs 100 · Save Rs 50');
+    expect(await screen.findByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated Rs 100 with automatic seller coupon');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Save Rs 50 · Applied automatically at checkout');
+    expect(screen.getByText('Rs 150')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/coupon/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the regular price without a coupon message when there is no estimate', async () => {
+    listingState.listing.reservedOfferId = null;
+    listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedUntil = null;
+    listingState.listing.status = 'APPROVED';
+    delete listingState.listing.sellerCouponEstimate;
+
+    renderListingDetail();
+
+    expect(await screen.findByText('Rs 150')).toBeInTheDocument();
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
+    expect(screen.queryByText(/seller coupon/i)).not.toBeInTheDocument();
+  });
+
+  it('does not promise a seller coupon on a listing reserved for another buyer', async () => {
+    listingState.listing.reservedOfferId = null;
+    listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
+
+    renderListingDetail();
+
+    expect(await screen.findByText('Rs 150')).toBeInTheDocument();
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
+  });
+
+  it('keeps the accepted-offer price without a seller coupon estimate', async () => {
+    listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
+
+    renderListingDetail();
+
+    expect(await screen.findByText('Your accepted offer')).toBeInTheDocument();
+    expect(screen.getByText('Rs 100')).toBeInTheDocument();
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
   });
 
   it('shows the buyer that submitted proof is awaiting review when there is no deadline', async () => {

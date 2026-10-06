@@ -23,8 +23,10 @@ export const offersQueryKey = {
     [...offersQueryKey.all(), 'mine', 'list', userId ?? null] as const,
   received: (userId?: string, listingId?: string) =>
     [...offersQueryKey.all(), 'received', 'list', userId ?? null, listingId ?? 'all'] as const,
-  reviewedIds: (userId?: string) =>
-    [...offersQueryKey.all(), 'reviewed-ids', 'list', userId ?? null] as const,
+  reviewedIds: {
+    all: () => [...offersQueryKey.all(), 'reviewed-ids'] as const,
+    list: (userId?: string) => [...offersQueryKey.reviewedIds.all(), 'list', userId ?? null] as const,
+  },
   selection: (offerId: string, recipient: 'BUYER' | 'SELLER', userId?: string) =>
     [...offersQueryKey.all(), 'selection', 'detail', recipient, offerId, userId ?? null] as const,
 };
@@ -95,7 +97,7 @@ export function getMyReviewedOfferIdsOptions(userId?: string) {
   return queryOptions({
     enabled: !!userId,
     queryFn: async () => await listMyReviews({ page: 1, size: 100 }),
-    queryKey: offersQueryKey.reviewedIds(userId),
+    queryKey: offersQueryKey.reviewedIds.list(userId),
   });
 }
 

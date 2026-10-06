@@ -2,6 +2,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 import type { CreateOfferReviewPayload, CreateReviewPayload, Review } from '@/types/offer.type';
 import type { PaginatedResponse } from '@/types/response.type';
 import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { offersQueryKey } from '@/queries/offers.query';
 import { sellerRatingQueryKey } from '@/queries/sellerRating.query';
 import {
   createOfferReview,
@@ -79,6 +80,7 @@ export function useCreateOfferReviewMutation() {
     mutationFn: (payload: CreateOfferReviewPayload) => createOfferReview(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
+      qc.invalidateQueries({ queryKey: offersQueryKey.reviewedIds.all() });
     },
   });
 }

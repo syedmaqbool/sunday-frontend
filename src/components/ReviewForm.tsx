@@ -22,6 +22,7 @@ interface ReviewFormProps {
   listingId: string;
   offerId: string;
   reviewedId: string;
+  onCancel?: () => void;
   onSuccess?: () => void;
   role: 'BUYER' | 'SELLER';
 }
@@ -30,6 +31,7 @@ export function ReviewForm({
   listingId,
   offerId,
   reviewedId,
+  onCancel,
   onSuccess,
   role,
 }: ReviewFormProps) {
@@ -88,6 +90,8 @@ export function ReviewForm({
                 onClick={() => field.onChange(star)}
                 onMouseEnter={() => setHoveredRating(star)}
                 onMouseLeave={() => setHoveredRating(0)}
+                aria-label={`Rate ${star} out of 5 stars`}
+                aria-pressed={rating === star}
                 type="button"
                 className="
                   transition-transform
@@ -127,17 +131,31 @@ export function ReviewForm({
           />
         )}
       />
-      <Button
-        onClick={handleSubmit(onSubmit)}
-        disabled={rating === 0 || submitReview.isPending}
-        size="sm"
-        className="gap-1.5"
-      >
-        {submitReview.isPending && (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={handleSubmit(onSubmit)}
+          disabled={rating === 0 || submitReview.isPending}
+          size="sm"
+          type="button"
+          className="gap-1.5"
+        >
+          {submitReview.isPending && (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          )}
+          Submit Review
+        </Button>
+        {onCancel && (
+          <Button
+            onClick={onCancel}
+            disabled={submitReview.isPending}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Cancel
+          </Button>
         )}
-        Submit Review
-      </Button>
+      </div>
     </div>
   );
 }

@@ -170,145 +170,158 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
             data-testid={offer.id === selectedOfferId ? 'selected-offer' : undefined}
             className={offer.id === selectedOfferId ? 'ring-2 ring-primary' : undefined}
           >
-            <CardContent className="
-              flex flex-col gap-4 p-4
-              sm:flex-row sm:items-center
-            "
-            >
-              <img
-                src={offer.coverImage?.url || '/placeholder.svg'}
-                alt={offer.listingTitle ?? 'Listing'}
-                className="h-16 w-16 rounded-md object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="truncate text-sm font-semibold text-foreground">
-                    {offer.listingTitle ?? 'Listing'}
-                  </h3>
-                  <Badge variant={statusBadge(offer.status)}>
-                    {formatEnumLabel(offer.status)}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  From
-                  {' '}
-                  {offer.buyerFullName || 'Buyer'}
-                  {' '}
-                  · Listed R
-                  {' '}
-                  {offer.listingPrice?.toLocaleString()}
-                </p>
-                <p className="mt-1 text-lg font-bold text-foreground">
-                  Offer: R
-                  {' '}
-                  {offer.amount.toLocaleString()}
-                </p>
-                {offer.counterAmount && (
+            <CardContent className="flex flex-col gap-4 p-4">
+              <div
+                aria-label={`Offer summary: ${offer.listingTitle ?? 'Listing'}`}
+                role="group"
+                className="
+                  flex flex-col gap-4
+                  sm:flex-row sm:items-center
+                "
+              >
+                <img
+                  src={offer.coverImage?.url || '/placeholder.svg'}
+                  alt={offer.listingTitle ?? 'Listing'}
+                  className="h-16 w-16 rounded-md object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate text-sm font-semibold text-foreground">
+                      {offer.listingTitle ?? 'Listing'}
+                    </h3>
+                    <Badge variant={statusBadge(offer.status)}>
+                      {formatEnumLabel(offer.status)}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Your counter: R
+                    From
                     {' '}
-                    {offer.counterAmount.toLocaleString()}
+                    {offer.buyerFullName || 'Buyer'}
+                    {' '}
+                    · Listed R
+                    {' '}
+                    {offer.listingPrice?.toLocaleString()}
                   </p>
+                  <p className="mt-1 text-lg font-bold text-foreground">
+                    Offer: R
+                    {' '}
+                    {offer.amount.toLocaleString()}
+                  </p>
+                  {offer.counterAmount && (
+                    <p className="text-xs text-muted-foreground">
+                      Your counter: R
+                      {' '}
+                      {offer.counterAmount.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                {offer.status === 'PENDING' && (
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      onClick={() =>
+                        respondToOffer.mutate(
+                          {
+                            id: offer.id,
+                            action: 'accept',
+                          },
+                          {
+                            onError: (error: unknown) => showErrorToast(error, 'Failed to accept offer'),
+                            onSuccess: () => {
+                              toast.success('Offer accepted');
+                              toast.info('The buyer has 24 hours to submit payment proof.');
+                              closeCounterDialog();
+                            },
+                          },
+                        )}
+                      disabled={respondToOffer.isPending}
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      {' '}
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        form.reset({ counterAmount: '' });
+                        setCounterDialog(offer);
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                    >
+                      <ArrowRightLeft className="h-3.5 w-3.5" />
+                      {' '}
+                      Counter
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        respondToOffer.mutate(
+                          {
+                            id: offer.id,
+                            action: 'reject',
+                          },
+                          {
+                            onError: (error: unknown) => showErrorToast(error, 'Failed to reject offer'),
+                            onSuccess: () => {
+                              toast.success('Offer rejected');
+                              closeCounterDialog();
+                            },
+                          },
+                        )}
+                      disabled={respondToOffer.isPending}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-destructive"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      {' '}
+                      Reject
+                    </Button>
+                  </div>
+                )}
+                {offer.status === 'ACCEPTED'
+                  && !myReviews.has(offer.id)
+                  && reviewingOffer !== offer.id && (
+                  <Button
+                    onClick={() => setReviewingOffer(offer.id)}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                  >
+                    <Star className="h-3.5 w-3.5" />
+                    {' '}
+                    Leave Review
+                  </Button>
+                )}
+                {offer.status === 'ACCEPTED' && myReviews.has(offer.id) && (
+                  <span className="text-xs italic text-muted-foreground">
+                    ✓ Reviewed
+                  </span>
                 )}
               </div>
-              {offer.status === 'PENDING' && (
-                <div className="flex shrink-0 gap-2">
-                  <Button
-                    onClick={() =>
-                      respondToOffer.mutate(
-                        {
-                          id: offer.id,
-                          action: 'accept',
-                        },
-                        {
-                          onError: (error: unknown) => showErrorToast(error, 'Failed to accept offer'),
-                          onSuccess: () => {
-                            toast.success('Offer accepted');
-                            toast.info('The buyer has 24 hours to submit payment proof.');
-                            closeCounterDialog();
-                          },
-                        },
-                      )}
-                    disabled={respondToOffer.isPending}
-                    size="sm"
-                    className="gap-1"
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    {' '}
-                    Accept
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      form.reset({ counterAmount: '' });
-                      setCounterDialog(offer);
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                  >
-                    <ArrowRightLeft className="h-3.5 w-3.5" />
-                    {' '}
-                    Counter
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      respondToOffer.mutate(
-                        {
-                          id: offer.id,
-                          action: 'reject',
-                        },
-                        {
-                          onError: (error: unknown) => showErrorToast(error, 'Failed to reject offer'),
-                          onSuccess: () => {
-                            toast.success('Offer rejected');
-                            closeCounterDialog();
-                          },
-                        },
-                      )}
-                    disabled={respondToOffer.isPending}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-destructive"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    {' '}
-                    Reject
-                  </Button>
-                </div>
-              )}
               {offer.status === 'ACCEPTED'
                 && !myReviews.has(offer.id)
-                && (reviewingOffer === offer.id
-                  ? (
-                      <div className="mt-3 w-full border-t border-border pt-3">
-                        <p className="mb-2 text-xs font-medium text-foreground">
-                          Rate this buyer
-                        </p>
-                        <ReviewForm
-                          listingId={offer.listingId}
-                          offerId={offer.id}
-                          reviewedId={offer.buyerId}
-                          onSuccess={() => setReviewingOffer(null)}
-                          role="SELLER"
-                        />
-                      </div>
-                    )
-                  : (
-                      <Button
-                        onClick={() => setReviewingOffer(offer.id)}
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0 gap-1.5"
-                      >
-                        <Star className="h-3.5 w-3.5" />
-                        {' '}
-                        Leave Review
-                      </Button>
-                    ))}
-              {offer.status === 'ACCEPTED' && myReviews.has(offer.id) && (
-                <span className="text-xs italic text-muted-foreground">
-                  ✓ Reviewed
-                </span>
+                && reviewingOffer === offer.id && (
+                <section
+                  aria-labelledby={`review-buyer-${offer.id}`}
+                  className="w-full border-t border-border pt-3"
+                >
+                  <h4
+                    id={`review-buyer-${offer.id}`}
+                    className="mb-2 text-xs font-medium text-foreground"
+                  >
+                    Rate this buyer
+                  </h4>
+                  <ReviewForm
+                    listingId={offer.listingId}
+                    offerId={offer.id}
+                    reviewedId={offer.buyerId}
+                    onCancel={() => setReviewingOffer(null)}
+                    onSuccess={() => setReviewingOffer(null)}
+                    role="SELLER"
+                  />
+                </section>
               )}
             </CardContent>
           </Card>

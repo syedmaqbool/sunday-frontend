@@ -22,6 +22,7 @@ import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets'
 import Navbar from '@/components/Navbar';
 import { ReportDialog } from '@/components/ReportDialog';
 import { ReviewsList } from '@/components/ReviewsList';
+import SellerCouponEstimateDisplay from '@/components/SellerCouponEstimateDisplay';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -341,6 +342,10 @@ function ListingDetail() {
                     {listing.price.toLocaleString()}
                   </p>
                 )}
+
+            {!listing.reservedOfferId && (
+              <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} />
+            )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">

@@ -13,6 +13,7 @@ import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';
 import Navbar from '@/components/Navbar';
 import SellerByline from '@/components/SellerByline';
+import SellerCouponEstimateDisplay from '@/components/SellerCouponEstimateDisplay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -356,6 +357,7 @@ function Listings() {
                                         {' '}
                                         {l.price.toLocaleString()}
                                       </p>
+                                      <SellerCouponEstimateDisplay estimate={l.sellerCouponEstimate} />
                                       <p className="text-xs text-muted-foreground">
                                         Size
                                         {' '}

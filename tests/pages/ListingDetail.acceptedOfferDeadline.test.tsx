@@ -79,6 +79,11 @@ beforeEach(() => {
     reservedForCurrentUser: true,
     reservedUntil: '2000-01-01T00:00:00.000Z',
     seller: { fullName: 'Seller' },
+    sellerCouponEstimate: {
+      discountAmount: 50,
+      estimatedPrice: 100,
+      isEstimate: true,
+    },
     size: 'M',
     status: 'RESERVED',
     title: 'Vintage jacket',
@@ -87,6 +92,23 @@ beforeEach(() => {
 });
 
 describe('accepted offer deadline on listing detail', () => {
+  it('shows the seller-coupon price as an estimate on regular listings', async () => {
+    listingState.listing.reservedOfferId = null;
+    listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedUntil = null;
+    listingState.listing.status = 'APPROVED';
+    listingState.listing.sellerCouponEstimate = {
+      discountAmount: 50,
+      estimatedPrice: 100,
+      isEstimate: true,
+    };
+
+    renderListingDetail();
+
+    expect(await screen.findByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated price after seller coupon');
+    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Rs 100 · Save Rs 50');
+  });
+
   it('shows the buyer that submitted proof is awaiting review when there is no deadline', async () => {
     listingState.listing.reservedUntil = null;
 
@@ -121,6 +143,7 @@ describe('accepted offer deadline on listing detail', () => {
     renderListingDetail();
 
     expect(await screen.findByRole('button', { name: 'Payment Window Closed' })).toBeDisabled();
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
     expect(screen.getByText(/payment deadline has passed/i)).toBeInTheDocument();
     expect(addItemMock).not.toHaveBeenCalled();
   });

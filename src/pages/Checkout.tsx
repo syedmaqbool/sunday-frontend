@@ -92,12 +92,25 @@ function Checkout() {
   });
   const discountCode = discountForm.watch('code');
   const listingIds = items.map(index => index.listing.id);
+  const acceptedOfferItem = items.find(({ listing }) =>
+    listing.status === 'RESERVED' && listing.reservedForCurrentUser === true,
+  );
+  const hasMixedAcceptedOfferCart = Boolean(acceptedOfferItem) && items.length > 1;
   const listingIdsKey = JSON.stringify(listingIds);
   const hasAcceptedOfferReservation = items.some(({ listing }) =>
     listing.reservedForCurrentUser && listing.reservedOfferId,
   );
+  const acceptedOfferReviewItem = items.find(({ listing }) =>
+    listing.reservedForCurrentUser
+    && listing.reservedOfferId
+    && listing.reservedUntil === null,
+  );
+  const hasAcceptedOfferAwaitingReview = !!acceptedOfferReviewItem;
   const hasExpiredAcceptedOffer = items.some(({ listing }) => {
     if (!listing.reservedForCurrentUser || !listing.reservedOfferId)
+      return false;
+
+    if (listing.reservedUntil === null)
       return false;
 
     const expiresAt = listing.reservedUntil ? new Date(listing.reservedUntil).getTime() : NaN;
@@ -217,6 +230,9 @@ function Checkout() {
   };
 
   const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async () => {
+    if (hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview)
+      return;
+
     if (!user) {
       navigate('/auth');
       return;
@@ -235,6 +251,11 @@ function Checkout() {
     senderAccountNumber: string;
     senderAccountTitle: string;
   }) => {
+    if (hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview) {
+      setManualPaymentOpen(false);
+      return;
+    }
+
     if (placing)
       return;
     const shipping = shippingSchema.parse(shippingForm.getValues());
@@ -456,6 +477,16 @@ function Checkout() {
                 {totalItems}
                 )
               </h2>
+              {hasMixedAcceptedOfferCart && acceptedOfferItem && (
+                <div
+                  role="alert"
+                  className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-foreground"
+                >
+                  <strong>{acceptedOfferItem.listing.title}</strong>
+                  {' '}
+                  is reserved through your accepted offer and must be checked out by itself. Remove the other cart items to continue.
+                </div>
+              )}
               <div className="mb-4 space-y-3">
                 {items.map(({ listing }) => {
                   const c = itemCommissions.find(
@@ -497,8 +528,8 @@ function Checkout() {
                           {listing.price.toLocaleString()}
                         </p>
                         <Button
-                          aria-label={`Remove ${listing.title} from cart`}
                           onClick={() => removeItem(listing.id)}
+                          aria-label={`Remove ${listing.title} from cart`}
                           size="icon"
                           variant="ghost"
                           className="
@@ -659,6 +690,14 @@ function Checkout() {
                   The payment deadline for this accepted offer has passed. Remove the item from your cart to continue.
                 </p>
               )}
+              {hasAcceptedOfferAwaitingReview && acceptedOfferReviewItem && (
+                <p role="alert" className="mb-3 text-sm text-foreground">
+                  Payment proof is awaiting admin review for
+                  {' '}
+                  <strong>{acceptedOfferReviewItem.listing.title}</strong>
+                  . You cannot start another checkout for this item while the review is pending.
+                </p>
+              )}
               <Button
                 onClick={shippingForm.handleSubmit(handlePlaceOrder, () => {
                   toast({
@@ -667,7 +706,7 @@ function Checkout() {
                     variant: 'destructive',
                   });
                 })}
-                disabled={placing || hasExpiredAcceptedOffer}
+                disabled={placing || hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview}
                 size="lg"
                 className="w-full"
               >

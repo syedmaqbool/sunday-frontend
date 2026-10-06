@@ -6,7 +6,7 @@ export interface CreateOrderData {
     proofFileId: string;
     discountCode?: string;
     listingIds: Array<string>;
-    sellerCouponCode?: string;
+    quoteRevision: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
     shippingAddress: string;
@@ -109,29 +109,120 @@ export interface CreateOrderErrors {
    * Default Response
    */
   409: {
-    /**
-     * Request identifier for tracing the error
-     */
-    requestId: string;
-    /**
-     * Http status code of the error response
-     */
-    statusCode: 409;
-    /**
-     * Detailed human-readable error message
-     */
-    message: string;
-    /**
-     * Application or framework-specific error code
-     */
-    code: string;
-    /**
-     * Field-level validation errors when applicable
-     */
+    requestId?: string;
+    code?: string;
+    data?: {
+      quote: {
+        appliedSellerCoupons: Array<{
+          id: string;
+          sellerId: string;
+          allocations: Array<{
+            listingId: string;
+            /**
+             * PKR amount as a number.
+             */
+            discountAmount: number;
+          }>;
+          code: string;
+          /**
+           * PKR amount as a number.
+           */
+          discountAmount: number;
+          discountType: 'FIXED' | 'PERCENTAGE';
+          discountValue: number;
+          scope: 'ITEM_BASED' | 'SELLER_WIDE';
+        }>;
+        /**
+         * PKR amount as a number.
+         */
+        commissionAmount: number;
+        currency: 'PKR';
+        /**
+         * PKR amount as a number.
+         */
+        discountAmount: number;
+        items: Array<{
+          listingId: string;
+          sellerCouponId: string | null;
+          sellerId: string;
+          /**
+           * PKR amount as a number.
+           */
+          commissionAmount: number;
+          commissionRate: number;
+          /**
+           * PKR amount as a number.
+           */
+          discountAmount: number;
+          /**
+           * PKR amount as a number.
+           */
+          marketplaceDiscountAmount: number;
+          /**
+           * PKR amount as a number.
+           */
+          platformFeeAmount: number;
+          /**
+           * PKR amount as a number.
+           */
+          price: number;
+          /**
+           * PKR amount as a number.
+           */
+          sellerCouponDiscountAmount: number;
+          /**
+           * PKR amount as a number.
+           */
+          taxAmount: number;
+          title: string;
+          /**
+           * PKR amount as a number.
+           */
+          total: number;
+        }>;
+        /**
+         * PKR amount as a number.
+         */
+        marketplaceDiscountAmount: number;
+        marketplaceDiscountCode: string | null;
+        /**
+         * PKR amount as a number.
+         */
+        platformFeeAmount: number;
+        quoteRevision: string;
+        /**
+         * PKR amount as a number.
+         */
+        sellerCouponDiscountAmount: number;
+        /**
+         * PKR amount as a number.
+         */
+        subtotal: number;
+        /**
+         * PKR amount as a number.
+         */
+        subtotalAfterSellerCoupons: number;
+        /**
+         * PKR amount as a number.
+         */
+        taxAmount: number;
+        taxRate: number;
+        /**
+         * PKR amount as a number.
+         */
+        total: number;
+        /**
+         * PKR amount as a number.
+         */
+        totalAfterDiscount: number;
+      };
+    };
     fieldErrors?: Array<{
       field: string;
       message: string;
     }>;
+    message: string;
+    statusCode: 409;
   };
 }
 
@@ -174,6 +265,7 @@ export interface CreateOrderResponses {
           offerId: string | null;
           orderId: string;
           reservationId: string | null;
+          sellerCouponId: string | null;
           sellerId: string;
           brand: string;
           buyerFullName: string;
@@ -204,6 +296,7 @@ export interface CreateOrderResponses {
           proofImageUrl: string | null;
           quantity: number;
           reservedOfferPrice: number | null;
+          sellerCouponCode: string | null;
           /**
            * PKR amount as a number.
            */
@@ -235,6 +328,23 @@ export interface CreateOrderResponses {
         platformFeeAmount: number;
         refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
         restorableListingIds?: Array<string>;
+        sellerCouponApplications: Array<{
+          id: string;
+          sellerId: string;
+          allocations: Array<{
+            listingId: string;
+            orderItemId: string;
+            /**
+             * PKR amount as a number.
+             */
+            discountAmount: number;
+          }>;
+          code: string;
+          /**
+           * PKR amount as a number.
+           */
+          discountAmount: number;
+        }>;
         sellerCouponCode: string | null;
         shippingAddress: string;
         shippingCity: string;

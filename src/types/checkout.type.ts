@@ -2,27 +2,21 @@ import type { ApiRequestBody, ApiResponseData } from './api.type';
 import type {
   CancelMyAwaitingPaymentOrderResponses,
   CreateOrderData,
+  CreateOrderErrors,
   CreateOrderResponses,
   GetPaymentInstructionsResponses,
+  QuoteCheckoutData,
+  QuoteCheckoutResponses,
   ResubmitMyManualPaymentOrderData,
   ResubmitMyManualPaymentOrderResponses,
   UploadFileResponses,
-  ValidateCheckoutDiscountData,
-  ValidateCheckoutDiscountResponses,
-  ValidateCheckoutSellerCouponData,
-  ValidateCheckoutSellerCouponResponses,
 } from '@/types/generated-api';
 
-export type ValidateDiscountPayload = ApiRequestBody<ValidateCheckoutDiscountData>;
-export type ValidateSellerCouponPayload = ApiRequestBody<ValidateCheckoutSellerCouponData>;
-export type ValidateDiscountResult = ApiResponseData<ValidateCheckoutDiscountResponses>;
-export type ValidateSellerCouponResult = ApiResponseData<ValidateCheckoutSellerCouponResponses>;
-export type AppliedDiscount = Pick<
-  ValidateDiscountResult | ValidateSellerCouponResult,
-  'code' | 'discountAmount' | 'discountType' | 'discountValue'
-> & {
-  listingIdsKey: string;
-  source: 'platform' | 'seller';
+export type CheckoutQuotePayload = ApiRequestBody<QuoteCheckoutData>;
+export type CheckoutQuote = ApiResponseData<QuoteCheckoutResponses>;
+export type CheckoutQuoteConflictResponse = CreateOrderErrors[409] & {
+  code: 'APP_CHECKOUT_QUOTE_CHANGED';
+  data: { quote: CheckoutQuote };
 };
 export type CreateOrderPayload = ApiRequestBody<CreateOrderData>;
 export type PaymentInstructions = ApiResponseData<GetPaymentInstructionsResponses>;

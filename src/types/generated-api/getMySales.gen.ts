@@ -90,6 +90,7 @@ export interface GetMySalesResponses {
       offerId: string | null;
       orderId: string;
       reservationId: string | null;
+      sellerCouponId: string | null;
       sellerId: string;
       brand: string;
       buyerFullName: string;
@@ -120,6 +121,7 @@ export interface GetMySalesResponses {
       proofImageUrl: string | null;
       quantity: number;
       reservedOfferPrice: number | null;
+      sellerCouponCode: string | null;
       /**
        * PKR amount as a number.
        */

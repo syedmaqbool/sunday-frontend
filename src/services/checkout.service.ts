@@ -1,29 +1,21 @@
 import type {
   CancelOrderResult,
   CheckoutOrderResult,
+  CheckoutQuote,
+  CheckoutQuotePayload,
   CreateOrderPayload,
   PaymentInstructions,
   ResubmitManualPaymentPayload,
   ResubmitManualPaymentResult,
   UploadedPaymentProof,
-  ValidateDiscountPayload,
-  ValidateDiscountResult,
-  ValidateSellerCouponPayload,
-  ValidateSellerCouponResult,
 } from '@/types/checkout.type';
 import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function validateDiscount(payload: ValidateDiscountPayload) {
+export function quoteCheckout(payload: CheckoutQuotePayload) {
   return authInstance
-    .post('/api/v1/checkout/validate-discount', { json: payload })
-    .json<Response<ValidateDiscountResult>>();
-}
-
-export function validateSellerCoupon(payload: ValidateSellerCouponPayload) {
-  return authInstance
-    .post('/api/v1/checkout/validate-seller-coupon', { json: payload })
-    .json<Response<ValidateSellerCouponResult>>();
+    .post('/api/v1/checkout/quote', { json: payload })
+    .json<Response<CheckoutQuote>>();
 }
 
 export function createOrder(payload: CreateOrderPayload) {

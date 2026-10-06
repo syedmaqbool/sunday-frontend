@@ -1,7 +1,6 @@
 import type { SubmitHandler } from 'react-hook-form';
-import type { AppliedDiscount } from '@/types/checkout.type';
+import type { CheckoutQuote, CheckoutQuoteConflictResponse } from '@/types/checkout.type';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Loader2,
@@ -10,7 +9,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -25,16 +24,11 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
-import { getActiveTaxOptions } from '@/hooks/useActiveTax';
-import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { trackEvent } from '@/lib/analytics';
-import { calculateCheckoutPricing } from '@/lib/checkoutPricing';
-import { calcCommission } from '@/lib/commission';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import {
+  useCheckoutQuoteMutation,
   useCreateCheckoutMutation,
-  useValidateDiscountMutation,
-  useValidateSellerCouponMutation,
 } from '@/queries/checkout.query';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
@@ -54,25 +48,52 @@ const discountSchema = z.object({
 type ShippingFormValues = z.infer<typeof shippingSchema>;
 type DiscountFormValues = z.infer<typeof discountSchema>;
 
+function getUpdatedCheckoutQuote(error: unknown) {
+  if (typeof error !== 'object' || error === null || !('response' in error) || !('data' in error))
+    return null;
+
+  const response = error.response;
+  const body = error.data;
+  if (
+    typeof response !== 'object'
+    || response === null
+    || !('status' in response)
+    || response.status !== 409
+    || typeof body !== 'object'
+    || body === null
+    || !('code' in body)
+    || body.code !== 'APP_CHECKOUT_QUOTE_CHANGED'
+    || !('data' in body)
+    || typeof body.data !== 'object'
+    || body.data === null
+    || !('quote' in body.data)
+  ) {
+    return null;
+  }
+
+  return (body as CheckoutQuoteConflictResponse).data.quote;
+}
+
 function Checkout() {
   const { clearCart, isHydrated, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: activeTax } = useQuery(getActiveTaxOptions());
-  const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
-  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
-    tier => tier.active,
-  );
   const [placing, setPlacing] = useState(false);
   const [manualPaymentError, setManualPaymentError] = useState<string | null>(null);
   const [manualPaymentOpen, setManualPaymentOpen] = useState(false);
-  const [appliedDiscount, setAppliedDiscount]
-    = useState<AppliedDiscount | null>(null);
+  const [checkoutQuote, setCheckoutQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteForKey, setQuoteForKey] = useState<string | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [marketplaceDiscountCode, setMarketplaceDiscountCode] = useState<string | null>(null);
+  const [quoteReviewStatus, setQuoteReviewStatus] = useState<'none' | 'required' | 'reviewed'>('none');
   const [applyingCode, setApplyingCode] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const lastQuoteRequestKey = useRef<string | null>(null);
+  const currentQuoteRequestKey = useRef('');
+  const currentListingIdsKey = useRef('');
+  const { mutateAsync: requestCheckoutQuote } = useCheckoutQuoteMutation();
   const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
-  const { mutateAsync: validateDiscountCode } = useValidateDiscountMutation();
-  const { mutateAsync: validateSellerCouponCode } = useValidateSellerCouponMutation();
   const shippingForm = useForm<ShippingFormValues>({
     defaultValues: {
       address: '',
@@ -97,6 +118,10 @@ function Checkout() {
   );
   const hasMixedAcceptedOfferCart = Boolean(acceptedOfferItem) && items.length > 1;
   const listingIdsKey = JSON.stringify(listingIds);
+  const quoteRequestKey = JSON.stringify([listingIdsKey, marketplaceDiscountCode]);
+  currentQuoteRequestKey.current = quoteRequestKey;
+  currentListingIdsKey.current = listingIdsKey;
+  const currentQuote = quoteForKey === quoteRequestKey ? checkoutQuote : null;
   const hasAcceptedOfferReservation = items.some(({ listing }) =>
     listing.reservedForCurrentUser && listing.reservedOfferId,
   );
@@ -116,10 +141,6 @@ function Checkout() {
     const expiresAt = listing.reservedUntil ? new Date(listing.reservedUntil).getTime() : NaN;
     return !Number.isFinite(expiresAt) || expiresAt <= currentTime;
   });
-  const validAppliedDiscount = appliedDiscount?.listingIdsKey === listingIdsKey
-    ? appliedDiscount
-    : null;
-
   useEffect(() => {
     if (!hasAcceptedOfferReservation)
       return;
@@ -144,94 +165,98 @@ function Checkout() {
   }, [items, totalPrice]);
 
   useEffect(() => {
-    if (appliedDiscount && appliedDiscount.listingIdsKey !== listingIdsKey) {
-      setAppliedDiscount(null);
+    if (!isHydrated || items.length === 0) {
+      lastQuoteRequestKey.current = null;
+      setCheckoutQuote(null);
+      setQuoteForKey(null);
+      setQuoteLoading(false);
+      return;
     }
-  }, [appliedDiscount, listingIdsKey]);
 
-  const itemCommissions = items.map(({ listing }) => {
-    const c = calcCommission(
-      commissionTiers,
-      listing.categoryValue,
-      listing.price,
-    );
-    return { listingId: listing.id, ...c };
-  });
-  const commissionTotal = itemCommissions.reduce((s, index) => s + index.amount, 0);
+    if (lastQuoteRequestKey.current === quoteRequestKey)
+      return;
 
-  const platformDiscountAmount = validAppliedDiscount?.source === 'platform'
-    ? validAppliedDiscount.discountAmount
-    : 0;
-  const sellerCouponDiscountAmount = validAppliedDiscount?.source === 'seller'
-    ? validAppliedDiscount.discountAmount
-    : 0;
-  const taxRate = activeTax?.rate ?? 0;
-  const { taxAmount, total: finalPrice } = calculateCheckoutPricing({
-    platformDiscountAmount,
-    platformFeeAmount: commissionTotal,
-    sellerCouponDiscountAmount,
-    subtotal: totalPrice,
-    taxRate,
-  });
+    const requestedQuoteKey = quoteRequestKey;
+    const requestedListingIds = JSON.parse(listingIdsKey) as string[];
+    lastQuoteRequestKey.current = requestedQuoteKey;
+    setQuoteLoading(true);
+    setQuoteError(null);
+
+    void requestCheckoutQuote({
+      listingIds: requestedListingIds,
+      ...(marketplaceDiscountCode && { discountCode: marketplaceDiscountCode }),
+    })
+      .then(({ data }) => {
+        if (currentQuoteRequestKey.current !== requestedQuoteKey)
+          return;
+        setCheckoutQuote(data);
+        setQuoteForKey(requestedQuoteKey);
+        setQuoteReviewStatus('none');
+      })
+      .catch((error: unknown) => {
+        if (currentQuoteRequestKey.current !== requestedQuoteKey)
+          return;
+        setCheckoutQuote(null);
+        setQuoteForKey(null);
+        setQuoteError(error instanceof Error ? error.message : 'Checkout quote could not be loaded.');
+      })
+      .finally(() => {
+        if (currentQuoteRequestKey.current === requestedQuoteKey)
+          setQuoteLoading(false);
+      });
+  }, [isHydrated, items.length, listingIdsKey, marketplaceDiscountCode, quoteRequestKey, requestCheckoutQuote]);
 
   const handleApplyDiscount: SubmitHandler<DiscountFormValues> = async (values) => {
     const code = values.code.trim().toUpperCase();
+    const requestedQuoteKey = JSON.stringify([listingIdsKey, code]);
     setApplyingCode(true);
+    setQuoteLoading(true);
+    setQuoteError(null);
+    lastQuoteRequestKey.current = requestedQuoteKey;
 
     try {
-      // 1) Try platform-wide discount first
-      try {
-        const { data } = await validateDiscountCode({ code, listingIds });
-        setAppliedDiscount({
-          code: data.code,
-          discountAmount: data.discountAmount,
-          discountType: data.discountType,
-          discountValue: data.discountValue,
-          listingIdsKey,
-          source: 'platform',
-        });
-        discountForm.reset();
-        toast({
-          description: `Code "${data.code}" has been applied.`,
-          title: 'Discount applied!',
-        });
+      const { data } = await requestCheckoutQuote({ discountCode: code, listingIds });
+      if (currentListingIdsKey.current !== listingIdsKey)
         return;
-      }
-      catch {
-        // not a platform code — try seller coupon
-      }
-
-      // 2) Try seller coupon
-      const { data } = await validateSellerCouponCode({ code, listingIds });
-      setAppliedDiscount({
-        code: data.code,
-        discountAmount: data.discountAmount,
-        discountType: data.discountType,
-        discountValue: data.discountValue,
-        listingIdsKey,
-        source: 'seller',
-      });
+      setMarketplaceDiscountCode(code);
+      setCheckoutQuote(data);
+      setQuoteForKey(requestedQuoteKey);
+      setQuoteReviewStatus('none');
       discountForm.reset();
       toast({
-        description: `"${data.code}" applied to eligible items.`,
-        title: 'Coupon applied!',
+        description: `Code "${data.marketplaceDiscountCode ?? code}" has been applied.`,
+        title: 'Marketplace discount applied!',
       });
     }
-    catch (error: any) {
-      toast(getErrorToastOptions(error, 'This code is not valid.'));
+    catch (error: unknown) {
+      toast(getErrorToastOptions(error, 'This marketplace discount code is not valid.'));
     }
     finally {
       setApplyingCode(false);
+      if (currentListingIdsKey.current === listingIdsKey)
+        setQuoteLoading(false);
     }
   };
 
   const handleRemoveDiscount = () => {
-    setAppliedDiscount(null);
+    setMarketplaceDiscountCode(null);
+    setCheckoutQuote(null);
+    setQuoteForKey(null);
+    setQuoteReviewStatus('none');
+    discountForm.reset();
   };
 
   const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async () => {
-    if (hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview)
+    if (
+      hasMixedAcceptedOfferCart
+      || hasExpiredAcceptedOffer
+      || hasAcceptedOfferAwaitingReview
+      || !currentQuote
+      || quoteLoading
+      || quoteReviewStatus === 'required'
+    ) {
       return;
+    }
 
     if (!user) {
       navigate('/auth');
@@ -251,7 +276,14 @@ function Checkout() {
     senderAccountNumber: string;
     senderAccountTitle: string;
   }) => {
-    if (hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview) {
+    if (
+      hasMixedAcceptedOfferCart
+      || hasExpiredAcceptedOffer
+      || hasAcceptedOfferAwaitingReview
+      || !currentQuote
+      || quoteLoading
+      || quoteReviewStatus === 'required'
+    ) {
       setManualPaymentOpen(false);
       return;
     }
@@ -267,6 +299,7 @@ function Checkout() {
       const response = await createCheckout({
         proofFileId,
         listingIds,
+        quoteRevision: currentQuote.quoteRevision,
         senderAccountNumber,
         senderAccountTitle,
         shippingAddress: shipping.address,
@@ -275,8 +308,7 @@ function Checkout() {
         shippingLastName: shipping.lastName,
         shippingPhone: shipping.phone,
         shippingPostal: shipping.postal,
-        ...(validAppliedDiscount?.source === 'platform' && { discountCode: validAppliedDiscount.code }),
-        ...(validAppliedDiscount?.source === 'seller' && { sellerCouponCode: validAppliedDiscount.code }),
+        ...(currentQuote.marketplaceDiscountCode && { discountCode: currentQuote.marketplaceDiscountCode }),
       });
       const result = response.data;
       if (!result?.manualPaymentSubmission || !result.order)
@@ -286,8 +318,23 @@ function Checkout() {
       setManualPaymentOpen(false);
       navigate(`/order-confirmation/${result.order.id}`, { replace: true });
     }
-    catch (error: any) {
-      const message = error?.message ?? 'Unknown error';
+    catch (error: unknown) {
+      const updatedQuote = getUpdatedCheckoutQuote(error);
+      if (updatedQuote && currentListingIdsKey.current === listingIdsKey) {
+        setCheckoutQuote(updatedQuote);
+        setQuoteForKey(currentQuoteRequestKey.current);
+        setQuoteReviewStatus('required');
+        setManualPaymentOpen(false);
+        setManualPaymentError(null);
+        toast({
+          description: 'The order was not created. Review the updated price and coupons before trying again.',
+          title: 'Checkout quote changed',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Unknown error';
       setManualPaymentError(message);
       toast(getErrorToastOptions(error, 'Order failed'));
       throw error;
@@ -489,9 +536,7 @@ function Checkout() {
               )}
               <div className="mb-4 space-y-3">
                 {items.map(({ listing }) => {
-                  const c = itemCommissions.find(
-                    x => x.listingId === listing.id,
-                  );
+                  const quotedItem = currentQuote?.items.find(item => item.listingId === listing.id);
                   return (
                     <div
                       key={listing.id}
@@ -511,13 +556,27 @@ function Checkout() {
                         <p className="truncate text-sm font-medium text-foreground">
                           {listing.title}
                         </p>
-                        {c && c.amount > 0 && (
+                        {quotedItem && quotedItem.commissionAmount > 0 && (
                           <p className="text-[11px] text-muted-foreground">
                             Platform fee (
-                            {c.rate}
+                            {quotedItem.commissionRate}
                             %): Rs
                             {' '}
-                            {c.amount.toLocaleString()}
+                            {quotedItem.commissionAmount.toLocaleString()}
+                          </p>
+                        )}
+                        {quotedItem && quotedItem.sellerCouponDiscountAmount > 0 && (
+                          <p className="text-[11px] text-primary">
+                            Seller coupon: −Rs
+                            {' '}
+                            {quotedItem.sellerCouponDiscountAmount.toLocaleString()}
+                          </p>
+                        )}
+                        {quotedItem && quotedItem.marketplaceDiscountAmount > 0 && (
+                          <p className="text-[11px] text-primary">
+                            Marketplace discount: −Rs
+                            {' '}
+                            {quotedItem.marketplaceDiscountAmount.toLocaleString()}
                           </p>
                         )}
                       </div>
@@ -525,7 +584,7 @@ function Checkout() {
                         <p className="whitespace-nowrap text-sm font-semibold text-foreground">
                           Rs
                           {' '}
-                          {listing.price.toLocaleString()}
+                          {(quotedItem?.price ?? listing.price).toLocaleString()}
                         </p>
                         <Button
                           onClick={() => removeItem(listing.id)}
@@ -545,21 +604,64 @@ function Checkout() {
                 })}
               </div>
 
+              {currentQuote && currentQuote.appliedSellerCoupons.length > 0 && (
+                <div aria-label="Automatic seller coupons" className="mb-4 space-y-3">
+                  {currentQuote.appliedSellerCoupons.map((coupon) => {
+                    const sellerName = items.find(({ listing }) => listing.seller?.id === coupon.sellerId)?.listing.seller?.fullName ?? 'Seller';
+                    return (
+                      <div key={coupon.id} className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="font-medium text-foreground">
+                            {sellerName}
+                            {' '}
+                            coupon
+                            {' '}
+                            <span className="text-primary">{coupon.code}</span>
+                          </span>
+                          <span className="shrink-0 font-medium text-primary">
+                            −Rs
+                            {' '}
+                            {coupon.discountAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                          {coupon.allocations.map(allocation => (
+                            <li key={allocation.listingId} className="flex justify-between gap-3">
+                              <span className="truncate">
+                                {items.find(({ listing }) => listing.id === allocation.listingId)?.listing.title ?? 'Eligible item'}
+                              </span>
+                              <span className="shrink-0">
+                                −Rs
+                                {' '}
+                                {allocation.discountAmount.toLocaleString()}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Discount code input */}
               <Separator />
               <div className="py-3">
-                {validAppliedDiscount
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Seller coupons apply automatically. You can also enter a marketplace discount code.
+                </p>
+                {marketplaceDiscountCode
                   ? (
                       <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
                         <div className="flex items-center gap-2">
                           <Tag className="h-4 w-4 text-primary" />
                           <span className="text-sm font-medium text-foreground">
-                            {validAppliedDiscount.code}
+                            {currentQuote?.marketplaceDiscountCode ?? marketplaceDiscountCode}
                           </span>
                           <span className="text-xs text-primary">
-                            {validAppliedDiscount.discountType === 'PERCENTAGE'
-                              ? `−${validAppliedDiscount.discountValue}%`
-                              : `−Rs ${validAppliedDiscount.discountValue.toLocaleString()}`}
+                            −Rs
+                            {' '}
+                            {(currentQuote?.marketplaceDiscountAmount ?? 0).toLocaleString()}
                           </span>
                         </div>
                         <Button
@@ -596,7 +698,7 @@ function Checkout() {
                           )}
                         />
                         <Button
-                          disabled={applyingCode || !discountCode.trim()}
+                          disabled={applyingCode || quoteLoading || !discountCode.trim()}
                           size="default"
                           type="submit"
                           variant="outline"
@@ -614,21 +716,42 @@ function Checkout() {
               </div>
 
               <Separator />
+              {quoteLoading && !currentQuote && (
+                <p role="status" className="py-3 text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                  Calculating your checkout quote…
+                </p>
+              )}
+              {quoteError && !currentQuote && (
+                <p role="alert" className="py-3 text-sm text-destructive">
+                  {quoteError}
+                </p>
+              )}
               <div className="flex items-center justify-between py-3">
                 <span className="text-sm text-muted-foreground">Subtotal</span>
                 <span className="font-medium text-foreground">
                   Rs
                   {' '}
-                  {totalPrice.toLocaleString()}
+                  {(currentQuote?.subtotal ?? totalPrice).toLocaleString()}
                 </span>
               </div>
-              {platformDiscountAmount > 0 && (
+              {(currentQuote?.sellerCouponDiscountAmount ?? 0) > 0 && (
                 <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-primary">Discount</span>
+                  <span className="text-sm text-primary">Seller coupons</span>
                   <span className="text-sm font-medium text-primary">
                     −Rs
                     {' '}
-                    {platformDiscountAmount.toLocaleString()}
+                    {currentQuote!.sellerCouponDiscountAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {(currentQuote?.marketplaceDiscountAmount ?? 0) > 0 && (
+                <div className="flex items-center justify-between pb-3">
+                  <span className="text-sm text-primary">Marketplace discount</span>
+                  <span className="text-sm font-medium text-primary">
+                    −Rs
+                    {' '}
+                    {currentQuote!.marketplaceDiscountAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -636,23 +759,21 @@ function Checkout() {
                 <span className="text-sm text-muted-foreground">Shipping</span>
                 <span className="text-sm text-muted-foreground">Free</span>
               </div>
-              {taxAmount > 0 && (
+              {(currentQuote?.taxAmount ?? 0) > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">
-                    {activeTax?.name}
-                    {' '}
-                    (
-                    {taxRate}
+                    Tax (
+                    {currentQuote!.taxRate}
                     %)
                   </span>
                   <span className="text-sm text-foreground">
                     Rs
                     {' '}
-                    {taxAmount.toLocaleString()}
+                    {currentQuote!.taxAmount.toLocaleString()}
                   </span>
                 </div>
               )}
-              {commissionTotal > 0 && (
+              {(currentQuote?.platformFeeAmount ?? 0) > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">
                     Platform fee
@@ -660,17 +781,7 @@ function Checkout() {
                   <span className="text-sm text-foreground">
                     Rs
                     {' '}
-                    {commissionTotal.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {sellerCouponDiscountAmount > 0 && (
-                <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-primary">Coupon (on platform fee)</span>
-                  <span className="text-sm font-medium text-primary">
-                    −Rs
-                    {' '}
-                    {sellerCouponDiscountAmount.toLocaleString()}
+                    {currentQuote!.platformFeeAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -682,9 +793,29 @@ function Checkout() {
                 <span className="font-heading text-xl font-bold text-foreground">
                   Rs
                   {' '}
-                  {finalPrice.toLocaleString()}
+                  {currentQuote ? currentQuote.total.toLocaleString() : '—'}
                 </span>
               </div>
+              {quoteReviewStatus === 'required' && currentQuote && (
+                <div role="alert" className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-foreground">
+                  <p className="mb-2">
+                    The price or coupon selection changed. Your order was not created. Review the updated quote before retrying.
+                  </p>
+                  <Button
+                    onClick={() => setQuoteReviewStatus('reviewed')}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    I reviewed the updated quote
+                  </Button>
+                </div>
+              )}
+              {quoteReviewStatus === 'reviewed' && (
+                <p role="status" className="mb-3 text-sm text-muted-foreground">
+                  Updated quote reviewed. You can continue when ready.
+                </p>
+              )}
               {hasExpiredAcceptedOffer && (
                 <p role="alert" className="mb-3 text-sm text-destructive">
                   The payment deadline for this accepted offer has passed. Remove the item from your cart to continue.
@@ -706,7 +837,15 @@ function Checkout() {
                     variant: 'destructive',
                   });
                 })}
-                disabled={placing || hasMixedAcceptedOfferCart || hasExpiredAcceptedOffer || hasAcceptedOfferAwaitingReview}
+                disabled={
+                  placing
+                  || quoteLoading
+                  || !currentQuote
+                  || quoteReviewStatus === 'required'
+                  || hasMixedAcceptedOfferCart
+                  || hasExpiredAcceptedOffer
+                  || hasAcceptedOfferAwaitingReview
+                }
                 size="lg"
                 className="w-full"
               >

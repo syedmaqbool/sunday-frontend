@@ -134,6 +134,7 @@ export interface GetAdminOrdersResponses {
         offerId: string | null;
         orderId: string;
         reservationId: string | null;
+        sellerCouponId: string | null;
         sellerId: string;
         brand: string;
         buyerFullName: string;
@@ -164,6 +165,7 @@ export interface GetAdminOrdersResponses {
         proofImageUrl: string | null;
         quantity: number;
         reservedOfferPrice: number | null;
+        sellerCouponCode: string | null;
         /**
          * PKR amount as a number.
          */
@@ -195,6 +197,23 @@ export interface GetAdminOrdersResponses {
       platformFeeAmount: number;
       refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
       restorableListingIds?: Array<string>;
+      sellerCouponApplications: Array<{
+        id: string;
+        sellerId: string;
+        allocations: Array<{
+          listingId: string;
+          orderItemId: string;
+          /**
+           * PKR amount as a number.
+           */
+          discountAmount: number;
+        }>;
+        code: string;
+        /**
+         * PKR amount as a number.
+         */
+        discountAmount: number;
+      }>;
       sellerCouponCode: string | null;
       shippingAddress: string;
       shippingCity: string;

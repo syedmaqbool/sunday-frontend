@@ -63,6 +63,7 @@ function makeOrder(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail 
     platformFeeAmount: 0,
     refundStatus: null,
     restorableListingIds: [],
+    sellerCouponApplications: [],
     sellerCouponCode: null,
     shippingAddress: '1 Example Street',
     shippingCity: 'Lahore',

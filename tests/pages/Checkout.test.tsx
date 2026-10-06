@@ -1,3 +1,4 @@
+import type { CheckoutQuote } from '@/types/checkout.type';
 import type { MarketplaceListing } from '@/types/marketplace.type';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -10,10 +11,8 @@ type CheckoutListing = Pick<MarketplaceListing, 'categoryValue' | 'id' | 'price'
 const {
   cartState,
   createCheckoutMock,
+  quoteCheckoutMock,
   removeItemMock,
-  useQueryMock,
-  validateDiscountMock,
-  validateSellerCouponMock,
 } = vi.hoisted(() => ({
   cartState: {
     items: [{
@@ -26,24 +25,9 @@ const {
     }] as { listing: CheckoutListing }[],
   },
   createCheckoutMock: vi.fn(),
+  quoteCheckoutMock: vi.fn(),
   removeItemMock: vi.fn(),
-  useQueryMock: vi.fn(),
-  validateDiscountMock: vi.fn(),
-  validateSellerCouponMock: vi.fn(),
 }));
-
-const commissionTier = {
-  id: 'tier-id',
-  active: true,
-  categories: ['clothing'],
-  maxPrice: null,
-  minPrice: 0,
-  name: 'Clothing',
-  rate: 10,
-  sortOrder: 1,
-};
-
-vi.mock('@tanstack/react-query', () => ({ useQuery: useQueryMock }));
 vi.mock('@/components/Footer', () => ({ default: () => <footer /> }));
 vi.mock('@/components/ManualPaymentDialog', () => ({
   ManualPaymentDialog: ({
@@ -87,16 +71,9 @@ vi.mock('@/contexts/CartContext', () => ({
   }),
 }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
-vi.mock('@/hooks/useActiveTax', () => ({
-  getActiveTaxOptions: () => ({ queryKey: ['active-tax'] }),
-}));
-vi.mock('@/hooks/useCommissionTiers', () => ({
-  getCommissionTiersOptions: () => ({ queryKey: ['commission-tiers'] }),
-}));
 vi.mock('@/queries/checkout.query', () => ({
+  useCheckoutQuoteMutation: () => ({ mutateAsync: quoteCheckoutMock }),
   useCreateCheckoutMutation: () => ({ mutateAsync: createCheckoutMock }),
-  useValidateDiscountMutation: () => ({ mutateAsync: validateDiscountMock }),
-  useValidateSellerCouponMutation: () => ({ mutateAsync: validateSellerCouponMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({ getListingMediaUrls: () => [] }));
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
@@ -134,11 +111,71 @@ function fillShippingInformation() {
   }
 }
 
+function buildCheckoutQuote(
+  listingIds: string[],
+  discountCode?: string,
+  sellerCoupons: CheckoutQuote['appliedSellerCoupons'] = [],
+): CheckoutQuote {
+  const items = listingIds.map((listingId) => {
+    const listing = cartState.items.find(({ listing }) => listing.id === listingId)?.listing;
+    const price = listing?.price ?? 1000;
+    const sellerCouponAllocation = sellerCoupons
+      .flatMap(coupon => coupon.allocations)
+      .find(allocation => allocation.listingId === listingId);
+    const sellerCouponDiscountAmount = sellerCouponAllocation?.discountAmount ?? 0;
+    const marketplaceDiscountAmount = discountCode ? 100 : 0;
+    const taxAmount = 100;
+    const commissionAmount = 100;
+    return {
+      listingId,
+      sellerCouponId: sellerCouponDiscountAmount > 0 ? sellerCoupons[0]?.id ?? null : null,
+      sellerId: `seller-${listingId}`,
+      commissionAmount,
+      commissionRate: 10,
+      discountAmount: marketplaceDiscountAmount,
+      marketplaceDiscountAmount,
+      platformFeeAmount: commissionAmount,
+      price,
+      sellerCouponDiscountAmount,
+      taxAmount,
+      title: listing?.title ?? 'Example listing',
+      total: price - sellerCouponDiscountAmount - marketplaceDiscountAmount + taxAmount + commissionAmount,
+    };
+  });
+  const subtotal = items.reduce((total, item) => total + item.price, 0);
+  const sellerCouponDiscountAmount = items.reduce((total, item) => total + item.sellerCouponDiscountAmount, 0);
+  const marketplaceDiscountAmount = items.reduce((total, item) => total + item.marketplaceDiscountAmount, 0);
+
+  return {
+    appliedSellerCoupons: sellerCoupons,
+    commissionAmount: items.reduce((total, item) => total + item.commissionAmount, 0),
+    currency: 'PKR',
+    discountAmount: marketplaceDiscountAmount,
+    items,
+    marketplaceDiscountAmount,
+    marketplaceDiscountCode: discountCode ?? null,
+    platformFeeAmount: items.reduce((total, item) => total + item.platformFeeAmount, 0),
+    quoteRevision: `revision-${listingIds.join('-')}-${discountCode ?? 'none'}`,
+    sellerCouponDiscountAmount,
+    subtotal,
+    subtotalAfterSellerCoupons: subtotal - sellerCouponDiscountAmount,
+    taxAmount: items.reduce((total, item) => total + item.taxAmount, 0),
+    taxRate: 10,
+    total: items.reduce((total, item) => total + item.total, 0),
+    totalAfterDiscount: subtotal - sellerCouponDiscountAmount - marketplaceDiscountAmount,
+  };
+}
+
 async function submitCheckout() {
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
   fillShippingInformation();
   fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Submit payment proof' }));
   await waitFor(() => expect(createCheckoutMock).toHaveBeenCalled());
+}
+
+async function waitForCheckoutQuote() {
+  await waitFor(() => expect(screen.getByText('Total').parentElement).not.toHaveTextContent('—'));
 }
 
 describe('checkout', () => {
@@ -149,6 +186,9 @@ describe('checkout', () => {
         order: { id: 'order-id' },
       },
     });
+    quoteCheckoutMock.mockReset().mockImplementation((payload: { discountCode?: string; listingIds: string[] }) => Promise.resolve({
+      data: buildCheckoutQuote(payload.listingIds, payload.discountCode),
+    }));
     removeItemMock.mockReset();
     removeItemMock.mockImplementation((listingId: string) => {
       cartState.items = cartState.items.filter(({ listing }) => listing.id !== listingId);
@@ -161,27 +201,9 @@ describe('checkout', () => {
         title: 'Example coat',
       },
     }];
-    useQueryMock.mockImplementation(({ queryKey }: { queryKey: readonly unknown[] }) => {
-      if (queryKey[0] === 'active-tax') {
-        return { data: { id: 'tax-id', name: 'Sales tax', rate: 10 } };
-      }
-      return { data: { data: [commissionTier] } };
-    });
-    validateDiscountMock.mockReset().mockRejectedValue(new Error('Not a platform discount'));
-    validateSellerCouponMock.mockReset().mockResolvedValue({
-      data: {
-        sellerId: 'seller-id',
-        code: 'FEE20',
-        currency: 'PKR',
-        discountAmount: 20,
-        discountType: 'FIXED',
-        discountValue: 20,
-        eligibleSubtotal: 1000,
-      },
-    });
   });
 
-  it('blocks a mixed cart containing an accepted-offer listing before order creation', () => {
+  it('blocks a mixed cart containing an accepted-offer listing before order creation', async () => {
     cartState.items = [
       {
         listing: {
@@ -228,9 +250,10 @@ describe('checkout', () => {
       },
     }];
     renderCheckout();
+    await waitForCheckoutQuote();
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
 
     await submitCheckout();
 
@@ -268,7 +291,7 @@ describe('checkout', () => {
     expect(removeItemMock).toHaveBeenCalledWith('other-listing-id');
     rerenderCheckout();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
 
     await submitCheckout();
 
@@ -301,7 +324,7 @@ describe('checkout', () => {
     renderCheckout();
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
 
     await submitCheckout();
 
@@ -310,31 +333,61 @@ describe('checkout', () => {
     }));
   });
 
-  it('uses the backend coupon amount without reducing merchandise subtotal or tax', async () => {
+  it('shows automatic seller coupon allocations and keeps marketplace code entry', async () => {
+    const automaticCoupon: CheckoutQuote['appliedSellerCoupons'][number] = {
+      id: 'seller-coupon-id',
+      sellerId: 'seller-listing-id',
+      allocations: [{ listingId: 'listing-id', discountAmount: 200 }],
+      code: 'AUTO200',
+      discountAmount: 200,
+      discountType: 'FIXED',
+      discountValue: 200,
+      scope: 'ITEM_BASED',
+    };
+    quoteCheckoutMock.mockImplementation((payload: { discountCode?: string; listingIds: string[] }) => Promise.resolve({
+      data: buildCheckoutQuote(payload.listingIds, payload.discountCode, [automaticCoupon]),
+    }));
     renderCheckout();
 
-    fireEvent.change(screen.getByPlaceholderText('Discount code'), {
-      target: { value: 'FEE20' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(await screen.findByLabelText('Automatic seller coupons')).toHaveTextContent('AUTO200');
+    expect(screen.getByLabelText('Automatic seller coupons')).toHaveTextContent('Example coat');
+    expect(screen.getByPlaceholderText('Discount code')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/seller coupon/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Seller coupons').parentElement).toHaveTextContent('−Rs 200');
 
-    await waitFor(() => expect(validateSellerCouponMock).toHaveBeenCalledWith({
-      code: 'FEE20',
+    fireEvent.change(screen.getByPlaceholderText('Discount code'), { target: { value: 'market10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenLastCalledWith({
+      discountCode: 'MARKET10',
       listingIds: ['listing-id'],
     }));
-
-    const subtotalLine = screen.getByText('Subtotal').parentElement;
-    expect(subtotalLine).toHaveTextContent('Rs 1,000');
-    const taxLine = screen.getByText(/Sales tax/).parentElement;
-    expect(taxLine).toHaveTextContent('Rs 100');
-    const feeLine = screen.getByText('Platform fee').parentElement;
-    expect(feeLine).toHaveTextContent('Rs 100');
-    const couponLine = screen.getByText('Coupon (on platform fee)').parentElement;
-    expect(couponLine).toHaveTextContent('20');
-    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,180');
+    expect(await screen.findByText('MARKET10')).toBeInTheDocument();
+    expect(screen.getByLabelText('Automatic seller coupons')).toHaveTextContent('AUTO200');
+    expect(screen.getByText('Seller coupons').parentElement).toHaveTextContent('−Rs 200');
   });
 
-  it('clears a validated coupon when the cart listing set changes', async () => {
+  it('submits the quote revision and only the optional marketplace code', async () => {
+    renderCheckout();
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
+    fireEvent.change(screen.getByPlaceholderText('Discount code'), { target: { value: 'market10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenLastCalledWith({
+      discountCode: 'MARKET10',
+      listingIds: ['listing-id'],
+    }));
+    await screen.findByText('MARKET10');
+    await submitCheckout();
+
+    expect(createCheckoutMock).toHaveBeenCalledWith(expect.objectContaining({
+      discountCode: 'MARKET10',
+      listingIds: ['listing-id'],
+      quoteRevision: expect.stringContaining('revision-listing-id-MARKET10'),
+    }));
+    expect(createCheckoutMock.mock.calls[0][0]).not.toHaveProperty('sellerCouponCode');
+  });
+
+  it('requotes the cart listing set when cart contents change', async () => {
     cartState.items = [
       ...cartState.items,
       {
@@ -348,16 +401,9 @@ describe('checkout', () => {
     ];
     const { rerender } = renderCheckout();
 
-    fireEvent.change(screen.getByPlaceholderText('Discount code'), {
-      target: { value: 'FEE20' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
-
-    await waitFor(() => expect(validateSellerCouponMock).toHaveBeenCalledWith({
-      code: 'FEE20',
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenCalledWith({
       listingIds: ['listing-id', 'second-listing-id'],
     }));
-    expect(screen.getByText('Coupon (on platform fee)')).toBeInTheDocument();
 
     cartState.items = [cartState.items[1]];
     rerender(
@@ -366,12 +412,49 @@ describe('checkout', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByText('Coupon (on platform fee)')).not.toBeInTheDocument();
-    expect(screen.queryByText('FEE20')).not.toBeInTheDocument();
-    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 600');
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenLastCalledWith({
+      listingIds: ['second-listing-id'],
+    }));
+    await waitFor(() => expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 700'));
   });
 
-  it('prevents checkout when an accepted offer reservation deadline has passed', () => {
+  it('shows a changed quote and requires explicit review before retrying', async () => {
+    renderCheckout();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
+    fillShippingInformation();
+    fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
+    const updatedQuote = {
+      ...buildCheckoutQuote(['listing-id']),
+      quoteRevision: 'updated-revision',
+      total: 1450,
+    };
+    createCheckoutMock.mockRejectedValueOnce(Object.assign(new Error('Checkout quote changed'), {
+      data: {
+        requestId: 'request-id',
+        code: 'APP_CHECKOUT_QUOTE_CHANGED',
+        data: { quote: updatedQuote },
+        message: 'Checkout quote changed',
+        statusCode: 409,
+      },
+      response: { status: 409 },
+    }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit payment proof' }));
+
+    await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The price or coupon selection changed');
+    expect(await screen.findByText('Rs 1,450')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Place Order' })).toBeDisabled();
+    expect(createCheckoutMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'I reviewed the updated quote' }));
+    expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit payment proof' }));
+    await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(2));
+    expect(createCheckoutMock.mock.calls[1][0]).toEqual(expect.objectContaining({ quoteRevision: 'updated-revision' }));
+  });
+
+  it('prevents checkout when an accepted offer reservation deadline has passed', async () => {
     cartState.items = [{
       listing: {
         id: 'accepted-listing-id',
@@ -386,12 +469,13 @@ describe('checkout', () => {
     }];
 
     renderCheckout();
+    await waitForCheckoutQuote();
 
     expect(screen.getByRole('alert')).toHaveTextContent('The payment deadline for this accepted offer has passed.');
     expect(screen.getByRole('button', { name: 'Place Order' })).toBeDisabled();
   });
 
-  it('blocks another checkout while accepted-offer payment proof is awaiting review', () => {
+  it('blocks another checkout while accepted-offer payment proof is awaiting review', async () => {
     cartState.items = [{
       listing: {
         id: 'accepted-listing-id',
@@ -406,6 +490,7 @@ describe('checkout', () => {
     }];
 
     renderCheckout();
+    await waitForCheckoutQuote();
 
     expect(screen.getByRole('alert')).toHaveTextContent(/payment proof is awaiting admin review/i);
     expect(screen.getByRole('alert')).toHaveTextContent(/cannot start another checkout/i);

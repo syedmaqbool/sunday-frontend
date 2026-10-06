@@ -1,8 +1,7 @@
 import type {
+  CheckoutQuotePayload,
   CreateOrderPayload,
   ResubmitManualPaymentPayload,
-  ValidateDiscountPayload,
-  ValidateSellerCouponPayload,
 } from '@/types/checkout.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { marketplaceQueryKey } from '@/queries/marketplace.query';
@@ -11,10 +10,9 @@ import {
   cancelOrder,
   createOrder,
   getPaymentInstructions,
+  quoteCheckout,
   resubmitManualPayment,
   uploadPaymentProof,
-  validateDiscount,
-  validateSellerCoupon,
 } from '@/services/checkout.service';
 
 export const checkoutQueryKey = {
@@ -29,15 +27,9 @@ export function getPaymentInstructionsOptions() {
   });
 }
 
-export function useValidateDiscountMutation() {
+export function useCheckoutQuoteMutation() {
   return useMutation({
-    mutationFn: (payload: ValidateDiscountPayload) => validateDiscount(payload),
-  });
-}
-
-export function useValidateSellerCouponMutation() {
-  return useMutation({
-    mutationFn: (payload: ValidateSellerCouponPayload) => validateSellerCoupon(payload),
+    mutationFn: (payload: CheckoutQuotePayload) => quoteCheckout(payload),
   });
 }
 

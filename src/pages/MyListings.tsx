@@ -51,6 +51,8 @@ import {
   useResubmitMyListingMutation,
 } from '@/queries/myListings.query';
 
+const MY_LISTING_TAB_VALUES = ['approved', 'pending', 'sold', 'offers'] as const;
+
 function getStatusColor(status: MyListing['status']) {
   if (status === 'APPROVED' || status === 'RESERVED')
     return 'default';
@@ -70,7 +72,8 @@ function MyListings() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedOfferId = searchParams.get('offer');
-  const selectedTab = searchParams.get('tab') === 'offers' ? 'offers' : 'approved';
+  const tabParameter = searchParams.get('tab');
+  const selectedTab = MY_LISTING_TAB_VALUES.find(tab => tab === tabParameter) ?? 'approved';
 
   const { data: listingsResponse, isLoading } = useQuery(getMyListingsOptions(!!user));
   const listings = listingsResponse?.data ?? [];
@@ -337,10 +340,10 @@ function MyListings() {
                   <Tabs
                     onValueChange={(value) => {
                       const nextSearchParams = new URLSearchParams(searchParams);
-                      if (value === 'offers')
-                        nextSearchParams.set('tab', value);
-                      else
+                      if (value === 'approved')
                         nextSearchParams.delete('tab');
+                      else
+                        nextSearchParams.set('tab', value);
                       setSearchParams(nextSearchParams);
                     }}
                     value={selectedTab}

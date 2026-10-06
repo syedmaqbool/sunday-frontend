@@ -321,8 +321,14 @@ function Checkout() {
     catch (error: unknown) {
       const updatedQuote = getUpdatedCheckoutQuote(error);
       if (updatedQuote && currentListingIdsKey.current === listingIdsKey) {
+        const updatedQuoteRequestKey = JSON.stringify([listingIdsKey, updatedQuote.marketplaceDiscountCode]);
+        lastQuoteRequestKey.current = updatedQuoteRequestKey;
+        if (marketplaceDiscountCode !== updatedQuote.marketplaceDiscountCode) {
+          setMarketplaceDiscountCode(updatedQuote.marketplaceDiscountCode);
+          discountForm.reset();
+        }
         setCheckoutQuote(updatedQuote);
-        setQuoteForKey(currentQuoteRequestKey.current);
+        setQuoteForKey(updatedQuoteRequestKey);
         setQuoteReviewStatus('required');
         setManualPaymentOpen(false);
         setManualPaymentError(null);

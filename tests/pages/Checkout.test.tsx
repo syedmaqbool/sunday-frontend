@@ -421,6 +421,9 @@ describe('checkout', () => {
   it('shows a changed quote and requires explicit review before retrying', async () => {
     renderCheckout();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled());
+    fireEvent.change(screen.getByPlaceholderText('Discount code'), { target: { value: 'market10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByText('MARKET10');
     fillShippingInformation();
     fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
     const updatedQuote = {
@@ -443,6 +446,8 @@ describe('checkout', () => {
     await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole('alert')).toHaveTextContent('The price or coupon selection changed');
     expect(await screen.findByText('Rs 1,450')).toBeInTheDocument();
+    expect(screen.queryByText('MARKET10')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Discount code')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Place Order' })).toBeDisabled();
     expect(createCheckoutMock).toHaveBeenCalledTimes(1);
 
@@ -452,6 +457,7 @@ describe('checkout', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Submit payment proof' }));
     await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(2));
     expect(createCheckoutMock.mock.calls[1][0]).toEqual(expect.objectContaining({ quoteRevision: 'updated-revision' }));
+    expect(createCheckoutMock.mock.calls[1][0]).not.toHaveProperty('discountCode');
   });
 
   it('prevents checkout when an accepted offer reservation deadline has passed', async () => {

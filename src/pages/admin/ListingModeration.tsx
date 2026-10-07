@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/components/AdminListingFeedbackWidgets';
@@ -487,10 +487,16 @@ function ListingModeration() {
                       'MMM d, yyyy \'at\' h:mm a',
                     )}
                     <br />
-                    Seller ID:
-                    {' '}
-                    {reviewListing.sellerId.slice(0, 8)}
-                    …
+                    <Link
+                      to={`/seller/${reviewListing.sellerId}`}
+                      className="
+                        font-medium underline-offset-4
+                        hover:underline
+                        focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                      "
+                    >
+                      {reviewListing.sellerName}
+                    </Link>
                   </div>
 
                   {/* Previous feedback history */}

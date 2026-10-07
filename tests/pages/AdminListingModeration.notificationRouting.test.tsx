@@ -1,7 +1,7 @@
 import type { AdminListing } from '@/types/adminListing.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
@@ -16,6 +16,7 @@ const { listing, listings } = vi.hoisted(() => ({
     description: 'Listing description',
     media: [],
     price: 100,
+    sellerName: 'Test Seller',
     size: 'M',
     status: 'PENDING',
     title: 'Notification listing',
@@ -42,11 +43,17 @@ function HistoryControls() {
   const navigate = useNavigate();
   return (
     <>
+      <LocationObserver />
       <button onClick={() => navigate(-1)} type="button">Back</button>
       <button onClick={() => navigate(1)} type="button">Forward</button>
       <ListingModeration />
     </>
   );
+}
+
+function LocationObserver() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}</output>;
 }
 
 function renderModeration(initialEntries: string[], initialIndex = initialEntries.length - 1) {
@@ -83,5 +90,18 @@ describe('admin listing notification navigation', () => {
 
     expect(await screen.findByText('No listings found')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Notification listing' })).not.toBeInTheDocument();
+  });
+
+  it('links the seller name in the review modal to the seller profile', async () => {
+    listings.splice(0, listings.length, listing);
+    renderModeration(['/admin/listings?listing=listing-1&status=PENDING']);
+
+    const sellerLink = await screen.findByRole('link', { name: 'Test Seller' });
+
+    expect(sellerLink).toHaveAttribute('href', '/seller/seller-1');
+    expect(sellerLink.parentElement).not.toHaveTextContent('…');
+    fireEvent.click(sellerLink);
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1');
   });
 });

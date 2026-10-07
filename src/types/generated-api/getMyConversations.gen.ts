@@ -60,16 +60,16 @@ export interface GetMyConversationsResponses {
     data: Array<{
       id: string;
       buyerId: string;
-      listingId: string;
-      offerId: string;
+      listingId: string | null;
+      offerId: string | null;
       sellerId: string;
-      amount: number;
+      amount: number | null;
       buyerFullName: string;
       counterAmount: number | null;
       lastMessageContent: string | null;
-      listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
+      listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD' | null;
       listingTitle: string;
-      offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN';
+      offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN' | null;
       reservedUntil: string | null;
       sellerFullName: string;
       unreadCount: number;

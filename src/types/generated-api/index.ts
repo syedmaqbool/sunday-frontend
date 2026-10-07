@@ -194,6 +194,7 @@ export type { RetryAdminQuickBooksSyncEventData, RetryAdminQuickBooksSyncEventEr
 export type { SendConversationMessageData, SendConversationMessageError, SendConversationMessageErrors, SendConversationMessageResponse, SendConversationMessageResponses } from './sendConversationMessage.gen';
 export type { SendRegisterOtpData, SendRegisterOtpError, SendRegisterOtpErrors, SendRegisterOtpResponse, SendRegisterOtpResponses } from './sendRegisterOtp.gen';
 export type { StartAdminQuickBooksConnectionData, StartAdminQuickBooksConnectionError, StartAdminQuickBooksConnectionErrors, StartAdminQuickBooksConnectionResponse, StartAdminQuickBooksConnectionResponses } from './startAdminQuickBooksConnection.gen';
+export type { StartConversationData, StartConversationError, StartConversationErrors, StartConversationResponse, StartConversationResponses } from './startConversation.gen';
 export type { ClientOptions } from './types.gen';
 export type { UnsubscribeMyEmailData, UnsubscribeMyEmailError, UnsubscribeMyEmailErrors, UnsubscribeMyEmailResponse, UnsubscribeMyEmailResponses } from './unsubscribeMyEmail.gen';
 export type { UpdateAdminBrandData, UpdateAdminBrandError, UpdateAdminBrandErrors, UpdateAdminBrandResponse, UpdateAdminBrandResponses } from './updateAdminBrand.gen';

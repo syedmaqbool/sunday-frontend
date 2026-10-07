@@ -20,8 +20,14 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
-  getCategoriesOptions: () => ({ queryFn: async () => [], queryKey: ['categories'] }),
-  getSubcategoriesOptions: () => ({ queryFn: async () => [], queryKey: ['subcategories'] }),
+  getCategoriesOptions: () => ({
+    queryFn: async () => [{ id: 'category-1', icon: '👗', label: 'Women', sortOrder: 0, value: 'women' }],
+    queryKey: ['categories'],
+  }),
+  getSubcategoriesOptions: () => ({
+    queryFn: async () => [{ id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' }],
+    queryKey: ['subcategories'],
+  }),
 }));
 
 vi.mock('@/queries/marketplace.query', () => ({
@@ -48,21 +54,21 @@ function LocationObserver() {
 
 function editableListing(status: string, sellerId = 'seller-1') {
   return {
-    brand: 'Vintage',
-    categoryId: 'category-1',
-    categoryValue: 'women-jackets',
-    condition: 'USED_GOOD',
-    description: 'A vintage jacket.',
     id: 'listing-1',
+    categoryId: 'category-1',
+    sellerId,
+    subcategoryId: 'subcategory-1',
+    brand: 'Vintage',
+    categoryValue: 'women-jackets',
+    condition: 'good',
+    description: 'A vintage jacket.',
     media: [
       { file: { id: 'image-file', url: '/jacket.jpg' }, sortOrder: 0, type: 'IMAGE' },
       { file: { id: 'video-file', url: '/jacket.mp4' }, sortOrder: 1, type: 'VIDEO' },
     ],
     price: 150,
-    sellerId,
     size: 'M',
     status,
-    subcategoryId: 'subcategory-1',
     title: 'Vintage jacket',
     weight: null,
   };
@@ -132,6 +138,7 @@ describe('edit listing moderation rules', () => {
 
       renderEditListing();
       fireEvent.click(await screen.findByRole('button', { name: 'Save Changes' }));
+      await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
 
       await waitFor(() => expect(toastMock).toHaveBeenCalledWith({
         description: 'Your listing was submitted for moderation.',

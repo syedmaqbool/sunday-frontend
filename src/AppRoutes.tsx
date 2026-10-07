@@ -17,6 +17,7 @@ const HelpManagement = lazy(() => import('./pages/admin/HelpManagement'));
 const ListingModeration = lazy(() => import('./pages/admin/ListingModeration'));
 const MessageModeration = lazy(() => import('./pages/admin/MessageModeration'));
 const MarginFinancials = lazy(() => import('./pages/admin/MarginFinancials'));
+const QuickBooksConnection = lazy(() => import('./pages/admin/QuickBooksConnection'));
 const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const Overview = lazy(() => import('./pages/admin/Overview'));
 const AdminPayouts = lazy(() => import('./pages/admin/Payouts'));
@@ -102,6 +103,7 @@ export default function AppRoutes() {
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminAnalytics /></Suspense>} path="analytics" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminPayouts /></Suspense>} path="payouts" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><MarginFinancials /></Suspense>} path="margins" />
+        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><QuickBooksConnection /></Suspense>} path="quickbooks" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><CommissionManagement /></Suspense>} path="commission" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SiteSettings /></Suspense>} path="site-settings" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SellerCoupons /></Suspense>} path="seller-coupons" />

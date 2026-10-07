@@ -119,6 +119,8 @@ export interface CreateAdminQuickBooksSellerVendorMappingResponses {
       effectiveDate: string;
       quickbooksApAccountName: string | null;
       reason: string;
+      sellerEmail: string;
+      sellerName: string;
       version: number;
       createdAt: string;
     };

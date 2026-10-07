@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FlaggedBuyers from '@/pages/admin/FlaggedBuyers';
 import { adminFlaggedBuyersQueryKey } from '@/queries/adminFlaggedBuyers.query';
@@ -73,7 +74,9 @@ function renderPage(queryClient = new QueryClient({
     queryClient,
     ...render(
       <QueryClientProvider client={queryClient}>
-        <FlaggedBuyers />
+        <MemoryRouter>
+          <FlaggedBuyers />
+        </MemoryRouter>
       </QueryClientProvider>,
     ),
   };
@@ -104,6 +107,7 @@ describe('admin flagged buyer rules', () => {
     expect(screen.getByText('3', { selector: 'p' })).toBeInTheDocument();
     expect(screen.getByText('4', { selector: 'td' })).toBeInTheDocument();
     expect(screen.getByText('24 Sep 2026')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/seller/buyer-1');
     expect(getBuyersMock).toHaveBeenCalledWith({ page: 1, size: 20 });
   });
 

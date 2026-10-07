@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -191,6 +192,7 @@ export default function FlaggedBuyers() {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>Buyer</TableHead>
+                                    <TableHead>Profile</TableHead>
                                     <TableHead>Qualifying complaints</TableHead>
                                     <TableHead>Latest qualifying complaint</TableHead>
                                   </TableRow>
@@ -199,6 +201,17 @@ export default function FlaggedBuyers() {
                                   {buyers.data.data.map(buyer => (
                                     <TableRow key={buyer.buyerId}>
                                       <TableCell className="font-medium">{buyer.displayName}</TableCell>
+                                      <TableCell className="text-sm">
+                                        <Link
+                                          to={`/seller/${buyer.buyerId}`}
+                                          className="
+                                            text-primary
+                                            hover:underline
+                                          "
+                                        >
+                                          Profile
+                                        </Link>
+                                      </TableCell>
                                       <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
                                       <TableCell>{format(new Date(buyer.latestQualifyingComplaintCreatedAt), 'dd MMM yyyy')}</TableCell>
                                     </TableRow>

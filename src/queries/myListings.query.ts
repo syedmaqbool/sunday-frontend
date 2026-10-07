@@ -4,7 +4,6 @@ import {
   cancelMyListingReservation,
   deleteMyListing,
   listMyListings,
-  resubmitMyListing,
 } from '@/services/listing.service';
 
 export type MyListing = Awaited<
@@ -32,17 +31,6 @@ export function useDeleteMyListingMutation() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
       qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
-    },
-  });
-}
-
-export function useResubmitMyListingMutation() {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (listingId: string) => resubmitMyListing(listingId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
     },
   });
 }

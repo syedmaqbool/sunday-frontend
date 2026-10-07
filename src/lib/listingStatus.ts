@@ -1,0 +1,5 @@
+const SELLER_EDITABLE_LISTING_STATUSES = ['PENDING', 'REJECTED', 'NEEDS_REVISION'] as const;
+
+export function isSellerEditableListingStatus(status: string): boolean {
+  return SELLER_EDITABLE_LISTING_STATUSES.some(editableStatus => editableStatus === status);
+}

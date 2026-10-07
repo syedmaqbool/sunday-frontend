@@ -7,7 +7,6 @@ import {
   Pencil,
   Plus,
   Rocket,
-  RotateCcw,
   Trash2,
 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -43,12 +42,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getWeightLabel } from '@/lib/constants';
 import { showErrorToast } from '@/lib/errorToast';
+import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getMyListingsOptions,
   useCancelMyListingReservationMutation,
   useDeleteMyListingMutation,
-  useResubmitMyListingMutation,
 } from '@/queries/myListings.query';
 
 const MY_LISTING_TAB_VALUES = ['approved', 'pending', 'sold', 'offers'] as const;
@@ -59,10 +58,6 @@ function getStatusColor(status: MyListing['status']) {
   if (status === 'REJECTED')
     return 'destructive';
   return 'secondary';
-}
-
-function isReadOnlyStatus(status: MyListing['status']) {
-  return ['APPROVED', 'RESERVED', 'SOLD'].includes(status);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -78,7 +73,6 @@ function MyListings() {
   const { data: listingsResponse, isLoading } = useQuery(getMyListingsOptions(!!user));
   const listings = listingsResponse?.data ?? [];
   const deleteMutation = useDeleteMyListingMutation();
-  const resubmitMutation = useResubmitMyListingMutation();
   const cancelReservationMutation = useCancelMyListingReservationMutation();
 
   useEffect(() => {
@@ -195,7 +189,7 @@ function MyListings() {
               )}
             />
           )}
-          {!isReadOnlyStatus(listing.status) && (
+          {isSellerEditableListingStatus(listing.status) && (
             <Button
               onClick={() => navigate(`/edit-listing/${listing.id}`)}
               size="sm"
@@ -205,26 +199,6 @@ function MyListings() {
               <Pencil className="h-3.5 w-3.5" />
               {' '}
               Edit
-            </Button>
-          )}
-          {(listing.status === 'REJECTED'
-            || listing.status === 'NEEDS_REVISION') && (
-            <Button
-              onClick={() =>
-                resubmitMutation.mutate(listing.id, {
-                  onError: (error: unknown) => showErrorToast(error, 'Failed to resubmit'),
-                  onSuccess: () => {
-                    toast.success('Listing resubmitted for review');
-                  },
-                })}
-              disabled={resubmitMutation.isPending}
-              size="sm"
-              variant="outline"
-              className="gap-1 text-primary"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              {' '}
-              Resubmit
             </Button>
           )}
           <AlertDialog>

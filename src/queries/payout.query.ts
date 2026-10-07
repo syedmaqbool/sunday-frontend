@@ -101,9 +101,11 @@ export function useUpdatePayoutRunItemStatusMutation() {
       payload: UpdatePayoutRunItemStatusPayload;
     }) => updatePayoutRunItemStatus(itemId, payload),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
-      queryClient.invalidateQueries({ queryKey: payoutQueryKey.refunds() });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() }),
+        queryClient.invalidateQueries({ queryKey: payoutQueryKey.refunds() }),
+      ]);
     },
   });
 }

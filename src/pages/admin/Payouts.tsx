@@ -52,6 +52,7 @@ import {
   getPayoutRunItemsOptions,
   getPayoutRunsOptions,
   useCreatePayoutRunMutation,
+  useUpdatePayoutRunItemStatusMutation,
 } from '@/queries/payout.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -89,6 +90,7 @@ function Payouts() {
   const [rangeEnd, setRangeEnd] = useState('');
   const [eligiblePage, setEligiblePage] = useState(1);
   const [runError, setRunError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // ─── Queries ───────────────────────────────────────────────────────────────
@@ -133,6 +135,7 @@ function Payouts() {
   const { data: runItemsData } = useQuery(getPayoutRunItemsOptions(detailRun?.id ?? '', {}));
 
   const createPayoutRunMutation = useCreatePayoutRunMutation();
+  const updatePayoutRunItemStatusMutation = useUpdatePayoutRunItemStatusMutation();
 
   const loading = lruns || lrefunds || lpayouts;
 
@@ -311,6 +314,19 @@ function Payouts() {
     }
     catch (error: unknown) {
       setRunError(error instanceof Error ? error.message : 'Could not generate a payout run.');
+    }
+  };
+
+  const markPayoutItemPaid = async (itemId: string) => {
+    setPaymentError(null);
+    try {
+      await updatePayoutRunItemStatusMutation.mutateAsync({
+        itemId,
+        payload: { status: 'PAID' },
+      });
+    }
+    catch (error: unknown) {
+      setPaymentError(error instanceof Error ? error.message : 'Could not record the payout payment.');
     }
   };
 
@@ -1034,6 +1050,16 @@ function Payouts() {
 
               {detailSellerItems.length > 0 && (
                 <>
+                  <Alert>
+                    <AlertDescription>
+                      Record payment only after the external transfer. This updates Sunday’s payout record; it does not move money.
+                    </AlertDescription>
+                  </Alert>
+                  {paymentError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{paymentError}</AlertDescription>
+                    </Alert>
+                  )}
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Seller payouts
                   </p>
@@ -1046,6 +1072,7 @@ function Payouts() {
                           <TableHead>Order</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1065,18 +1092,41 @@ function Payouts() {
                                 : '—'}
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant={
-                                  item.status === 'PAID'
-                                    ? 'default'
-                                    : 'secondary'
-                                }
-                              >
-                                {formatEnumLabel(item.status)}
-                              </Badge>
+                              <div className="flex flex-col items-start gap-1">
+                                <Badge
+                                  variant={
+                                    item.status === 'PAID'
+                                      ? 'default'
+                                      : 'secondary'
+                                  }
+                                >
+                                  {formatEnumLabel(item.status)}
+                                </Badge>
+                                {item.status === 'PAID' && item.paidAt && (
+                                  <span className="text-xs text-muted-foreground">
+                                    Paid ·
+                                    {' '}
+                                    {format(new Date(item.paidAt), 'MMM d, yyyy, h:mm a')}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {fmt(Number(item.amount))}
+                            </TableCell>
+                            <TableCell>
+                              {item.status === 'UNPAID' && (
+                                <Button
+                                  onClick={() => void markPayoutItemPaid(item.id)}
+                                  disabled={updatePayoutRunItemStatusMutation.isPending}
+                                  size="sm"
+                                  type="button"
+                                >
+                                  {updatePayoutRunItemStatusMutation.isPending
+                                    ? 'Recording payment…'
+                                    : 'Mark paid'}
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}

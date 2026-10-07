@@ -56,6 +56,51 @@ const eligibleResponse = createEligibleResponse({
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 1 },
 });
 
+const payoutRun = {
+  id: 'run-1',
+  buyerRefundAmount: 0,
+  buyerRefundItemCount: 0,
+  generatedByFullName: 'Finance Admin',
+  itemCount: 1,
+  periodEnd: '2026-09-30T23:59:59.999Z',
+  periodStart: '2026-09-01T00:00:00.000Z',
+  sellerPayoutAmount: 2450,
+  sellerPayoutItemCount: 1,
+  totalAmount: 2450,
+  generatedBy: 'admin-1',
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
+
+const sellerPayoutRunItem = {
+  id: 'run-item-1',
+  buyerId: null,
+  complaintId: null,
+  orderId: 'order-12345678',
+  orderItemId: 'order-item-1',
+  payoutRunId: 'run-1',
+  sellerId: 'seller-1',
+  userId: 'seller-1',
+  amount: 2450,
+  bankAccountHolder: null,
+  bankAccountNumber: null,
+  bankIban: null,
+  bankName: null,
+  bankSwift: null,
+  itemType: 'SELLER_PAYOUT' as const,
+  periodEnd: payoutRun.periodEnd,
+  periodStart: payoutRun.periodStart,
+  sourceDate: '2026-09-18T10:30:00.000Z',
+  sourceMetadata: { listingTitle: 'Vintage jacket' },
+  sourceStatus: 'DELIVERED',
+  sourceType: 'ORDER_ITEM',
+  status: 'UNPAID' as const,
+  userFullName: 'Seller One',
+  paidAt: null,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -80,13 +125,31 @@ async function selectPeriod(expectedContent: RegExp | string = 'Vintage jacket')
   expect(await screen.findByText(expectedContent)).toBeInTheDocument();
 }
 
+async function openRunDetails() {
+  payoutService.listPayoutRuns.mockResolvedValue({
+    ...emptyPage,
+    data: [payoutRun],
+  });
+  if (!payoutService.listPayoutRunItems.getMockImplementation()) {
+    payoutService.listPayoutRunItems.mockResolvedValue({
+      ...emptyPage,
+      data: [sellerPayoutRunItem],
+    });
+  }
+  renderPage();
+  fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout runs' }), { button: 0 });
+  fireEvent.click(await screen.findByText('Finance Admin'));
+  expect(await screen.findByRole('heading', { name: 'Payout run details' })).toBeInTheDocument();
+  expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', {});
+  expect(await screen.findByText('Seller One')).toBeInTheDocument();
+}
+
 describe('admin payout eligibility page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     payoutService.listPayoutRuns.mockResolvedValue(emptyPage);
     payoutService.listRefundPayouts.mockResolvedValue(emptyPage);
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
-    payoutService.listPayoutRunItems.mockResolvedValue(emptyPage);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
       data: { id: 'run-1' },
@@ -189,6 +252,87 @@ describe('admin payout eligibility page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generate payout run' }));
 
     expect(await screen.findByText('Run creation failed')).toBeInTheDocument();
+  });
+
+  it('lets an admin record an unpaid seller payout as paid after an external transfer', async () => {
+    await openRunDetails();
+
+    expect(screen.getByText(/Record payment only after the external transfer/i)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+
+    await waitFor(() => expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledWith(
+      'run-item-1',
+      { status: 'PAID' },
+    ));
+  });
+
+  it('refreshes the run item to PAID and shows its paid timestamp after recording payment', async () => {
+    payoutService.listPayoutRunItems.mockImplementation(async () => {
+      const isPaid = payoutService.updatePayoutRunItemStatus.mock.calls.length > 0;
+      return {
+        ...emptyPage,
+        data: [{
+          ...sellerPayoutRunItem,
+          status: isPaid ? 'PAID' : 'UNPAID',
+          paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
+        }],
+      };
+    });
+    payoutService.updatePayoutRunItemStatus.mockResolvedValue({
+      data: { ...sellerPayoutRunItem, status: 'PAID', paidAt: '2026-10-07T10:15:00.000Z' },
+      message: 'Updated.',
+      statusCode: 200,
+    });
+    await openRunDetails();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+
+    await waitFor(() => expect(payoutService.listPayoutRunItems.mock.calls.length).toBeGreaterThan(1));
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.getByText('Paid').parentElement).toHaveTextContent(/Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/);
+  });
+
+  it('disables repeat payment submission while the request is pending', async () => {
+    let resolvePayment!: (response: { data: unknown; message: string; statusCode: number }) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.updatePayoutRunItemStatus.mockReturnValue(new Promise((resolve) => {
+      resolvePayment = resolve;
+    }));
+    await openRunDetails();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+
+    const pendingButton = await screen.findByRole('button', { name: 'Recording payment…' });
+    expect(pendingButton).toBeDisabled();
+    fireEvent.click(pendingButton);
+    expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledTimes(1);
+    resolvePayment({ data: sellerPayoutRunItem, message: 'Updated.', statusCode: 200 });
+  });
+
+  it('shows payment errors and keeps buyer refunds separate from seller payment actions', async () => {
+    payoutService.listPayoutRunItems.mockResolvedValue({
+      ...emptyPage,
+      data: [
+        sellerPayoutRunItem,
+        {
+          ...sellerPayoutRunItem,
+          id: 'refund-item-1',
+          buyerId: 'buyer-1',
+          sellerId: null,
+          itemType: 'BUYER_REFUND',
+          userFullName: 'Buyer One',
+        },
+      ],
+    });
+    payoutService.updatePayoutRunItemStatus.mockRejectedValue(new Error('Payment update failed'));
+    await openRunDetails();
+
+    expect(screen.getAllByText('Buyer refunds').length).toBeGreaterThan(1);
+    expect(screen.getByText('Buyer One')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Mark paid' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Mark paid' }));
+
+    expect(await screen.findByText('Payment update failed')).toBeInTheDocument();
   });
 
   it('keeps historical manual payout records and refund reporting available without manual creation', async () => {

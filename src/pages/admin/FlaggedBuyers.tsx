@@ -1,3 +1,4 @@
+import type { AdminFlaggedBuyer, AdminFlaggedBuyerComplaintHistory } from '@/types/adminFlaggedBuyer.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -33,10 +34,18 @@ import {
 
 const FLAGGED_BUYERS_PAGE_SIZE = 20;
 
+const THRESHOLD_ERROR = 'Threshold must be a positive whole number.';
+const WINDOW_DAYS_ERROR = 'Lookback window must be a positive whole number.';
+
 const flaggedBuyerRuleSchema = z.object({
-  threshold: z.number().int('Threshold must be a positive whole number.').min(1, 'Threshold must be a positive whole number.'),
-  windowDays: z.number().int('Lookback window must be a positive whole number.').min(1, 'Lookback window must be a positive whole number.'),
+  threshold: z.number({ invalid_type_error: THRESHOLD_ERROR }).int(THRESHOLD_ERROR).min(1, THRESHOLD_ERROR),
+  windowDays: z.number({ invalid_type_error: WINDOW_DAYS_ERROR }).int(WINDOW_DAYS_ERROR).min(1, WINDOW_DAYS_ERROR),
 });
+
+const HISTORY_STATUS_LABEL: Record<AdminFlaggedBuyerComplaintHistory['status'], string> = {
+  REFUNDED: 'Completed (Refunded)',
+  RETURN_RECEIVED: 'Return Received',
+};
 
 type FlaggedBuyerRuleForm = z.infer<typeof flaggedBuyerRuleSchema>;
 const flaggedBuyerWarningSchema = z.object({ message: z.string() });
@@ -45,9 +54,9 @@ type FlaggedBuyerWarningForm = z.infer<typeof flaggedBuyerWarningSchema>;
 export default function FlaggedBuyers() {
   const { can } = useAccessControl();
   const [page, setPage] = useState(1);
-  const [historyBuyer, setHistoryBuyer] = useState<{ buyerId: string; displayName: string } | null>(null);
+  const [historyBuyer, setHistoryBuyer] = useState<AdminFlaggedBuyer | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
-  const [warningBuyer, setWarningBuyer] = useState<{ buyerId: string; displayName: string } | null>(null);
+  const [warningBuyer, setWarningBuyer] = useState<AdminFlaggedBuyer | null>(null);
   const canReadRules = can('COMPLAINTS_READ');
   const canEditRules = can(['COMPLAINTS_READ', 'COMPLAINTS_UPDATE']);
   const rules = useQuery({ ...getAdminFlaggedBuyerRulesOptions(), enabled: canReadRules });
@@ -59,7 +68,8 @@ export default function FlaggedBuyers() {
   const history = useQuery({
     ...getAdminFlaggedBuyerComplaintHistoryOptions(historyBuyer?.buyerId ?? '', { page: historyPage, size: FLAGGED_BUYERS_PAGE_SIZE }),
     enabled: canReadRules && historyBuyer !== null,
-    placeholderData: keepPreviousData,
+    // Keep the previous page only while paging the same buyer; never show another buyer's history.
+    placeholderData: (previousData, previousQuery) => previousQuery?.queryKey[2] === historyBuyer?.buyerId ? previousData : undefined,
   });
   useEffect(() => {
     const pagination = buyers.data?.pagination;
@@ -269,7 +279,7 @@ export default function FlaggedBuyers() {
                                             <Button
                                               onClick={() => {
                                                 resetWarningForm();
-                                                setWarningBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
+                                                setWarningBuyer(buyer);
                                               }}
                                               size="sm"
                                               type="button"
@@ -281,7 +291,7 @@ export default function FlaggedBuyers() {
                                           <Button
                                             onClick={() => {
                                               setHistoryPage(1);
-                                              setHistoryBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
+                                              setHistoryBuyer(buyer);
                                             }}
                                             size="sm"
                                             type="button"
@@ -376,7 +386,7 @@ export default function FlaggedBuyers() {
                             {history.data.data.map(complaint => (
                               <TableRow key={complaint.id}>
                                 <TableCell className="whitespace-nowrap">{format(new Date(complaint.createdAt), 'dd MMM yyyy')}</TableCell>
-                                <TableCell>{complaint.status}</TableCell>
+                                <TableCell>{HISTORY_STATUS_LABEL[complaint.status]}</TableCell>
                                 <TableCell>{complaint.reason}</TableCell>
                               </TableRow>
                             ))}

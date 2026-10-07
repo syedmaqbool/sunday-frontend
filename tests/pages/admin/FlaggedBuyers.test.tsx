@@ -154,7 +154,7 @@ describe('admin flagged buyer rules', () => {
     expect(await screen.findByRole('heading', { name: 'Complaint history' })).toBeInTheDocument();
     expect(screen.getByText('Qualifying complaints for Alex Buyer.')).toBeInTheDocument();
     expect(await screen.findByText('20 Sep 2026')).toBeInTheDocument();
-    expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+    expect(screen.getByText('Completed (Refunded)')).toBeInTheDocument();
     expect(screen.getByText('Item arrived damaged')).toBeInTheDocument();
     expect(getHistoryMock).toHaveBeenCalledWith('buyer-1', { page: 1, size: 20 });
 
@@ -213,6 +213,28 @@ describe('admin flagged buyer rules', () => {
     expect(screen.getByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
   });
 
+  it('does not show the previous buyer history while another buyer history loads', async () => {
+    getBuyersMock.mockResolvedValue({
+      ...buyersResponse(),
+      data: [...buyersResponse(1).data, ...buyersResponse(2).data],
+    });
+    getHistoryMock.mockImplementation((buyerId: string) => buyerId === 'buyer-1'
+      ? Promise.resolve(historyResponse())
+      : new Promise(() => {}));
+    renderPage();
+    expect(await screen.findByText('Blair Buyer')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'History' })[0]);
+    expect(await screen.findByText('Item arrived damaged')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'History' })[1]);
+
+    expect(await screen.findByText('Qualifying complaints for Blair Buyer.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Loading complaint history')).toBeInTheDocument();
+    expect(screen.queryByText('Item arrived damaged')).not.toBeInTheDocument();
+  });
+
   it('pages through complaint history using the API pagination', async () => {
     getHistoryMock.mockImplementation((_buyerId: string, { page }: { page: number }) => Promise.resolve(historyResponse(page, 2)));
     renderPage();
@@ -221,6 +243,7 @@ describe('admin flagged buyer rules', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next history page' }));
 
     expect(await screen.findByText('Item was not as described')).toBeInTheDocument();
+    expect(screen.getByText('Return Received')).toBeInTheDocument();
     expect(getHistoryMock).toHaveBeenLastCalledWith('buyer-1', { page: 2, size: 20 });
     expect(screen.getByRole('button', { name: 'Previous history page' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Next history page' })).toBeDisabled();
@@ -325,7 +348,7 @@ describe('admin flagged buyer rules', () => {
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminFlaggedBuyersQueryKey.all() });
   });
 
-  it.each(['0', '-1', '1.5'])('rejects invalid threshold %s before submission', async (value) => {
+  it.each(['0', '-1', '1.5', 'abc'])('rejects invalid threshold %s before submission', async (value) => {
     renderPage();
     fireEvent.change(await screen.findByLabelText('Complaint threshold'), { target: { value } });
     fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
@@ -334,7 +357,7 @@ describe('admin flagged buyer rules', () => {
     expect(updateRulesMock).not.toHaveBeenCalled();
   });
 
-  it.each(['0', '-1', '1.5'])('rejects invalid lookback window %s before submission', async (value) => {
+  it.each(['0', '-1', '1.5', 'abc'])('rejects invalid lookback window %s before submission', async (value) => {
     renderPage();
     fireEvent.change(await screen.findByLabelText('Lookback window (days)'), { target: { value } });
     fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));

@@ -30,10 +30,10 @@ vi.mock('@/components/ReceivedOffers', () => ({ ReceivedOffers: () => null }));
 function renderMyListings(status: string) {
   const tab = ['APPROVED', 'RESERVED'].includes(status)
     ? 'approved'
-    : status === 'SOLD' ? 'sold' : 'pending';
+    : (status === 'SOLD' ? 'sold' : 'pending');
   listingsState.data = [{
-    brand: 'Vintage',
     id: 'listing-1',
+    brand: 'Vintage',
     price: 100,
     reservedUntil: status === 'RESERVED' ? '2099-01-01T00:00:00.000Z' : null,
     status,
@@ -49,7 +49,7 @@ function renderMyListings(status: string) {
   );
 }
 
-describe('My Listings edit actions', () => {
+describe('my Listings edit actions', () => {
   beforeEach(() => {
     listingsState.data = [];
   });

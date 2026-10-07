@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import sundayLogo from '@/assets/sndy-logo.png';
 import CartDrawer from '@/components/CartDrawer';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +43,8 @@ interface LandingNavbarProps {
   navigationDisabled?: boolean;
   onMenuToggle?: () => void;
 }
+
+const sundayLogo = '/sunday-logo.png';
 
 export default function LandingNavbar({
   navigationDisabled = false,

@@ -4,14 +4,14 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ListingDetail from '@/pages/ListingDetail';
 
-const { listingState, userState, startConversationMutation, showErrorToastMock } = vi.hoisted(() => ({
+const { listingState, showErrorToastMock, startConversationMutation, userState } = vi.hoisted(() => ({
   listingState: { listing: undefined as any },
-  userState: { user: { id: 'buyer-1' } as { id: string } | null },
+  showErrorToastMock: vi.fn(),
   startConversationMutation: {
     isPending: false,
     mutate: vi.fn(),
   },
-  showErrorToastMock: vi.fn(),
+  userState: { user: { id: 'buyer-1' } as { id: string } | null },
 }));
 
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: userState.user }) }));
@@ -140,7 +140,7 @@ describe('start a conversation from listing detail', () => {
 
     await waitFor(() => expect(startConversationMutation.mutate).toHaveBeenCalledWith(
       { listingId: 'listing-1', content: 'Is this still available?' },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
     ));
     expect(await screen.findByText('Messages')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/messages?conversation=conversation-42');

@@ -31,7 +31,7 @@ import { useAccessControl } from '@/hooks/useAccessControl';
 import { getCategoriesOptions } from '@/hooks/useCategories';
 import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
 
-const sundayLogo = 'https://staging.sndymarket.com/sunday-logo.png';
+const sundayLogo = '/sunday-logo.png';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,7 +42,6 @@ export default function Navbar() {
   const { data: heroData } = useQuery(getPublicHeroImageOptions());
 
   const siteLogo = (heroData as any)?.siteLogoUrl || sundayLogo;
-
   const handleSellClick = () => {
     if (user)
       navigate('/create-listing');

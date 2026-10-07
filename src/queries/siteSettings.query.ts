@@ -8,8 +8,9 @@ import {
 } from '@/services/adminSiteSettings.service';
 
 export const siteSettingsQueryKey = {
+  adminHeroImage: () => [...siteSettingsQueryKey.all(), 'admin', 'hero_image'] as const,
   all: () => ['site-settings'] as const,
-  heroImage: () => [...siteSettingsQueryKey.all(), 'hero_image'] as const,
+  publicHeroImage: () => [...siteSettingsQueryKey.all(), 'public', 'hero_image'] as const,
 };
 
 export function getHeroImageQueryOptions() {
@@ -30,7 +31,7 @@ export function getHeroImageQueryOptions() {
         throw error;
       }
     },
-    queryKey: siteSettingsQueryKey.heroImage(),
+    queryKey: siteSettingsQueryKey.adminHeroImage(),
   });
 }
 
@@ -45,7 +46,7 @@ export function getPublicHeroImageOptions() {
         return null;
       }
     },
-    queryKey: siteSettingsQueryKey.heroImage(),
+    queryKey: siteSettingsQueryKey.publicHeroImage(),
     staleTime: 60_000,
   });
 }
@@ -56,7 +57,7 @@ export function useUpdateHeroImageMutation() {
     mutationFn: (value: Partial<HeroImageValue>) => updateHeroImage(value),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: siteSettingsQueryKey.heroImage(),
+        queryKey: siteSettingsQueryKey.adminHeroImage(),
       });
     },
   });

@@ -55,7 +55,10 @@ export function MessageSellerButton({ listingId }: { listingId: string }) {
         onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`)}
         size="lg"
         variant="outline"
-        className="w-full gap-2 sm:w-auto"
+        className="
+          w-full gap-2
+          sm:w-auto
+        "
       >
         <MessageSquare className="h-4 w-4" />
         Message seller
@@ -66,7 +69,14 @@ export function MessageSellerButton({ listingId }: { listingId: string }) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button size="lg" variant="outline" className="w-full gap-2 sm:w-auto">
+        <Button
+          size="lg"
+          variant="outline"
+          className="
+            w-full gap-2
+            sm:w-auto
+          "
+        >
           <MessageSquare className="h-4 w-4" />
           Message seller
         </Button>
@@ -79,8 +89,8 @@ export function MessageSellerButton({ listingId }: { listingId: string }) {
         <div className="space-y-2">
           <Label htmlFor="seller-message">Your message</Label>
           <Controller
-            control={form.control}
             name="content"
+            control={form.control}
             render={({ field }) => (
               <Textarea
                 {...field}
@@ -93,9 +103,9 @@ export function MessageSellerButton({ listingId }: { listingId: string }) {
           />
         </div>
         <Button
-          className="w-full"
-          disabled={!form.formState.isValid || startConversation.isPending}
           onClick={form.handleSubmit(onSubmit)}
+          disabled={!form.formState.isValid || startConversation.isPending}
+          className="w-full"
         >
           {startConversation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Send message

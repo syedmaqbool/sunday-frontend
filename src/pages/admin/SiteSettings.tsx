@@ -170,22 +170,47 @@ function SiteSettings() {
   const mobileInputReference = useRef<HTMLInputElement>(null);
   const badgeInputReference = useRef<HTMLInputElement>(null); // ← NEW
   const [uploading, setUploading] = useState<'badge' | 'desktop' | 'logo' | 'mobile' | null>(null);
-  const form = useForm<HeroImageValue>({ defaultValues: DEFAULTS, resolver: zodResolver(heroImageFormSchema) });
+  const { data, isError, isLoading, refetch } = useQuery(getHeroImageQueryOptions());
+  const form = useForm<HeroImageValue>({
+    defaultValues: data ? { ...DEFAULTS, ...data } : DEFAULTS,
+    resolver: zodResolver(heroImageFormSchema),
+  });
+  const [isFormReady, setIsFormReady] = useState(() => data !== undefined);
   const formValues = form.watch();
+  const isDirty = form.formState.isDirty;
+  const resetForm = form.reset;
 
-  const { data, isLoading } = useQuery(getHeroImageQueryOptions());
   const updateHero = useUpdateHeroImageMutation();
   const uploadAsset = useUploadFileMutation();
   const logoInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    form.reset({ ...DEFAULTS, ...data });
-  }, [data, form]);
+    if (data === undefined) {
+      return;
+    }
+
+    if (!isDirty) {
+      resetForm(data ? { ...DEFAULTS, ...data } : DEFAULTS);
+    }
+
+    setIsFormReady(true);
+  }, [data, isDirty, resetForm]);
 
   const save = (next: HeroImageValue) => {
     updateHero.mutate(next, {
       onError: (error: any) => showErrorToast(error, 'Failed to save settings'),
-      onSuccess: () => toast.success('Hero section updated'),
+      onSuccess: (response) => {
+        const currentValues = form.getValues();
+        const valuesMatchSubmitted = Object.entries(next).every(
+          ([key, value]) => currentValues[key as keyof HeroImageValue] === value,
+        );
+
+        if (valuesMatchSubmitted) {
+          form.reset({ ...DEFAULTS, ...response.data.value });
+        }
+
+        toast.success('Hero section updated');
+      },
     });
   };
 
@@ -226,6 +251,12 @@ function SiteSettings() {
   const updateValue = (key: keyof HeroImageValue, value: string) =>
     form.setValue(key, value, { shouldDirty: true, shouldValidate: true });
 
+  const loadingContent = (isLoading || !isError) && (
+    <div aria-label="Loading site settings" role="status" className="flex justify-center py-8">
+      <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -241,10 +272,18 @@ function SiteSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isLoading
-            ? (
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              )
+          {isError && (
+            <div role="alert" className="flex items-center justify-between gap-4">
+              <p className="text-sm text-destructive">
+                {isFormReady ? 'Failed to refresh site settings.' : 'Failed to load site settings.'}
+              </p>
+              <Button onClick={() => void refetch()} type="button" variant="outline">
+                Retry
+              </Button>
+            </div>
+          )}
+          {isLoading || !isFormReady
+            ? loadingContent
             : (
                 <form onSubmit={form.handleSubmit(save)} className="space-y-4">
                   {/* ── Banner images ── */}

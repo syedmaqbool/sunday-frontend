@@ -568,22 +568,30 @@ function Payouts() {
                                   {eligibleItemsData.pagination.lastPage > 1 && (
                                     <div className="flex items-center justify-between gap-3 text-sm">
                                       <p className="text-muted-foreground">
-                                        Page {eligibleItemsData.pagination.currentPage} of {eligibleItemsData.pagination.lastPage}
+                                        Page
+                                        {' '}
+                                        {eligibleItemsData.pagination.currentPage}
+                                        {' '}
+                                        of
+                                        {' '}
+                                        {eligibleItemsData.pagination.lastPage}
                                         {' · '}
-                                        {eligibleItemsData.pagination.total} eligible items
+                                        {eligibleItemsData.pagination.total}
+                                        {' '}
+                                        eligible items
                                       </p>
                                       <div className="flex gap-2">
                                         <Button
-                                          disabled={!eligibleItemsData.pagination.prevPage}
                                           onClick={() => setEligiblePage(eligibleItemsData.pagination.prevPage ?? 1)}
+                                          disabled={!eligibleItemsData.pagination.prevPage}
                                           size="sm"
                                           variant="outline"
                                         >
                                           Previous
                                         </Button>
                                         <Button
-                                          disabled={!eligibleItemsData.pagination.nextPage}
                                           onClick={() => setEligiblePage(eligibleItemsData.pagination.nextPage ?? eligiblePage)}
+                                          disabled={!eligibleItemsData.pagination.nextPage}
                                           size="sm"
                                           variant="outline"
                                         >

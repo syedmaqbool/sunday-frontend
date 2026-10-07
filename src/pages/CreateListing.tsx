@@ -460,8 +460,9 @@ function CreateListing() {
       && (!existingListing
         || existingListing.sellerId !== user?.id
         || !isSellerEditableListingStatus(existingListing.status)))
-  )
+  ) {
     return null;
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

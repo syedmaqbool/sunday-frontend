@@ -18,7 +18,6 @@ import {
   Package,
   Percent,
   Percent as PercentIcon,
-  Rocket,
   ShieldCheck,
   Tag,
   UserCog,

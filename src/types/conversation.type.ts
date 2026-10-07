@@ -2,9 +2,9 @@ import type { ApiRequestBody, ApiResponseData, ApiResponseItem } from './api.typ
 import type {
   GetConversationMessagesResponses,
   GetMyConversationsResponses,
+  SendConversationMessageData,
   StartConversationData,
   StartConversationResponses,
-  SendConversationMessageData,
 } from '@/types/generated-api';
 
 export type Conversation = ApiResponseItem<GetMyConversationsResponses>;

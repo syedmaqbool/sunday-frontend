@@ -1,3 +1,4 @@
+import type { StartConversationPayload } from '@/types/conversation.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   listConversationMessages,
@@ -6,7 +7,6 @@ import {
   sendConversationMessage,
   startConversation,
 } from '@/services/conversation.service';
-import type { StartConversationPayload } from '@/types/conversation.type';
 
 export const conversationsQueryKey = {
   all: () => ['conversations'] as const,

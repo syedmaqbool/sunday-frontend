@@ -17,6 +17,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 import { MakeOfferButton } from '@/components/MakeOfferButton';
+import { MessageSellerButton } from '@/components/MessageSellerButton';
 import { ListingDetailsNotice, SoldListingNotice } from '@/components/MarketplaceNotices';
 import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets';
 import Navbar from '@/components/Navbar';
@@ -580,6 +581,12 @@ function ListingDetail() {
                         )}
                       </div>
                     ))}
+
+            {!isOwner && (listing.status === 'APPROVED' || listing.status === 'RESERVED') && (
+              <div className="mt-3 flex flex-wrap gap-3">
+                <MessageSellerButton listingId={listing.id} />
+              </div>
+            )}
 
             {!isOwner && (
               <div className="mt-3 flex justify-end gap-2">

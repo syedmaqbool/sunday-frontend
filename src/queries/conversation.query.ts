@@ -4,7 +4,9 @@ import {
   listConversations,
   markConversationRead,
   sendConversationMessage,
+  startConversation,
 } from '@/services/conversation.service';
+import type { StartConversationPayload } from '@/types/conversation.type';
 
 export const conversationsQueryKey = {
   all: () => ['conversations'] as const,
@@ -43,6 +45,17 @@ export function useSendMessageMutation() {
       qc.invalidateQueries({
         queryKey: conversationsQueryKey.messages(variables.conversationId),
       });
+      qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
+    },
+  });
+}
+
+export function useStartConversationMutation() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: StartConversationPayload) => startConversation(payload),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
     },
   });

@@ -1,16 +1,24 @@
-import type { AdminFlaggedBuyerRuleUpdate } from '@/types/adminFlaggedBuyer.type';
+import type { AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters } from '@/types/adminFlaggedBuyer.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAdminFlaggedBuyerRules,
+  getAdminFlaggedBuyers,
   updateAdminFlaggedBuyerRules,
 } from '@/services/adminFlaggedBuyers.service';
 
 export const adminFlaggedBuyersQueryKey = {
   all: () => ['admin-flagged-buyers'] as const,
   history: (buyerId: string) => [...adminFlaggedBuyersQueryKey.all(), 'history', buyerId] as const,
-  list: (params?: Record<string, unknown>) => [...adminFlaggedBuyersQueryKey.all(), 'list', params] as const,
+  list: (parameters: AdminFlaggedBuyersParameters) => [...adminFlaggedBuyersQueryKey.all(), 'list', parameters] as const,
   rules: () => [...adminFlaggedBuyersQueryKey.all(), 'rules'] as const,
 };
+
+export function getAdminFlaggedBuyersOptions(parameters: AdminFlaggedBuyersParameters) {
+  return queryOptions({
+    queryFn: () => getAdminFlaggedBuyers(parameters),
+    queryKey: adminFlaggedBuyersQueryKey.list(parameters),
+  });
+}
 
 export function getAdminFlaggedBuyerRulesOptions() {
   return queryOptions({

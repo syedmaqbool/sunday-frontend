@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -9,12 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminFlaggedBuyerRulesOptions,
+  getAdminFlaggedBuyersOptions,
   useUpdateAdminFlaggedBuyerRulesMutation,
 } from '@/queries/adminFlaggedBuyers.query';
+
+const FLAGGED_BUYERS_PAGE_SIZE = 20;
 
 const flaggedBuyerRuleSchema = z.object({
   threshold: z.number().int('Threshold must be a positive whole number.').min(1, 'Threshold must be a positive whole number.'),
@@ -25,9 +37,21 @@ type FlaggedBuyerRuleForm = z.infer<typeof flaggedBuyerRuleSchema>;
 
 export default function FlaggedBuyers() {
   const { can } = useAccessControl();
+  const [page, setPage] = useState(1);
   const canReadRules = can('COMPLAINTS_READ');
   const canEditRules = can(['COMPLAINTS_READ', 'COMPLAINTS_UPDATE']);
   const rules = useQuery({ ...getAdminFlaggedBuyerRulesOptions(), enabled: canReadRules });
+  const buyers = useQuery({
+    ...getAdminFlaggedBuyersOptions({ page, size: FLAGGED_BUYERS_PAGE_SIZE }),
+    enabled: canReadRules,
+    placeholderData: keepPreviousData,
+  });
+  useEffect(() => {
+    const pagination = buyers.data?.pagination;
+    if (pagination && pagination.total > 0 && pagination.currentPage > pagination.lastPage) {
+      setPage(pagination.lastPage);
+    }
+  }, [buyers.data]);
   const updateRules = useUpdateAdminFlaggedBuyerRulesMutation();
   const form = useForm<FlaggedBuyerRuleForm>({
     defaultValues: { threshold: 3, windowDays: 90 },
@@ -44,6 +68,7 @@ export default function FlaggedBuyers() {
   async function saveRule(values: FlaggedBuyerRuleForm) {
     try {
       await updateRules.mutateAsync(values);
+      setPage(1);
       toast.success('Flagged buyer rule saved');
     }
     catch (error) {
@@ -119,6 +144,113 @@ export default function FlaggedBuyers() {
             : <p className="text-sm text-muted-foreground">You do not have permission to view flagged buyer rules.</p>}
         </CardContent>
       </Card>
+
+      {canReadRules
+        ? (
+            <section aria-label="Flagged buyer results" className="space-y-4">
+              <div className="
+                grid gap-3
+                sm:grid-cols-2
+              "
+              >
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs uppercase text-muted-foreground">Qualifying buyers</p>
+                    <p className="font-heading text-2xl font-semibold">
+                      {buyers.data?.aggregates?.qualifyingBuyerCount ?? '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs uppercase text-muted-foreground">Counted complaint rows</p>
+                    <p className="font-heading text-2xl font-semibold">
+                      {buyers.data?.aggregates?.countedComplaintRowCount ?? '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading">Buyers meeting the rule</CardTitle>
+                  <CardDescription>
+                    Buyers and complaint totals are shown in the order returned by the API.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {buyers.isLoading
+                    ? <div className="flex items-center justify-center p-12"><Loader2 aria-label="Loading flagged buyers" className="h-5 w-5 animate-spin" /></div>
+                    : buyers.isError
+                      ? <p role="alert" className="p-8 text-center text-sm text-destructive">Unable to load flagged buyers.</p>
+                      : buyers.data.data.length === 0
+                        ? <p className="p-8 text-center text-sm text-muted-foreground">No buyers meet the current rule.</p>
+                        : (
+                            <>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Buyer</TableHead>
+                                    <TableHead>Qualifying complaints</TableHead>
+                                    <TableHead>Latest qualifying complaint</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {buyers.data.data.map(buyer => (
+                                    <TableRow key={buyer.buyerId}>
+                                      <TableCell className="font-medium">{buyer.displayName}</TableCell>
+                                      <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
+                                      <TableCell>{format(new Date(buyer.latestQualifyingComplaintCreatedAt), 'dd MMM yyyy')}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                              {buyers.data.pagination.total > 0 && (
+                                <div className="flex items-center justify-between gap-4 border-t p-4 text-sm">
+                                  <p className="text-muted-foreground">
+                                    Page
+                                    {' '}
+                                    {buyers.data.pagination.currentPage}
+                                    {' '}
+                                    of
+                                    {' '}
+                                    {buyers.data.pagination.lastPage}
+                                    {' '}
+                                    ·
+                                    {' '}
+                                    {buyers.data.pagination.total}
+                                    {' '}
+                                    buyers
+                                  </p>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={() => setPage(buyers.data.pagination.prevPage ?? 1)}
+                                      aria-label="Previous page"
+                                      disabled={buyers.data.pagination.prevPage === null || buyers.isFetching}
+                                      type="button"
+                                      variant="outline"
+                                    >
+                                      Previous
+                                    </Button>
+                                    <Button
+                                      onClick={() => setPage(buyers.data.pagination.nextPage ?? page)}
+                                      aria-label="Next page"
+                                      disabled={buyers.data.pagination.nextPage === null || buyers.isFetching}
+                                      type="button"
+                                      variant="outline"
+                                    >
+                                      Next
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                </CardContent>
+              </Card>
+            </section>
+          )
+        : null}
     </div>
   );
 }

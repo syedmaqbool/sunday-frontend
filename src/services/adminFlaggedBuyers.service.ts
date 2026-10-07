@@ -1,6 +1,12 @@
-import type { AdminFlaggedBuyerRuleUpdate } from '@/types/adminFlaggedBuyer.type';
-import type { GetAdminFlaggedBuyerRulesResponses, UpdateAdminFlaggedBuyerRulesResponses } from '@/types/generated-api';
+import type { AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters } from '@/types/adminFlaggedBuyer.type';
+import type { GetAdminFlaggedBuyerRulesResponses, GetAdminFlaggedBuyersResponses, UpdateAdminFlaggedBuyerRulesResponses } from '@/types/generated-api';
 import { authInstance } from '@/services/ky.instance';
+
+export function getAdminFlaggedBuyers(parameters: AdminFlaggedBuyersParameters) {
+  return authInstance
+    .get('/api/v1/admin/flagged-buyers', { searchParams: parameters })
+    .json<GetAdminFlaggedBuyersResponses['200']>();
+}
 
 export function getAdminFlaggedBuyerRules() {
   return authInstance

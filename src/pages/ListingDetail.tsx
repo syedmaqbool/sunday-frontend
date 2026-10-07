@@ -40,6 +40,7 @@ import { useCart } from '@/contexts/CartContext';
 import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
 import { showErrorToast } from '@/lib/errorToast';
+import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getListingMediaUrls,
@@ -460,16 +461,18 @@ function ListingDetail() {
             {isOwner
               ? (
                   <div className="mt-8 flex flex-wrap gap-3">
-                    <Button
-                      onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                      size="lg"
-                      variant="outline"
-                      className="flex-1 gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      {' '}
-                      Edit Listing
-                    </Button>
+                    {isSellerEditableListingStatus(listing.status) && (
+                      <Button
+                        onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                        size="lg"
+                        variant="outline"
+                        className="flex-1 gap-2"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        {' '}
+                        Edit Listing
+                      </Button>
+                    )}
                     {isReserved && !isAcceptedOfferReviewPending && (
                       <Button
                         onClick={() =>

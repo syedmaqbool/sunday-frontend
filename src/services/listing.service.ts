@@ -15,7 +15,6 @@ import type {
   MyListingFeedbackEntry,
   MyListingFeedbackParameters,
   MyListingParameters,
-  ResubmittedListing,
   UpdatedMyListing,
   UpdateListingPayload,
 } from '@/types/listing.type';
@@ -74,12 +73,6 @@ export function deleteMyListing(listingId: string): Promise<Response> {
   return authInstance
     .delete(`/api/v1/me/listings/${listingId}`)
     .json<Response>();
-}
-
-export function resubmitMyListing(listingId: string): Promise<Response<ResubmittedListing>> {
-  return authInstance
-    .post(`/api/v1/me/listings/${listingId}/resubmit`)
-    .json<Response<ResubmittedListing>>();
 }
 
 export function cancelMyListingReservation(listingId: string): Promise<Response<CancelledListingReservation>> {

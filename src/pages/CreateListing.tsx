@@ -44,6 +44,7 @@ import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCatego
 import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 import { getErrorToastOptions } from '@/lib/errorToast';
+import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { uploadFile } from '@/lib/uploadFile';
 import {
   getEditListingOptions,
@@ -175,8 +176,8 @@ function CreateListing() {
     if (!existingListing)
       return;
 
-    if (existingListing.sellerId !== user?.id) {
-      navigate('/listings', { replace: true });
+    if (existingListing.sellerId !== user?.id || !isSellerEditableListingStatus(existingListing.status)) {
+      navigate('/my-listings', { replace: true });
       return;
     }
 
@@ -335,7 +336,7 @@ function CreateListing() {
           ...(videoFileId ? [{ fileId: videoFileId, sortOrder: allImageItems.length }] : []),
         ];
 
-        await updateMyListing(id!, {
+        const { data: updatedListing } = await updateMyListing(id!, {
           categoryId: values.categoryId,
           subcategoryId: values.subcategoryId,
           brand: values.brand,
@@ -348,7 +349,13 @@ function CreateListing() {
           weight,
         });
 
-        toast({ description: 'Your changes have been saved.', title: 'Listing updated!' });
+        const returnedForReview
+          = (existingListing?.status === 'REJECTED' || existingListing?.status === 'NEEDS_REVISION')
+            && updatedListing.status === 'PENDING';
+
+        toast(returnedForReview
+          ? { description: 'Your listing was submitted for moderation.', title: 'Listing submitted for review!' }
+          : { description: 'Your changes have been saved.', title: 'Listing updated!' });
         navigate(`/listing/${id}`);
       }
       else {
@@ -446,7 +453,14 @@ function CreateListing() {
     [formValues.existingVideo, formValues.videoFile],
   );
 
-  if (authLoading || loadingListing)
+  if (
+    authLoading
+    || loadingListing
+    || (isEditing
+      && (!existingListing
+        || existingListing.sellerId !== user?.id
+        || !isSellerEditableListingStatus(existingListing.status)))
+  )
     return null;
 
   return (

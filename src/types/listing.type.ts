@@ -13,7 +13,6 @@ import type {
   GetMyListingsData,
   GetMyListingsResponses,
   ModerateAdminListingResponses,
-  ResubmitMyListingResponses,
   UpdateMyListingData,
   UpdateMyListingResponses,
 } from '@/types/generated-api';
@@ -27,7 +26,6 @@ export type EditableListing = ApiResponseData<GetMyListingByIdResponses>;
 export type CreatedListing = ApiResponseData<CreateListingResponses>;
 export type UpdatedMyListing = ApiResponseData<UpdateMyListingResponses>;
 export type ModeratedListing = ApiResponseData<ModerateAdminListingResponses>;
-export type ResubmittedListing = ApiResponseData<ResubmitMyListingResponses>;
 export type CancelledListingReservation = ApiResponseData<CancelMyListingReservationResponses>;
 
 export type AdminListingParameters = Partial<ApiRequestQuery<GetAdminListingsData>>;

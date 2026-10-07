@@ -92,6 +92,36 @@ beforeEach(() => {
 });
 
 describe('accepted offer deadline on listing detail', () => {
+  it.each(['PENDING', 'REJECTED', 'NEEDS_REVISION'])(
+    'shows the owner edit action for %s listings',
+    async (status) => {
+      userState.user = { id: 'seller-1' };
+      listingState.listing.status = status;
+      listingState.listing.reservedOfferId = null;
+      listingState.listing.reservedUntil = null;
+      listingState.listing.reservedForCurrentUser = false;
+
+      renderListingDetail();
+
+      expect(await screen.findByRole('button', { name: 'Edit Listing' })).toBeInTheDocument();
+    },
+  );
+
+  it.each(['APPROVED', 'RESERVED', 'SOLD'])(
+    'hides the owner edit action for %s listings',
+    async (status) => {
+      userState.user = { id: 'seller-1' };
+      listingState.listing.status = status;
+      listingState.listing.reservedUntil = null;
+      listingState.listing.reservedForCurrentUser = false;
+
+      renderListingDetail();
+
+      await screen.findByText('Vintage jacket');
+      expect(screen.queryByRole('button', { name: 'Edit Listing' })).not.toBeInTheDocument();
+    },
+  );
+
   it('shows the seller-coupon price as an estimate on regular listings', async () => {
     listingState.listing.reservedOfferId = null;
     listingState.listing.reservedForCurrentUser = false;

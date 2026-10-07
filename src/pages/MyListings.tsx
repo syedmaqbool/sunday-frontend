@@ -178,7 +178,7 @@ function MyListings() {
               Cancel reservation
             </Button>
           )}
-          {listing.status === 'APPROVED' && (
+          {/* {listing.status === 'APPROVED' && (
             <BoostDialog
               listingId={listing.id}
               listingTitle={listing.title}
@@ -194,7 +194,7 @@ function MyListings() {
                 </Button>
               )}
             />
-          )}
+          )} */}
           {!isReadOnlyStatus(listing.status) && (
             <Button
               onClick={() => navigate(`/edit-listing/${listing.id}`)}
@@ -290,7 +290,7 @@ function MyListings() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
+            {/* <Button
               onClick={() => navigate('/boost')}
               variant="outline"
               className="gap-1"
@@ -298,7 +298,7 @@ function MyListings() {
               <Rocket className="h-4 w-4" />
               {' '}
               Boost
-            </Button>
+            </Button> */}
             <Button
               onClick={() => navigate('/create-listing')}
               className="gap-1"

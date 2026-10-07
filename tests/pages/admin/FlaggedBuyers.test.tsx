@@ -4,11 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FlaggedBuyers from '@/pages/admin/FlaggedBuyers';
 import { adminFlaggedBuyersQueryKey } from '@/queries/adminFlaggedBuyers.query';
+import { notificationsQueryKey } from '@/queries/notification.query';
 
 const getRulesMock = vi.hoisted(() => vi.fn());
 const getBuyersMock = vi.hoisted(() => vi.fn());
 const getHistoryMock = vi.hoisted(() => vi.fn());
 const updateRulesMock = vi.hoisted(() => vi.fn());
+const warnBuyerMock = vi.hoisted(() => vi.fn());
 const toastSuccessMock = vi.hoisted(() => vi.fn());
 const showErrorToastMock = vi.hoisted(() => vi.fn());
 const accessMock = vi.hoisted(() => vi.fn((_permission: string | string[]) => true));
@@ -18,6 +20,7 @@ vi.mock('@/services/adminFlaggedBuyers.service', () => ({
   getAdminFlaggedBuyerRules: getRulesMock,
   getAdminFlaggedBuyers: getBuyersMock,
   updateAdminFlaggedBuyerRules: updateRulesMock,
+  warnAdminFlaggedBuyer: warnBuyerMock,
 }));
 
 vi.mock('@/hooks/useAccessControl', () => ({
@@ -118,6 +121,7 @@ describe('admin flagged buyer rules', () => {
     getBuyersMock.mockReset().mockResolvedValue(buyersResponse());
     getHistoryMock.mockReset().mockResolvedValue(historyResponse());
     updateRulesMock.mockReset().mockResolvedValue(ruleResponse(4, 120));
+    warnBuyerMock.mockReset().mockResolvedValue({ message: 'Buyer warning sent successfully.', statusCode: 200 });
     toastSuccessMock.mockReset();
     showErrorToastMock.mockReset();
     accessMock.mockReset().mockReturnValue(true);
@@ -156,6 +160,57 @@ describe('admin flagged buyer rules', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument());
+  });
+
+  it('sends the default warning with an empty JSON object and resets after success', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+    renderPage(queryClient);
+    expect(await screen.findByText('Alex Buyer')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Warn' }));
+
+    expect(await screen.findByRole('heading', { name: 'Warn buyer' })).toBeInTheDocument();
+    expect(screen.getByText(/Send a warning to Alex Buyer about their refund activity/)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Send warning' }));
+
+    await waitFor(() => expect(warnBuyerMock).toHaveBeenCalledWith('buyer-1', {}));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument());
+    expect(toastSuccessMock).toHaveBeenCalledWith('Buyer warning sent');
+    expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: notificationsQueryKey.all() });
+    fireEvent.click(screen.getByRole('button', { name: 'Warn' }));
+    expect(await screen.findByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
+  });
+
+  it('trims and sends a custom warning message', async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Warn' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Custom message (optional)' }), { target: { value: '  Please contact support.  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send warning' }));
+
+    await waitFor(() => expect(warnBuyerMock).toHaveBeenCalledWith('buyer-1', { message: 'Please contact support.' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument());
+  });
+
+  it('disables warning submission while pending', async () => {
+    warnBuyerMock.mockImplementationOnce(() => new Promise(() => {}));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Warn' }));
+    const submitButton = screen.getByRole('button', { name: 'Send warning' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => expect(submitButton).toBeDisabled());
+  });
+
+  it('keeps the dialog open and shows an error when warning submission fails', async () => {
+    warnBuyerMock.mockRejectedValueOnce(new Error('send failed'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Warn' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send warning' }));
+
+    await waitFor(() => expect(showErrorToastMock).toHaveBeenCalled());
+    expect(screen.getByRole('heading', { name: 'Warn buyer' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
   });
 
   it('pages through complaint history using the API pagination', async () => {

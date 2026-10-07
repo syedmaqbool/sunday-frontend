@@ -1,10 +1,11 @@
-import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters } from '@/types/adminFlaggedBuyer.type';
+import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters, AdminFlaggedBuyerWarningSubmission } from '@/types/adminFlaggedBuyer.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAdminFlaggedBuyerComplaintHistory,
   getAdminFlaggedBuyerRules,
   getAdminFlaggedBuyers,
   updateAdminFlaggedBuyerRules,
+  warnAdminFlaggedBuyer,
 } from '@/services/adminFlaggedBuyers.service';
 
 export const adminFlaggedBuyersQueryKey = {
@@ -40,5 +41,11 @@ export function useUpdateAdminFlaggedBuyerRulesMutation() {
   return useMutation({
     mutationFn: (rule: AdminFlaggedBuyerRuleUpdate) => updateAdminFlaggedBuyerRules(rule),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminFlaggedBuyersQueryKey.all() }),
+  });
+}
+
+export function useWarnAdminFlaggedBuyerMutation() {
+  return useMutation({
+    mutationFn: ({ buyerId, body }: AdminFlaggedBuyerWarningSubmission) => warnAdminFlaggedBuyer(buyerId, body),
   });
 }

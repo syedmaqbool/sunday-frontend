@@ -174,6 +174,17 @@ describe('getNotificationDestinationPath', () => {
     }))).toBe('/listings');
   });
 
+  it('opens buyer refund activity warnings in the returns tab', () => {
+    expect(getNotificationDestinationPath({
+      ...notification({
+        recipient: 'BUYER',
+        resource: 'complaint',
+        section: 'my-returns',
+      }),
+      type: 'REFUND_ACTIVITY_WARNING',
+    })).toBe('/profile?tab=returns&returnsTab=my-returns');
+  });
+
   it('opens admin listing submissions in moderation with URL-backed selection state', () => {
     expect(getNotificationDestinationPath({
       ...notification({

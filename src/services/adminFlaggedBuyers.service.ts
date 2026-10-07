@@ -1,4 +1,4 @@
-import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters } from '@/types/adminFlaggedBuyer.type';
+import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters, AdminFlaggedBuyerWarning, AdminFlaggedBuyerWarningResponse } from '@/types/adminFlaggedBuyer.type';
 import type { GetAdminFlaggedBuyerComplaintHistoryResponses, GetAdminFlaggedBuyerRulesResponses, GetAdminFlaggedBuyersResponses, UpdateAdminFlaggedBuyerRulesResponses } from '@/types/generated-api';
 import { authInstance } from '@/services/ky.instance';
 
@@ -24,4 +24,10 @@ export function updateAdminFlaggedBuyerRules(rule: AdminFlaggedBuyerRuleUpdate) 
   return authInstance
     .patch('/api/v1/admin/flagged-buyers/rules', { json: rule })
     .json<UpdateAdminFlaggedBuyerRulesResponses['200']>();
+}
+
+export function warnAdminFlaggedBuyer(buyerId: string, body: AdminFlaggedBuyerWarning) {
+  return authInstance
+    .post(`/api/v1/admin/flagged-buyers/${buyerId}/warn`, { json: body })
+    .json<AdminFlaggedBuyerWarningResponse>();
 }

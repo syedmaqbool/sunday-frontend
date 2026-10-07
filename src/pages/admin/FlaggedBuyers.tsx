@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { showErrorToast } from '@/lib/errorToast';
 import {
@@ -27,6 +28,7 @@ import {
   getAdminFlaggedBuyerRulesOptions,
   getAdminFlaggedBuyersOptions,
   useUpdateAdminFlaggedBuyerRulesMutation,
+  useWarnAdminFlaggedBuyerMutation,
 } from '@/queries/adminFlaggedBuyers.query';
 
 const FLAGGED_BUYERS_PAGE_SIZE = 20;
@@ -37,12 +39,15 @@ const flaggedBuyerRuleSchema = z.object({
 });
 
 type FlaggedBuyerRuleForm = z.infer<typeof flaggedBuyerRuleSchema>;
+const flaggedBuyerWarningSchema = z.object({ message: z.string() });
+type FlaggedBuyerWarningForm = z.infer<typeof flaggedBuyerWarningSchema>;
 
 export default function FlaggedBuyers() {
   const { can } = useAccessControl();
   const [page, setPage] = useState(1);
   const [historyBuyer, setHistoryBuyer] = useState<{ buyerId: string; displayName: string } | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
+  const [warningBuyer, setWarningBuyer] = useState<{ buyerId: string; displayName: string } | null>(null);
   const canReadRules = can('COMPLAINTS_READ');
   const canEditRules = can(['COMPLAINTS_READ', 'COMPLAINTS_UPDATE']);
   const rules = useQuery({ ...getAdminFlaggedBuyerRulesOptions(), enabled: canReadRules });
@@ -69,11 +74,16 @@ export default function FlaggedBuyers() {
     }
   }, [history.data]);
   const updateRules = useUpdateAdminFlaggedBuyerRulesMutation();
+  const warnBuyer = useWarnAdminFlaggedBuyerMutation();
   const form = useForm<FlaggedBuyerRuleForm>({
     defaultValues: { threshold: 3, windowDays: 90 },
     resolver: zodResolver(flaggedBuyerRuleSchema),
   });
   const { reset } = form;
+  const warningForm = useForm<FlaggedBuyerWarningForm>({
+    defaultValues: { message: '' },
+    resolver: zodResolver(flaggedBuyerWarningSchema),
+  });
 
   useEffect(() => {
     if (rules.data?.data) {
@@ -89,6 +99,29 @@ export default function FlaggedBuyers() {
     }
     catch (error) {
       showErrorToast(error, 'Failed to save flagged buyer rule');
+    }
+  }
+
+  function resetWarningForm() {
+    warningForm.reset({ message: '' });
+  }
+
+  async function sendWarning(values: FlaggedBuyerWarningForm) {
+    if (warningBuyer === null)
+      return;
+
+    const message = values.message.trim();
+    try {
+      await warnBuyer.mutateAsync({
+        buyerId: warningBuyer.buyerId,
+        body: message ? { message } : {},
+      });
+      toast.success('Buyer warning sent');
+      setWarningBuyer(null);
+      resetWarningForm();
+    }
+    catch (error) {
+      showErrorToast(error, 'Failed to send buyer warning');
     }
   }
 
@@ -231,17 +264,32 @@ export default function FlaggedBuyers() {
                                       <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
                                       <TableCell>{format(new Date(buyer.latestQualifyingComplaintCreatedAt), 'dd MMM yyyy')}</TableCell>
                                       <TableCell className="text-right">
-                                        <Button
-                                          onClick={() => {
-                                            setHistoryPage(1);
-                                            setHistoryBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
-                                          }}
-                                          size="sm"
-                                          type="button"
-                                          variant="outline"
-                                        >
-                                          History
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                          {canEditRules && (
+                                            <Button
+                                              onClick={() => {
+                                                resetWarningForm();
+                                                setWarningBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
+                                              }}
+                                              size="sm"
+                                              type="button"
+                                              variant="outline"
+                                            >
+                                              Warn
+                                            </Button>
+                                          )}
+                                          <Button
+                                            onClick={() => {
+                                              setHistoryPage(1);
+                                              setHistoryBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
+                                            }}
+                                            size="sm"
+                                            type="button"
+                                            variant="outline"
+                                          >
+                                            History
+                                          </Button>
+                                        </div>
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -375,6 +423,47 @@ export default function FlaggedBuyers() {
                         )}
                       </>
                     )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (open || warnBuyer.isPending) {
+            return;
+          }
+
+          setWarningBuyer(null);
+          resetWarningForm();
+        }}
+        open={warningBuyer !== null}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Warn buyer</DialogTitle>
+            <DialogDescription>
+              Send a warning to
+              {' '}
+              {warningBuyer?.displayName}
+              {' '}
+              about their refund activity. Leave the message blank to use the default warning.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={warningForm.handleSubmit(sendWarning)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="warning-message">Custom message (optional)</Label>
+              <Textarea
+                id="warning-message"
+                disabled={warnBuyer.isPending}
+                {...warningForm.register('message')}
+              />
+            </div>
+            <DialogFooter>
+              <Button disabled={warnBuyer.isPending} type="submit">
+                {warnBuyer.isPending && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
+                {warnBuyer.isPending ? 'Sending…' : 'Send warning'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

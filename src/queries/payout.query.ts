@@ -3,6 +3,7 @@ import type {
   AdminSellerPayoutListParams,
   CreatePayoutRunPayload,
   CreateSellerPayoutPayload,
+  EligibleSellerPayoutItemsParams,
   PayoutRunItemListParams,
   PayoutRunListParams,
   UpdatePayoutRunItemStatusPayload,
@@ -11,6 +12,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import {
   createPayoutRun,
   createSellerPayout,
+  listEligibleSellerPayoutItems,
   listPayoutRunItems,
   listPayoutRuns,
   listRefundPayouts,
@@ -21,18 +23,31 @@ import {
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const payoutQueryKey = {
+  all: () => ['payouts'] as const,
+  eligibleItemList: (parameters: EligibleSellerPayoutItemsParams) =>
+    [...payoutQueryKey.eligibleItems(), 'list', parameters] as const,
+  eligibleItems: () => [...payoutQueryKey.all(), 'eligible-items'] as const,
   refundList: (parameters: AdminRefundReportParams = {}) =>
     [...payoutQueryKey.refunds(), 'list', parameters] as const,
-  refunds: () => ['payout-refunds'] as const,
+  refunds: () => [...payoutQueryKey.all(), 'refunds'] as const,
   runItems: (runId: string, parameters: PayoutRunItemListParams = {}) =>
     [...payoutQueryKey.runs(), runId, 'items', parameters] as const,
   runList: (parameters: PayoutRunListParams = {}) =>
     [...payoutQueryKey.runs(), 'list', parameters] as const,
-  runs: () => ['payout-runs'] as const,
+  runs: () => [...payoutQueryKey.all(), 'runs'] as const,
   sellerPayoutList: (parameters: AdminSellerPayoutListParams = {}) =>
     [...payoutQueryKey.sellerPayouts(), 'list', parameters] as const,
-  sellerPayouts: () => ['admin-seller-payouts'] as const,
+  sellerPayouts: () => [...payoutQueryKey.all(), 'seller-payouts'] as const,
 };
+
+export function getEligibleSellerPayoutItemsOptions(
+  parameters: EligibleSellerPayoutItemsParams,
+) {
+  return queryOptions({
+    queryFn: () => listEligibleSellerPayoutItems(parameters),
+    queryKey: payoutQueryKey.eligibleItemList(parameters),
+  });
+}
 
 // ─── Payout Runs ──────────────────────────────────────────────────────────────
 
@@ -52,8 +67,11 @@ export function useCreatePayoutRunMutation() {
   return useMutation({
     mutationFn: (payload: CreatePayoutRunPayload) => createPayoutRun(payload),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: payoutQueryKey.eligibleItems() }),
+        queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() }),
+      ]);
     },
   });
 }

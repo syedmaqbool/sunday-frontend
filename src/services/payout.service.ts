@@ -3,6 +3,8 @@ import type {
   AdminSellerPayoutListParams,
   CreatePayoutRunPayload,
   CreateSellerPayoutPayload,
+  EligibleSellerPayoutItemsParams,
+  EligibleSellerPayoutItemsResponse,
   PayoutRun,
   PayoutRunItem,
   PayoutRunItemListParams,
@@ -28,6 +30,19 @@ export function createPayoutRun(payload: CreatePayoutRunPayload) {
   return authInstance
     .post('/api/v1/admin/payout-runs', { json: payload })
     .json<Response<PayoutRun>>();
+}
+
+export function listEligibleSellerPayoutItems(
+  parameters: EligibleSellerPayoutItemsParams,
+) {
+  return authInstance
+    .get('/api/v1/admin/payout-runs/eligible-items', {
+      searchParams: parameters as Record<
+        string,
+        boolean | number | string | undefined
+      >,
+    })
+    .json<EligibleSellerPayoutItemsResponse>();
 }
 
 export function listPayoutRunItems(

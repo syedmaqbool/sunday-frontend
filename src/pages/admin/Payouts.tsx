@@ -1,6 +1,4 @@
 import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
-import { zodResolver } from '@hookform/resolvers/zod';
-
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
@@ -10,11 +8,11 @@ import {
   CircleDollarSign,
   Download,
   Loader2,
+  Play,
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,45 +43,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { getErrorToastOptions } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
   getAdminSellerPayoutsOptions,
+  getEligibleSellerPayoutItemsOptions,
   getPayoutRunItemsOptions,
   getPayoutRunsOptions,
-  useCreateSellerPayoutMutation,
+  useCreatePayoutRunMutation,
 } from '@/queries/payout.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-export const SELLER_COMMISSION_SHARE_RATE = 5;
-
-const payoutFormSchema = z.object({
-  amount: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) > 0, 'Enter a valid amount.'),
-  method: z.enum(['bank_transfer', 'paypal', 'stripe', 'cash', 'other']),
-  notes: z.string(),
-  period_end: z.string().min(1, 'Period end is required.'),
-  period_start: z.string().min(1, 'Period start is required.'),
-  reference: z.string(),
-}).superRefine((values, context) => {
-  if (values.period_start && values.period_end && values.period_end < values.period_start) {
-    context.addIssue({ path: ['period_end'], code: z.ZodIssueCode.custom, message: 'Period end must be on or after period start.' });
-  }
-});
-
-type PayoutFormValues = z.infer<typeof payoutFormSchema>;
-
-const emptyPayoutForm: PayoutFormValues = {
-  amount: '',
-  method: 'bank_transfer',
-  notes: '',
-  period_end: '',
-  period_start: '',
-  reference: '',
-};
 
 function fmt(n: number) {
   return `Rs ${(Math.round(n * 100) / 100).toLocaleString('en-PK', {
@@ -113,16 +84,11 @@ interface PeriodItem {
 
 function Payouts() {
   const [sellerFilter, setSellerFilter] = useState<string>('all');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeSeller, setActiveSeller] = useState<{
-    sellerId: string;
-    balance: number;
-    name: string;
-  } | null>(null);
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
-  const form = useForm<PayoutFormValues>({ defaultValues: emptyPayoutForm, resolver: zodResolver(payoutFormSchema) });
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
+  const [eligiblePage, setEligiblePage] = useState(1);
+  const [runError, setRunError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // ─── Queries ───────────────────────────────────────────────────────────────
@@ -132,6 +98,30 @@ function Payouts() {
   const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(getAdminSellerPayoutsOptions(
     sellerFilter === 'all' ? {} : { sellerId: sellerFilter },
   ));
+  const eligiblePeriod = rangeStart && rangeEnd && rangeEnd >= rangeStart
+    ? {
+        page: eligiblePage,
+        periodEnd: new Date(`${rangeEnd}T23:59:59.999`).toISOString(),
+        periodStart: new Date(`${rangeStart}T00:00:00`).toISOString(),
+        size: 100,
+      }
+    : null;
+  const eligibleParameters = eligiblePeriod ?? {
+    page: eligiblePage,
+    periodEnd: '',
+    periodStart: '',
+    size: 100,
+  };
+  const {
+    data: eligibleItemsData,
+    error: eligibleItemsError,
+    isFetching: eligibleItemsFetching,
+    isLoading: eligibleItemsLoading,
+    refetch: refetchEligibleItems,
+  } = useQuery({
+    ...getEligibleSellerPayoutItemsOptions(eligibleParameters),
+    enabled: Boolean(eligiblePeriod),
+  });
   const { data: periodPayoutsData } = useQuery(getAdminSellerPayoutsOptions(
     rangeStart && rangeEnd
       ? { periodEnd: rangeEnd, periodStart: rangeStart }
@@ -142,7 +132,7 @@ function Payouts() {
   const { data: allRefundsData } = useQuery(getAdminRefundReportOptions());
   const { data: runItemsData } = useQuery(getPayoutRunItemsOptions(detailRun?.id ?? '', {}));
 
-  const createSellerPayoutMutation = useCreateSellerPayoutMutation();
+  const createPayoutRunMutation = useCreatePayoutRunMutation();
 
   const loading = lruns || lrefunds || lpayouts;
 
@@ -303,46 +293,24 @@ function Payouts() {
 
   // ─── Actions ───────────────────────────────────────────────────────────────
 
-  const openRecord = (s: {
-    sellerId: string;
-    balance: number;
-    name: string;
-  }) => {
-    setActiveSeller(s);
-    form.reset({
-      amount: s.balance > 0 ? s.balance.toFixed(2) : '',
-      method: 'bank_transfer',
-      notes: '',
-      period_end: '',
-      period_start: '',
-      reference: '',
-    });
-    setDialogOpen(true);
-  };
-
-  const savePayout = async (values: PayoutFormValues) => {
-    if (!activeSeller)
+  const generatePayoutRun = async () => {
+    if (!eligiblePeriod)
       return;
-    const amount = Number(values.amount);
 
+    setRunError(null);
     try {
-      await createSellerPayoutMutation.mutateAsync({
-        sellerId: activeSeller.sellerId,
-        amount,
-        method: values.method,
-        notes: values.notes || null,
-        periodEnd: values.period_end,
-        periodStart: values.period_start,
-        reference: values.reference,
+      await createPayoutRunMutation.mutateAsync({
+        periodEnd: eligiblePeriod.periodEnd,
+        periodStart: eligiblePeriod.periodStart,
       });
+      setEligiblePage(1);
       toast({
-        description: `${fmt(amount)} to ${activeSeller.name}`,
-        title: 'Payout recorded',
+        description: 'Eligible items have been added as unpaid payout run items.',
+        title: 'Payout run generated',
       });
-      setDialogOpen(false);
     }
     catch (error: unknown) {
-      toast(getErrorToastOptions(error, 'Could not save payout.'));
+      setRunError(error instanceof Error ? error.message : 'Could not generate a payout run.');
     }
   };
 
@@ -414,12 +382,7 @@ function Payouts() {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Sales become payout-eligible only after the buyer confirms receipt
-            with no issues. Sellers also earn a flat
-            {' '}
-            {SELLER_COMMISSION_SHARE_RATE}
-            % commission on the listing price,
-            separate from the platform fee charged to the buyer.
+            Review ledger-eligible seller items for a selected period and generate unpaid payout runs.
           </p>
         </div>
         <Button onClick={exportCsv} size="sm" variant="outline">
@@ -467,14 +430,165 @@ function Payouts() {
             </div>
           )
         : (
-            <Tabs defaultValue="runs" className="space-y-4">
+            <Tabs defaultValue="available" className="space-y-4">
               <TabsList>
+                <TabsTrigger value="available">Available items</TabsTrigger>
                 <TabsTrigger value="runs">Payout runs</TabsTrigger>
                 <TabsTrigger value="sellers">By seller</TabsTrigger>
                 <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
                 <TabsTrigger value="history">Payout history</TabsTrigger>
                 <TabsTrigger value="period">Period report</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="available">
+                <Card>
+                  <CardContent className="space-y-4 p-4">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="eligible-period-start">Period start</Label>
+                        <Input
+                          id="eligible-period-start"
+                          onChange={(event) => {
+                            setRangeStart(event.target.value);
+                            setEligiblePage(1);
+                            setRunError(null);
+                          }}
+                          value={rangeStart}
+                          type="date"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="eligible-period-end">Period end</Label>
+                        <Input
+                          id="eligible-period-end"
+                          onChange={(event) => {
+                            setRangeEnd(event.target.value);
+                            setEligiblePage(1);
+                            setRunError(null);
+                          }}
+                          value={rangeEnd}
+                          min={rangeStart || undefined}
+                          type="date"
+                        />
+                      </div>
+                      <Button
+                        onClick={generatePayoutRun}
+                        disabled={!eligiblePeriod || eligibleItemsFetching || eligibleItemsLoading || createPayoutRunMutation.isPending || !eligibleItemsData?.data.length}
+                        type="button"
+                      >
+                        {createPayoutRunMutation.isPending
+                          ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          : <Play className="mr-2 h-4 w-4" />}
+                        {createPayoutRunMutation.isPending ? 'Generating run…' : 'Generate payout run'}
+                      </Button>
+                    </div>
+
+                    {rangeStart && rangeEnd && rangeEnd < rangeStart && (
+                      <Alert variant="destructive">
+                        <AlertDescription>Period end must be on or after period start.</AlertDescription>
+                      </Alert>
+                    )}
+                    {eligibleItemsError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          Could not load eligible payout items. Please adjust the period or try again.
+                          {' '}
+                          <Button onClick={() => void refetchEligibleItems()} size="sm" variant="outline">Retry</Button>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {runError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{runError}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    {eligiblePeriod
+                      ? eligibleItemsLoading
+                        ? <div aria-live="polite" role="status" className="py-8 text-center text-sm text-muted-foreground">Loading eligible items…</div>
+                        : eligibleItemsError
+                          ? null
+                          : eligibleItemsData?.data.length
+                            ? (
+                                <>
+                                  <div className="flex flex-wrap gap-6 rounded-md bg-muted/50 p-3 text-sm">
+                                    <p>
+                                      <span className="text-muted-foreground">Eligible items: </span>
+                                      <span className="font-semibold">{eligibleItemsData.pagination.total}</span>
+                                    </p>
+                                    <p>
+                                      <span className="text-muted-foreground">Eligible total: </span>
+                                      <span className="font-semibold">{fmt(Number(eligibleItemsData.aggregates?.totalAmount ?? 0))}</span>
+                                    </p>
+                                  </div>
+                                  <div className="overflow-auto rounded-md border">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Seller</TableHead>
+                                          <TableHead>Order</TableHead>
+                                          <TableHead>Item</TableHead>
+                                          <TableHead>Received</TableHead>
+                                          <TableHead className="text-right">Payout amount</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {eligibleItemsData.data.map(item => (
+                                          <TableRow key={item.orderItemId}>
+                                            <TableCell className="font-medium">{item.sellerFullName}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                              Order
+                                              {' '}
+                                              {item.orderId.slice(0, 8)}
+                                            </TableCell>
+                                            <TableCell>{item.title}</TableCell>
+                                            <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(item.receivedAt), 'MMM d, yyyy')}</TableCell>
+                                            <TableCell className="text-right font-medium">{fmt(Number(item.amount))}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                  {eligibleItemsData.pagination.lastPage > 1 && (
+                                    <div className="flex items-center justify-between gap-3 text-sm">
+                                      <p className="text-muted-foreground">
+                                        Page {eligibleItemsData.pagination.currentPage} of {eligibleItemsData.pagination.lastPage}
+                                        {' · '}
+                                        {eligibleItemsData.pagination.total} eligible items
+                                      </p>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          disabled={!eligibleItemsData.pagination.prevPage}
+                                          onClick={() => setEligiblePage(eligibleItemsData.pagination.prevPage ?? 1)}
+                                          size="sm"
+                                          variant="outline"
+                                        >
+                                          Previous
+                                        </Button>
+                                        <Button
+                                          disabled={!eligibleItemsData.pagination.nextPage}
+                                          onClick={() => setEligiblePage(eligibleItemsData.pagination.nextPage ?? eligiblePage)}
+                                          size="sm"
+                                          variant="outline"
+                                        >
+                                          Next
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            : (
+                                <Alert>
+                                  <AlertDescription>
+                                    No items are eligible for this period. Buyer receipt confirmation and a posted local accounting snapshot are required before an item can be paid out.
+                                  </AlertDescription>
+                                </Alert>
+                              )
+                      : <p className="text-sm text-muted-foreground">Select a period to load payout-eligible items.</p>}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               {/* ── Payout Runs ── */}
               <TabsContent value="runs">
@@ -559,14 +673,13 @@ function Payouts() {
                         <TableRow>
                           <TableHead>Seller</TableHead>
                           <TableHead className="text-right">Paid</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {sellerSummaries.length === 0 && (
                           <TableRow>
                             <TableCell
-                              colSpan={3}
+                              colSpan={2}
                               className="py-10 text-center text-muted-foreground"
                             >
                               No seller activity yet.
@@ -578,15 +691,6 @@ function Payouts() {
                             <TableCell className="font-medium">{s.name}</TableCell>
                             <TableCell className="text-right">
                               {fmt(s.paid)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                onClick={() => openRecord(s)}
-                                size="sm"
-                                variant="outline"
-                              >
-                                Record payout
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -890,128 +994,6 @@ function Payouts() {
               </TabsContent>
             </Tabs>
           )}
-
-      {/* ── Record Payout Dialog ── */}
-      <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record payout</DialogTitle>
-            <DialogDescription>
-              {activeSeller ? `Paying ${activeSeller.name}` : ''}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={form.handleSubmit(savePayout, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Invalid payout', variant: 'destructive' }))} className="grid gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="amount">Amount (PKR)</Label>
-                <Controller
-                  name="amount"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="amount"
-                      step="0.01"
-                      type="number"
-                    />
-                  )}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Method</Label>
-                <Controller
-                  name="method"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bank_transfer">Bank transfer</SelectItem>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="stripe">Stripe</SelectItem>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="ps">
-                  Period start
-                  {' '}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Controller
-                  name="period_start"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="ps"
-                      type="date"
-                    />
-                  )}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pe">
-                  Period end
-                  {' '}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Controller
-                  name="period_end"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="pe"
-                      type="date"
-                    />
-                  )}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ref">Reference</Label>
-              <Controller
-                name="reference"
-                control={form.control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    id="ref"
-                    placeholder="e.g. TX-2026-05-18-001"
-                  />
-                )}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">Notes</Label>
-              <Controller name="notes" control={form.control} render={({ field }) => <Textarea {...field} id="notes" rows={3} />} />
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setDialogOpen(false)} type="button" variant="ghost">
-                Cancel
-              </Button>
-              <Button
-                disabled={createSellerPayoutMutation.isPending}
-                type="submit"
-              >
-                {createSellerPayoutMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Save payout
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* ── Payout Run Detail Dialog ── */}
       <Dialog onOpenChange={o => !o && setDetailRun(null)} open={!!detailRun}>

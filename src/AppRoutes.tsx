@@ -12,6 +12,7 @@ const AdminComplaints = lazy(() => import('./pages/admin/Complaints'));
 const DiscountCodes = lazy(() => import('./pages/admin/DiscountCodes'));
 const EmailTemplates = lazy(() => import('./pages/admin/EmailTemplates'));
 const FlagKeywords = lazy(() => import('./pages/admin/FlagKeywords'));
+const FlaggedBuyers = lazy(() => import('./pages/admin/FlaggedBuyers'));
 const HelpManagement = lazy(() => import('./pages/admin/HelpManagement'));
 const ListingModeration = lazy(() => import('./pages/admin/ListingModeration'));
 const MessageModeration = lazy(() => import('./pages/admin/MessageModeration'));
@@ -93,6 +94,7 @@ export default function AppRoutes() {
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><Reports /></Suspense>} path="reports" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminOrders /></Suspense>} path="orders" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminComplaints /></Suspense>} path="complaints" />
+        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><FlaggedBuyers /></Suspense>} path="flagged-buyers" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><TaxSettings /></Suspense>} path="tax" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><EmailTemplates /></Suspense>} path="email-templates" />
         <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminSupport /></Suspense>} path="support" />

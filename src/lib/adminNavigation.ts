@@ -67,6 +67,7 @@ export const adminNavSections: AdminNavSection[] = [
   {
     items: [
       { path: '/admin/complaints', icon: AlertTriangle, label: 'Complaints', permission: 'COMPLAINTS_READ' },
+      { path: '/admin/flagged-buyers', icon: AlertTriangle, label: 'Flagged Buyers', permission: 'COMPLAINTS_READ' },
       { path: '/admin/messages', icon: MessageSquareWarning, label: 'Messages', permission: 'MESSAGES_READ' },
       { path: '/admin/flag-keywords', adminOnly: true, icon: Filter, label: 'Keywords' },
       { path: '/admin/reports', icon: Flag, label: 'Reports', permission: 'REPORTS_READ' },

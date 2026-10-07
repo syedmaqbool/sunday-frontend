@@ -2,7 +2,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { HTTPError } from 'ky';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -64,6 +64,20 @@ function parseRetryAfterSeconds(value: string | null): number {
   return Math.ceil(seconds);
 }
 
+function getPostAuthDestination(returnTo: string | null): string {
+  if (!returnTo || returnTo === '/' || returnTo.startsWith('/#')) {
+    return '/listings';
+  }
+
+  if (returnTo.startsWith('/?')) {
+    const hashIndex = returnTo.indexOf('#');
+    const search = hashIndex === -1 ? returnTo.slice(1) : returnTo.slice(1, hashIndex);
+    return `/listings${search}`;
+  }
+
+  return returnTo;
+}
+
 function Auth() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
@@ -73,6 +87,7 @@ function Auth() {
   const [otpCooldown, setOtpCooldown] = useState(0);
   const [emailExistsError, setEmailExistsError] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const authSubmissionInProgress = useRef(false);
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -111,10 +126,11 @@ function Auth() {
     form.clearErrors('otp');
   };
 
-  // Already logged in → home
+  // Already signed-in users who open the auth page go to their requested destination.
   useEffect(() => {
-    if (user)
-      navigate(returnTo ?? '/', { replace: true });
+    if (user && !authSubmissionInProgress.current) {
+      navigate(getPostAuthDestination(returnTo), { replace: true });
+    }
   }, [user, navigate, returnTo]);
 
   useEffect(() => {
@@ -198,6 +214,7 @@ function Auth() {
           return;
         }
 
+        authSubmissionInProgress.current = true;
         await signUp({
           dateOfBirth: values.dob,
           email: values.email.trim(),
@@ -222,6 +239,7 @@ function Auth() {
         navigate('/preferences');
       }
       else {
+        authSubmissionInProgress.current = true;
         const data = await signIn(values.email, values.password);
 
         trackEvent('login', { method: 'email' });
@@ -229,7 +247,7 @@ function Auth() {
         const onboardingDone = (data.preferences as any)?.onboardingCompleted;
         if (onboardingDone) {
           toast({ title: 'Welcome back!' });
-          navigate(returnTo ?? '/');
+          navigate(getPostAuthDestination(returnTo));
         }
         else {
           navigate('/preferences');
@@ -237,6 +255,7 @@ function Auth() {
       }
     }
     catch (error: unknown) {
+      authSubmissionInProgress.current = false;
       if (mode === 'register' && error instanceof HTTPError && error.response.status === 401) {
         const message = 'Invalid or expired OTP.';
         setOtpError(message);

@@ -431,13 +431,13 @@ export default function ReturnsPolicy() {
                 Email:
                 {' '}
                 <a
-                  href="mailto:xxxx@sndymarket.com"
+                  href="mailto:contact@sndymarket.com"
                   className="
                     text-primary
                     hover:underline
                   "
                 >
-                  xxxx@sndymarket.com
+                  contact@sndymarket.com
                 </a>
               </p>
               <p>

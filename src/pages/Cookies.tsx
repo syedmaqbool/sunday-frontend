@@ -113,7 +113,7 @@ export default function Cookies() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               Questions about this Cookie Policy? Email us at
               {' '}
-              <a href="mailto:areebaghouriii@gmail.com" className="underline">areebaghouriii@gmail.com</a>
+              <a href="mailto:contact@sndymarket.com" className="underline">contact@sndymarket.com</a>
               .
             </p>
           </section>

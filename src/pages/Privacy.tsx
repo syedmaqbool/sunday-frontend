@@ -166,13 +166,13 @@ export default function Privacy() {
               To exercise these rights, contact us at
               {' '}
               <a
-                href="mailto:areebaghouriii@gmail.com"
+                href="mailto:contact@sndymarket.com"
                 className="
                   text-primary
                   hover:underline
                 "
               >
-                areebaghouriii@gmail.com
+                contact@sndymarket.com
               </a>
               .
             </p>
@@ -206,13 +206,13 @@ export default function Privacy() {
               <p>
                 Email:
                 <a
-                  href="mailto:areebaghouriii@gmail.com"
+                  href="mailto:contact@sndymarket.com"
                   className="
                     text-primary
                     hover:underline
                   "
                 >
-                  areebaghouriii@gmail.com
+                  contact@sndymarket.com
                 </a>
               </p>
               <p>

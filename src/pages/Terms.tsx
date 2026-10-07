@@ -536,7 +536,7 @@ export default function Terms() {
               <p>
                 <strong>Sunday</strong>
               </p>
-              <p>Email: xxxx@sndymarket.com</p>
+              <p>Email: contact@sndymarket.com</p>
               <p>
                 Website:
                 {' '}
@@ -558,3 +558,4 @@ export default function Terms() {
     </div>
   );
 }
+              

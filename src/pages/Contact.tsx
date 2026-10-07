@@ -41,13 +41,13 @@ export default function Contact() {
             </CardHeader>
             <CardContent>
               <a
-                href="mailto:areebaghouriii@gmail.com"
+                href="mailto:contact@sndymarket.com"
                 className="
                   text-sm text-primary
                   hover:underline
                 "
               >
-                areebaghouriii@gmail.com
+                contact@sndymarket.com
               </a>
             </CardContent>
           </Card>
@@ -62,13 +62,13 @@ export default function Contact() {
             </CardHeader>
             <CardContent>
               <a
-                href="tel:0336-8914667"
+                href="tel:0309-2257637"
                 className="
                   text-sm text-primary
                   hover:underline
                 "
               >
-                0336 8914667
+                0309 2257637
               </a>
             </CardContent>
           </Card>

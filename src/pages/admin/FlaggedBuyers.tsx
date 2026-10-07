@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -22,6 +23,7 @@ import {
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { showErrorToast } from '@/lib/errorToast';
 import {
+  getAdminFlaggedBuyerComplaintHistoryOptions,
   getAdminFlaggedBuyerRulesOptions,
   getAdminFlaggedBuyersOptions,
   useUpdateAdminFlaggedBuyerRulesMutation,
@@ -39,6 +41,8 @@ type FlaggedBuyerRuleForm = z.infer<typeof flaggedBuyerRuleSchema>;
 export default function FlaggedBuyers() {
   const { can } = useAccessControl();
   const [page, setPage] = useState(1);
+  const [historyBuyer, setHistoryBuyer] = useState<{ buyerId: string; displayName: string } | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
   const canReadRules = can('COMPLAINTS_READ');
   const canEditRules = can(['COMPLAINTS_READ', 'COMPLAINTS_UPDATE']);
   const rules = useQuery({ ...getAdminFlaggedBuyerRulesOptions(), enabled: canReadRules });
@@ -47,12 +51,23 @@ export default function FlaggedBuyers() {
     enabled: canReadRules,
     placeholderData: keepPreviousData,
   });
+  const history = useQuery({
+    ...getAdminFlaggedBuyerComplaintHistoryOptions(historyBuyer?.buyerId ?? '', { page: historyPage, size: FLAGGED_BUYERS_PAGE_SIZE }),
+    enabled: canReadRules && historyBuyer !== null,
+    placeholderData: keepPreviousData,
+  });
   useEffect(() => {
     const pagination = buyers.data?.pagination;
     if (pagination && pagination.total > 0 && pagination.currentPage > pagination.lastPage) {
       setPage(pagination.lastPage);
     }
   }, [buyers.data]);
+  useEffect(() => {
+    const pagination = history.data?.pagination;
+    if (pagination && pagination.total > 0 && pagination.currentPage > pagination.lastPage) {
+      setHistoryPage(pagination.lastPage);
+    }
+  }, [history.data]);
   const updateRules = useUpdateAdminFlaggedBuyerRulesMutation();
   const form = useForm<FlaggedBuyerRuleForm>({
     defaultValues: { threshold: 3, windowDays: 90 },
@@ -195,6 +210,7 @@ export default function FlaggedBuyers() {
                                     <TableHead>Profile</TableHead>
                                     <TableHead>Qualifying complaints</TableHead>
                                     <TableHead>Latest qualifying complaint</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -214,6 +230,19 @@ export default function FlaggedBuyers() {
                                       </TableCell>
                                       <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
                                       <TableCell>{format(new Date(buyer.latestQualifyingComplaintCreatedAt), 'dd MMM yyyy')}</TableCell>
+                                      <TableCell className="text-right">
+                                        <Button
+                                          onClick={() => {
+                                            setHistoryPage(1);
+                                            setHistoryBuyer({ buyerId: buyer.buyerId, displayName: buyer.displayName });
+                                          }}
+                                          size="sm"
+                                          type="button"
+                                          variant="outline"
+                                        >
+                                          History
+                                        </Button>
+                                      </TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
@@ -264,6 +293,90 @@ export default function FlaggedBuyers() {
             </section>
           )
         : null}
+
+      <Dialog onOpenChange={open => !open && setHistoryBuyer(null)} open={historyBuyer !== null}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Complaint history</DialogTitle>
+            <DialogDescription>
+              Qualifying complaints for
+              {' '}
+              {historyBuyer?.displayName}
+              .
+            </DialogDescription>
+          </DialogHeader>
+
+          {historyBuyer === null
+            ? null
+            : history.isLoading
+              ? <div className="flex items-center justify-center p-12"><Loader2 aria-label="Loading complaint history" className="h-5 w-5 animate-spin" /></div>
+              : history.isError
+                ? <p role="alert" className="p-8 text-center text-sm text-destructive">Unable to load complaint history.</p>
+                : history.data.data.length === 0
+                  ? <p className="p-8 text-center text-sm text-muted-foreground">No qualifying complaint history.</p>
+                  : (
+                      <>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Reason</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {history.data.data.map(complaint => (
+                              <TableRow key={complaint.id}>
+                                <TableCell className="whitespace-nowrap">{format(new Date(complaint.createdAt), 'dd MMM yyyy')}</TableCell>
+                                <TableCell>{complaint.status}</TableCell>
+                                <TableCell>{complaint.reason}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {history.data.pagination.total > 0 && (
+                          <div className="flex items-center justify-between gap-4 border-t pt-4 text-sm">
+                            <p className="text-muted-foreground">
+                              Page
+                              {' '}
+                              {history.data.pagination.currentPage}
+                              {' '}
+                              of
+                              {' '}
+                              {history.data.pagination.lastPage}
+                              {' · '}
+                              {history.data.pagination.total}
+                              {' '}
+                              complaints
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => setHistoryPage(history.data.pagination.prevPage ?? 1)}
+                                aria-label="Previous history page"
+                                disabled={history.data.pagination.prevPage === null || history.isFetching}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Previous
+                              </Button>
+                              <Button
+                                onClick={() => setHistoryPage(history.data.pagination.nextPage ?? historyPage)}
+                                aria-label="Next history page"
+                                disabled={history.data.pagination.nextPage === null || history.isFetching}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

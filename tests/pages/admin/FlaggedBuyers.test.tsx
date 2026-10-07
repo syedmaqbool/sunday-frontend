@@ -7,12 +7,14 @@ import { adminFlaggedBuyersQueryKey } from '@/queries/adminFlaggedBuyers.query';
 
 const getRulesMock = vi.hoisted(() => vi.fn());
 const getBuyersMock = vi.hoisted(() => vi.fn());
+const getHistoryMock = vi.hoisted(() => vi.fn());
 const updateRulesMock = vi.hoisted(() => vi.fn());
 const toastSuccessMock = vi.hoisted(() => vi.fn());
 const showErrorToastMock = vi.hoisted(() => vi.fn());
 const accessMock = vi.hoisted(() => vi.fn((_permission: string | string[]) => true));
 
 vi.mock('@/services/adminFlaggedBuyers.service', () => ({
+  getAdminFlaggedBuyerComplaintHistory: getHistoryMock,
   getAdminFlaggedBuyerRules: getRulesMock,
   getAdminFlaggedBuyers: getBuyersMock,
   updateAdminFlaggedBuyerRules: updateRulesMock,
@@ -67,6 +69,34 @@ function buyersResponse(page = 1, lastPage = 1) {
   };
 }
 
+function historyResponse(page = 1, lastPage = 1) {
+  return {
+    data: page === 1
+      ? [{
+          id: 'complaint-1',
+          reason: 'Item arrived damaged',
+          status: 'REFUNDED' as const,
+          createdAt: '2026-09-20T12:00:00.000Z',
+        }]
+      : [{
+          id: 'complaint-2',
+          reason: 'Item was not as described',
+          status: 'RETURN_RECEIVED' as const,
+          createdAt: '2026-09-12T12:00:00.000Z',
+        }],
+    message: 'Success',
+    pagination: {
+      currentPage: page,
+      lastPage,
+      nextPage: page < lastPage ? page + 1 : null,
+      perPage: 20,
+      prevPage: page > 1 ? page - 1 : null,
+      total: lastPage > 1 ? 2 : 1,
+    },
+    statusCode: 200,
+  };
+}
+
 function renderPage(queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 })) {
@@ -86,6 +116,7 @@ describe('admin flagged buyer rules', () => {
   beforeEach(() => {
     getRulesMock.mockReset().mockResolvedValue(ruleResponse());
     getBuyersMock.mockReset().mockResolvedValue(buyersResponse());
+    getHistoryMock.mockReset().mockResolvedValue(historyResponse());
     updateRulesMock.mockReset().mockResolvedValue(ruleResponse(4, 120));
     toastSuccessMock.mockReset();
     showErrorToastMock.mockReset();
@@ -109,6 +140,53 @@ describe('admin flagged buyer rules', () => {
     expect(screen.getByText('24 Sep 2026')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/seller/buyer-1');
     expect(getBuyersMock).toHaveBeenCalledWith({ page: 1, size: 20 });
+  });
+
+  it('opens and closes the selected buyer history dialog with backend fields', async () => {
+    renderPage();
+    expect(await screen.findByText('Alex Buyer')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+
+    expect(await screen.findByRole('heading', { name: 'Complaint history' })).toBeInTheDocument();
+    expect(screen.getByText('Qualifying complaints for Alex Buyer.')).toBeInTheDocument();
+    expect(await screen.findByText('20 Sep 2026')).toBeInTheDocument();
+    expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+    expect(screen.getByText('Item arrived damaged')).toBeInTheDocument();
+    expect(getHistoryMock).toHaveBeenCalledWith('buyer-1', { page: 1, size: 20 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument());
+  });
+
+  it('pages through complaint history using the API pagination', async () => {
+    getHistoryMock.mockImplementation((_buyerId: string, { page }: { page: number }) => Promise.resolve(historyResponse(page, 2)));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'History' }));
+    expect(await screen.findByText('Item arrived damaged')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next history page' }));
+
+    expect(await screen.findByText('Item was not as described')).toBeInTheDocument();
+    expect(getHistoryMock).toHaveBeenLastCalledWith('buyer-1', { page: 2, size: 20 });
+    expect(screen.getByRole('button', { name: 'Previous history page' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Next history page' })).toBeDisabled();
+  });
+
+  it('shows loading, empty, and error states in the complaint history dialog', async () => {
+    getHistoryMock.mockImplementationOnce(() => new Promise(() => {}));
+    const loadingPage = renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'History' }));
+    expect(screen.getByLabelText('Loading complaint history')).toBeInTheDocument();
+    loadingPage.unmount();
+
+    getHistoryMock.mockReset().mockResolvedValue({ ...historyResponse(), data: [], pagination: { ...historyResponse().pagination, lastPage: 0, total: 0 } });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'History' }));
+    expect(await screen.findByText('No qualifying complaint history.')).toBeInTheDocument();
+
+    getHistoryMock.mockReset().mockRejectedValueOnce(new Error('load failed'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'History' }));
+    expect(await screen.findByText('Unable to load complaint history.')).toBeInTheDocument();
   });
 
   it('uses the response pagination to load every buyer page', async () => {

@@ -96,7 +96,7 @@ function ImageGallery({
   const unavailableClass = isUnavailable ? 'grayscale opacity-60' : '';
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
         {isCurrentIsVideo
           ? (
@@ -306,7 +306,7 @@ function ListingDetail() {
             title={listing.title}
           />
 
-          <div className="flex flex-col justify-center">
+          <div className="flex min-w-0 flex-col justify-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {listing.brand}
             </p>

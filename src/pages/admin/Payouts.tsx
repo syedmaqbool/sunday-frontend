@@ -446,8 +446,8 @@ function Payouts() {
             </div>
           )
         : (
-            <Tabs defaultValue="available" className="space-y-4">
-              <TabsList>
+            <Tabs defaultValue="available" className="min-w-0 space-y-4">
+              <TabsList className="max-w-full justify-start overflow-x-auto">
                 <TabsTrigger value="available">Available items</TabsTrigger>
                 <TabsTrigger value="runs">Payout runs</TabsTrigger>
                 <TabsTrigger value="sellers">By seller</TabsTrigger>

@@ -241,7 +241,11 @@ function CategoryManagement() {
 
       {/* ── Categories ── */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="
+          flex flex-col items-start justify-between gap-3
+          sm:flex-row sm:items-center
+        "
+        >
           <CardTitle>Categories</CardTitle>
           <Button onClick={openNewCat} size="sm" className="gap-1">
             <Plus className="h-4 w-4" />
@@ -302,7 +306,11 @@ function CategoryManagement() {
 
       {/* ── Subcategories ── */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="
+          flex flex-col items-start justify-between gap-3
+          sm:flex-row sm:items-center
+        "
+        >
           <CardTitle>Subcategories</CardTitle>
           <Button
             onClick={openNewSub}

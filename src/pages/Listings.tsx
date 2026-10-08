@@ -232,7 +232,7 @@ function Listings() {
               variant="outline"
               className="
                 gap-1
-                md:hidden
+                lg:hidden
               "
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -241,7 +241,7 @@ function Listings() {
             </Button>
             <div className="
               hidden gap-2
-              md:flex
+              lg:flex
             "
             >
               {filterSelects}
@@ -272,7 +272,7 @@ function Listings() {
         {showFilters && (
           <div className="
             mt-4 flex flex-wrap gap-2
-            md:hidden
+            lg:hidden
           "
           >
             {filterSelects}

@@ -395,8 +395,9 @@ function AdminOrders() {
         <Tabs
           onValueChange={v => setStatusFilter(v as StatusFilter)}
           value={statusFilter}
+          className="min-w-0 max-w-full"
         >
-          <TabsList>
+          <TabsList className="max-w-full justify-start overflow-x-auto">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
@@ -409,8 +410,9 @@ function AdminOrders() {
         <Tabs
           onValueChange={v => setDateFilter(v as DateFilter)}
           value={dateFilter}
+          className="min-w-0 max-w-full"
         >
-          <TabsList>
+          <TabsList className="max-w-full justify-start overflow-x-auto">
             <TabsTrigger value="all">All time</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="7d">Last 7 days</TabsTrigger>

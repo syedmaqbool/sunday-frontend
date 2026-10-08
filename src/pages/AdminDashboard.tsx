@@ -149,7 +149,7 @@ export default function AdminDashboard() {
       {/* Desktop sidebar */}
       <aside className="
         hidden w-64 shrink-0 flex-col border-r border-border bg-card
-        md:flex
+        lg:flex
       "
       >
         <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
       {mobileOpen && (
         <div className="
           fixed inset-0 z-50
-          md:hidden
+          lg:hidden
         "
         >
           <div
@@ -242,14 +242,14 @@ export default function AdminDashboard() {
         <header className="
           sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur
           supports-[backdrop-filter]:bg-background/60
-          md:px-8
+          lg:px-8
         "
         >
           <Button
             onClick={() => setMobileOpen(true)}
             size="icon"
             variant="ghost"
-            className="md:hidden"
+            className="lg:hidden"
           >
             <Menu className="h-5 w-5" />
           </Button>

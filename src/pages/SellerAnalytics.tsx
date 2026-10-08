@@ -201,7 +201,11 @@ export default function SellerAnalytics() {
                     "
                     >
                       {/* Monthly Revenue Bar Chart */}
-                      <Card className="md:col-span-2">
+                      <Card className="
+                        min-w-0
+                        md:col-span-2
+                      "
+                      >
                         <CardHeader>
                           <CardTitle className="text-lg">
                             Revenue (Last 6 Months)
@@ -210,7 +214,7 @@ export default function SellerAnalytics() {
                         <CardContent>
                           <ChartContainer
                             config={chartConfig}
-                            className="h-[280px] w-full"
+                            className="h-[280px] w-full min-w-0"
                           >
                             <BarChart
                               data={monthlyChartData}
@@ -234,7 +238,7 @@ export default function SellerAnalytics() {
                       </Card>
 
                       {/* Category Breakdown */}
-                      <Card>
+                      <Card className="min-w-0">
                         <CardHeader>
                           <CardTitle className="text-lg">
                             Listings by Category
@@ -245,7 +249,7 @@ export default function SellerAnalytics() {
                             ? (
                                 <ChartContainer
                                   config={chartConfig}
-                                  className="h-[240px] w-full"
+                                  className="h-[240px] w-full min-w-0"
                                 >
                                   <PieChart>
                                     <Pie
@@ -277,7 +281,7 @@ export default function SellerAnalytics() {
                       </Card>
 
                       {/* Offer Outcomes */}
-                      <Card>
+                      <Card className="min-w-0">
                         <CardHeader>
                           <CardTitle className="text-lg">Offer Outcomes</CardTitle>
                         </CardHeader>
@@ -286,7 +290,7 @@ export default function SellerAnalytics() {
                             ? (
                                 <ChartContainer
                                   config={chartConfig}
-                                  className="h-[240px] w-full"
+                                  className="h-[240px] w-full min-w-0"
                                 >
                                   <PieChart>
                                     <Pie

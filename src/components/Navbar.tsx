@@ -55,7 +55,11 @@ export default function Navbar() {
       supports-[backdrop-filter]:bg-background/80
     "
     >
-      <div className="container flex h-16 items-center justify-between gap-4">
+      <div className="
+        container flex h-16 items-center justify-between gap-2
+        sm:gap-4
+      "
+      >
         <Link to="/" className="flex items-center">
           <img src={siteLogo} alt="Sunday" className="h-10 w-auto" />
         </Link>
@@ -88,7 +92,11 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="
+          flex items-center gap-1
+          sm:gap-2
+        "
+        >
           <Button
             onClick={() => navigate('/listings')}
             size="icon"

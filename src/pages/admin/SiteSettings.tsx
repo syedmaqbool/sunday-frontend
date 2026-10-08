@@ -377,7 +377,11 @@ function SiteSettings() {
                     >
                       <div className="space-y-2">
                         <Label>Site logo (Navbar)</Label>
-                        <div className="flex items-center gap-4">
+                        <div className="
+                          flex flex-col gap-3
+                          sm:flex-row sm:items-center sm:gap-4
+                        "
+                        >
                           <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
                             {formValues.siteLogoUrl
                               ? <img src={formValues.siteLogoUrl} alt="Site logo" className="h-full w-full object-contain p-1" />
@@ -419,7 +423,11 @@ function SiteSettings() {
                       {/* Badge icon upload */}
                       <div className="space-y-2">
                         <Label>Badge icon (replaces badge text when uploaded)</Label>
-                        <div className="flex items-center gap-4">
+                        <div className="
+                          flex flex-col gap-3
+                          sm:flex-row sm:items-center sm:gap-4
+                        "
+                        >
                           <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
                             {formValues.badgeIconUrl
                               ? (

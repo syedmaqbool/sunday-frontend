@@ -802,14 +802,21 @@ function Analytics() {
               total leads
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="
+            flex flex-col items-stretch gap-2
+            sm:flex-row sm:items-center
+          "
+          >
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 onChange={event => setLeadSearch(event.target.value)}
                 value={leadSearch}
                 placeholder="Filter leads…"
-                className="h-8 w-48 pl-8 text-xs"
+                className="
+                  h-8 w-full pl-8 text-xs
+                  sm:w-48
+                "
               />
             </div>
             <Button

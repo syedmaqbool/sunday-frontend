@@ -319,7 +319,7 @@ function ListingModeration() {
                             {listing.description}
                           </p>
                         </div>
-                        <div className="flex shrink-0 gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
                           <Button
                             onClick={() => {
                               updateReviewSelection(listing.id);

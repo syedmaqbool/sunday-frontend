@@ -480,19 +480,45 @@ function UserProfile() {
                   value={profileTab}
                   className="mt-6"
                 >
-                  <TabsList>
-                    <TabsTrigger value="bought">
+                  <TabsList className="w-full justify-between">
+                    <TabsTrigger
+                      value="bought"
+                      className="
+                        min-w-0 px-1 text-xs
+                        sm:px-3 sm:text-sm
+                      "
+                    >
                       Bought (
                       {orders.length}
                       )
                     </TabsTrigger>
-                    <TabsTrigger value="sold">
+                    <TabsTrigger
+                      value="sold"
+                      className="
+                        min-w-0 px-1 text-xs
+                        sm:px-3 sm:text-sm
+                      "
+                    >
                       Sold (
                       {sales.length}
                       )
                     </TabsTrigger>
-                    <TabsTrigger value="returns">Returns</TabsTrigger>
-                    <TabsTrigger value="reviews">
+                    <TabsTrigger
+                      value="returns"
+                      className="
+                        min-w-0 px-1 text-xs
+                        sm:px-3 sm:text-sm
+                      "
+                    >
+                      Returns
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="reviews"
+                      className="
+                        min-w-0 px-1 text-xs
+                        sm:px-3 sm:text-sm
+                      "
+                    >
                       Reviews
                       {rating?.totalReviews ? ` (${rating.totalReviews})` : ''}
                     </TabsTrigger>

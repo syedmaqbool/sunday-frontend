@@ -169,13 +169,13 @@ function SellerProfile() {
                       {profile.location}
                     </span>
                   )}
-                  {profile.phone && (
+                  {/* {profile.phone && (
                     <span className="inline-flex items-center gap-1">
                       <Phone className="h-3.5 w-3.5" />
                       {' '}
                       {profile.phone}
                     </span>
-                  )}
+                  )} */}
                 </div>
               </div>
             )}

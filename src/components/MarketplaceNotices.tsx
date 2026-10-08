@@ -47,7 +47,7 @@ export function CheckoutDispatchNotice() {
         dark:text-amber-300
       "
       >
-        Item will be dispatched within 3 working days after quality is verified by buyer.
+        Item will be dispatched within 3 working days after payment is verified by admin.
         {' '}
         <Link
           to="/terms"

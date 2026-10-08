@@ -144,7 +144,7 @@ export function ReportDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Report
+            Report -  
             {targetType}
           </DialogTitle>
           <DialogDescription>

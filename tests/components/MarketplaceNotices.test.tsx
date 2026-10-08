@@ -34,7 +34,7 @@ describe('marketplace notices', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Item will be dispatched within 3 working days after quality is verified by buyer.')).toBeInTheDocument();
+    expect(screen.getByText('Item will be dispatched within 3 working days after payment is verified by admin.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'More info' })).toHaveAttribute('href', '/terms');
   });
 });

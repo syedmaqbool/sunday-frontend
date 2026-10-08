@@ -761,10 +761,10 @@ function Checkout() {
                   </span>
                 </div>
               )}
-              <div className="flex items-center justify-between pb-3">
+              {/* <div className="flex items-center justify-between pb-3">
                 <span className="text-sm text-muted-foreground">Shipping</span>
                 <span className="text-sm text-muted-foreground">Free</span>
-              </div>
+              </div> */}
               {(currentQuote?.taxAmount ?? 0) > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">

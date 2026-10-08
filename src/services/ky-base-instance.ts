@@ -1,6 +1,6 @@
 import type { BeforeErrorState } from 'ky';
 import type { ErrorResponse, FieldError } from '@/types/response.type';
-import ky, { HTTPError } from 'ky';
+import ky, { HTTPError, isNetworkError } from 'ky';
 
 export const API_BASE_URL
   = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
@@ -20,7 +20,10 @@ export function getApiFieldErrors(error: unknown): FieldError[] | undefined {
 }
 
 async function normalizeError({ error, options: _options, request: _request }: BeforeErrorState) {
-  if (error instanceof HTTPError) {
+  if (isNetworkError(error)) {
+    error.message = 'Request failed. Please check your internet connection.';
+  }
+  else if (error instanceof HTTPError) {
     let body: ErrorResponse | null = null;
     let responseBody = '';
     const errorData = error.data;

@@ -605,7 +605,7 @@ function ListingDetail() {
               </div>
             )}
 
-            <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
+            {/* <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-secondary p-4">
               <Shield className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium text-foreground">
@@ -615,7 +615,7 @@ function ListingDetail() {
                   Money-back guarantee if item isn't as described
                 </p>
               </div>
-            </div>
+            </div> */}
 
             <div className="mt-6 border-t border-border pt-4">
               <p className="mt-4 text-sm text-muted-foreground">

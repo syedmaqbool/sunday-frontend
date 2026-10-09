@@ -105,7 +105,7 @@ export interface QuoteCheckoutResponses {
    */
   200: {
     data: {
-      appliedSellerCoupons: Array<{
+      appliedSellerIncentives: Array<{
         id: string;
         sellerId: string;
         allocations: Array<{
@@ -113,15 +113,13 @@ export interface QuoteCheckoutResponses {
           /**
            * PKR amount as a number.
            */
-          discountAmount: number;
+          bonusAmount: number;
         }>;
-        code: string;
         /**
          * PKR amount as a number.
          */
-        discountAmount: number;
-        discountType: 'FIXED' | 'PERCENTAGE';
-        discountValue: number;
+        bonusAmount: number;
+        percentage: number;
         scope: 'ITEM_BASED' | 'SELLER_WIDE';
       }>;
       /**
@@ -135,8 +133,8 @@ export interface QuoteCheckoutResponses {
       discountAmount: number;
       items: Array<{
         listingId: string;
-        sellerCouponId: string | null;
         sellerId: string;
+        sellerIncentiveId: string | null;
         /**
          * PKR amount as a number.
          */
@@ -161,7 +159,8 @@ export interface QuoteCheckoutResponses {
         /**
          * PKR amount as a number.
          */
-        sellerCouponDiscountAmount: number;
+        sellerIncentiveBonus: number;
+        sellerIncentivePercentage: number | null;
         /**
          * PKR amount as a number.
          */
@@ -185,15 +184,11 @@ export interface QuoteCheckoutResponses {
       /**
        * PKR amount as a number.
        */
-      sellerCouponDiscountAmount: number;
+      sellerIncentiveBonus: number;
       /**
        * PKR amount as a number.
        */
       subtotal: number;
-      /**
-       * PKR amount as a number.
-       */
-      subtotalAfterSellerCoupons: number;
       /**
        * PKR amount as a number.
        */

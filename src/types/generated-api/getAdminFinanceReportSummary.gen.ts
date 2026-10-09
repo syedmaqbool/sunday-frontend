@@ -138,6 +138,7 @@ export interface GetAdminFinanceReportSummaryResponses {
         postedRecordCount: number;
       };
       sellerCouponCogsMinorUnits: number;
+      sellerIncentiveBonusCogsMinorUnits: number;
       sellerPayableMinorUnits: number;
       sellerPayoutFeeCogsMinorUnits: number;
       totalCogsMinorUnits: number;
@@ -162,6 +163,7 @@ export interface GetAdminFinanceReportSummaryResponses {
       profitMinorUnits: number;
       recordType: 'ADJUSTMENT' | 'SNAPSHOT';
       sellerCouponCogsMinorUnits: number;
+      sellerIncentiveBonusCogsMinorUnits: number;
       sellerPaidAmountMinorUnits: number;
       sellerPayableMinorUnits: number;
       sellerPayoutFeeMinorUnits: number;

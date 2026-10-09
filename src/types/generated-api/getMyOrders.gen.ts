@@ -105,8 +105,8 @@ export interface GetMyOrdersResponses {
         offerId: string | null;
         orderId: string;
         reservationId: string | null;
-        sellerCouponId: string | null;
         sellerId: string;
+        sellerIncentiveId: string | null;
         brand: string;
         buyerFullName: string;
         category: string;
@@ -136,12 +136,12 @@ export interface GetMyOrdersResponses {
         proofImageUrl: string | null;
         quantity: number;
         reservedOfferPrice: number | null;
-        sellerCouponCode: string | null;
+        sellerFullName: string;
         /**
          * PKR amount as a number.
          */
-        sellerCouponDiscountAmount: number;
-        sellerFullName: string;
+        sellerIncentiveBonus: number;
+        sellerIncentivePercentage: number | null;
         shippingMethod: string | null;
         size: string;
         status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';
@@ -168,7 +168,7 @@ export interface GetMyOrdersResponses {
       platformFeeAmount: number;
       refundStatus: 'REFUND_FAILED' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REFUNDING' | null;
       restorableListingIds?: Array<string>;
-      sellerCouponApplications: Array<{
+      sellerIncentives: Array<{
         id: string;
         sellerId: string;
         allocations: Array<{
@@ -177,15 +177,14 @@ export interface GetMyOrdersResponses {
           /**
            * PKR amount as a number.
            */
-          discountAmount: number;
+          bonusAmount: number;
         }>;
-        code: string;
         /**
          * PKR amount as a number.
          */
-        discountAmount: number;
+        bonusAmount: number;
+        percentage: number;
       }>;
-      sellerCouponCode: string | null;
       shippingAddress: string;
       shippingCity: string;
       shippingFirstName: string;

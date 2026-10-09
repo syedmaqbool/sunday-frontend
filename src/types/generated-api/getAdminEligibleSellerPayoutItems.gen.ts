@@ -148,6 +148,7 @@ export interface GetAdminEligibleSellerPayoutItemsResponses {
       orderItemId: string;
       sellerId: string;
       amount: number;
+      payoutComponent: 'BASE' | 'SELLER_INCENTIVE_BONUS';
       sellerFullName: string;
       title: string;
       receivedAt: string;

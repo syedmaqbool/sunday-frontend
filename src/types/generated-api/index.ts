@@ -226,7 +226,6 @@ export type { UploadFileData, UploadFileError, UploadFileErrors, UploadFileRespo
 export type { UploadFileFromUrlData, UploadFileFromUrlErrors, UploadFileFromUrlResponse, UploadFileFromUrlResponses } from './uploadFileFromUrl.gen';
 export type { UploadOrderItemShippingProofData, UploadOrderItemShippingProofError, UploadOrderItemShippingProofErrors, UploadOrderItemShippingProofResponse, UploadOrderItemShippingProofResponses } from './uploadOrderItemShippingProof.gen';
 export type { ValidateCheckoutDiscountData, ValidateCheckoutDiscountError, ValidateCheckoutDiscountErrors, ValidateCheckoutDiscountResponse, ValidateCheckoutDiscountResponses } from './validateCheckoutDiscount.gen';
-export type { ValidateCheckoutSellerCouponData, ValidateCheckoutSellerCouponError, ValidateCheckoutSellerCouponErrors, ValidateCheckoutSellerCouponResponse, ValidateCheckoutSellerCouponResponses } from './validateCheckoutSellerCoupon.gen';
 export type { ValidateUnsubscribeTokenData, ValidateUnsubscribeTokenError, ValidateUnsubscribeTokenErrors, ValidateUnsubscribeTokenResponse, ValidateUnsubscribeTokenResponses } from './validateUnsubscribeToken.gen';
 export type { VerifyUserEmailData, VerifyUserEmailError, VerifyUserEmailErrors, VerifyUserEmailResponse, VerifyUserEmailResponses } from './verifyUserEmail.gen';
 export type { VerifyWhatsAppWebhookData, VerifyWhatsAppWebhookError, VerifyWhatsAppWebhookErrors, VerifyWhatsAppWebhookResponse, VerifyWhatsAppWebhookResponses } from './verifyWhatsAppWebhook.gen';

@@ -123,7 +123,6 @@ export interface GetAdminSellerCouponRedemptionsResponses {
       orderItemId: string;
       sellerCouponId: string;
       sellerId: string;
-      code: string;
       discountAmount: number;
       createdAt: string;
     }>;

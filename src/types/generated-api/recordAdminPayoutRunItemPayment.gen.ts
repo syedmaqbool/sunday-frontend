@@ -151,6 +151,7 @@ export interface RecordAdminPayoutRunItemPaymentResponses {
       bankName: string | null;
       bankSwift: string | null;
       itemType: 'BUYER_REFUND' | 'SELLER_PAYOUT';
+      payoutComponent: 'BASE' | 'SELLER_INCENTIVE_BONUS';
       periodEnd: string;
       periodStart: string;
       sourceDate: string | null;

@@ -90,8 +90,8 @@ export interface GetMySalesResponses {
       offerId: string | null;
       orderId: string;
       reservationId: string | null;
-      sellerCouponId: string | null;
       sellerId: string;
+      sellerIncentiveId: string | null;
       brand: string;
       buyerFullName: string;
       category: string;
@@ -121,12 +121,12 @@ export interface GetMySalesResponses {
       proofImageUrl: string | null;
       quantity: number;
       reservedOfferPrice: number | null;
-      sellerCouponCode: string | null;
+      sellerFullName: string;
       /**
        * PKR amount as a number.
        */
-      sellerCouponDiscountAmount: number;
-      sellerFullName: string;
+      sellerIncentiveBonus: number;
+      sellerIncentivePercentage: number | null;
       shippingMethod: string | null;
       size: string;
       status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'SHIPPED';

@@ -91,7 +91,7 @@ export interface GetAdminQuickBooksAccountMappingVersionsResponses {
       effectiveDate: string;
       mappings: Array<{
         accountId: string;
-        category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+        category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_INCENTIVE_MARKETING_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
         displayName: string;
       }>;
       reason: string;

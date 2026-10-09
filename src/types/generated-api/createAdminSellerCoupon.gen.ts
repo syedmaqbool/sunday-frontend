@@ -6,11 +6,9 @@ export interface CreateAdminSellerCouponData {
     listingId?: string | null;
     sellerId: string;
     active?: boolean;
-    code: string;
-    discountType: 'FIXED' | 'PERCENTAGE';
-    discountValue: number;
-    maxOrders?: number | null;
+    maxEligibleUnits?: number | null;
     minOrderAmount?: number;
+    percentage: number;
     scope: 'ITEM_BASED' | 'SELLER_WIDE';
     expiresAt?: string | null;
     startsAt?: string | null;
@@ -76,34 +74,6 @@ export interface CreateAdminSellerCouponErrors {
       message: string;
     }>;
   };
-  /**
-   * Default Response
-   */
-  409: {
-    /**
-     * Request identifier for tracing the error
-     */
-    requestId: string;
-    /**
-     * Http status code of the error response
-     */
-    statusCode: 409;
-    /**
-     * Detailed human-readable error message
-     */
-    message: string;
-    /**
-     * Application or framework-specific error code
-     */
-    code: string;
-    /**
-     * Field-level validation errors when applicable
-     */
-    fieldErrors?: Array<{
-      field: string;
-      message: string;
-    }>;
-  };
 }
 
 export type CreateAdminSellerCouponError = CreateAdminSellerCouponErrors[keyof CreateAdminSellerCouponErrors];
@@ -118,14 +88,12 @@ export interface CreateAdminSellerCouponResponses {
       listingId: string | null;
       sellerId: string;
       active: boolean;
-      code: string;
-      currentOrders: number;
-      discountType: 'FIXED' | 'PERCENTAGE';
-      discountValue: number;
-      maxOrders: number | null;
+      maxEligibleUnits: number | null;
       minOrderAmount: number;
-      reservedOrders: number;
+      percentage: number;
+      reservedEligibleUnits: number;
       scope: 'ITEM_BASED' | 'SELLER_WIDE';
+      usedEligibleUnits: number;
       expiresAt: string | null;
       startsAt: string | null;
       createdAt: string;

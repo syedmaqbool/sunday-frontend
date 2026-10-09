@@ -120,16 +120,18 @@ const shipmentFormSchema = z.object({
 type ShipmentFormValues = z.infer<typeof shipmentFormSchema>;
 
 const SHIPPING_METHODS = [
-  'PostNet',
-  'The Courier Guy',
-  'Aramex',
-  'PUDO (Pick Up Drop Off)',
-  'Pargo',
-  'Fastway',
+  'TCS',
+  'Leopards',
+  'PostEx',
+  'M&P Express Logistics',
+  'blueEX',
+  'CallCourier',
+  'Trax Logistics',
+  'Pakistan Post',
+  'Bykea',
   'DHL',
-  'South African Post Office (SAPO)',
-  'Hand Delivery',
-  'Other',
+  'FedEx',
+  'Other'
 ];
 
 // ── Status helpers ────────────────────────────────────────────────────────────

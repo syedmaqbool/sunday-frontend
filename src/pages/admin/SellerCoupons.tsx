@@ -263,6 +263,13 @@ function SellerCoupons() {
                             {incentive.minOrderAmount.toLocaleString()}
                           </span>
                         )}
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          Rs
+                          {' '}
+                          {incentive.sellerIncentiveBonusAmount.toLocaleString('en-PK', { maximumFractionDigits: 2 })}
+                          {' '}
+                          generated
+                        </span>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {incentive.scope === 'SELLER_WIDE' ? 'All seller items' : 'Specific item'}

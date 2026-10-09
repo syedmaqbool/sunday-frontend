@@ -100,8 +100,10 @@ describe('seller incentives', () => {
     expect(await screen.findByRole('heading', { name: 'Seller Incentives' })).toBeInTheDocument();
     const cappedRow = screen.getByText('10%').closest('tr')!;
     expect(cappedRow).toHaveTextContent('4 used + 2 reserved / 10 units');
+    expect(cappedRow).toHaveTextContent('Rs 1,250 generated');
     expect(cappedRow).not.toHaveTextContent('CAPPED10');
-    expect(screen.getByText('1 used + 0 reserved / unlimited units')).toBeInTheDocument();
+    const unlimitedRow = screen.getByText('1 used + 0 reserved / unlimited units').closest('tr')!;
+    expect(unlimitedRow).toHaveTextContent('Rs 0 generated');
     expect(screen.queryByText('Code')).not.toBeInTheDocument();
   });
 

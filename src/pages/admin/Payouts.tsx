@@ -71,6 +71,13 @@ function getListingTitle(sourceMetadata: unknown) {
   return typeof sourceMetadata.listingTitle === 'string' ? sourceMetadata.listingTitle : undefined;
 }
 
+function PayoutComponentCaption({ payoutComponent }: { payoutComponent: PayoutRunItem['payoutComponent'] }) {
+  if (payoutComponent !== 'SELLER_INCENTIVE_BONUS')
+    return null;
+
+  return <span className="block text-xs text-muted-foreground">Seller incentive bonus</span>;
+}
+
 interface PeriodItem {
   id: string;
   amount: number;
@@ -559,9 +566,7 @@ function Payouts() {
                                             </TableCell>
                                             <TableCell>
                                               {item.title}
-                                              {item.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
-                                                <span className="block text-xs text-muted-foreground">Seller incentive bonus</span>
-                                              )}
+                                              <PayoutComponentCaption payoutComponent={item.payoutComponent} />
                                             </TableCell>
                                             <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(item.receivedAt), 'MMM d, yyyy')}</TableCell>
                                             <TableCell className="text-right font-medium">{fmt(Number(item.amount))}</TableCell>
@@ -1099,9 +1104,7 @@ function Payouts() {
                               <span className="block truncate">
                                 {getListingTitle(item.sourceMetadata) || '—'}
                               </span>
-                              {item.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
-                                <span className="block text-xs text-muted-foreground">Seller incentive bonus</span>
-                              )}
+                              <PayoutComponentCaption payoutComponent={item.payoutComponent} />
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {item.orderId

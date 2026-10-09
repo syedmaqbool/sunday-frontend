@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { SellerCoupon } from '@/types/sellerCoupon.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SellerCoupons from '@/pages/admin/SellerCoupons';
 
 const { couponState, createCouponMock, toastMock, updateCouponMock } = vi.hoisted(() => ({
@@ -16,7 +16,7 @@ vi.mock('@/hooks/use-toast', () => ({ toast: toastMock }));
 vi.mock('@/queries/adminSellerCoupons.query', () => ({
   getAdminSellerListingsOptions: (sellerId?: string, isEnabled = false) => ({
     enabled: isEnabled,
-    queryFn: async () => ({ data: [] }),
+    queryFn: async () => ({ data: [{ id: 'listing-1', title: 'Desk' }] }),
     queryKey: ['seller-listings', sellerId],
   }),
   getAdminUsersListOptions: () => ({
@@ -31,7 +31,6 @@ vi.mock('@/queries/adminSellerCoupons.query', () => ({
   useDeleteSellerCouponMutation: () => ({ mutate: vi.fn() }),
   useUpdateSellerCouponMutation: () => ({ mutate: vi.fn(), mutateAsync: updateCouponMock }),
 }));
-// Radix Select does not run in jsdom, so a native select stands in for it.
 vi.mock('@/components/ui/select', () => ({
   Select: ({ children, onValueChange, value }: { children: ReactNode; onValueChange: (value: string) => void; value: string }) => (
     <select onChange={event => onValueChange(event.target.value)} value={value}>
@@ -47,18 +46,17 @@ vi.mock('@/components/ui/select', () => ({
 
 function buildCoupon(overrides: Partial<SellerCoupon> = {}): SellerCoupon {
   return {
-    id: 'coupon-1',
+    id: 'incentive-1',
     listingId: null,
     sellerId: 'seller-1',
     active: true,
-    code: 'CAPPED10',
-    currentOrders: 4,
-    discountType: 'PERCENTAGE',
-    discountValue: 10,
-    maxOrders: 10,
+    maxEligibleUnits: 10,
     minOrderAmount: 0,
-    reservedOrders: 2,
+    percentage: 10,
+    reservedEligibleUnits: 2,
+    sellerIncentiveBonusAmount: 1250,
     scope: 'SELLER_WIDE',
+    usedEligibleUnits: 4,
     expiresAt: null,
     startsAt: null,
     createdAt: '2026-10-01T00:00:00.000Z',
@@ -77,93 +75,94 @@ function renderPage() {
 
 async function openCreateForm() {
   renderPage();
-  fireEvent.click(await screen.findByRole('button', { name: /New Coupon/ }));
-  await screen.findByText('Create Seller Coupon');
+  fireEvent.click(await screen.findByRole('button', { name: /New Seller Incentive/ }));
+  await screen.findByRole('heading', { name: 'Create Seller Incentive' });
   await waitFor(() => expect(screen.getByRole('option', { name: 'Jamie Seller' })).toBeInTheDocument());
-  fireEvent.change(screen.getByPlaceholderText('SELLER10'), { target: { value: 'save10' } });
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Percentage' }), { target: { value: '10' } });
   fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'seller-1' } });
-  fireEvent.change(screen.getByPlaceholderText('10'), { target: { value: '10' } });
 }
 
-describe('seller coupon max orders', () => {
+describe('seller incentives', () => {
   beforeEach(() => {
     couponState.coupons = [
       buildCoupon(),
-      buildCoupon({ id: 'coupon-2', code: 'OPEN5', currentOrders: 1, discountValue: 5, maxOrders: null, reservedOrders: 0 }),
+      buildCoupon({ id: 'incentive-2', percentage: 5, maxEligibleUnits: null, reservedEligibleUnits: 0, sellerIncentiveBonusAmount: 0, usedEligibleUnits: 1 }),
     ];
     createCouponMock.mockReset().mockResolvedValue({});
     toastMock.mockReset();
     updateCouponMock.mockReset().mockResolvedValue({});
   });
 
-  it('shows completed and pending orders against the cap or as unlimited', async () => {
+  afterEach(cleanup);
+
+  it('labels assignments and usage in seller incentive units without code values', async () => {
     renderPage();
-
-    const cappedCode = await screen.findByText('CAPPED10');
-    const cappedRow = cappedCode.closest('tr')!;
-    expect(cappedRow).toHaveTextContent('4 completed + 2 pending / 10 max');
-    const unlimitedRow = screen.getByText('OPEN5').closest('tr')!;
-    expect(unlimitedRow).toHaveTextContent('1 completed + 0 pending / unlimited');
+    expect(await screen.findByRole('heading', { name: 'Seller Incentives' })).toBeInTheDocument();
+    const cappedRow = screen.getByText('10%').closest('tr')!;
+    expect(cappedRow).toHaveTextContent('4 used + 2 reserved / 10 units');
+    expect(cappedRow).not.toHaveTextContent('CAPPED10');
+    expect(screen.getByText('1 used + 0 reserved / unlimited units')).toBeInTheDocument();
+    expect(screen.queryByText('Code')).not.toBeInTheDocument();
   });
 
-  it('exposes only an optional max orders limit', async () => {
+  it('creates a percentage-only seller incentive with existing assignment settings', async () => {
     await openCreateForm();
-
-    expect(screen.getByLabelText('Max orders')).toHaveAttribute('placeholder', 'Unlimited');
-    expect(screen.queryByText('Max uses')).not.toBeInTheDocument();
-    expect(screen.queryByText('Per user limit')).not.toBeInTheDocument();
-  });
-
-  it.each(['0', '-1', '1.5'])('rejects %s max orders', async (maxOrders) => {
-    await openCreateForm();
-    fireEvent.change(screen.getByLabelText('Max orders'), { target: { value: maxOrders } });
-    fireEvent.click(screen.getByRole('button', { name: 'Create Coupon' }));
-
-    await waitFor(() => expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
-      description: 'Max orders must be a positive whole number.',
-    })));
-    expect(createCouponMock).not.toHaveBeenCalled();
-  });
-
-  it('creates a capped coupon with maxOrders', async () => {
-    await openCreateForm();
-    fireEvent.change(screen.getByLabelText('Max orders'), { target: { value: '25' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Create Coupon' }));
+    fireEvent.change(screen.getByLabelText('Minimum order (Rs)'), { target: { value: '500' } });
+    fireEvent.change(screen.getByLabelText('Eligible unit cap'), { target: { value: '25' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Seller Incentive' }));
 
     await waitFor(() => expect(createCouponMock).toHaveBeenCalledTimes(1));
-    const payload = createCouponMock.mock.calls[0][0];
-    expect(payload).toEqual(expect.objectContaining({ sellerId: 'seller-1', code: 'SAVE10', maxOrders: 25 }));
-    expect(payload).not.toHaveProperty('maxUses');
-    expect(payload).not.toHaveProperty('perUserLimit');
+    expect(createCouponMock.mock.calls[0][0]).toEqual(expect.objectContaining({
+      sellerId: 'seller-1',
+      percentage: 10,
+      minOrderAmount: 500,
+      maxEligibleUnits: 25,
+      scope: 'SELLER_WIDE',
+    }));
+    expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('code');
+    expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('discountType');
+    expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('discountValue');
   });
 
-  it('creates an unlimited coupon when max orders is blank', async () => {
+  it.each(['0', '-1', '1.5', '101'])('rejects invalid percentage %s', async (percentage) => {
     await openCreateForm();
-    fireEvent.click(screen.getByRole('button', { name: 'Create Coupon' }));
-
-    await waitFor(() => expect(createCouponMock).toHaveBeenCalledTimes(1));
-    expect(createCouponMock.mock.calls[0][0]).toEqual(expect.objectContaining({ maxOrders: null }));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Percentage' }), { target: { value: percentage } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Seller Incentive' }));
+    await waitFor(() => expect(createCouponMock).not.toHaveBeenCalled());
   });
 
-  it('updates the cap and clears it to unlimited', async () => {
+  it('edits the percentage and nullable unit cap', async () => {
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit CAPPED10' }));
-    expect(await screen.findByLabelText('Max orders')).toHaveValue(10);
-
-    fireEvent.change(screen.getByLabelText('Max orders'), { target: { value: '12' } });
+    await screen.findByRole('heading', { name: 'Seller Incentives' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit seller incentive' })[0]);
+    expect(await screen.findByRole('spinbutton', { name: 'Percentage' })).toHaveValue(10);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Percentage' }), { target: { value: '15' } });
+    fireEvent.change(screen.getByLabelText('Eligible unit cap'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
-    await waitFor(() => expect(updateCouponMock).toHaveBeenCalledTimes(1));
-    expect(updateCouponMock).toHaveBeenCalledWith({
-      id: 'coupon-1',
-      payload: expect.objectContaining({ maxOrders: 12 }),
-    });
-    expect(updateCouponMock.mock.calls[0][0].payload).not.toHaveProperty('maxUses');
-    expect(updateCouponMock.mock.calls[0][0].payload).not.toHaveProperty('perUserLimit');
+    await waitFor(() => expect(updateCouponMock).toHaveBeenCalledWith({
+      id: 'incentive-1',
+      payload: expect.objectContaining({ percentage: 15, maxEligibleUnits: null }),
+    }));
+  });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit CAPPED10' }));
-    fireEvent.change(await screen.findByLabelText('Max orders'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
-    await waitFor(() => expect(updateCouponMock).toHaveBeenCalledTimes(2));
-    expect(updateCouponMock.mock.calls[1][0].payload).toEqual(expect.objectContaining({ maxOrders: null }));
+  it('shows usage details using bonus terms', async () => {
+    renderPage();
+    await screen.findByRole('heading', { name: 'Seller Incentives' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Seller incentive usage' })[0]);
+    expect(await screen.findByRole('heading', { name: 'Seller incentive usage' })).toBeInTheDocument();
+    expect(screen.getByText('4 used units')).toBeInTheDocument();
+    expect(screen.getByText('2 reserved units')).toBeInTheDocument();
+    expect(screen.getByText('10% seller bonus per eligible item')).toBeInTheDocument();
+    expect(screen.getByText('Total seller bonus generated')).toBeInTheDocument();
+    expect(screen.getByText('Rs 1,250')).toBeInTheDocument();
+    expect(screen.queryByText(/redemptions|discount amount|code/i)).not.toBeInTheDocument();
+  });
+
+  it('does not expose a code field or discount type control in create or edit forms', async () => {
+    await openCreateForm();
+    expect(screen.queryByLabelText('Code')).not.toBeInTheDocument();
+    expect(screen.queryByText('Discount type')).not.toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', { name: 'Percentage' })).toHaveAttribute('min', '1');
+    expect(screen.queryByRole('spinbutton', { name: 'Percentage' })).toHaveAttribute('max', '100');
   });
 });

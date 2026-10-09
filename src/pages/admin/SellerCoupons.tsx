@@ -1,7 +1,5 @@
 import type { AdminUser } from '@/types/adminUser.type';
-
-import type { PaginatedResponse } from '@/types/response.type';
-import type { CreateSellerCouponPayload, SellerCoupon, SellerCouponRedemption } from '@/types/sellerCoupon.type';
+import type { CreateSellerCouponPayload, SellerCoupon } from '@/types/sellerCoupon.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
@@ -44,128 +42,104 @@ import {
   useDeleteSellerCouponMutation,
   useUpdateSellerCouponMutation,
 } from '@/queries/adminSellerCoupons.query';
-import { authInstance } from '@/services/ky.instance';
 
-// ── Types ────────────────────────────────────────────────────────────────────
-type DiscountType = 'fixed' | 'percentage';
 type Scope = 'item_based' | 'seller_wide';
 
 interface SellerOption {
   id: string;
   full_name: string | null;
 }
+
 interface ListingOption {
   id: string;
   title: string;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function formToPayload(form: SellerCouponFormValues): CreateSellerCouponPayload {
+const emptyForm = {
+  expires_at: '',
+  listing_id: '',
+  max_eligible_units: '',
+  min_order_amount: '',
+  percentage: '',
+  scope: 'seller_wide' as Scope,
+  seller_id: '',
+  starts_at: '',
+};
+
+const sellerIncentiveFormSchema = z.object({
+  expires_at: z.string(),
+  listing_id: z.string(),
+  max_eligible_units: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Eligible unit cap must be a positive whole number.'),
+  min_order_amount: z.string().refine(value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), 'Minimum order must be zero or greater.'),
+  percentage: z.string().refine((value) => {
+    const percentage = Number(value);
+    return value.trim() !== '' && Number.isSafeInteger(percentage) && percentage >= 1 && percentage <= 100;
+  }, 'Percentage must be a whole number from 1 to 100.'),
+  scope: z.enum(['item_based', 'seller_wide']),
+  seller_id: z.string().min(1, 'Choose a seller.'),
+  starts_at: z.string(),
+}).superRefine((values, context) => {
+  if (values.scope === 'item_based' && !values.listing_id) {
+    context.addIssue({ path: ['listing_id'], code: z.ZodIssueCode.custom, message: 'Choose a listing for an item-based incentive.' });
+  }
+  if (values.starts_at && values.expires_at && new Date(values.expires_at) <= new Date(values.starts_at)) {
+    context.addIssue({ path: ['expires_at'], code: z.ZodIssueCode.custom, message: 'Expiry must be after the start date.' });
+  }
+});
+
+type SellerIncentiveFormValues = z.infer<typeof sellerIncentiveFormSchema>;
+
+function formToPayload(form: SellerIncentiveFormValues): CreateSellerCouponPayload {
   return {
     listingId: form.scope === 'item_based' ? form.listing_id || null : null,
     sellerId: form.seller_id,
-    code: form.code.trim().toUpperCase(),
-    discountType: form.discount_type === 'fixed' ? 'FIXED' : 'PERCENTAGE',
-    discountValue: Number(form.discount_value),
-    maxOrders: form.max_orders ? Number(form.max_orders) : null,
+    maxEligibleUnits: form.max_eligible_units ? Number(form.max_eligible_units) : null,
     minOrderAmount: form.min_order_amount ? Number(form.min_order_amount) : 0,
+    percentage: Number(form.percentage),
     scope: form.scope === 'item_based' ? 'ITEM_BASED' : 'SELLER_WIDE',
     expiresAt: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     startsAt: form.starts_at ? new Date(form.starts_at).toISOString() : null,
   };
 }
 
-const emptyForm = {
-  code: '',
-  discount_type: 'percentage' as DiscountType,
-  discount_value: '',
-  expires_at: '',
-  listing_id: '', // ← single listing ID
-  max_orders: '',
-  min_order_amount: '',
-  scope: 'seller_wide' as Scope,
-  seller_id: '',
-  starts_at: '',
-};
-
-const sellerCouponFormSchema = z.object({
-  code: z.string().trim().min(1, 'Code is required.'),
-  discount_type: z.enum(['fixed', 'percentage']),
-  discount_value: z.string().refine((value) => {
-    const amount = Number(value);
-    return Number.isFinite(amount) && amount > 0;
-  }, 'Discount value must be greater than zero.'),
-  expires_at: z.string(),
-  listing_id: z.string(),
-  max_orders: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Max orders must be a positive whole number.'),
-  min_order_amount: z.string().refine(value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), 'Minimum order must be zero or greater.'),
-  scope: z.enum(['item_based', 'seller_wide']),
-  seller_id: z.string().min(1, 'Choose a seller.'),
-  starts_at: z.string(),
-}).superRefine((values, context) => {
-  const discountValue = Number(values.discount_value);
-  if (values.discount_type === 'percentage' && discountValue > 100) {
-    context.addIssue({ path: ['discount_value'], code: z.ZodIssueCode.custom, message: 'Percentage discount cannot exceed 100.' });
-  }
-  if (values.scope === 'item_based' && !values.listing_id)
-    context.addIssue({ path: ['listing_id'], code: z.ZodIssueCode.custom, message: 'Choose a listing for an item-based coupon.' });
-  if (values.starts_at && values.expires_at && new Date(values.expires_at) <= new Date(values.starts_at))
-    context.addIssue({ path: ['expires_at'], code: z.ZodIssueCode.custom, message: 'Expiry must be after the start date.' });
-});
-
-type SellerCouponFormValues = z.infer<typeof sellerCouponFormSchema>;
-
-// ── Component ─────────────────────────────────────────────────────────────────
 function SellerCoupons() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const form = useForm<SellerCouponFormValues>({
+  const [usageFor, setUsageFor] = useState<SellerCoupon | null>(null);
+  const form = useForm<SellerIncentiveFormValues>({
     defaultValues: emptyForm,
-    resolver: zodResolver(sellerCouponFormSchema),
+    resolver: zodResolver(sellerIncentiveFormSchema),
   });
   const formValues = form.watch();
-  const [redemptionsFor, setRedemptionsFor]
-    = useState<SellerCoupon | null>(null);
-  const [redemptions, setRedemptions] = useState<SellerCouponRedemption[]>([]);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-  const { data: coupons = [], isLoading } = useQuery(getSellerCouponsOptions());
-
+  const { data: incentives = [], isLoading } = useQuery(getSellerCouponsOptions());
   const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
-
   const sellers: SellerOption[] = useMemo(
-    () =>
-      (sellersRaw?.data ?? []).map((u: AdminUser) => ({
-        id: u.id,
-        full_name: `${u.firstName} ${u.lastName}`.trim() || null,
-      })),
+    () => (sellersRaw?.data ?? []).map((user: AdminUser) => ({
+      id: user.id,
+      full_name: `${user.firstName} ${user.lastName}`.trim() || null,
+    })),
     [sellersRaw],
   );
-
   const sellerMap = useMemo(
-    () => new Map(sellers.map(s => [s.id, s.full_name])),
+    () => new Map(sellers.map(seller => [seller.id, seller.full_name])),
     [sellers],
   );
 
-  // Listings for selected seller (item_based scope only)
   const { data: listingsRaw } = useQuery(getAdminSellerListingsOptions(
     formValues.seller_id,
     !!formValues.seller_id && formValues.scope === 'item_based',
   ));
-
   const listings: ListingOption[] = useMemo(
-    () =>
-      (listingsRaw?.data ?? []).map(l => ({ id: l.id, title: l.title })),
+    () => (listingsRaw?.data ?? []).map(listing => ({ id: listing.id, title: listing.title })),
     [listingsRaw],
   );
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
-  const createCoupon = useCreateSellerCouponMutation();
-  const updateCoupon = useUpdateSellerCouponMutation();
-  const deleteCouponM = useDeleteSellerCouponMutation();
+  const createIncentive = useCreateSellerCouponMutation();
+  const updateIncentive = useUpdateSellerCouponMutation();
+  const deleteIncentive = useDeleteSellerCouponMutation();
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   const resetForm = () => {
     form.reset(emptyForm);
     setEditingId(null);
@@ -176,40 +150,37 @@ function SellerCoupons() {
     setDialogOpen(true);
   };
 
-  // openEdit — no extra API call, listingId already in coupon
-  const openEdit = (c: SellerCoupon) => {
-    setEditingId(c.id);
+  const openEdit = (incentive: SellerCoupon) => {
+    setEditingId(incentive.id);
     form.reset({
-      code: c.code,
-      discount_type: c.discountType === 'FIXED' ? 'fixed' : 'percentage',
-      discount_value: String(c.discountValue),
-      expires_at: c.expiresAt ? c.expiresAt.slice(0, 16) : '',
-      listing_id: c.listingId ?? '',
-      max_orders: c.maxOrders === null ? '' : String(c.maxOrders),
-      min_order_amount: c.minOrderAmount ? String(c.minOrderAmount) : '',
-      scope: c.scope === 'ITEM_BASED' ? 'item_based' : 'seller_wide',
-      seller_id: c.sellerId,
-      starts_at: c.startsAt ? c.startsAt.slice(0, 16) : '',
+      expires_at: incentive.expiresAt ? incentive.expiresAt.slice(0, 16) : '',
+      listing_id: incentive.listingId ?? '',
+      max_eligible_units: incentive.maxEligibleUnits === null ? '' : String(incentive.maxEligibleUnits),
+      min_order_amount: incentive.minOrderAmount ? String(incentive.minOrderAmount) : '',
+      percentage: String(incentive.percentage),
+      scope: incentive.scope === 'ITEM_BASED' ? 'item_based' : 'seller_wide',
+      seller_id: incentive.sellerId,
+      starts_at: incentive.startsAt ? incentive.startsAt.slice(0, 16) : '',
     });
     setDialogOpen(true);
   };
 
-  const handleSave = async (values: SellerCouponFormValues) => {
+  const handleSave = async (values: SellerIncentiveFormValues) => {
     setSaving(true);
     try {
       const payload = formToPayload(values);
       if (editingId) {
-        await updateCoupon.mutateAsync({ id: editingId, payload });
-        toast({ title: 'Coupon updated' });
+        await updateIncentive.mutateAsync({ id: editingId, payload });
+        toast({ title: 'Seller incentive updated' });
       }
       else {
-        await createCoupon.mutateAsync(payload);
-        toast({ title: 'Coupon created' });
+        await createIncentive.mutateAsync(payload);
+        toast({ title: 'Seller incentive created' });
       }
       setDialogOpen(false);
       resetForm();
     }
-    catch (error: any) {
+    catch (error: unknown) {
       toast(getErrorToastOptions(error, 'Save failed'));
     }
     finally {
@@ -217,27 +188,14 @@ function SellerCoupons() {
     }
   };
 
-  const toggleActive = (c: SellerCoupon) =>
-    updateCoupon.mutate({ id: c.id, payload: { active: !c.active } });
+  const toggleActive = (incentive: SellerCoupon) =>
+    updateIncentive.mutate({ id: incentive.id, payload: { active: !incentive.active } });
 
-  const deleteCoupon = (id: string) => {
-    deleteCouponM.mutate(id, {
-      onError: (error: any) => toast(getErrorToastOptions(error)),
-      onSuccess: () => toast({ title: 'Coupon deleted' }),
+  const deleteSellerIncentive = (id: string) => {
+    deleteIncentive.mutate(id, {
+      onError: (error: unknown) => toast(getErrorToastOptions(error)),
+      onSuccess: () => toast({ title: 'Seller incentive deleted' }),
     });
-  };
-
-  const openRedemptions = async (c: SellerCoupon) => {
-    setRedemptionsFor(c);
-    try {
-      const response = await authInstance
-        .get(`/api/v1/admin/seller-coupons/${c.id}/redemptions`)
-        .json<PaginatedResponse<SellerCouponRedemption>>();
-      setRedemptions(response.data ?? []);
-    }
-    catch {
-      setRedemptions([]);
-    }
   };
 
   if (isLoading) {
@@ -252,27 +210,25 @@ function SellerCoupons() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">
-            Seller Coupons
-          </h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">Seller Incentives</h1>
           <p className="text-sm text-muted-foreground">
-            {coupons.length}
+            {incentives.length}
             {' '}
-            coupons assigned to sellers
+            automatic seller incentives
           </p>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" />
           {' '}
-          New Coupon
+          New Seller Incentive
         </Button>
       </div>
 
-      {coupons.length === 0
+      {incentives.length === 0
         ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
               <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No seller coupons yet</p>
+              <p className="text-sm text-muted-foreground">No seller incentives yet</p>
             </div>
           )
         : (
@@ -280,76 +236,66 @@ function SellerCoupons() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
                     <TableHead>Seller</TableHead>
-                    <TableHead>Discount</TableHead>
+                    <TableHead>Seller bonus</TableHead>
                     <TableHead>Scope</TableHead>
                     <TableHead>Validity</TableHead>
-                    <TableHead>Orders</TableHead>
+                    <TableHead>Eligible units</TableHead>
                     <TableHead>Active</TableHead>
                     <TableHead className="w-32" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {coupons.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-mono font-semibold text-foreground">
-                        {c.code}
-                      </TableCell>
+                  {incentives.map(incentive => (
+                    <TableRow key={incentive.id}>
                       <TableCell className="text-sm text-muted-foreground">
-                        {sellerMap.get(c.sellerId) ?? '—'}
+                        {sellerMap.get(incentive.sellerId) ?? '—'}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {c.discountType === 'PERCENTAGE'
-                            ? `${c.discountValue}%`
-                            : `Rs ${c.discountValue.toLocaleString()}`}
+                          {incentive.percentage}
+                          %
                         </Badge>
-                        {c.minOrderAmount > 0 && (
+                        {incentive.minOrderAmount > 0 && (
                           <span className="ml-2 text-xs text-muted-foreground">
                             min Rs
                             {' '}
-                            {c.minOrderAmount.toLocaleString()}
+                            {incentive.minOrderAmount.toLocaleString()}
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {c.scope === 'SELLER_WIDE'
-                          ? 'All seller items'
-                          : 'Specific item'}
+                        {incentive.scope === 'SELLER_WIDE' ? 'All seller items' : 'Specific item'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {c.startsAt
-                          ? new Date(c.startsAt).toLocaleDateString()
-                          : '—'}
+                        {incentive.startsAt ? new Date(incentive.startsAt).toLocaleDateString() : '—'}
                         {' → '}
-                        {c.expiresAt
-                          ? new Date(c.expiresAt).toLocaleDateString()
-                          : 'Never'}
+                        {incentive.expiresAt ? new Date(incentive.expiresAt).toLocaleDateString() : 'Never'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {`${c.currentOrders} completed + ${c.reservedOrders} pending / `}
-                        {c.maxOrders === null ? 'unlimited' : `${c.maxOrders} max`}
+                        {`${incentive.usedEligibleUnits} used + ${incentive.reservedEligibleUnits} reserved / `}
+                        {incentive.maxEligibleUnits === null ? 'unlimited units' : `${incentive.maxEligibleUnits} units`}
                       </TableCell>
                       <TableCell>
                         <Switch
-                          onCheckedChange={() => toggleActive(c)}
-                          checked={c.active}
+                          onCheckedChange={() => toggleActive(incentive)}
+                          checked={incentive.active}
                         />
                       </TableCell>
                       <TableCell className="flex items-center justify-end gap-1">
                         <Button
-                          onClick={() => openRedemptions(c)}
+                          onClick={() => setUsageFor(incentive)}
+                          aria-label="Seller incentive usage"
                           size="icon"
-                          title="Usage"
+                          title="Seller incentive usage"
                           variant="ghost"
                           className="h-7 w-7"
                         >
                           <BarChart3 className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          onClick={() => openEdit(c)}
-                          aria-label={`Edit ${c.code}`}
+                          onClick={() => openEdit(incentive)}
+                          aria-label="Edit seller incentive"
                           size="icon"
                           variant="ghost"
                           className="h-7 w-7"
@@ -357,8 +303,9 @@ function SellerCoupons() {
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          onClick={() => deleteCoupon(c.id)}
+                          onClick={() => deleteSellerIncentive(incentive.id)}
                           size="icon"
+                          aria-label="Delete seller incentive"
                           variant="ghost"
                           className="
                             h-7 w-7 text-muted-foreground
@@ -375,11 +322,10 @@ function SellerCoupons() {
             </div>
           )}
 
-      {/* Create / Edit dialog */}
       <Dialog
-        onOpenChange={(o) => {
-          setDialogOpen(o);
-          if (!o)
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open)
             resetForm();
         }}
         open={dialogOpen}
@@ -390,16 +336,16 @@ function SellerCoupons() {
         "
         >
           <DialogHeader>
-            <DialogTitle>
-              {editingId ? 'Edit Coupon' : 'Create Seller Coupon'}
-            </DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Seller Incentive' : 'Create Seller Incentive'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleSave, errors => toast({ description: Object.values(errors)[0]?.message, title: 'Check coupon fields', variant: 'destructive' }))} className="grid gap-4 py-2">
+          <form
+            onSubmit={form.handleSubmit(handleSave, (errors) => {
+              const firstError = Object.values(errors)[0];
+              toast({ description: firstError?.message, title: 'Check seller incentive fields', variant: 'destructive' });
+            })}
+            className="grid gap-4 py-2"
+          >
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Code</Label>
-                <Controller name="code" control={form.control} render={({ field }) => <Input {...field} onChange={event => field.onChange(event.target.value.toUpperCase())} placeholder="SELLER10" className="uppercase" />} />
-              </div>
               <div className="space-y-2">
                 <Label>Assign to seller</Label>
                 <Controller
@@ -407,60 +353,29 @@ function SellerCoupons() {
                   control={form.control}
                   render={({ field }) => (
                     <Select
-                      onValueChange={(v) => {
-                        field.onChange(v);
+                      onValueChange={(value) => {
+                        field.onChange(value);
                         form.setValue('listing_id', '');
                       }}
                       value={field.value}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose seller" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Choose seller" /></SelectTrigger>
                       <SelectContent>
-                        {sellers.map(s => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.full_name || s.id.slice(0, 8)}
-                          </SelectItem>
+                        {sellers.map(seller => (
+                          <SelectItem key={seller.id} value={seller.id}>{seller.full_name || seller.id.slice(0, 8)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Discount type</Label>
+                <Label htmlFor="seller-incentive-percentage">Percentage</Label>
                 <Controller
-                  name="discount_type"
+                  name="percentage"
                   control={form.control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed (Rs)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Value</Label>
-                <Controller
-                  name="discount_value"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      placeholder={
-                        formValues.discount_type === 'percentage' ? '10' : '500'
-                      }
-                      type="number"
-                    />
+                    <Input {...field} id="seller-incentive-percentage" max="100" min="1" placeholder="10" step="1" type="number" />
                   )}
                 />
               </div>
@@ -468,12 +383,12 @@ function SellerCoupons() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Min order (Rs)</Label>
-                <Controller name="min_order_amount" control={form.control} render={({ field }) => <Input {...field} placeholder="0" type="number" />} />
+                <Label htmlFor="seller-incentive-minimum-order">Minimum order (Rs)</Label>
+                <Controller name="min_order_amount" control={form.control} render={({ field }) => <Input {...field} id="seller-incentive-minimum-order" placeholder="0" type="number" />} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="seller-coupon-max-orders">Max orders</Label>
-                <Controller name="max_orders" control={form.control} render={({ field }) => <Input {...field} id="seller-coupon-max-orders" placeholder="Unlimited" type="number" />} />
+                <Label htmlFor="seller-incentive-unit-cap">Eligible unit cap</Label>
+                <Controller name="max_eligible_units" control={form.control} render={({ field }) => <Input {...field} id="seller-incentive-unit-cap" min="1" placeholder="Unlimited" step="1" type="number" />} />
               </div>
             </div>
 
@@ -495,144 +410,87 @@ function SellerCoupons() {
                 control={form.control}
                 render={({ field }) => (
                   <Select
-                    onValueChange={(v) => {
-                      field.onChange(v);
+                    onValueChange={(value) => {
+                      field.onChange(value);
                       form.setValue('listing_id', '');
                     }}
                     value={field.value}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="seller_wide">
-                        All items from this seller
-                      </SelectItem>
-                      <SelectItem value="item_based">
-                        One specific listing
-                      </SelectItem>
+                      <SelectItem value="seller_wide">All items from this seller</SelectItem>
+                      <SelectItem value="item_based">One specific listing</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
             </div>
 
-            {/* Single listing select — backend supports one listingId only */}
             {formValues.scope === 'item_based' && (
               <div className="space-y-2">
                 <Label>Applicable listing</Label>
                 {formValues.seller_id
                   ? (listings.length === 0
-                      ? (
-                          <p className="text-xs text-muted-foreground">
-                            No approved listings for this seller.
-                          </p>
-                        )
+                      ? <p className="text-xs text-muted-foreground">No approved listings for this seller.</p>
                       : (
                           <Controller
                             name="listing_id"
                             control={form.control}
                             render={({ field }) => (
                               <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose a listing" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Choose a listing" /></SelectTrigger>
                                 <SelectContent>
-                                  {listings.map(l => (
-                                    <SelectItem key={l.id} value={l.id}>
-                                      {l.title}
-                                    </SelectItem>
-                                  ))}
+                                  {listings.map(listing => <SelectItem key={listing.id} value={listing.id}>{listing.title}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                             )}
                           />
                         ))
-                  : (
-                      <p className="text-xs text-muted-foreground">
-                        Pick a seller first.
-                      </p>
-                    )}
+                  : <p className="text-xs text-muted-foreground">Pick a seller first.</p>}
               </div>
             )}
 
             <Button disabled={saving} type="submit">
               {saving
-                ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )
-                : (editingId
-                    ? (
-                        'Save Changes'
-                      )
-                    : (
-                        'Create Coupon'
-                      ))}
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : editingId ? 'Save Changes' : 'Create Seller Incentive'}
             </Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Redemptions dialog */}
-      <Dialog
-        onOpenChange={(o) => {
-          if (o) {
-            return;
-          }
-
-          setRedemptionsFor(null);
-          setRedemptions([]);
-        }}
-        open={!!redemptionsFor}
-      >
+      <Dialog onOpenChange={open => !open && setUsageFor(null)} open={!!usageFor}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              Usage ·
-              {' '}
-              <span className="font-mono">{redemptionsFor?.code}</span>
-            </DialogTitle>
-          </DialogHeader>
-          {redemptions.length === 0
-            ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No redemptions yet.
-                </p>
-              )
-            : (
-                <div className="max-h-[60vh] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Buyer</TableHead>
-                        <TableHead>Order</TableHead>
-                        <TableHead className="text-right">Discount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {redemptions.map(r => (
-                        <TableRow key={r.id}>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {new Date(r.createdAt).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {r.buyerId?.slice(0, 8)}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {r.orderId?.slice(0, 8) ?? '—'}
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-medium">
-                            Rs
-                            {' '}
-                            {Number(r.discountAmount).toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+          <DialogHeader><DialogTitle>Seller incentive usage</DialogTitle></DialogHeader>
+          {usageFor && (
+            <div className="grid gap-3 py-4 text-sm">
+              <p className="font-medium">
+                {usageFor.percentage}
+                % seller bonus per eligible item
+              </p>
+              <p>
+                {usageFor.usedEligibleUnits}
+                {' '}
+                used units
+              </p>
+              <p>
+                {usageFor.reservedEligibleUnits}
+                {' '}
+                reserved units
+              </p>
+              <p>Total seller bonus generated</p>
+              <p>
+                Rs
+                {' '}
+                {usageFor.sellerIncentiveBonusAmount.toLocaleString('en-PK', { maximumFractionDigits: 2 })}
+              </p>
+              <p>
+                Unit cap:
+                {' '}
+                {usageFor.maxEligibleUnits === null ? 'Unlimited' : usageFor.maxEligibleUnits}
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

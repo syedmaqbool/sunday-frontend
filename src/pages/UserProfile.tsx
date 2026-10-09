@@ -2,7 +2,7 @@ import type { Complaint, ComplaintStatus } from '@/types/complaint.type';
 import type { Order, OrderItem } from '@/types/order.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import {
   AlertTriangle,
   Calendar as CalendarIcon,
@@ -910,11 +910,22 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
   // const updateStatus = useUpdateOrderItemStatusMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState<number | null>(null);
   const shipmentForm = useForm<ShipmentFormValues>({
     defaultValues: { expectedDate: undefined, method: '', proofFile: null, tracking: '' },
     resolver: zodResolver(shipmentFormSchema),
   });
   const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const bonusPayableAt = item.receivedAt
+    ? addDays(new Date(item.receivedAt), 14)
+    : null;
+  useEffect(() => {
+    setCurrentTimestamp(Date.now());
+  }, []);
+  const bonusIsPayable = item.status === 'DELIVERED'
+    && bonusPayableAt !== null
+    && currentTimestamp !== null
+    && currentTimestamp >= bonusPayableAt.getTime();
 
   const resetForm = () => {
     shipmentForm.reset({ expectedDate: undefined, method: '', proofFile: null, tracking: '' });
@@ -1006,6 +1017,18 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
               {' '}
               {Number(item.total).toLocaleString()}
             </p>
+            {item.sellerIncentiveBonus > 0 && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {bonusIsPayable ? 'Payable seller incentive bonus' : 'Pending seller incentive bonus'}
+                  :
+                </span>
+                {' '}
+                Rs
+                {' '}
+                {item.sellerIncentiveBonus.toLocaleString()}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Buyer:
               {' '}

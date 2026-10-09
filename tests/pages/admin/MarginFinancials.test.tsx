@@ -11,10 +11,15 @@ import AppRoutes from '@/AppRoutes';
 import MarginFinancials, { getAdminMarginDateRange } from '@/pages/admin/MarginFinancials';
 
 const getAdminMarginReportMock = vi.hoisted(() => vi.fn());
+const getAdminFinanceReportSummaryMock = vi.hoisted(() => vi.fn());
 const canAccessFinanceMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/services/adminMarginReport.service', () => ({
   getAdminMarginReport: getAdminMarginReportMock,
+}));
+
+vi.mock('@/services/adminFinanceReport.service', () => ({
+  getAdminFinanceReportSummary: getAdminFinanceReportSummaryMock,
 }));
 
 vi.mock('@/hooks/useAccessControl', () => ({
@@ -114,6 +119,13 @@ describe('admin margin report page', () => {
   beforeEach(() => {
     canAccessFinanceMock.mockReset().mockReturnValue(true);
     getAdminMarginReportMock.mockReset().mockResolvedValue(createReport());
+    getAdminFinanceReportSummaryMock.mockReset().mockResolvedValue({
+      aggregates: { sellerIncentiveBonusCogsMinorUnits: 12_500 },
+      data: [],
+      message: 'Finance summary fetched successfully.',
+      pagination: createReport().pagination,
+      statusCode: 200,
+    });
   });
 
   it('converts the today preset from local midnight through the current instant', () => {
@@ -186,12 +198,26 @@ describe('admin margin report page', () => {
 
     expect(await screen.findByRole('row', { name: /AWAITING PAYMENT/ })).toBeInTheDocument();
     expect(await screen.findByRole('row', { name: /CANCELLED/ })).toBeInTheDocument();
+    expect(screen.getByText('Rs -250')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Summary/ })).toHaveTextContent(
       'Summary · 47 orders (28 positive, 19 negative)',
     );
     expect(screen.getByText('Rs 876,543')).toBeInTheDocument();
     expect(screen.getByText('Rs 23,456')).toBeInTheDocument();
     expect(screen.getByText('Page 2 of 4 · 67 orders')).toBeInTheDocument();
+  });
+
+  it('shows seller incentive marketing cost as a distinct finance expense', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Seller incentive marketing cost')).toBeInTheDocument();
+    expect(screen.getByText('−Rs 125')).toBeInTheDocument();
+    expect(getAdminFinanceReportSummaryMock).toHaveBeenCalledWith(expect.objectContaining({
+      page: 1,
+      periodEnd: expect.any(String),
+      periodStart: expect.any(String),
+      size: 1,
+    }));
   });
 
   it('is reachable at /admin/margins and requests the default filters', async () => {

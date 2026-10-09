@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/table';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { cn } from '@/lib/utilities';
+import { getAdminFinanceReportSummaryQueryOptions } from '@/queries/adminFinanceReport.query';
 import { getAdminMarginReportQueryOptions } from '@/queries/adminMarginReport.query';
 
 const SELLER_SHARE_RATE = 5;
@@ -180,6 +181,16 @@ function MarginFinancials() {
     ...getAdminMarginReportQueryOptions(parameters),
     enabled: canReadFinancials,
   });
+  const financeReportParameters = useMemo(() => ({
+    page: 1,
+    size: 1,
+    ...(dateRange.from && { periodStart: dateRange.from }),
+    ...(dateRange.to && { periodEnd: dateRange.to }),
+  }), [dateRange]);
+  const financeReportQuery = useQuery({
+    ...getAdminFinanceReportSummaryQueryOptions(financeReportParameters),
+    enabled: canReadFinancials,
+  });
 
   if (!canReadFinancials) {
     return (
@@ -201,6 +212,12 @@ function MarginFinancials() {
         { label: 'Seller Payout', value: formatCurrency(aggregates.sellerPayout) },
         { label: `Seller ${SELLER_SHARE_RATE}% Share`, value: `−${formatCurrency(aggregates.sellerShare)}` },
         { label: 'Estimated Payout Fees', value: `−${formatCurrency(aggregates.estimatedPayoutFee)}` },
+        ...(financeReportQuery.data?.aggregates
+          ? [{
+              label: 'Seller incentive marketing cost',
+              value: `−${formatCurrency(financeReportQuery.data.aggregates.sellerIncentiveBonusCogsMinorUnits / 100)}`,
+            }]
+          : []),
       ]
     : [];
 

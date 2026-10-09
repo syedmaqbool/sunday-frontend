@@ -54,6 +54,7 @@ import {
 const QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES = [
   'COMMISSION_REVENUE',
   'SELLER_COUPONS_COGS',
+  'SELLER_INCENTIVE_MARKETING_COGS',
   'BUYER_DISCOUNTS_COGS',
   'SELLER_PAYOUT_FEES_COGS',
   'SELLER_PAYABLE',
@@ -69,6 +70,7 @@ const ACCOUNT_MAPPING_LABELS: Record<AdminQuickBooksAccountMappingCategory, stri
   PAYMENT_CLEARING: 'Payment clearing',
   REFUNDS: 'Refunds',
   SELLER_COUPONS_COGS: 'Seller coupons COGS',
+  SELLER_INCENTIVE_MARKETING_COGS: 'Seller incentive marketing cost',
   SELLER_PAYABLE: 'Seller payable',
   SELLER_PAYOUT_FEES_COGS: 'Seller payout fees COGS',
 };

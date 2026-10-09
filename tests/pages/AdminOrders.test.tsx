@@ -90,8 +90,8 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
       offerId: null,
       orderId: `${status}-order-id`,
       reservationId: null,
-      sellerCouponId: null,
       sellerId: 'seller-id',
+      sellerIncentiveId: 'incentive-1',
       brand: 'Example',
       buyerFullName: 'Jane Buyer',
       category: 'Clothing',
@@ -109,9 +109,9 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
       proofImageUrl: null,
       quantity: 1,
       reservedOfferPrice: null,
-      sellerCouponCode: null,
-      sellerCouponDiscountAmount: 0,
       sellerFullName: 'Example Seller',
+      sellerIncentiveBonus: 250,
+      sellerIncentivePercentage: 10,
       shippingMethod: null,
       size: 'M',
       status: 'CONFIRMED',
@@ -143,8 +143,7 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
     platformFeeAmount: 0,
     refundStatus: null,
     restorableListingIds: [],
-    sellerCouponApplications: [],
-    sellerCouponCode: null,
+    sellerIncentives: [],
     shippingAddress: '1 Example Street',
     shippingCity: 'Lahore',
     shippingFirstName: 'Jane',
@@ -319,6 +318,24 @@ describe('admin order number search', () => {
 });
 
 describe('admin order cancellation', () => {
+  it('shows the seller incentive as an additional earning in order details', async () => {
+    orders.current = [makeOrder('APPROVED', 'Incentivized item')];
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <AdminOrders />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(await screen.findByText('Incentivized item'));
+    const detailDialog = await screen.findByRole('dialog');
+    expect(within(detailDialog).getByText('Seller incentive bonus')).toBeInTheDocument();
+    expect(within(detailDialog).getByText('Rs 250')).toBeInTheDocument();
+    expect(within(detailDialog).queryByText(/seller payout fee/i)).not.toBeInTheDocument();
+  });
+
   it('requires ORDERS_UPDATE and confirms through the admin action', async () => {
     const order = makeOrder('APPROVED', 'Cancelable order item');
     order.status = 'SHIPPED';

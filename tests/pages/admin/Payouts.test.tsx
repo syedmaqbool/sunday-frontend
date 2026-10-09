@@ -49,6 +49,7 @@ const eligibleResponse = createEligibleResponse({
     orderItemId: 'order-item-1',
     sellerId: 'seller-1',
     amount: 2450,
+    payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
     sellerFullName: 'Seller One',
     title: 'Vintage jacket',
     receivedAt: '2026-09-18T10:30:00.000Z',
@@ -88,6 +89,7 @@ const sellerPayoutRunItem = {
   bankName: null,
   bankSwift: null,
   itemType: 'SELLER_PAYOUT' as const,
+  payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
   periodEnd: payoutRun.periodEnd,
   periodStart: payoutRun.periodStart,
   sourceDate: '2026-09-18T10:30:00.000Z',
@@ -158,6 +160,14 @@ describe('admin payout eligibility page', () => {
     });
   });
 
+  it('labels an incentive bonus as a bonus in the payout run details', async () => {
+    await openRunDetails();
+
+    expect(screen.getAllByText('Seller incentive bonus')).toHaveLength(1);
+    expect(screen.getAllByText('Rs 2,450.00').length).toBeGreaterThan(1);
+    expect(screen.queryByText(/payout fee/i)).not.toBeInTheDocument();
+  });
+
   it('waits for a selected period and sends full calendar-day boundaries', async () => {
     renderPage();
 
@@ -184,6 +194,7 @@ describe('admin payout eligibility page', () => {
     expect(screen.getByText('Order order-12')).toBeInTheDocument();
     expect(screen.getByText('Sep 18, 2026')).toBeInTheDocument();
     expect(screen.getAllByText('Rs 2,450.00')).toHaveLength(2);
+    expect(screen.getByText('Seller incentive bonus')).toBeInTheDocument();
     expect(screen.getByText('Eligible items:').parentElement).toHaveTextContent('1');
     expect(screen.getByText('Eligible total:').parentElement).toHaveTextContent('Rs 2,450.00');
     expect(screen.queryByText(/commission on the listing price/i)).not.toBeInTheDocument();

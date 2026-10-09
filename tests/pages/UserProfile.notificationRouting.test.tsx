@@ -1,13 +1,16 @@
 import type { Complaint } from '@/types/complaint.type';
+import type { Order, Sale } from '@/types/order.type';
 import { infiniteQueryOptions, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import UserProfile, { ReturnsTab } from '@/pages/UserProfile';
 
-const { reviewsOptionsMock, sellerRatingTotal } = vi.hoisted(() => ({
+const { reviewsOptionsMock, sellerOrders, sellerRatingTotal, sellerSales } = vi.hoisted(() => ({
   reviewsOptionsMock: vi.fn(),
+  sellerOrders: { value: [] as Order[] },
   sellerRatingTotal: { value: 2 },
+  sellerSales: { value: [] as Sale[] },
 }));
 
 const complaints: Complaint[] = [
@@ -33,7 +36,9 @@ vi.mock('@/services/complaints.service', () => ({
 }));
 
 vi.mock('@/queries/review.query', () => ({
+  getOrderItemReviewOptions: () => ({ queryFn: async () => ({ data: [] }), queryKey: ['order-item-review'] }),
   getUserReviewsOptions: reviewsOptionsMock,
+  useCreateOrderItemReviewMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));
 
 vi.mock('@/contexts/AuthContext', () => ({
@@ -58,8 +63,8 @@ vi.mock('@/queries/myProfile.query', () => ({
 }));
 
 vi.mock('@/queries/myOrders.query', () => ({
-  getMyOrdersOptions: () => ({ queryFn: async () => ({ data: [] }), queryKey: ['orders'] }),
-  getMySalesOptions: () => ({ queryFn: async () => ({ data: [] }), queryKey: ['sales'] }),
+  getMyOrdersOptions: () => ({ queryFn: async () => ({ data: sellerOrders.value }), queryKey: ['orders'] }),
+  getMySalesOptions: () => ({ queryFn: async () => ({ data: sellerSales.value }), queryKey: ['sales'] }),
   getMySalesOrderOptions: () => ({ queryFn: async () => ({ data: [] }), queryKey: ['sales-order'] }),
   myOrdersQueryKey: { all: () => ['orders'] },
   useUpdateOrderItemStatusMutation: () => ({}),
@@ -110,6 +115,90 @@ function renderUserProfile(initialEntry: string) {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+function createSale(overrides: Partial<Sale> = {}): Sale {
+  return {
+    id: 'sale-1',
+    buyerId: 'buyer-1',
+    commissionTierId: null,
+    listingId: 'listing-1',
+    offerId: null,
+    orderId: 'order-1',
+    reservationId: null,
+    sellerId: 'current-user',
+    sellerIncentiveId: 'incentive-1',
+    brand: 'Vintage',
+    buyerFullName: 'Buyer One',
+    category: 'Clothing',
+    commissionAmount: 0,
+    commissionRate: 0,
+    commissionTierName: null,
+    condition: 'GOOD',
+    currency: 'PKR',
+    description: 'Vintage jacket',
+    discountAmount: 0,
+    expectedDelivery: null,
+    imageUrl: '',
+    platformFeeAmount: 0,
+    price: 1000,
+    proofImageUrl: null,
+    quantity: 1,
+    reservedOfferPrice: null,
+    sellerFullName: 'Current User',
+    sellerIncentiveBonus: 100,
+    sellerIncentivePercentage: 10,
+    shippingMethod: null,
+    size: 'M',
+    status: 'CONFIRMED',
+    subcategory: 'Jackets',
+    taxAmount: 0,
+    title: 'Vintage jacket',
+    total: 1000,
+    trackingNumber: null,
+    receivedAt: null,
+    shippedAt: null,
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function createBuyerOrder(): Order {
+  return {
+    id: 'buyer-order-1',
+    buyerId: 'current-user',
+    buyerFullName: 'Current User',
+    canCancel: false,
+    cancellationReason: null,
+    canResubmit: false,
+    commissionAmount: 0,
+    currency: 'PKR',
+    discountAmount: 125,
+    discountCode: 'OLD-SELLER-COUPON',
+    items: [createSale({ sellerId: 'seller-1', sellerIncentiveBonus: 0, status: 'DELIVERED' })],
+    manualPaymentSubmission: undefined,
+    paymentStatus: 'PAID',
+    platformFeeAmount: 0,
+    refundStatus: null,
+    sellerIncentives: [],
+    shippingAddress: '1 Example Street',
+    shippingCity: 'Lahore',
+    shippingFirstName: 'Current',
+    shippingLastName: 'User',
+    shippingPhone: '03001234567',
+    shippingPostal: '54000',
+    status: 'DELIVERED',
+    subtotal: 1000,
+    taxAmount: 0,
+    taxRate: 0,
+    total: 875,
+    cancelledAt: null,
+    expiresAt: null,
+    paidAt: '2026-09-01T00:00:00.000Z',
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+  };
 }
 
 describe('profile complaint notification navigation', () => {
@@ -165,5 +254,40 @@ describe('own profile reviews', () => {
     }));
     renderUserProfile('/profile?tab=reviews');
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Reviews' })).toHaveAttribute('aria-selected', 'true'));
+  });
+});
+
+describe('seller sales incentives', () => {
+  it('shows pending and payable bonuses separately from the item value', async () => {
+    sellerSales.value = [
+      createSale({ id: 'pending-sale', sellerIncentiveBonus: 100, title: 'Pending jacket' }),
+      createSale({ id: 'maturing-sale', sellerIncentiveBonus: 50, status: 'DELIVERED', title: 'Maturing jacket', receivedAt: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString() }),
+      createSale({ id: 'payable-sale', sellerIncentiveBonus: 200, status: 'DELIVERED', title: 'Delivered jacket', receivedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() }),
+      createSale({ id: 'returned-sale', sellerIncentiveBonus: 0, status: 'CANCELLED', title: 'Returned jacket' }),
+    ];
+    renderUserProfile('/profile?tab=sold');
+
+    expect(await screen.findByText('Pending jacket')).toBeInTheDocument();
+    expect(await screen.findAllByText(/Pending seller incentive bonus/)).toHaveLength(2);
+    expect(screen.getByText(/Payable seller incentive bonus/)).toBeInTheDocument();
+    expect(screen.getByText('Rs 100')).toBeInTheDocument();
+    expect(screen.getByText('Rs 50')).toBeInTheDocument();
+    expect(screen.getByText('Rs 200')).toBeInTheDocument();
+    expect(screen.queryByText('Rs 0')).not.toBeInTheDocument();
+    const pendingSale = document.querySelector('#sold-order-item-pending-sale');
+    expect(pendingSale).toHaveTextContent('Rs 1,000');
+    expect(within(pendingSale as HTMLElement).getByText(/Pending seller incentive bonus/)).toBeInTheDocument();
+  });
+});
+
+describe('historical order discounts', () => {
+  it('keeps a legacy seller coupon discount readable in buyer order details', async () => {
+    sellerOrders.value = [createBuyerOrder()];
+    renderUserProfile('/profile?tab=bought');
+
+    fireEvent.click(await screen.findByRole('button', { name: /Details/ }));
+
+    expect(await screen.findByText('Discount (OLD-SELLER-COUPON)')).toBeInTheDocument();
+    expect(screen.getByText('−Rs 125')).toBeInTheDocument();
   });
 });

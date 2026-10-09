@@ -557,7 +557,12 @@ function Payouts() {
                                               {' '}
                                               {item.orderId.slice(0, 8)}
                                             </TableCell>
-                                            <TableCell>{item.title}</TableCell>
+                                            <TableCell>
+                                              {item.title}
+                                              {item.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
+                                                <span className="block text-xs text-muted-foreground">Seller incentive bonus</span>
+                                              )}
+                                            </TableCell>
                                             <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(item.receivedAt), 'MMM d, yyyy')}</TableCell>
                                             <TableCell className="text-right font-medium">{fmt(Number(item.amount))}</TableCell>
                                           </TableRow>
@@ -1090,9 +1095,13 @@ function Payouts() {
                               {item.userFullName
                                 || `User ${item.sellerId?.slice(0, 6) ?? '?'}`}
                             </TableCell>
-                            <TableCell className="max-w-xs truncate">
-                              {getListingTitle(item.sourceMetadata)
-                                || '—'}
+                            <TableCell className="max-w-xs">
+                              <span className="block truncate">
+                                {getListingTitle(item.sourceMetadata) || '—'}
+                              </span>
+                              {item.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
+                                <span className="block text-xs text-muted-foreground">Seller incentive bonus</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {item.orderId

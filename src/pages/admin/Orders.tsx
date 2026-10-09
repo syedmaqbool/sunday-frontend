@@ -993,6 +993,19 @@ function OrderDetailDialog({
             </Card>
           </div>
 
+          {item.sellerIncentiveBonus > 0 && (
+            <Card>
+              <CardContent className="flex justify-between gap-4 p-4 text-sm">
+                <span className="text-muted-foreground">Seller incentive bonus</span>
+                <span className="font-medium">
+                  Rs
+                  {' '}
+                  {item.sellerIncentiveBonus.toLocaleString()}
+                </span>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardContent className="space-y-2 p-4 text-sm">
               <p className="text-xs font-semibold uppercase text-muted-foreground">

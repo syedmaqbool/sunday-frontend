@@ -46,6 +46,7 @@ export interface GetPaymentInstructionsResponses {
    */
   200: {
     data: {
+      accountIban: string;
       accountNumber: string;
       accountTitle: string;
       bankOrWalletLabel: string;

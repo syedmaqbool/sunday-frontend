@@ -1,9 +1,10 @@
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, ImageUp, Loader2 } from 'lucide-react';
+import { AlertCircle, Copy, ImageUp, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { showErrorToast } from '@/lib/errorToast';
 import {
   getPaymentInstructionsOptions,
   useUploadPaymentProofMutation,
@@ -74,6 +76,16 @@ function errorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+async function handleCopyPaymentDetail(value: string, label: 'Account number' | 'IBAN') {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(`${label} copied to clipboard.`);
+  }
+  catch (error) {
+    showErrorToast(error, `Could not copy ${label.toLowerCase()}.`);
+  }
 }
 
 export function ManualPaymentDialog({
@@ -185,7 +197,7 @@ export function ManualPaymentDialog({
                 ? (
                     <dl className="
                       grid gap-2 text-sm
-                      sm:grid-cols-3
+                      sm:grid-cols-2
                     "
                     >
                       <div>
@@ -196,9 +208,37 @@ export function ManualPaymentDialog({
                         <dt className="text-muted-foreground">Account title</dt>
                         <dd className="font-medium text-foreground">{instructions.accountTitle}</dd>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <dt className="text-muted-foreground">Account number</dt>
-                        <dd className="font-medium text-foreground">{instructions.accountNumber}</dd>
+                        <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
+                          <span className="min-w-0 break-all">{instructions.accountNumber}</span>
+                          <Button
+                            onClick={() => void handleCopyPaymentDetail(instructions.accountNumber, 'Account number')}
+                            aria-label="Copy account number"
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0"
+                          >
+                            <Copy aria-hidden="true" />
+                          </Button>
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">IBAN</dt>
+                        <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
+                          <span className="min-w-0 break-all">{instructions.accountIban}</span>
+                          <Button
+                            onClick={() => void handleCopyPaymentDetail(instructions.accountIban, 'IBAN')}
+                            aria-label="Copy IBAN"
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0"
+                          >
+                            <Copy aria-hidden="true" />
+                          </Button>
+                        </dd>
                       </div>
                     </dl>
                   )

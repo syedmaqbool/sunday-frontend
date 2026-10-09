@@ -562,20 +562,11 @@ function Checkout() {
                         <p className="truncate text-sm font-medium text-foreground">
                           {listing.title}
                         </p>
-                        {quotedItem && quotedItem.commissionAmount > 0 && (
+                        {quotedItem && quotedItem.platformFeeAmount > 0 && (
                           <p className="text-[11px] text-muted-foreground">
-                            Platform fee (
-                            {quotedItem.commissionRate}
-                            %): Rs
+                            Platform fee: Rs
                             {' '}
-                            {quotedItem.commissionAmount.toLocaleString()}
-                          </p>
-                        )}
-                        {quotedItem && quotedItem.sellerCouponDiscountAmount > 0 && (
-                          <p className="text-[11px] text-primary">
-                            Seller coupon: −Rs
-                            {' '}
-                            {quotedItem.sellerCouponDiscountAmount.toLocaleString()}
+                            {quotedItem.platformFeeAmount.toLocaleString()}
                           </p>
                         )}
                         {quotedItem && quotedItem.marketplaceDiscountAmount > 0 && (
@@ -610,51 +601,11 @@ function Checkout() {
                 })}
               </div>
 
-              {currentQuote && currentQuote.appliedSellerCoupons.length > 0 && (
-                <div aria-label="Automatic seller coupons" className="mb-4 space-y-3">
-                  {currentQuote.appliedSellerCoupons.map((coupon) => {
-                    const sellerName = items.find(({ listing }) => listing.seller?.id === coupon.sellerId)?.listing.seller?.fullName ?? 'Seller';
-                    return (
-                      <div key={coupon.id} className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="font-medium text-foreground">
-                            {sellerName}
-                            {' '}
-                            coupon
-                            {' '}
-                            <span className="text-primary">{coupon.code}</span>
-                          </span>
-                          <span className="shrink-0 font-medium text-primary">
-                            −Rs
-                            {' '}
-                            {coupon.discountAmount.toLocaleString()}
-                          </span>
-                        </div>
-                        <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                          {coupon.allocations.map(allocation => (
-                            <li key={allocation.listingId} className="flex justify-between gap-3">
-                              <span className="truncate">
-                                {items.find(({ listing }) => listing.id === allocation.listingId)?.listing.title ?? 'Eligible item'}
-                              </span>
-                              <span className="shrink-0">
-                                −Rs
-                                {' '}
-                                {allocation.discountAmount.toLocaleString()}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
               {/* Discount code input */}
               <Separator />
               <div className="py-3">
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Seller coupons apply automatically. You can also enter a marketplace discount code.
+                  You can enter an optional marketplace discount code.
                 </p>
                 {marketplaceDiscountCode
                   ? (
@@ -741,16 +692,6 @@ function Checkout() {
                   {(currentQuote?.subtotal ?? totalPrice).toLocaleString()}
                 </span>
               </div>
-              {(currentQuote?.sellerCouponDiscountAmount ?? 0) > 0 && (
-                <div className="flex items-center justify-between pb-3">
-                  <span className="text-sm text-primary">Seller coupons</span>
-                  <span className="text-sm font-medium text-primary">
-                    −Rs
-                    {' '}
-                    {currentQuote!.sellerCouponDiscountAmount.toLocaleString()}
-                  </span>
-                </div>
-              )}
               {(currentQuote?.marketplaceDiscountAmount ?? 0) > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-primary">Marketplace discount</span>
@@ -779,7 +720,7 @@ function Checkout() {
                   </span>
                 </div>
               )}
-              {(currentQuote?.platformFeeAmount ?? 0) > 0 && (
+              {currentQuote && currentQuote.platformFeeAmount > 0 && (
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-sm text-muted-foreground">
                     Platform fee
@@ -787,7 +728,7 @@ function Checkout() {
                   <span className="text-sm text-foreground">
                     Rs
                     {' '}
-                    {currentQuote!.platformFeeAmount.toLocaleString()}
+                    {currentQuote.platformFeeAmount.toLocaleString()}
                   </span>
                 </div>
               )}

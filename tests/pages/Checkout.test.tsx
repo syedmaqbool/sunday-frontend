@@ -114,40 +114,45 @@ function fillShippingInformation() {
 function buildCheckoutQuote(
   listingIds: string[],
   discountCode?: string,
-  sellerCoupons: CheckoutQuote['appliedSellerCoupons'] = [],
+  hasSellerIncentive = false,
 ): CheckoutQuote {
   const items = listingIds.map((listingId) => {
     const listing = cartState.items.find(({ listing }) => listing.id === listingId)?.listing;
     const price = listing?.price ?? 1000;
-    const sellerCouponAllocation = sellerCoupons
-      .flatMap(coupon => coupon.allocations)
-      .find(allocation => allocation.listingId === listingId);
-    const sellerCouponDiscountAmount = sellerCouponAllocation?.discountAmount ?? 0;
-    const marketplaceDiscountAmount = discountCode ? 100 : 0;
+    const marketplaceDiscountAmount = discountCode ? 80 : 0;
     const taxAmount = 100;
     const commissionAmount = 100;
     return {
       listingId,
-      sellerCouponId: sellerCouponDiscountAmount > 0 ? sellerCoupons[0]?.id ?? null : null,
       sellerId: `seller-${listingId}`,
+      sellerIncentiveId: hasSellerIncentive ? 'incentive-id' : null,
       commissionAmount,
       commissionRate: 10,
       discountAmount: marketplaceDiscountAmount,
       marketplaceDiscountAmount,
       platformFeeAmount: commissionAmount,
       price,
-      sellerCouponDiscountAmount,
+      sellerIncentiveBonus: hasSellerIncentive ? 200 : 0,
+      sellerIncentivePercentage: hasSellerIncentive ? 20 : null,
       taxAmount,
       title: listing?.title ?? 'Example listing',
-      total: price - sellerCouponDiscountAmount - marketplaceDiscountAmount + taxAmount + commissionAmount,
+      total: price - marketplaceDiscountAmount + taxAmount + commissionAmount,
     };
   });
   const subtotal = items.reduce((total, item) => total + item.price, 0);
-  const sellerCouponDiscountAmount = items.reduce((total, item) => total + item.sellerCouponDiscountAmount, 0);
   const marketplaceDiscountAmount = items.reduce((total, item) => total + item.marketplaceDiscountAmount, 0);
 
   return {
-    appliedSellerCoupons: sellerCoupons,
+    appliedSellerIncentives: hasSellerIncentive
+      ? [{
+          id: 'incentive-id',
+          sellerId: `seller-${listingIds[0]}`,
+          allocations: [{ listingId: listingIds[0], bonusAmount: 200 }],
+          bonusAmount: 200,
+          percentage: 20,
+          scope: 'ITEM_BASED',
+        }]
+      : [],
     commissionAmount: items.reduce((total, item) => total + item.commissionAmount, 0),
     currency: 'PKR',
     discountAmount: marketplaceDiscountAmount,
@@ -156,13 +161,12 @@ function buildCheckoutQuote(
     marketplaceDiscountCode: discountCode ?? null,
     platformFeeAmount: items.reduce((total, item) => total + item.platformFeeAmount, 0),
     quoteRevision: `revision-${listingIds.join('-')}-${discountCode ?? 'none'}`,
-    sellerCouponDiscountAmount,
+    sellerIncentiveBonus: hasSellerIncentive ? 200 : 0,
     subtotal,
-    subtotalAfterSellerCoupons: subtotal - sellerCouponDiscountAmount,
     taxAmount: items.reduce((total, item) => total + item.taxAmount, 0),
     taxRate: 10,
     total: items.reduce((total, item) => total + item.total, 0),
-    totalAfterDiscount: subtotal - sellerCouponDiscountAmount - marketplaceDiscountAmount,
+    totalAfterDiscount: subtotal - marketplaceDiscountAmount,
   };
 }
 
@@ -337,27 +341,21 @@ describe('checkout', () => {
     }));
   });
 
-  it('shows automatic seller coupon allocations and keeps marketplace code entry', async () => {
-    const automaticCoupon: CheckoutQuote['appliedSellerCoupons'][number] = {
-      id: 'seller-coupon-id',
-      sellerId: 'seller-listing-id',
-      allocations: [{ listingId: 'listing-id', discountAmount: 200 }],
-      code: 'AUTO200',
-      discountAmount: 200,
-      discountType: 'FIXED',
-      discountValue: 200,
-      scope: 'ITEM_BASED',
-    };
+  it('shows the backend buyer price with a seller incentive and keeps marketplace code entry separate', async () => {
     quoteCheckoutMock.mockImplementation((payload: { discountCode?: string; listingIds: string[] }) => Promise.resolve({
-      data: buildCheckoutQuote(payload.listingIds, payload.discountCode, [automaticCoupon]),
+      data: buildCheckoutQuote(payload.listingIds, payload.discountCode, true),
     }));
     renderCheckout();
 
-    expect(await screen.findByLabelText('Automatic seller coupons')).toHaveTextContent('AUTO200');
-    expect(screen.getByLabelText('Automatic seller coupons')).toHaveTextContent('Example coat');
+    await waitForCheckoutQuote();
+    expect(screen.getByText('Subtotal').parentElement).toHaveTextContent('Rs 1,000');
+    expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('Rs 100');
+    expect(screen.getByText('Tax (10%)').parentElement).toHaveTextContent('Rs 100');
+    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,200');
     expect(screen.getByPlaceholderText('Discount code')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/seller coupon/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Seller coupons').parentElement).toHaveTextContent('−Rs 200');
+    expect(screen.queryByText(/seller coupon|seller incentive|save rs/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Marketplace discount')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Discount code'), { target: { value: 'market10' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
@@ -366,17 +364,18 @@ describe('checkout', () => {
       listingIds: ['listing-id'],
     }));
     expect(await screen.findByText('MARKET10')).toBeInTheDocument();
-    expect(screen.getByLabelText('Automatic seller coupons')).toHaveTextContent('AUTO200');
-    expect(screen.getByText('Seller coupons').parentElement).toHaveTextContent('−Rs 200');
+    expect(screen.getByText('Marketplace discount').parentElement).toHaveTextContent('−Rs 80');
+    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,120');
+    expect(screen.queryByText(/seller coupon|seller incentive|save rs/i)).not.toBeInTheDocument();
   });
 
-  it('omits seller coupons that the quote does not apply', async () => {
+  it('shows backend subtotal, tax, platform fee, marketplace discount, and total', async () => {
     renderCheckout();
     await waitForCheckoutQuote();
 
-    expect(screen.getByText('Seller coupons apply automatically. You can also enter a marketplace discount code.')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Automatic seller coupons')).not.toBeInTheDocument();
-    expect(screen.queryByText('Seller coupons')).not.toBeInTheDocument();
+    expect(screen.getByText('Subtotal').parentElement).toHaveTextContent('Rs 1,000');
+    expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('Rs 100');
+    expect(screen.getByText('Tax (10%)').parentElement).toHaveTextContent('Rs 100');
     expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,200');
   });
 

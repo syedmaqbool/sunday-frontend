@@ -79,11 +79,6 @@ beforeEach(() => {
     reservedForCurrentUser: true,
     reservedUntil: '2000-01-01T00:00:00.000Z',
     seller: { fullName: 'Seller' },
-    sellerCouponEstimate: {
-      discountAmount: 50,
-      estimatedPrice: 100,
-      isEstimate: true,
-    },
     size: 'M',
     status: 'RESERVED',
     title: 'Vintage jacket',
@@ -122,22 +117,17 @@ describe('accepted offer deadline on listing detail', () => {
     },
   );
 
-  it('shows the seller-coupon price as an estimate on regular listings', async () => {
+  it('shows the regular listing price without seller incentive savings', async () => {
     listingState.listing.reservedOfferId = null;
     listingState.listing.reservedForCurrentUser = false;
     listingState.listing.reservedUntil = null;
     listingState.listing.status = 'APPROVED';
-    listingState.listing.sellerCouponEstimate = {
-      discountAmount: 50,
-      estimatedPrice: 100,
-      isEstimate: true,
-    };
-
     renderListingDetail();
 
-    expect(await screen.findByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated Rs 100 with automatic seller coupon');
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Save Rs 50 · Applied automatically at checkout');
+    expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
     expect(screen.getByText('Rs 150')).toBeInTheDocument();
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
+    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/coupon/i)).not.toBeInTheDocument();
   });
 
@@ -146,13 +136,11 @@ describe('accepted offer deadline on listing detail', () => {
     listingState.listing.reservedForCurrentUser = false;
     listingState.listing.reservedUntil = null;
     listingState.listing.status = 'APPROVED';
-    delete listingState.listing.sellerCouponEstimate;
-
     renderListingDetail();
 
     expect(await screen.findByText('Rs 150')).toBeInTheDocument();
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
-    expect(screen.queryByText(/seller coupon/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
   });
 
   it('does not promise a seller coupon on a listing reserved for another buyer', async () => {

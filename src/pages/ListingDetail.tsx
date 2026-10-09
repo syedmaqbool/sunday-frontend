@@ -23,7 +23,6 @@ import { MyListingFeedbackSection } from '@/components/MyListingFeedbackWidgets'
 import Navbar from '@/components/Navbar';
 import { ReportDialog } from '@/components/ReportDialog';
 import { ReviewsList } from '@/components/ReviewsList';
-import SellerCouponEstimateDisplay from '@/components/SellerCouponEstimateDisplay';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -345,8 +344,6 @@ function ListingDetail() {
                   </p>
                 )}
 
-            <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} status={listing.status} />
-
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
                 Size
@@ -371,7 +368,6 @@ function ListingDetail() {
             <p className="mt-6 leading-relaxed text-muted-foreground">
               {listing.description}
             </p>
-
             {isOwner && <MyListingFeedbackSection listingId={listing.id} />}
 
             {listing.status === 'SOLD' && !isOwner && (

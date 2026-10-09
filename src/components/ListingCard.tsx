@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SellerByline from '@/components/SellerByline';
-import SellerCouponEstimateDisplay from '@/components/SellerCouponEstimateDisplay';
 import { formatEnumLabel } from '@/lib/utilities';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
@@ -15,7 +14,6 @@ interface ListingCardProps {
     condition: string;
     images?: string[];
     price: number;
-    sellerCouponEstimate?: NonNullable<MarketplaceListing['sellerCouponEstimate']>;
     size: string;
     status: string;
     title: string;
@@ -100,7 +98,6 @@ function ListingCard({
               {' '}
               {listing.price.toLocaleString()}
             </p>
-            <SellerCouponEstimateDisplay estimate={listing.sellerCouponEstimate} status={listing.status} />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 Size

@@ -22,16 +22,15 @@ function renderListingCard(cardListing: Parameters<typeof ListingCard>[0]['listi
   );
 }
 
-describe('listing card seller coupon estimate', () => {
-  it('shows the original price with the automatic seller coupon estimate', () => {
+describe('listing card pricing', () => {
+  it('shows the listing price without seller incentive savings', () => {
     renderListingCard({
       ...listing,
-      sellerCouponEstimate: { discountAmount: 250, estimatedPrice: 2250, isEstimate: true },
     });
 
     expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Estimated Rs 2,250 with automatic seller coupon');
-    expect(screen.getByTestId('seller-coupon-estimate')).toHaveTextContent('Save Rs 250 · Applied automatically at checkout');
+    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
+    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
   });
 
   it('shows only the regular price when the listing has no estimate', () => {
@@ -39,13 +38,12 @@ describe('listing card seller coupon estimate', () => {
 
     expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
-    expect(screen.queryByText(/seller coupon/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
   });
 
   it('does not promise a seller coupon on a reserved listing', () => {
     renderListingCard({
       ...listing,
-      sellerCouponEstimate: { discountAmount: 250, estimatedPrice: 2250, isEstimate: true },
       status: 'RESERVED',
     });
 

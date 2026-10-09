@@ -569,7 +569,7 @@ function OrderConfirmation() {
                   {Number(order.discountAmount) > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-primary">
-                        Discount
+                        Marketplace discount
                         {order.discountCode ? ` (${order.discountCode})` : ''}
                       </span>
                       <span className="text-primary">
@@ -595,12 +595,12 @@ function OrderConfirmation() {
                       </span>
                     </div>
                   )}
-                  {Number(order.commissionAmount) > 0 && (
+                  {Number(order.platformFeeAmount) > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Platform fee</span>
                       <span className="text-foreground">
                         Rs
-                        {Number(order.commissionAmount).toLocaleString()}
+                        {Number(order.platformFeeAmount).toLocaleString()}
                       </span>
                     </div>
                   )}

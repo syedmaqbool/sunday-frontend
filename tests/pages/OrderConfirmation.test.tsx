@@ -98,8 +98,8 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
       offerId: null,
       orderId: 'order-id',
       reservationId: null,
-      sellerCouponId: null,
       sellerId: 'seller-id',
+      sellerIncentiveId: null,
       brand: 'Example',
       buyerFullName: 'Jane Buyer',
       category: 'Clothing',
@@ -117,9 +117,9 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
       proofImageUrl: null,
       quantity: 1,
       reservedOfferPrice: null,
-      sellerCouponCode: null,
-      sellerCouponDiscountAmount: 0,
       sellerFullName: 'Example Seller',
+      sellerIncentiveBonus: 0,
+      sellerIncentivePercentage: null,
       shippingMethod: null,
       size: 'M',
       status: 'CONFIRMED',
@@ -146,8 +146,7 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     paymentStatus: 'PENDING',
     platformFeeAmount: 0,
     refundStatus: null,
-    sellerCouponApplications: [],
-    sellerCouponCode: null,
+    sellerIncentives: [],
     shippingAddress: '1 Example Street',
     shippingCity: 'Lahore',
     shippingFirstName: 'Jane',
@@ -196,6 +195,45 @@ describe('order confirmation manual actions', () => {
     uploadPaymentProofMock.mockReset();
     fetchMarketplaceListingMock.mockResolvedValue({ id: 'listing-id', status: 'APPROVED' });
     uploadPaymentProofMock.mockResolvedValue({ data: { id: 'proof-file-id' } });
+  });
+
+  it('shows the marketplace discount and total from the created order without seller bonus details', async () => {
+    const item = makeOrder().items[0];
+    testState.currentOrder = makeOrder({
+      discountAmount: 80,
+      discountCode: 'MARKET10',
+      items: [{
+        ...item,
+        sellerIncentiveId: 'incentive-id',
+        discountAmount: 80,
+        platformFeeAmount: 100,
+        sellerIncentiveBonus: 200,
+        sellerIncentivePercentage: 20,
+        taxAmount: 100,
+        total: 1120,
+      }],
+      platformFeeAmount: 100,
+      sellerIncentives: [{
+        id: 'incentive-id',
+        sellerId: 'seller-id',
+        allocations: [{ listingId: 'listing-id', orderItemId: 'item-id', bonusAmount: 200 }],
+        bonusAmount: 200,
+        percentage: 20,
+      }],
+      subtotal: 1000,
+      taxAmount: 100,
+      taxRate: 10,
+      total: 1120,
+    });
+    renderPage();
+
+    await screen.findByText('Payment pending verification');
+
+    expect(screen.getByText('Marketplace discount (MARKET10)').parentElement).toHaveTextContent('80');
+    expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('100');
+    expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,120');
+    expect(screen.queryByText(/seller incentive|seller bonus|seller coupon/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/200/)).not.toBeInTheDocument();
   });
 
   it('does not render a retry control or start a gateway flow for a manual order', async () => {

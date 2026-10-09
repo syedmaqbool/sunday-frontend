@@ -5,17 +5,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DiscountCodes from '@/pages/admin/DiscountCodes';
 
-const { codeState, createDiscountCodeMock, listDiscountCodesMock } = vi.hoisted(() => ({
+const { codeState, createDiscountCodeMock, listDiscountCodesMock, updateDiscountCodeMock } = vi.hoisted(() => ({
   codeState: { codes: [] as DiscountCode[] },
   createDiscountCodeMock: vi.fn(),
   listDiscountCodesMock: vi.fn(),
+  updateDiscountCodeMock: vi.fn(),
 }));
 
 vi.mock('@/services/discountCode.service', () => ({
   createDiscountCode: createDiscountCodeMock,
   deleteDiscountCode: vi.fn(),
   listDiscountCodes: listDiscountCodesMock,
-  updateDiscountCode: vi.fn(),
+  updateDiscountCode: updateDiscountCodeMock,
 }));
 
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
@@ -69,6 +70,10 @@ describe('discount codes', () => {
     codeState.codes = [];
     listDiscountCodesMock.mockReset().mockImplementation(async () => ({ data: codeState.codes }));
     createDiscountCodeMock.mockReset().mockResolvedValue({});
+    updateDiscountCodeMock.mockReset().mockImplementation(async (id: string, payload: Partial<DiscountCode>) => {
+      codeState.codes = codeState.codes.map(code => code.id === id ? { ...code, ...payload } : code);
+      return {};
+    });
   });
 
   afterEach(cleanup);
@@ -113,5 +118,36 @@ describe('discount codes', () => {
     const unlimitedRow = screen.getByText('NOLIMIT').closest('tr');
     expect(unlimitedRow).toHaveTextContent('1');
     expect(unlimitedRow).toHaveTextContent('Per buyer: Unlimited');
+  });
+
+  it('updates only the per-buyer cap and refreshes the list', async () => {
+    codeState.codes = [buildCode()];
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit per-buyer cap for SAVE10' }));
+    expect(await screen.findByRole('heading', { name: 'Edit per-buyer cap' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Max uses per buyer')).toHaveValue(3);
+
+    fireEvent.change(screen.getByLabelText('Max uses per buyer'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save cap' }));
+
+    await waitFor(() => expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: 5 }));
+    expect(await screen.findByText('Per buyer: 5')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Edit per-buyer cap' })).not.toBeInTheDocument());
+    expect(screen.getByText('SAVE10').closest('tr')).toHaveTextContent('10%');
+    expect(screen.getByText('SAVE10').closest('tr')).toHaveTextContent('7 / 20');
+  });
+
+  it('clears the per-buyer cap with a cap-only update', async () => {
+    codeState.codes = [buildCode()];
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit per-buyer cap for SAVE10' }));
+    expect(screen.getByLabelText('Max uses per buyer')).toHaveValue(3);
+    fireEvent.change(screen.getByLabelText('Max uses per buyer'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save cap' }));
+
+    await waitFor(() => expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: null }));
+    expect(await screen.findByText('Per buyer: Unlimited')).toBeInTheDocument();
   });
 });

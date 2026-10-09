@@ -1,6 +1,7 @@
+import type { DiscountCode } from '@/types/discountCode.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Tag, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -88,6 +89,19 @@ const discountCodeFormSchema = z.object({
 
 type DiscountCodeFormValues = z.infer<typeof discountCodeFormSchema>;
 
+const editDiscountCodeCapSchema = z.object({
+  maxUsesPerUser: z.union([
+    z.literal(''),
+    z.string()
+      .min(1, 'Enter a positive whole number.')
+      .transform(Number)
+      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
+      .transform(String),
+  ]),
+});
+
+type EditDiscountCodeCapValues = z.infer<typeof editDiscountCodeCapSchema>;
+
 const emptyDiscountCodeForm: DiscountCodeFormValues = {
   code: '',
   discountType: 'PERCENTAGE',
@@ -106,9 +120,14 @@ function DiscountCodes() {
   const deleteMutation = useDeleteDiscountCodeMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
   const form = useForm<DiscountCodeFormValues>({
     defaultValues: emptyDiscountCodeForm,
     resolver: zodResolver(discountCodeFormSchema),
+  });
+  const editCapForm = useForm<EditDiscountCodeCapValues>({
+    defaultValues: { maxUsesPerUser: '' },
+    resolver: zodResolver(editDiscountCodeCapSchema),
   });
 
   const resetForm = () => {
@@ -151,6 +170,28 @@ function DiscountCodes() {
       toast({
         title: 'Status updated',
       });
+    }
+    catch (error: any) {
+      toast(getErrorToastOptions(error));
+    }
+  };
+
+  const editPerBuyerCap = async (values: EditDiscountCodeCapValues) => {
+    if (!editingCode)
+      return;
+
+    try {
+      await updateMutation.mutateAsync({
+        discountCodeId: editingCode.id,
+        payload: {
+          maxUsesPerUser: values.maxUsesPerUser ? Number(values.maxUsesPerUser) : null,
+        },
+      });
+
+      toast({
+        title: 'Per-buyer cap updated',
+      });
+      setEditingCode(null);
     }
     catch (error: any) {
       toast(getErrorToastOptions(error));
@@ -405,6 +446,19 @@ function DiscountCodes() {
 
                       <TableCell>
                         <Button
+                          onClick={() => {
+                            editCapForm.reset({
+                              maxUsesPerUser: c.maxUsesPerUser === null ? '' : String(c.maxUsesPerUser),
+                            });
+                            setEditingCode(c);
+                          }}
+                          aria-label={`Edit per-buyer cap for ${c.code}`}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
                           onClick={() => deleteCode(c.id)}
                           size="icon"
                           variant="ghost"
@@ -422,6 +476,44 @@ function DiscountCodes() {
               </Table>
             </div>
           )}
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open)
+            setEditingCode(null);
+        }}
+        open={editingCode !== null}
+      >
+        <DialogContent>
+          <Form {...editCapForm}>
+            <form onSubmit={editCapForm.handleSubmit(editPerBuyerCap)} className="grid gap-4 py-2">
+              <DialogHeader>
+                <DialogTitle>Edit per-buyer cap</DialogTitle>
+              </DialogHeader>
+
+              <FormField
+                name="maxUsesPerUser"
+                control={editCapForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max uses per buyer</FormLabel>
+                    <FormControl>
+                      <Input {...field} min="1" placeholder="Unlimited" step="1" type="number" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button disabled={updateMutation.isPending} type="submit">
+                {updateMutation.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : 'Save cap'}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

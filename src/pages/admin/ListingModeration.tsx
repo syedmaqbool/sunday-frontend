@@ -63,22 +63,63 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-        {current.isVideo
-          ? (
-              <video
-                src={current.url}
-                controls
-                playsInline
-                className="h-full w-full bg-black object-contain"
-              />
-            )
-          : (
-              <img
-                src={current.url}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            )}
+        {current.isVideo ? (
+  <div className="relative h-full w-full bg-black">
+    <video
+      src={current.url}
+      muted
+      playsInline
+      controls={false}
+      onClick={(event) => {
+        const video = event.currentTarget;
+
+        if (video.paused) {
+          void video.play();
+        } else {
+          video.pause();
+        }
+      }}
+      onVolumeChange={(event) => {
+        const video = event.currentTarget;
+
+        if (!video.muted || video.volume !== 0) {
+          video.muted = true;
+          video.volume = 0;
+        }
+      }}
+      className="h-full w-full bg-black object-contain"
+    />
+
+    <button
+      type="button"
+      onClick={(event) => {
+        const video =
+          event.currentTarget.parentElement?.querySelector('video');
+
+        if (!video) return;
+
+        if (video.paused) {
+          void video.play();
+        } else {
+          video.pause();
+        }
+      }}
+      className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
+    >
+      Play / Pause
+    </button>
+
+    <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
+      Muted
+    </span>
+  </div>
+) : (
+  <img
+    src={current.url}
+    alt=""
+    className="h-full w-full object-cover"
+  />
+)}
         {images.length > 1 && (
           <>
             <button

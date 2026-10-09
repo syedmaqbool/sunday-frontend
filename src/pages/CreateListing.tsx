@@ -216,6 +216,8 @@ function CreateListing() {
       weight: closestWeight,
     });
 
+    
+
     const sortedMedia = [...(existingListing.media ?? [])]
       .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
@@ -596,43 +598,64 @@ function CreateListing() {
               <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
             </Label>
             <div className="mt-2 flex flex-wrap gap-3">
-              {videoPreviewUrl
-                ? (
-                    <div className="relative h-32 w-44 overflow-hidden rounded-lg border border-border bg-muted">
-                      <video
-                        src={videoPreviewUrl}
-                        controls
-                        muted={videoMuted}
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        onClick={() => setVideoMuted(m => !m)}
-                        title={videoMuted ? 'Unmute' : 'Mute'}
-                        type="button"
-                        className="
-                          absolute left-1 top-1 rounded-full bg-background/80 p-1 text-foreground
-                          hover:bg-background
-                        "
-                      >
-                        {videoMuted
-                          ? (
-                              <VolumeX className="h-3.5 w-3.5" />
-                            )
-                          : (
-                              <Volume2 className="h-3.5 w-3.5" />
-                            )}
-                      </button>
-                      <button
-                        onClick={removeVideo}
-                        type="button"
-                        className="
-                          absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive
-                          hover:bg-background
-                        "
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+             {videoPreviewUrl ? (
+              <div className="relative h-32 w-44 overflow-hidden rounded-lg border border-border bg-muted">
+              <video
+                src={videoPreviewUrl}
+                muted
+                playsInline
+                controls={false}
+                className="h-full w-full object-cover"
+                onClick={(event) => {
+                  const video = event.currentTarget;
+
+                  if (video.paused) {
+                    void video.play();
+                  } else {
+                    video.pause();
+                  }
+                }}
+                onVolumeChange={(event) => {
+                  const video = event.currentTarget;
+                  if (!video.muted || video.volume !== 0) {
+                    video.muted = true;
+                    video.volume = 0;
+                  }
+                }}
+              />
+
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                const video = event.currentTarget
+                                  .parentElement?.querySelector('video');
+
+                                if (!video) return;
+
+                                if (video.paused) {
+                                  void video.play();
+                                } else {
+                                  video.pause();
+                                }
+                              }}
+                              className="absolute bottom-1 left-1 rounded bg-background/80 px-2 py-1 text-xs"
+                            >
+                              Play / Pause
+                            </button>
+
+                            <button
+                              onClick={removeVideo}
+                              type="button"
+                              aria-label="Remove video"
+                              className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-destructive"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+
+                            <span className="absolute bottom-1 right-1 rounded bg-background/80 px-1.5 py-1 text-[10px]">
+                              Muted
+                            </span>
+                          </div>
                   )
                 : (
                     <label className="

@@ -97,29 +97,64 @@ function ImageGallery({
   return (
     <div className="min-w-0 space-y-3">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-        {isCurrentIsVideo
-          ? (
-              <video
-                key={current}
-                src={current}
-                controls
-                playsInline
-                className={`
-                  h-full w-full bg-black object-contain
-                  ${unavailableClass}
-                `}
-              />
-            )
-          : (
-              <img
-                src={current}
-                alt={`${title} - photo ${selected + 1}`}
-                className={`
-                  h-full w-full object-cover transition-opacity duration-300
-                  ${unavailableClass}
-                `}
-              />
-            )}
+        {isCurrentIsVideo ? (
+  <div className="relative h-full w-full bg-black">
+    <video
+      key={current}
+      src={current}
+      muted
+      playsInline
+      controls={false}
+      onClick={(event) => {
+        const video = event.currentTarget;
+
+        if (video.paused) {
+          void video.play();
+        } else {
+          video.pause();
+        }
+      }}
+      onVolumeChange={(event) => {
+        const video = event.currentTarget;
+
+        if (!video.muted || video.volume !== 0) {
+          video.muted = true;
+          video.volume = 0;
+        }
+      }}
+      className={`h-full w-full bg-black object-contain ${unavailableClass}`}
+    />
+
+    <button
+      type="button"
+      onClick={(event) => {
+        const video =
+          event.currentTarget.parentElement?.querySelector('video');
+
+        if (!video) return;
+
+        if (video.paused) {
+          void video.play();
+        } else {
+          video.pause();
+        }
+      }}
+      className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
+    >
+      Play / Pause
+    </button>
+
+    <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
+      Muted
+    </span>
+  </div>
+) : (
+  <img
+    src={current}
+    alt={`${title} - photo ${selected + 1}`}
+    className={`h-full w-full object-cover transition-opacity duration-300 ${unavailableClass}`}
+  />
+)}
         {images.length > 1 && (
           <>
             <button

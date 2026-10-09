@@ -64,6 +64,14 @@ const discountCodeFormSchema = z.object({
       .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
       .transform(String),
   ]),
+  maxUsesPerUser: z.union([
+    z.literal(''),
+    z.string()
+      .min(1, 'Enter a positive whole number.')
+      .transform(Number)
+      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
+      .transform(String),
+  ]),
   minOrder: z.union([
     z.literal(''),
     z.string()
@@ -85,6 +93,7 @@ const emptyDiscountCodeForm: DiscountCodeFormValues = {
   discountType: 'PERCENTAGE',
   discountValue: '',
   maxUses: '',
+  maxUsesPerUser: '',
   minOrder: '',
   expiresAt: '',
 };
@@ -113,6 +122,7 @@ function DiscountCodes() {
         discountType: values.discountType,
         discountValue: Number(values.discountValue),
         maxUses: values.maxUses ? Number(values.maxUses) : null,
+        maxUsesPerUser: values.maxUsesPerUser ? Number(values.maxUsesPerUser) : null,
         minOrderAmount: values.minOrder ? Number(values.minOrder) : 0,
         expiresAt: values.expiresAt ? new Date(values.expiresAt).toISOString() : null,
       });
@@ -257,6 +267,20 @@ function DiscountCodes() {
                   />
                 </div>
 
+                <FormField
+                  name="maxUsesPerUser"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max uses per buyer</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Unlimited" type="number" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     name="minOrder"
@@ -359,6 +383,11 @@ function DiscountCodes() {
                       <TableCell className="text-muted-foreground">
                         {c.currentUses}
                         {c.maxUses === null ? '' : ` / ${c.maxUses}`}
+                        <div className="text-xs">
+                          Per buyer:
+                          {' '}
+                          {c.maxUsesPerUser ?? 'Unlimited'}
+                        </div>
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">

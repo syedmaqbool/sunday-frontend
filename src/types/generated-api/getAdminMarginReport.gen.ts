@@ -158,6 +158,10 @@ export interface GetAdminMarginReportResponses {
       /**
        * PKR amount as a number.
        */
+      sellerIncentiveBonus: number;
+      /**
+       * PKR amount as a number.
+       */
       sellerPayout: number;
       /**
        * PKR amount as a number.
@@ -199,6 +203,10 @@ export interface GetAdminMarginReportResponses {
       /**
        * PKR amount as a number.
        */
+      sellerIncentiveBonus: number;
+      /**
+       * PKR amount as a number.
+       */
       sellerPayout: number;
       sellers: Array<{
         sellerId: string;
@@ -227,6 +235,10 @@ export interface GetAdminMarginReportResponses {
            */
           unitPrice: number;
         }>;
+        /**
+         * PKR amount as a number.
+         */
+        sellerIncentiveBonus: number;
         sellerName: string;
       }>;
       /**

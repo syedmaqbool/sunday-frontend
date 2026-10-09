@@ -97,12 +97,14 @@ function OrderDetails({ order }: { order: AdminMarginReportOrder }) {
         {' '}
         <span className="text-foreground">{order.buyerName}</span>
         {' · '}
-        Seller
+        Legacy seller
         {' '}
         {SELLER_SHARE_RATE}
         {'% share reported: '}
         {' '}
         {formatCurrency(order.sellerShare)}
+        {' · Seller incentive bonus: '}
+        {formatCurrency(order.sellerIncentiveBonus)}
       </p>
       {order.sellers.map(seller => (
         <section
@@ -120,6 +122,10 @@ function OrderDetails({ order }: { order: AdminMarginReportOrder }) {
               <span>Estimated payout:</span>
               {' '}
               <span>{formatCurrency(seller.estimatedPayout)}</span>
+              {' · '}
+              <span>Incentive bonus:</span>
+              {' '}
+              <span>{formatCurrency(seller.sellerIncentiveBonus)}</span>
               {' · '}
               <span>Estimated fee:</span>
               {' '}
@@ -205,12 +211,12 @@ function MarginFinancials() {
   const summary = aggregates
     ? [
         { label: 'Order Value', value: formatCurrency(aggregates.orderValue) },
-        { label: 'Seller Coupon Discount', value: `−${formatCurrency(aggregates.sellerCouponDiscount)}` },
+        { label: 'Legacy seller coupon discount', value: `−${formatCurrency(aggregates.sellerCouponDiscount)}` },
         { label: 'Buyer Discount', value: `−${formatCurrency(aggregates.buyerDiscount)}` },
         { label: 'Final Order Amount', value: formatCurrency(aggregates.finalOrderAmount) },
         { label: 'Platform Commission', value: formatCurrency(aggregates.platformCommission) },
         { label: 'Seller Payout', value: formatCurrency(aggregates.sellerPayout) },
-        { label: `Seller ${SELLER_SHARE_RATE}% Share`, value: `−${formatCurrency(aggregates.sellerShare)}` },
+        { label: `Legacy seller ${SELLER_SHARE_RATE}% share`, value: `−${formatCurrency(aggregates.sellerShare)}` },
         { label: 'Estimated Payout Fees', value: `−${formatCurrency(aggregates.estimatedPayoutFee)}` },
         ...(financeReportQuery.data?.aggregates
           ? [{
@@ -230,12 +236,11 @@ function MarginFinancials() {
           the buyer confirms receipt or when delivery completes automatically.
         </p>
         <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
-          Margin = Platform commission − seller coupon discount − buyer discount − seller
+          Margin = Platform commission − legacy seller coupon discount − buyer discount − seller incentive bonus −
           {' '}
           {SELLER_SHARE_RATE}
-          {'% share − estimated payout fees (HBL Rs 25, other banks Rs 75 per seller). '}
-          {' '}
-          The seller share applies only when a seller coupon is used. Tax is pass-through.
+          {'% legacy share − estimated payout fees (HBL Rs 20, other banks Rs 75 per seller). '}
+          The legacy seller share reflects historical coupon redemptions. Tax is pass-through.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Payout fees are estimates for this report. They do not change actual payouts.
@@ -380,7 +385,8 @@ function MarginFinancials() {
                             <TableHead className="w-10" />
                             <TableHead>Order</TableHead>
                             <TableHead>Order Value</TableHead>
-                            <TableHead>Seller Coupon Discount</TableHead>
+                            <TableHead>Legacy seller coupon discount</TableHead>
+                            <TableHead>Seller incentive bonus</TableHead>
                             <TableHead>Buyer Discount</TableHead>
                             <TableHead>Final Order Amount</TableHead>
                             <TableHead>Platform Commission</TableHead>
@@ -433,6 +439,9 @@ function MarginFinancials() {
                                     {order.sellerCouponDiscount ? `−${formatCurrency(order.sellerCouponDiscount)}` : '—'}
                                   </TableCell>
                                   <TableCell className="whitespace-nowrap">
+                                    {order.sellerIncentiveBonus ? `−${formatCurrency(order.sellerIncentiveBonus)}` : '—'}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">
                                     {order.buyerDiscount ? `−${formatCurrency(order.buyerDiscount)}` : '—'}
                                   </TableCell>
                                   <TableCell className="whitespace-nowrap">{formatCurrency(order.finalOrderAmount)}</TableCell>
@@ -453,7 +462,7 @@ function MarginFinancials() {
                                 </TableRow>
                                 {isExpanded && (
                                   <TableRow className="bg-muted/30">
-                                    <TableCell colSpan={11} className="p-0">
+                                    <TableCell colSpan={12} className="p-0">
                                       <OrderDetails order={order} />
                                     </TableCell>
                                   </TableRow>

@@ -37,18 +37,19 @@ function createOrder(overrides: Partial<AdminMarginReportOrder> = {}): AdminMarg
     bankNames: 'HBL',
     buyerDiscount: 50,
     buyerName: 'Buyer Person',
-    estimatedPayoutFee: 25,
+    estimatedPayoutFee: 20,
     finalOrderAmount: 1850,
     orderValue: 2000,
     platformCommission: 300,
     platformMargin: 125,
     sellerCouponDiscount: 100,
+    sellerIncentiveBonus: 125,
     sellerPayout: 1900,
     sellers: [{
       sellerId: 'seller-1',
       bankName: 'HBL',
       estimatedPayout: 1900,
-      estimatedPayoutFee: 25,
+      estimatedPayoutFee: 20,
       grossItemValue: 2000,
       items: [{
         commissionAmount: 300,
@@ -56,6 +57,7 @@ function createOrder(overrides: Partial<AdminMarginReportOrder> = {}): AdminMarg
         title: 'Vintage jacket',
         unitPrice: 1000,
       }],
+      sellerIncentiveBonus: 125,
       sellerName: 'Seller One',
     }],
     sellerShare: 100,
@@ -80,6 +82,7 @@ function createReport(
       platformCommission: 15_000,
       platformMargin: 8700,
       sellerCouponDiscount: 1000,
+      sellerIncentiveBonus: 625,
       sellerPayout: 105_000,
       sellerShare: 800,
     },
@@ -211,13 +214,42 @@ describe('admin margin report page', () => {
     renderPage();
 
     expect(await screen.findByText('Seller incentive marketing cost')).toBeInTheDocument();
-    expect(screen.getByText('−Rs 125')).toBeInTheDocument();
+    expect(screen.getAllByText('−Rs 125')).toHaveLength(2);
     expect(getAdminFinanceReportSummaryMock).toHaveBeenCalledWith(expect.objectContaining({
       page: 1,
       periodEnd: expect.any(String),
       periodStart: expect.any(String),
       size: 1,
     }));
+  });
+
+  it('shows seller incentive bonus in the margin row and seller payout details', async () => {
+    const defaultSeller = createOrder().sellers[0]!;
+    const order = createOrder({
+      sellerIncentiveBonus: 625,
+      sellerPayout: 13_125,
+      sellers: [{
+        ...defaultSeller,
+        estimatedPayout: 13_125,
+        sellerIncentiveBonus: 625,
+      }],
+    });
+    const report = createReport({
+      aggregates: {
+        ...createReport().aggregates,
+        sellerIncentiveBonus: 625,
+        sellerPayout: 13_125,
+      },
+      data: [order],
+    });
+    getAdminMarginReportMock.mockResolvedValue(report);
+    renderPage();
+
+    expect(await screen.findByText('Seller incentive bonus')).toBeInTheDocument();
+    expect(screen.getByText('−Rs 625')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Expand order order-12345678' }));
+    expect(await screen.findByRole('region', { name: 'Seller One seller details' })).toHaveTextContent('Incentive bonus: Rs 625');
+    expect(screen.getByText('Buyer Person').closest('p')).toHaveTextContent('Seller incentive bonus: Rs 625');
   });
 
   it('is reachable at /admin/margins and requests the default filters', async () => {
@@ -302,10 +334,11 @@ describe('admin margin report page', () => {
     const sellerDetails = await screen.findByRole('region', { name: 'Seller One seller details' });
     expect(sellerDetails).toHaveTextContent('Bank: HBL');
     expect(screen.getByText('Buyer Person').closest('p')).toHaveTextContent(
-      'Buyer: Buyer Person · Seller 5% share reported: Rs 100',
+      'Buyer: Buyer Person · Legacy seller 5% share reported: Rs 100 · Seller incentive bonus: Rs 125',
     );
     expect(sellerDetails).toHaveTextContent('Estimated payout: Rs 1,900');
-    expect(sellerDetails).toHaveTextContent('Estimated fee: Rs 25');
+    expect(sellerDetails).toHaveTextContent('Incentive bonus: Rs 125');
+    expect(sellerDetails).toHaveTextContent('Estimated fee: Rs 20');
     expect(screen.getByText('Vintage jacket × 2')).toBeInTheDocument();
     expect(sellerDetails).toHaveTextContent('Gross line value: Rs 2,000');
     expect(sellerDetails).toHaveTextContent('Commission: Rs 300');

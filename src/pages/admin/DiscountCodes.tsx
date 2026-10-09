@@ -1,3 +1,4 @@
+import type { Control, FieldPath, FieldValues } from 'react-hook-form';
 import type { DiscountCode } from '@/types/discountCode.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
@@ -49,6 +50,15 @@ import {
   useUpdateDiscountCodeMutation,
 } from '@/queries/adminDiscountCodes.query';
 
+const positiveWholeNumberOrBlankSchema = z.union([
+  z.literal(''),
+  z.string()
+    .min(1, 'Enter a positive whole number.')
+    .transform(Number)
+    .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
+    .transform(String),
+]);
+
 const discountCodeFormSchema = z.object({
   code: z.string().trim().min(1, 'Enter a code.'),
   discountType: z.enum(['PERCENTAGE', 'FIXED']),
@@ -57,22 +67,8 @@ const discountCodeFormSchema = z.object({
     .transform(Number)
     .pipe(z.number().positive('Enter a value greater than zero.'))
     .transform(String),
-  maxUses: z.union([
-    z.literal(''),
-    z.string()
-      .min(1, 'Enter a positive whole number.')
-      .transform(Number)
-      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
-      .transform(String),
-  ]),
-  maxUsesPerUser: z.union([
-    z.literal(''),
-    z.string()
-      .min(1, 'Enter a positive whole number.')
-      .transform(Number)
-      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
-      .transform(String),
-  ]),
+  maxUses: positiveWholeNumberOrBlankSchema,
+  maxUsesPerUser: positiveWholeNumberOrBlankSchema,
   minOrder: z.union([
     z.literal(''),
     z.string()
@@ -90,17 +86,36 @@ const discountCodeFormSchema = z.object({
 type DiscountCodeFormValues = z.infer<typeof discountCodeFormSchema>;
 
 const editDiscountCodeCapSchema = z.object({
-  maxUsesPerUser: z.union([
-    z.literal(''),
-    z.string()
-      .min(1, 'Enter a positive whole number.')
-      .transform(Number)
-      .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
-      .transform(String),
-  ]),
+  maxUsesPerUser: positiveWholeNumberOrBlankSchema,
 });
 
 type EditDiscountCodeCapValues = z.infer<typeof editDiscountCodeCapSchema>;
+
+function MaxUsesPerUserFormField<TFieldValues extends FieldValues & { maxUsesPerUser?: string }>({
+  control,
+  min,
+  step,
+}: {
+  control: Control<TFieldValues>;
+  min?: number;
+  step?: number;
+}) {
+  return (
+    <FormField<TFieldValues, FieldPath<TFieldValues>>
+      name={'maxUsesPerUser' as FieldPath<TFieldValues>}
+      control={control}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Max uses per buyer</FormLabel>
+          <FormControl>
+            <Input {...field} min={min} placeholder="Unlimited" step={step} type="number" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
 
 const emptyDiscountCodeForm: DiscountCodeFormValues = {
   code: '',
@@ -308,19 +323,7 @@ function DiscountCodes() {
                   />
                 </div>
 
-                <FormField
-                  name="maxUsesPerUser"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max uses per buyer</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Unlimited" type="number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <MaxUsesPerUserFormField control={form.control} />
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -491,19 +494,7 @@ function DiscountCodes() {
                 <DialogTitle>Edit per-buyer cap</DialogTitle>
               </DialogHeader>
 
-              <FormField
-                name="maxUsesPerUser"
-                control={editCapForm.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max uses per buyer</FormLabel>
-                    <FormControl>
-                      <Input {...field} min="1" placeholder="Unlimited" step="1" type="number" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <MaxUsesPerUserFormField control={editCapForm.control} min={1} step={1} />
 
               <Button disabled={updateMutation.isPending} type="submit">
                 {updateMutation.isPending

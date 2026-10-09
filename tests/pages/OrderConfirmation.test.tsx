@@ -71,6 +71,7 @@ vi.spyOn(globalThis, 'scrollTo').mockImplementation(() => {});
 
 const testRequestOptions: NormalizedOptions = {
   context: {},
+  headers: new Headers(),
   method: 'GET',
   onDownloadProgress: undefined,
   onUploadProgress: undefined,

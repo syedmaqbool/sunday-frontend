@@ -5,7 +5,7 @@ import {
   listComplaintsAgainstMe,
   listMyRefundComplaints,
 } from '@/services/complaints.service';
-import { getOrder } from '@/services/myOrders.service';
+import { getOrder } from '@/services/myorders.service';
 
 export const complaintsQueryKey = {
   againstMe: () => [...complaintsQueryKey.all(), 'against-me', 'list'] as const,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getSellerAnalytics } from '@/services/sellerAnalytic.service';
+import { getSellerAnalytics } from '@/services/selleranalytic.service';
 
 const getMock = vi.hoisted(() => vi.fn());
 

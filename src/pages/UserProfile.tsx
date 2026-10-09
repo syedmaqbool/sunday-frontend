@@ -88,7 +88,7 @@ import { getMyProfileQueryOptions, myProfileQueryKey } from '@/queries/myProfile
 import {
   updateItemStatus,
   uploadShippingProof,
-} from '@/services/myOrders.service';
+} from '@/services/myorders.service';
 
 const shipmentProofFileSchema = z.custom<File>(
   value => typeof File !== 'undefined' && value instanceof File,

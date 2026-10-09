@@ -5,7 +5,7 @@ import {
   listOrders,
   listSales,
   updateItemStatus,
-} from '@/services/myOrders.service';
+} from '@/services/myorders.service';
 
 export const myOrdersQueryKey = {
   all: () => ['my-orders'] as const,

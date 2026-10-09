@@ -5,7 +5,7 @@ import SellerAnalytics from '@/pages/SellerAnalytics';
 
 const getSellerAnalyticsMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/services/sellerAnalytic.service', () => ({
+vi.mock('@/services/selleranalytic.service', () => ({
   getSellerAnalytics: getSellerAnalyticsMock,
 }));
 

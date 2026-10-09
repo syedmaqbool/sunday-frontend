@@ -28,8 +28,8 @@ vi.mock('@/services/offers.service', async (importOriginal) => {
   };
 });
 
-vi.mock('@/services/myOrders.service', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/services/myOrders.service')>();
+vi.mock('@/services/myorders.service', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/myorders.service')>();
   return { ...actual, listOrders: serviceMocks.listOrders };
 });
 

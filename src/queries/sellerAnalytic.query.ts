@@ -1,6 +1,6 @@
 import type { AnalyticsDateRange } from '@/types/analyticsDateRange.type';
 import { queryOptions } from '@tanstack/react-query';
-import { getSellerAnalytics } from '@/services/sellerAnalytic.service';
+import { getSellerAnalytics } from '@/services/selleranalytic.service';
 
 export const sellerAnalyticsQueryKey = {
   all: () => ['seller-analytics'] as const,

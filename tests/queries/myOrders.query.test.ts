@@ -3,7 +3,7 @@ import { getMySalesOrderOptions, myOrdersQueryKey } from '@/queries/myOrders.que
 
 const listSalesMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/services/myOrders.service', () => ({
+vi.mock('@/services/myorders.service', () => ({
   getOrder: vi.fn(),
   listOrders: vi.fn(),
   listSales: listSalesMock,

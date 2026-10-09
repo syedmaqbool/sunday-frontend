@@ -77,7 +77,7 @@ vi.mock('@/hooks/useSellerRating', () => ({
   }),
 }));
 
-vi.mock('@/services/myOrders.service', () => ({
+vi.mock('@/services/myorders.service', () => ({
   updateItemStatus: vi.fn(),
   uploadShippingProof: vi.fn(),
 }));

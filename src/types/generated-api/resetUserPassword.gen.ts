@@ -15,6 +15,34 @@ export interface ResetUserPasswordErrors {
   /**
    * Default Response
    */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
   401: {
     /**
      * Request identifier for tracing the error
@@ -24,6 +52,62 @@ export interface ResetUserPasswordErrors {
      * Http status code of the error response
      */
     statusCode: 401;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  404: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  /**
+   * Default Response
+   */
+  500: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 500;
     /**
      * Detailed human-readable error message
      */

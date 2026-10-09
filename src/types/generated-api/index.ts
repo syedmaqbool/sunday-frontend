@@ -55,7 +55,7 @@ export type { DisconnectAdminQuickBooksConnectionData, DisconnectAdminQuickBooks
 export type { DismissAdminFlaggedMessageData, DismissAdminFlaggedMessageError, DismissAdminFlaggedMessageErrors, DismissAdminFlaggedMessageResponse, DismissAdminFlaggedMessageResponses } from './dismissAdminFlaggedMessage.gen';
 export type { ExportAdminFinanceReportData, ExportAdminFinanceReportError, ExportAdminFinanceReportErrors, ExportAdminFinanceReportResponse, ExportAdminFinanceReportResponses } from './exportAdminFinanceReport.gen';
 export type { ExportAdminMarketingLeadsData, ExportAdminMarketingLeadsError, ExportAdminMarketingLeadsErrors, ExportAdminMarketingLeadsResponse, ExportAdminMarketingLeadsResponses } from './exportAdminMarketingLeads.gen';
-export type { ForgotUserPasswordData, ForgotUserPasswordErrors, ForgotUserPasswordResponse, ForgotUserPasswordResponses } from './forgotUserPassword.gen';
+export type { ForgotUserPasswordData, ForgotUserPasswordError, ForgotUserPasswordErrors, ForgotUserPasswordResponse, ForgotUserPasswordResponses } from './forgotUserPassword.gen';
 export type { GetActiveListingBoostsData, GetActiveListingBoostsError, GetActiveListingBoostsErrors, GetActiveListingBoostsResponse, GetActiveListingBoostsResponses } from './getActiveListingBoosts.gen';
 export type { GetAdminAnalyticsData, GetAdminAnalyticsError, GetAdminAnalyticsErrors, GetAdminAnalyticsResponse, GetAdminAnalyticsResponses } from './getAdminAnalytics.gen';
 export type { GetAdminBoostsData, GetAdminBoostsError, GetAdminBoostsErrors, GetAdminBoostsResponse, GetAdminBoostsResponses } from './getAdminBoosts.gen';

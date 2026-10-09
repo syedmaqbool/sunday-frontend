@@ -93,6 +93,7 @@ export interface GetAdminDiscountCodesResponses {
       discountType: 'FIXED' | 'PERCENTAGE';
       discountValue: number;
       maxUses: number | null;
+      maxUsesPerUser: number | null;
       minOrderAmount: number;
       expiresAt: string | null;
       createdAt: string;

@@ -1400,6 +1400,20 @@ function ComplaintCard({ complaint, selected = false }: { complaint: Complaint; 
               <span className="font-medium">Admin note:</span>
               {' '}
               {complaint.adminNotes}
+              {complaint.status === "RETURN_APPROVED" && (
+                <p>
+                  <a
+                    href={`/profile?tab=sold`}
+                    style={{
+                      color: "blue",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Please provide the return address if you haven’t already.
+                  </a>
+                </p>
+              )}
             </p>
           )}
           <p className="text-xs text-muted-foreground">

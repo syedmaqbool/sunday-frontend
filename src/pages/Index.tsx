@@ -1,19 +1,28 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import ComingSoonLanding from '@/components/ComingSoonLanding';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import { useAuth } from '@/contexts/AuthContext';
+import CategoryGrid from '@/components/CategoryGrid';
+import FeaturedListings from '@/components/FeaturedListings';
+import Footer from '@/components/Footer';
+import HeroSection from '@/components/HeroSection';
+import MobileAppBanner from '@/components/MobileAppBanner';
+import Navbar from '@/components/Navbar';
+import TopFAQs from '@/components/TopFAQs';
+import TrendingProducts from '@/components/TrendingProducts';
+import WhyShopWithUs from '@/components/WhyShopWithUs';
 
 export default function Index() {
-  const location = useLocation();
-  const { loading, user } = useAuth();
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (user) {
-    return <Navigate replace to={{ pathname: '/listings', search: location.search }} />;
-  }
-
-  return <ComingSoonLanding />;
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <HeroSection />
+        <CategoryGrid />
+        <FeaturedListings variant="fresh" />
+        <WhyShopWithUs />
+        <TrendingProducts />
+        <FeaturedListings variant="personalized" />
+        <TopFAQs />
+      </main>
+      <MobileAppBanner />
+      <Footer />
+    </div>
+  );
 }

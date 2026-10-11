@@ -1,7 +1,6 @@
-import type { MouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,18 +18,9 @@ import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
 import { calcCommission } from '@/lib/commission';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
-interface CartDrawerProps {
-  navigationDisabled?: boolean;
-}
-
-function preventNavigation(event: MouseEvent<HTMLElement>) {
-  event.preventDefault();
-}
-
-export default function CartDrawer({ navigationDisabled = false }: CartDrawerProps) {
+export default function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice } = useCart();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
   const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
     tier => tier.active,
@@ -51,35 +41,10 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
   const platformFee = itemFees.reduce((s, f) => s + f.amount, 0);
   const totalPayable = totalPrice + platformFee;
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!navigationDisabled)
-      setOpen(nextOpen);
-  };
-
-  const handleBrowseClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (navigationDisabled) {
-      event.preventDefault();
-      return;
-    }
-
-    navigate('/listings');
-  };
-
-  const handleCheckoutClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (navigationDisabled) {
-      event.preventDefault();
-      return;
-    }
-
-    navigate('/checkout');
-  };
-
   return (
-    <Sheet onOpenChange={handleOpenChange} open={navigationDisabled ? false : open}>
+    <Sheet>
       <SheetTrigger asChild>
         <Button
-          onClick={navigationDisabled ? preventNavigation : undefined}
-          aria-disabled={navigationDisabled || undefined}
           aria-label="Open cart"
           size="icon"
           variant="ghost"
@@ -114,28 +79,15 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <ShoppingBag className="h-12 w-12 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">Your cart is empty</p>
-                {navigationDisabled
-                  ? (
-                      <Button
-                        onClick={handleBrowseClick}
-                        aria-disabled="true"
-                        size="sm"
-                        variant="outline"
-                      >
-                        Browse listings
-                      </Button>
-                    )
-                  : (
-                      <SheetClose asChild>
-                        <Button
-                          onClick={handleBrowseClick}
-                          size="sm"
-                          variant="outline"
-                        >
-                          Browse listings
-                        </Button>
-                      </SheetClose>
-                    )}
+                <SheetClose asChild>
+                  <Button
+                    onClick={() => navigate('/listings')}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Browse listings
+                  </Button>
+                </SheetClose>
               </div>
             )
           : (
@@ -227,32 +179,17 @@ export default function CartDrawer({ navigationDisabled = false }: CartDrawerPro
                       {totalPayable.toLocaleString()}
                     </span>
                   </div>
-                  {navigationDisabled
-                    ? (
-                        <Button
-                          onClick={handleCheckoutClick}
-                          aria-disabled="true"
-                          size="lg"
-                          className="mt-2 w-full gap-2"
-                        >
-                          Checkout
-                          {' '}
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      )
-                    : (
-                        <SheetClose asChild>
-                          <Button
-                            onClick={handleCheckoutClick}
-                            size="lg"
-                            className="mt-2 w-full gap-2"
-                          >
-                            Checkout
-                            {' '}
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
-                        </SheetClose>
-                      )}
+                  <SheetClose asChild>
+                    <Button
+                      onClick={() => navigate('/checkout')}
+                      size="lg"
+                      className="mt-2 w-full gap-2"
+                    >
+                      Checkout
+                      {' '}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </SheetClose>
                 </div>
               </>
             )}

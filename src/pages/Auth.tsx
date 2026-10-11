@@ -64,20 +64,6 @@ function parseRetryAfterSeconds(value: string | null): number {
   return Math.ceil(seconds);
 }
 
-function getPostAuthDestination(returnTo: string | null): string {
-  if (!returnTo || returnTo === '/' || returnTo.startsWith('/#')) {
-    return '/listings';
-  }
-
-  if (returnTo.startsWith('/?')) {
-    const hashIndex = returnTo.indexOf('#');
-    const search = hashIndex === -1 ? returnTo.slice(1) : returnTo.slice(1, hashIndex);
-    return `/listings${search}`;
-  }
-
-  return returnTo;
-}
-
 function Auth() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
@@ -126,10 +112,10 @@ function Auth() {
     form.clearErrors('otp');
   };
 
-  // Already signed-in users who open the auth page go to their requested destination.
+  // Already logged in → home
   useEffect(() => {
     if (user && !authSubmissionInProgress.current) {
-      navigate(getPostAuthDestination(returnTo), { replace: true });
+      navigate(returnTo ?? '/', { replace: true });
     }
   }, [user, navigate, returnTo]);
 
@@ -247,7 +233,7 @@ function Auth() {
         const onboardingDone = (data.preferences as any)?.onboardingCompleted;
         if (onboardingDone) {
           toast({ title: 'Welcome back!' });
-          navigate(getPostAuthDestination(returnTo));
+          navigate(returnTo ?? '/');
         }
         else {
           navigate('/preferences');

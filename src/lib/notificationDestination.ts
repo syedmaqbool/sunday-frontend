@@ -9,6 +9,9 @@ export function getNotificationDestinationPath(notification: Notification): stri
   const parameters = new URLSearchParams();
   const focusedChild = destination.focusedChild;
 
+  if (destination.resource === 'profile' && destination.section === 'overview')
+    return '/profile';
+
   if (destination.resource === 'conversation' && destination.section === 'messages') {
     if (resourceId)
       parameters.set('conversation', resourceId);

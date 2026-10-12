@@ -1,4 +1,3 @@
-import { setTimeout as delay } from 'node:timers/promises';
 import { infiniteQueryOptions, QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -74,6 +73,7 @@ function reviewPage(data: typeof review[], currentPage = 1, lastPage = 1) {
 function renderSellerProfile(
   initialEntry: string,
   reviewPages: Array<Error | Promise<ReturnType<typeof reviewPage>> | ReturnType<typeof reviewPage>> = [reviewPage([review])],
+  onReviewPageRequested?: (pageNumber: number) => void,
 ) {
   sellerProfileQueryMock.mockReturnValue(queryOptions({
     queryFn: async () => ({
@@ -103,6 +103,7 @@ function renderSellerProfile(
     getNextPageParam: page => page.pagination.nextPage ?? undefined,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
+      onReviewPageRequested?.(pageParam);
       const page = reviewPages[pageParam - 1];
       if (page instanceof Error)
         throw page;
@@ -150,17 +151,28 @@ describe('seller review notification routing', () => {
   });
 
   it('clears an unavailable review only after all review pages have loaded', async () => {
-    const lastReviewPage = (async () => {
-      await delay(200);
-      return reviewPage([], 2, 2);
-    })();
+    let resolveLastReviewPage!: (page: ReturnType<typeof reviewPage>) => void;
+    const lastReviewPage = new Promise<ReturnType<typeof reviewPage>>((resolve) => {
+      resolveLastReviewPage = resolve;
+    });
+    let resolvePageTwoRequested!: () => void;
+    const pageTwoRequested = new Promise<void>((resolve) => {
+      resolvePageTwoRequested = resolve;
+    });
     renderSellerProfile(
       '/seller/seller-1?tab=reviews&review=missing-review',
       [reviewPage([], 1, 2), lastReviewPage],
+      (pageNumber) => {
+        if (pageNumber === 2)
+          resolvePageTwoRequested();
+      },
     );
 
     expect(await screen.findByText('No reviews yet')).toBeInTheDocument();
+    await pageTwoRequested;
     expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=missing-review');
+
+    resolveLastReviewPage(reviewPage([], 2, 2));
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'));
   });
 

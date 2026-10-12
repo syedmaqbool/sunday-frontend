@@ -53,7 +53,6 @@ function renderAuth(returnTo?: string) {
       <Routes>
         <Route element={<Auth />} path="/auth" />
         <Route element={<Destination label="Index" />} path="/" />
-        <Route element={<Destination label="Listings" />} path="/listings" />
         <Route element={<Destination label="Checkout" />} path="/checkout" />
         <Route element={<Destination label="Preferences" />} path="/preferences" />
       </Routes>
@@ -117,12 +116,12 @@ describe('sign-in navigation', () => {
     toastMock.mockReset();
   });
 
-  it('sends a completed sign-in to listings by default', async () => {
+  it('sends a completed sign-in to the index by default', async () => {
     renderAuth();
 
     await submitLogin();
 
-    expect(await screen.findByTestId('destination')).toHaveTextContent('Listings');
+    expect(await screen.findByTestId('destination')).toHaveTextContent('Index');
   });
 
   it('preserves an explicit non-root destination after sign-in', async () => {
@@ -133,19 +132,19 @@ describe('sign-in navigation', () => {
     expect(await screen.findByTestId('destination')).toHaveTextContent('Checkout?source=offer');
   });
 
-  it('sends a root destination to listings and preserves its query', async () => {
+  it('sends a root destination to the index and preserves its query', async () => {
     renderAuth('/?category=women&source=home#featured');
 
     await submitLogin();
 
-    expect(await screen.findByTestId('destination')).toHaveTextContent('Listings?category=women&source=home');
+    expect(await screen.findByTestId('destination')).toHaveTextContent('Index?category=women&source=home');
   });
 
-  it('sends an already signed-in user to listings by default', async () => {
+  it('sends an already signed-in user to the index by default', async () => {
     authState.user = { id: 'user-id' };
     renderAuth();
 
-    expect(await screen.findByTestId('destination')).toHaveTextContent('Listings');
+    expect(await screen.findByTestId('destination')).toHaveTextContent('Index');
   });
 
   it('keeps incomplete onboarding in preferences after sign-in', async () => {

@@ -7,6 +7,13 @@ function notification(destination: Notification['destination'], audience: Notifi
 }
 
 describe('getNotificationDestinationPath', () => {
+  it('opens profile overview notifications without query parameters', () => {
+    expect(getNotificationDestinationPath(notification({
+      resource: 'profile',
+      section: 'overview',
+    }))).toBe('/profile');
+  });
+
   it('opens a user conversation and focuses the notified message', () => {
     expect(getNotificationDestinationPath(notification({
       resourceId: 'conversation-1',
@@ -54,22 +61,23 @@ describe('getNotificationDestinationPath', () => {
     }))).toBe('/listings');
   });
 
-  it('opens seller listing notifications in the exact listing editor', () => {
-    for (const type of [
-      'LISTING_APPROVED',
-      'LISTING_FEEDBACK_ADDED',
-      'LISTING_NEEDS_REVISION',
-      'LISTING_REJECTED',
-    ] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'listing 1',
-          resource: 'listing',
-          section: 'editor',
-        }),
-        type,
-      })).toBe('/edit-listing/listing%201');
-    }
+  it('opens seller listing editor notifications in the status-specific tab', () => {
+    const destination = {
+      resourceId: 'listing 1',
+      resource: 'listing',
+      section: 'editor',
+    } as const;
+
+    expect(getNotificationDestinationPath({
+      ...notification(destination),
+      metadata: { status: 'APPROVED' },
+      type: 'LISTING_APPROVED',
+    })).toBe('/my-listings?tab=approved');
+    expect(getNotificationDestinationPath({
+      ...notification(destination),
+      metadata: { status: 'REJECTED' },
+      type: 'LISTING_REJECTED',
+    })).toBe('/my-listings?tab=pending');
   });
 
   it('opens both complaint notification types in the recipient returns tab with the complaint selected', () => {

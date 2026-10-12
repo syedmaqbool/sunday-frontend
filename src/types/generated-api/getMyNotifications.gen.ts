@@ -71,8 +71,8 @@ export interface GetMyNotificationsResponses {
           resource: 'manualPaymentSubmission' | 'message' | 'orderItem' | 'review' | 'supportTicketMessage';
         };
         recipient?: 'ADMIN' | 'BUYER' | 'SELLER';
-        resource: 'complaint' | 'conversation' | 'listing' | 'offer' | 'order' | 'report' | 'seller' | 'supportTicket';
-        section: 'detail' | 'editor' | 'list' | 'listings' | 'management' | 'manual-payment-review' | 'messages' | 'moderation' | 'my-returns' | 'received' | 'returned-to-me' | 'reviews' | 'sent' | 'sold';
+        resource: 'complaint' | 'conversation' | 'listing' | 'offer' | 'order' | 'profile' | 'report' | 'seller' | 'supportTicket';
+        section: 'detail' | 'editor' | 'list' | 'listings' | 'management' | 'manual-payment-review' | 'messages' | 'moderation' | 'my-returns' | 'overview' | 'received' | 'returned-to-me' | 'reviews' | 'sent' | 'sold';
       } | null;
       entityType: string | null;
       metadata: {

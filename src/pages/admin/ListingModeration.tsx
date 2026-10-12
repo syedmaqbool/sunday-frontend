@@ -1,4 +1,4 @@
-import type { AdminListing, ListingStatus } from '@/types/adminListing.type';
+import type { AdminListing, ListingStatus, ModerateListingPayload } from '@/types/adminListing.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useQuery } from '@tanstack/react-query';
@@ -44,7 +44,6 @@ import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminListingsOptions,
-  useCreateAdminListingFeedbackMutation,
   useModerateListingMutation,
 } from '@/queries/adminListing.query';
 
@@ -63,63 +62,68 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-        {current.isVideo ? (
-  <div className="relative h-full w-full bg-black">
-    <video
-      src={current.url}
-      muted
-      playsInline
-      controls={false}
-      onClick={(event) => {
-        const video = event.currentTarget;
+        {current.isVideo
+          ? (
+              <div className="relative h-full w-full bg-black">
+                <video
+                  src={current.url}
+                  onClick={(event) => {
+                    const video = event.currentTarget;
 
-        if (video.paused) {
-          void video.play();
-        } else {
-          video.pause();
-        }
-      }}
-      onVolumeChange={(event) => {
-        const video = event.currentTarget;
+                    if (video.paused) {
+                      void video.play();
+                    }
+                    else {
+                      video.pause();
+                    }
+                  }}
+                  onVolumeChange={(event) => {
+                    const video = event.currentTarget;
 
-        if (!video.muted || video.volume !== 0) {
-          video.muted = true;
-          video.volume = 0;
-        }
-      }}
-      className="h-full w-full bg-black object-contain"
-    />
+                    if (!video.muted || video.volume !== 0) {
+                      video.muted = true;
+                      video.volume = 0;
+                    }
+                  }}
+                  controls={false}
+                  muted
+                  playsInline
+                  className="h-full w-full bg-black object-contain"
+                />
 
-    <button
-      type="button"
-      onClick={(event) => {
-        const video =
-          event.currentTarget.parentElement?.querySelector('video');
+                <button
+                  onClick={(event) => {
+                    const video = event.currentTarget.parentElement?.querySelector('video');
 
-        if (!video) return;
+                    if (!video) {
+                      return;
+                    }
 
-        if (video.paused) {
-          void video.play();
-        } else {
-          video.pause();
-        }
-      }}
-      className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
-    >
-      Play / Pause
-    </button>
+                    if (video.paused) {
+                      void video.play();
+                    }
+                    else {
+                      video.pause();
+                    }
+                  }}
+                  type="button"
+                  className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
+                >
+                  Play / Pause
+                </button>
 
-    <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
-      Muted
-    </span>
-  </div>
-) : (
-  <img
-    src={current.url}
-    alt=""
-    className="h-full w-full object-cover"
-  />
-)}
+                <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
+                  Muted
+                </span>
+              </div>
+            )
+          : (
+              <img
+                src={current.url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            )}
         {images.length > 1 && (
           <>
             <button
@@ -211,7 +215,6 @@ function ListingModeration() {
   const reviewListing = requestedListingId
     ? listings.find(listing => listing.id === requestedListingId) ?? null
     : null;
-  const createFeedback = useCreateAdminListingFeedbackMutation();
   const moderateListing = useModerateListingMutation();
 
   const statusColor = (s: ListingStatus) => {
@@ -257,21 +260,30 @@ function ListingModeration() {
 
   const handleModerate = async (
     id: string,
-    status: 'APPROVED' | 'REJECTED',
+    status: ModerateListingPayload['status'],
     feedbackText?: string,
   ) => {
     const normalizedFeedback = feedbackText?.trim();
 
-    try {
-      if (normalizedFeedback) {
-        await createFeedback.mutateAsync({
-          listingId: id,
-          feedback: normalizedFeedback,
-        });
-      }
+    if (status === 'NEEDS_REVISION' && !normalizedFeedback) {
+      feedbackForm.setError('feedback', {
+        message: 'Enter feedback before requesting revisions.',
+        type: 'required',
+      });
+      return;
+    }
 
-      await moderateListing.mutateAsync({ listingId: id, status });
-      toast.success(`Listing ${status.toLowerCase()}`);
+    feedbackForm.clearErrors('feedback');
+
+    try {
+      await moderateListing.mutateAsync({
+        listingId: id,
+        status,
+        ...(normalizedFeedback && { feedback: normalizedFeedback }),
+      });
+      toast.success(status === 'NEEDS_REVISION'
+        ? 'Listing marked as needing revision'
+        : `Listing ${status.toLowerCase()}`);
       updateReviewSelection(null);
       feedbackForm.reset({ feedback: '' });
       goToNext();
@@ -280,6 +292,9 @@ function ListingModeration() {
       showErrorToast(error, 'Failed to update listing');
     }
   };
+
+  const submitReviewDecision = (id: string, status: ModerateListingPayload['status']) =>
+    feedbackForm.handleSubmit(values => handleModerate(id, status, values.feedback))();
 
   return (
     <div>
@@ -377,7 +392,7 @@ function ListingModeration() {
                           {listing.status !== 'APPROVED' && (
                             <Button
                               onClick={() => handleModerate(listing.id, 'APPROVED')}
-                              disabled={moderateListing.isPending || createFeedback.isPending}
+                              disabled={moderateListing.isPending}
                               size="sm"
                               variant="outline"
                               className="gap-1 text-primary"
@@ -390,7 +405,7 @@ function ListingModeration() {
                           {listing.status !== 'REJECTED' && (
                             <Button
                               onClick={() => handleModerate(listing.id, 'REJECTED')}
-                              disabled={moderateListing.isPending || createFeedback.isPending}
+                              disabled={moderateListing.isPending}
                               size="sm"
                               variant="outline"
                               className="gap-1 text-destructive"
@@ -556,22 +571,38 @@ function ListingModeration() {
                     <Controller
                       name="feedback"
                       control={feedbackForm.control}
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <Textarea
                           {...field}
-                          placeholder="Provide feedback to the seller (optional for approval, recommended for rejection)..."
+                          onChange={(event) => {
+                            field.onChange(event);
+                            if (event.target.value.trim()) {
+                              feedbackForm.clearErrors('feedback');
+                            }
+                          }}
+                          aria-describedby={fieldState.error ? 'listing-feedback-hint listing-feedback-error' : 'listing-feedback-hint'}
+                          aria-invalid={fieldState.invalid}
+                          placeholder="Feedback for the seller"
                           rows={3}
                         />
                       )}
                     />
+                    <p id="listing-feedback-hint" className="text-xs text-muted-foreground">
+                      Required when requesting revisions. Optional for approval or rejection.
+                    </p>
+                    {feedbackForm.formState.errors.feedback && (
+                      <p id="listing-feedback-error" role="alert" className="text-sm text-destructive">
+                        {feedbackForm.formState.errors.feedback.message}
+                      </p>
+                    )}
                   </div>
 
                   {/* Moderation actions */}
                   <div className="flex gap-3">
                     {reviewListing.status !== 'APPROVED' && (
                       <Button
-                        onClick={() => feedbackForm.handleSubmit(values => handleModerate(reviewListing.id, 'APPROVED', values.feedback || undefined))()}
-                        disabled={moderateListing.isPending || createFeedback.isPending}
+                        onClick={() => submitReviewDecision(reviewListing.id, 'APPROVED')}
+                        disabled={moderateListing.isPending}
                         type="button"
                         className="flex-1 gap-2"
                       >
@@ -580,10 +611,23 @@ function ListingModeration() {
                         Approve
                       </Button>
                     )}
+                    {reviewListing.status !== 'NEEDS_REVISION' && (
+                      <Button
+                        onClick={() => submitReviewDecision(reviewListing.id, 'NEEDS_REVISION')}
+                        disabled={moderateListing.isPending}
+                        type="button"
+                        variant="outline"
+                        className="flex-1 gap-2"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        {' '}
+                        Request revisions
+                      </Button>
+                    )}
                     {reviewListing.status !== 'REJECTED' && (
                       <Button
-                        onClick={() => feedbackForm.handleSubmit(values => handleModerate(reviewListing.id, 'REJECTED', values.feedback))()}
-                        disabled={moderateListing.isPending || createFeedback.isPending}
+                        onClick={() => submitReviewDecision(reviewListing.id, 'REJECTED')}
+                        disabled={moderateListing.isPending}
                         type="button"
                         variant="destructive"
                         className="flex-1 gap-2"

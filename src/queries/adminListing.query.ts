@@ -1,4 +1,4 @@
-import type { ListingStatus } from '@/types/adminListing.type';
+import type { ListingStatus, ModerateListingPayload } from '@/types/adminListing.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminListingFeedbackQueryKey } from '@/queries/adminListingFeedback.query';
 import { myListingFeedbackQueryKey } from '@/queries/myListingFeedback.query';
@@ -32,11 +32,8 @@ export function useModerateListingMutation() {
   return useMutation({
     mutationFn: ({
       listingId,
-      status,
-    }: {
-      listingId: string;
-      status: 'APPROVED' | 'NEEDS_REVISION' | 'REJECTED';
-    }) => moderateListing(listingId, { status }),
+      ...payload
+    }: { listingId: string } & ModerateListingPayload) => moderateListing(listingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
       queryClient.invalidateQueries({

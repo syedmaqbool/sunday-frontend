@@ -360,7 +360,7 @@ export default function RolesPermissions() {
                 render={({ field }) => {
                   const selectedPermissionSet = new Set(field.value);
                   const updatePermissions = (nextPermissions: string[]) =>
-                    field.onChange(normalizePermissionNames(nextPermissions));
+                    field.onChange(normalizeRolePermissionNames(nextPermissions));
                   const handleToggleSingle = (permissionName: AssignableAdminPermissionName, checked: boolean) => {
                     const next = new Set(field.value);
                     if (checked)
@@ -565,7 +565,17 @@ function parsePermissionName(name: string) {
 function normalizePermissions(
   permissionNames: AssignableAdminPermissionName[],
 ): AssignableAdminPermissionName[] {
-  return normalizePermissionNames(permissionNames) as AssignableAdminPermissionName[];
+  return normalizeRolePermissionNames(permissionNames) as AssignableAdminPermissionName[];
+}
+
+function normalizeRolePermissionNames(permissionNames: string[]): string[] {
+  const values = new Set(permissionNames);
+
+  if (values.has('SELLER_COUPONS_CREATE') || values.has('SELLER_COUPONS_UPDATE')) {
+    values.add('USERS_READ');
+  }
+
+  return normalizePermissionNames([...values]);
 }
 
 function normalizePermissionNames(permissionNames: string[]): string[] {

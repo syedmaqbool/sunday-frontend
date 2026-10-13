@@ -49,6 +49,7 @@ import {
 
 const listingFeedbackSchema = z.object({ feedback: z.string() });
 const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD'] as const;
+const REVIEW_LOOKUP_PAGE_SIZE = 100;
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -210,10 +211,52 @@ function ListingModeration() {
     defaultValues: { feedback: '' },
     resolver: zodResolver(listingFeedbackSchema),
   });
-
-  const { data: listings = [], isLoading } = useQuery(getAdminListingsOptions(filter));
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const apiStatus = filter === 'all' ? undefined : filter;
+  const {
+    data: listingsResponse,
+    isLoading,
+    isPlaceholderData,
+  } = useQuery({
+    ...getAdminListingsOptions({
+      page: currentPage,
+      size: itemsPerPage,
+      status: apiStatus,
+    }),
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[2] === apiStatus ? previousData : undefined,
+  });
+  const listings = listingsResponse?.data ?? [];
+  const totalListings = listingsResponse?.pagination.total ?? 0;
+  const totalPages = Math.max(1, listingsResponse?.pagination.lastPage ?? 1);
+  const startRecord = totalListings === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endRecord = Math.min(currentPage * itemsPerPage, totalListings);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+  const selectedPageListing = requestedListingId
+    ? listings.find(listing => listing.id === requestedListingId)
+    : undefined;
+  const reviewListingsQuery = useQuery({
+    ...getAdminListingsOptions({
+      page: 1,
+      size: REVIEW_LOOKUP_PAGE_SIZE,
+      status: apiStatus,
+    }),
+    enabled: Boolean(requestedListingId) && selectedPageListing === undefined,
+  });
+  const firstPageReviewListings = reviewListingsQuery.data?.data ?? [];
+  const reviewListingFromFirstPage = firstPageReviewListings.find(
+    listing => listing.id === requestedListingId,
+  );
   const reviewListing = requestedListingId
-    ? listings.find(listing => listing.id === requestedListingId) ?? null
+    ? selectedPageListing ?? reviewListingFromFirstPage ?? null
     : null;
   const moderateListing = useModerateListingMutation();
 
@@ -226,7 +269,11 @@ function ListingModeration() {
   };
 
   // Navigate to next pending listing in review modal
-  const pendingListings = listings.filter(l => l.status === 'PENDING');
+  const firstPageReviewListingIds = new Set(firstPageReviewListings.map(listing => listing.id));
+  const pendingListings = [
+    ...firstPageReviewListings,
+    ...listings.filter(listing => !firstPageReviewListingIds.has(listing.id)),
+  ].filter(listing => listing.status === 'PENDING');
   const currentReviewIndex = reviewListing
     ? pendingListings.findIndex(l => l.id === reviewListing.id)
     : -1;
@@ -250,14 +297,13 @@ function ListingModeration() {
   };
 
   useEffect(() => {
-    if (isLoading || !requestedListingId || reviewListing)
+    if (isLoading || reviewListingsQuery.isLoading || !requestedListingId || reviewListing)
       return;
 
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.delete('listing');
     setSearchParameters(nextParameters, { replace: true });
-  }, [isLoading, requestedListingId, reviewListing, searchParameters, setSearchParameters]);
-
+  }, [isLoading, requestedListingId, reviewListing, reviewListingsQuery.isLoading, searchParameters, setSearchParameters]);
   const handleModerate = async (
     id: string,
     status: ModerateListingPayload['status'],
@@ -308,7 +354,10 @@ function ListingModeration() {
           </p>
         </div>
         <Select
-          onValueChange={v => updateReviewSelection(null, v as 'all' | ListingStatus)}
+          onValueChange={(v) => {
+            setCurrentPage(1);
+            updateReviewSelection(null, v as 'all' | ListingStatus);
+          }}
           value={filter}
         >
           <SelectTrigger className="w-[160px]">
@@ -337,89 +386,178 @@ function ListingModeration() {
                 </div>
               )
             : (
-                <div className="mt-6 space-y-3">
-                  {listings.map(listing => (
-                    <Card key={listing.id} className="group">
-                      <CardContent className="
-                        flex flex-col gap-4 p-4
-                        sm:flex-row sm:items-center
-                      "
-                      >
-                        <img
-                          src={listing.coverImage?.url || '/placeholder.svg'}
-                          alt={listing.title}
-                          className="h-20 w-20 rounded-md object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="truncate font-semibold text-foreground">
-                              {listing.title}
-                            </h3>
-                            <Badge variant={statusColor(listing.status)}>
-                              {formatEnumLabel(listing.status)}
-                            </Badge>
+                <>
+                  <div className="mt-6 space-y-3">
+                    {listings.map(listing => (
+                      <Card key={listing.id} className="group">
+                        <CardContent className="
+                          flex flex-col gap-4 p-4
+                          sm:flex-row sm:items-center
+                        "
+                        >
+                          <img
+                            src={listing.coverImage?.url || '/placeholder.svg'}
+                            alt={listing.title}
+                            className="h-20 w-20 rounded-md object-cover"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="truncate font-semibold text-foreground">
+                                {listing.title}
+                              </h3>
+                              <Badge variant={statusColor(listing.status)}>
+                                {formatEnumLabel(listing.status)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {listing.brand}
+                              {' '}
+                              ·
+                              {listing.categoryLabel}
+                              {' '}
+                              · Rs
+                              {' '}
+                              {listing.price.toLocaleString()}
+                              {listing.media?.length > 1
+                                && ` · ${listing.media.length} files`}
+                            </p>
+                            <p className="mt-1 truncate text-xs text-muted-foreground">
+                              {listing.description}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {listing.brand}
-                            {' '}
-                            ·
-                            {listing.categoryLabel}
-                            {' '}
-                            · Rs
-                            {' '}
-                            {listing.price.toLocaleString()}
-                            {listing.media?.length > 1
-                              && ` · ${listing.media.length} files`}
-                          </p>
-                          <p className="mt-1 truncate text-xs text-muted-foreground">
-                            {listing.description}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap justify-end gap-2">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <Button
+                              onClick={() => {
+                                updateReviewSelection(listing.id);
+                                feedbackForm.reset({ feedback: '' });
+                              }}
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                              {' '}
+                              Review
+                            </Button>
+                            {listing.status !== 'APPROVED' && (
+                              <Button
+                                onClick={() => handleModerate(listing.id, 'APPROVED')}
+                                disabled={moderateListing.isPending}
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-primary"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                {' '}
+                                Approve
+                              </Button>
+                            )}
+                            {listing.status !== 'REJECTED' && (
+                              <Button
+                                onClick={() => handleModerate(listing.id, 'REJECTED')}
+                                disabled={moderateListing.isPending}
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-destructive"
+                              >
+                                <XCircle className="h-4 w-4" />
+                                {' '}
+                                Reject
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {listings.length > 0 && (
+                    <div className="
+                      mt-4 flex flex-col gap-3
+                      sm:flex-row sm:items-center sm:justify-between
+                    "
+                    >
+                      <div className="text-sm text-muted-foreground">
+                        {isPlaceholderData
+                          ? (
+                              <span role="status">
+                                Loading page
+                                {' '}
+                                {currentPage}
+                                …
+                              </span>
+                            )
+                          : (
+                              <>
+                                Showing
+                                {' '}
+                                {startRecord}
+                                –
+                                {endRecord}
+                                {' '}
+                                of
+                                {' '}
+                                {totalListings}
+                                {' '}
+                                listings
+                              </>
+                            )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Rows per page</span>
+                        <Select
+                          onValueChange={(value) => {
+                            setItemsPerPage(Number(value));
+                            setCurrentPage(1);
+                          }}
+                          value={String(itemsPerPage)}
+                        >
+                          <SelectTrigger disabled={isPlaceholderData} className="w-[90px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                          disabled={isPlaceholderData || currentPage === 1}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <ChevronLeft className="mr-1 h-4 w-4" />
+                          Previous
+                        </Button>
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
                           <Button
-                            onClick={() => {
-                              updateReviewSelection(listing.id);
-                              feedbackForm.reset({ feedback: '' });
-                            }}
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            aria-current={page === currentPage ? 'page' : undefined}
+                            disabled={isPlaceholderData}
                             size="sm"
-                            variant="outline"
-                            className="gap-1"
+                            type="button"
+                            variant={page === currentPage ? 'default' : 'outline'}
                           >
-                            <Eye className="h-4 w-4" />
-                            {' '}
-                            Review
+                            {page}
                           </Button>
-                          {listing.status !== 'APPROVED' && (
-                            <Button
-                              onClick={() => handleModerate(listing.id, 'APPROVED')}
-                              disabled={moderateListing.isPending}
-                              size="sm"
-                              variant="outline"
-                              className="gap-1 text-primary"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              {' '}
-                              Approve
-                            </Button>
-                          )}
-                          {listing.status !== 'REJECTED' && (
-                            <Button
-                              onClick={() => handleModerate(listing.id, 'REJECTED')}
-                              disabled={moderateListing.isPending}
-                              size="sm"
-                              variant="outline"
-                              className="gap-1 text-destructive"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              {' '}
-                              Reject
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        ))}
+                        <Button
+                          onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                          disabled={isPlaceholderData || currentPage === totalPages}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          Next
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               ))}
 
       {/* Full review modal */}

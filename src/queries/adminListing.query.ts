@@ -1,4 +1,5 @@
-import type { ListingStatus, ModerateListingPayload } from '@/types/adminListing.type';
+import type { ModerateListingPayload } from '@/types/adminListing.type';
+import type { GetAdminListingsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminListingFeedbackQueryKey } from '@/queries/adminListingFeedback.query';
 import { myListingFeedbackQueryKey } from '@/queries/myListingFeedback.query';
@@ -10,20 +11,14 @@ import {
 
 export const adminListingsQueryKey = {
   all: () => ['admin-listings'] as const,
-  list: (status?: 'all' | ListingStatus) =>
-    [...adminListingsQueryKey.all(), 'list', status] as const,
+  list: (query: GetAdminListingsData['query']) =>
+    [...adminListingsQueryKey.all(), 'list', query.status, query.page, query.size] as const,
 };
 
-export function getAdminListingsOptions(status?: 'all' | ListingStatus) {
+export function getAdminListingsOptions(query: GetAdminListingsData['query']) {
   return queryOptions({
-    queryFn: async () => {
-      const response = await listAdminListings({
-        size: 100,
-        status: status && status !== 'all' ? status : undefined,
-      });
-      return response.data;
-    },
-    queryKey: adminListingsQueryKey.list(status),
+    queryFn: () => listAdminListings(query),
+    queryKey: adminListingsQueryKey.list(query),
   });
 }
 

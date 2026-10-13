@@ -29,11 +29,25 @@ const { feedbackMutation, listing, listings, moderationMutation } = vi.hoisted((
 }));
 
 vi.mock('@/queries/adminListing.query', () => ({
-  getAdminListingsOptions: (status: string) => ({
-    queryFn: async () => status === 'all'
-      ? listings
-      : listings.filter(listing => listing.status === status),
-    queryKey: ['admin-listings', status],
+  getAdminListingsOptions: ({ page, size, status }: { page: number; size: number; status?: string }) => ({
+    queryFn: async () => {
+      const filteredListings = status
+        ? listings.filter(listing => listing.status === status)
+        : listings;
+      const total = filteredListings.length;
+      return {
+        data: filteredListings.slice((page - 1) * size, page * size),
+        pagination: {
+          currentPage: page,
+          lastPage: Math.max(1, Math.ceil(total / size)),
+          nextPage: null,
+          perPage: size,
+          prevPage: null,
+          total,
+        },
+      };
+    },
+    queryKey: ['admin-listings', 'list', status, page, size],
   }),
   useCreateAdminListingFeedbackMutation: () => ({ isPending: false, mutateAsync: feedbackMutation }),
   useModerateListingMutation: () => ({ isPending: false, mutateAsync: moderationMutation }),

@@ -23,9 +23,19 @@ vi.mock('@/queries/adminSellerCoupons.query', () => ({
     queryFn: async () => ({ data: [{ id: 'seller-1', firstName: 'Jamie', lastName: 'Seller' }] }),
     queryKey: ['admin-users-list'],
   }),
-  getSellerCouponsOptions: () => ({
-    queryFn: async () => couponState.coupons,
-    queryKey: ['seller-coupons', 'list'],
+  getSellerCouponsOptions: (query: { page: number; size: number }) => ({
+    queryFn: async () => ({
+      data: couponState.coupons,
+      pagination: {
+        currentPage: query.page,
+        lastPage: Math.max(1, Math.ceil(couponState.coupons.length / query.size)),
+        nextPage: null,
+        perPage: query.size,
+        prevPage: null,
+        total: couponState.coupons.length,
+      },
+    }),
+    queryKey: ['seller-coupons', 'list', query],
   }),
   useCreateSellerCouponMutation: () => ({ mutateAsync: createCouponMock }),
   useDeleteSellerCouponMutation: () => ({ mutate: vi.fn() }),
@@ -54,8 +64,8 @@ function buildCoupon(overrides: Partial<SellerCoupon> = {}): SellerCoupon {
     minOrderAmount: 0,
     percentage: 10,
     reservedEligibleUnits: 2,
-    sellerIncentiveBonusAmount: 1250,
     scope: 'SELLER_WIDE',
+    sellerIncentiveBonusAmount: 1250,
     usedEligibleUnits: 4,
     expiresAt: null,
     startsAt: null,
@@ -86,7 +96,7 @@ describe('seller incentives', () => {
   beforeEach(() => {
     couponState.coupons = [
       buildCoupon(),
-      buildCoupon({ id: 'incentive-2', percentage: 5, maxEligibleUnits: null, reservedEligibleUnits: 0, sellerIncentiveBonusAmount: 0, usedEligibleUnits: 1 }),
+      buildCoupon({ id: 'incentive-2', maxEligibleUnits: null, percentage: 5, reservedEligibleUnits: 0, sellerIncentiveBonusAmount: 0, usedEligibleUnits: 1 }),
     ];
     createCouponMock.mockReset().mockResolvedValue({});
     toastMock.mockReset();
@@ -116,9 +126,9 @@ describe('seller incentives', () => {
     await waitFor(() => expect(createCouponMock).toHaveBeenCalledTimes(1));
     expect(createCouponMock.mock.calls[0][0]).toEqual(expect.objectContaining({
       sellerId: 'seller-1',
-      percentage: 10,
-      minOrderAmount: 500,
       maxEligibleUnits: 25,
+      minOrderAmount: 500,
+      percentage: 10,
       scope: 'SELLER_WIDE',
     }));
     expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('code');
@@ -143,7 +153,7 @@ describe('seller incentives', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() => expect(updateCouponMock).toHaveBeenCalledWith({
       id: 'incentive-1',
-      payload: expect.objectContaining({ percentage: 15, maxEligibleUnits: null }),
+      payload: expect.objectContaining({ maxEligibleUnits: null, percentage: 15 }),
     }));
   });
 

@@ -19,7 +19,7 @@ describe('index page composition', () => {
     render(<Index />);
 
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
-    expect(Array.from(screen.getByRole('main').children).map(element => element.getAttribute('data-testid'))).toEqual([
+    expect([...screen.getByRole('main').children].map((element: HTMLElement) => element.dataset.testid)).toEqual([
       'hero-section',
       'category-grid',
       'featured-listings-fresh',

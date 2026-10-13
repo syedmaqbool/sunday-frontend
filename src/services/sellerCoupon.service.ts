@@ -1,3 +1,4 @@
+import type { GetAdminSellerCouponsData } from '@/types/generated-api';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
   CreateSellerCouponPayload,
@@ -6,9 +7,11 @@ import type {
 } from '@/types/sellerCoupon.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function listSellerCoupons() {
+export function listSellerCoupons(query: GetAdminSellerCouponsData['query']) {
   return authInstance
-    .get('/api/v1/admin/seller-coupons')
+    .get('/api/v1/admin/seller-coupons', {
+      searchParams: query,
+    })
     .json<PaginatedResponse<SellerCoupon>>();
 }
 

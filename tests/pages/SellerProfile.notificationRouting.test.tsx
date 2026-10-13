@@ -152,10 +152,12 @@ describe('seller review notification routing', () => {
 
   it('clears an unavailable review only after all review pages have loaded', async () => {
     let resolveLastReviewPage!: (page: ReturnType<typeof reviewPage>) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers -- This project does not include ES2024 in its TypeScript library.
     const lastReviewPage = new Promise<ReturnType<typeof reviewPage>>((resolve) => {
       resolveLastReviewPage = resolve;
     });
     let resolvePageTwoRequested!: () => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers -- This project does not include ES2024 in its TypeScript library.
     const pageTwoRequested = new Promise<void>((resolve) => {
       resolvePageTwoRequested = resolve;
     });

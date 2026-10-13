@@ -1,5 +1,5 @@
 import type { AdminUser } from '@/types/adminUser.type';
-import type { GetPublicListingsData } from '@/types/generated-api';
+import type { GetAdminSellerCouponsData, GetPublicListingsData } from '@/types/generated-api';
 import type { MarketplaceListing } from '@/types/marketplace.type';
 import type { PaginatedResponse } from '@/types/response.type';
 import type {
@@ -18,17 +18,14 @@ import {
 export const sellerCouponsQueryKey = {
   adminUsers: () => ['admin-users-list'] as const,
   all: () => ['seller-coupons'] as const,
-  list: () => [...sellerCouponsQueryKey.all(), 'list'] as const,
+  list: (query: GetAdminSellerCouponsData['query']) => [...sellerCouponsQueryKey.all(), 'list', query] as const,
   sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
 };
 
-export function getSellerCouponsOptions() {
+export function getSellerCouponsOptions(query: GetAdminSellerCouponsData['query']) {
   return queryOptions({
-    queryFn: async () => {
-      const response = await listSellerCoupons();
-      return response.data;
-    },
-    queryKey: sellerCouponsQueryKey.list(),
+    queryFn: () => listSellerCoupons(query),
+    queryKey: sellerCouponsQueryKey.list(query),
     staleTime: 5 * 60 * 1000,
   });
 }

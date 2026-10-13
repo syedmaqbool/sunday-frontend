@@ -1,9 +1,9 @@
 import type { AdminUser } from '@/types/adminUser.type';
 import type { CreateSellerCouponPayload, SellerCoupon } from '@/types/sellerCoupon.type';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { BarChart3, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -113,7 +113,25 @@ function SellerCoupons() {
   });
   const formValues = form.watch();
 
-  const { data: incentives = [], isLoading } = useQuery(getSellerCouponsOptions());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { data: sellerCouponsResponse, isLoading } = useQuery({
+    ...getSellerCouponsOptions({
+      page: currentPage,
+      size: itemsPerPage,
+    }),
+    placeholderData: keepPreviousData,
+  });
+  const incentives = sellerCouponsResponse?.data ?? [];
+  const totalIncentives = sellerCouponsResponse?.pagination.total ?? 0;
+  const totalPages = Math.max(1, sellerCouponsResponse?.pagination.lastPage ?? 1);
+  const startRecord = totalIncentives === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endRecord = Math.min(currentPage * itemsPerPage, totalIncentives);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
   const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
   const sellers: SellerOption[] = useMemo(
     () => (sellersRaw?.data ?? []).map((user: AdminUser) => ({
@@ -212,7 +230,7 @@ function SellerCoupons() {
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Seller Incentives</h1>
           <p className="text-sm text-muted-foreground">
-            {incentives.length}
+            {totalIncentives}
             {' '}
             automatic seller incentives
           </p>
@@ -224,7 +242,7 @@ function SellerCoupons() {
         </Button>
       </div>
 
-      {incentives.length === 0
+      {totalIncentives === 0
         ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
               <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
@@ -311,8 +329,8 @@ function SellerCoupons() {
                         </Button>
                         <Button
                           onClick={() => deleteSellerIncentive(incentive.id)}
-                          size="icon"
                           aria-label="Delete seller incentive"
+                          size="icon"
                           variant="ghost"
                           className="
                             h-7 w-7 text-muted-foreground
@@ -326,6 +344,103 @@ function SellerCoupons() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="
+                flex flex-col gap-4 border-t border-border px-4 py-3
+                sm:flex-row sm:items-center sm:justify-between
+              "
+              >
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  <span>
+                    Showing
+                    {' '}
+                    {startRecord}
+                    –
+                    {endRecord}
+                    {' '}
+                    of
+                    {' '}
+                    {totalIncentives}
+                  </span>
+                  <Select
+                    onValueChange={(value) => {
+                      setItemsPerPage(Number(value));
+                      setCurrentPage(1);
+                    }}
+                    value={String(itemsPerPage)}
+                  >
+                    <SelectTrigger className="h-8 w-[110px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 / page</SelectItem>
+                      <SelectItem value="20">20 / page</SelectItem>
+                      <SelectItem value="50">50 / page</SelectItem>
+                      <SelectItem value="100">100 / page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    aria-label="Previous page"
+                    disabled={currentPage <= 1}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1)
+                    .filter(page =>
+                      page === 1
+                      || page === totalPages
+                      || Math.abs(page - currentPage) <= 1,
+                    )
+                    .reduce<{ key: string; page: 'ellipsis' | number }[]>((pages, page, index, visiblePages) => {
+                      const previousPage = visiblePages[index - 1];
+                      if (previousPage !== undefined && page - previousPage > 1) {
+                        pages.push({ key: `ellipsis-${previousPage}-${page}`, page: 'ellipsis' });
+                      }
+                      pages.push({ key: `page-${page}`, page });
+                      return pages;
+                    }, [])
+                    .map(({ key, page }) =>
+                      page === 'ellipsis'
+                        ? (
+                            <span
+                              key={key}
+                              aria-hidden="true"
+                              className="px-1 text-muted-foreground"
+                            >
+                              …
+                            </span>
+                          )
+                        : (
+                            <Button
+                              key={key}
+                              onClick={() => setCurrentPage(page)}
+                              aria-current={currentPage === page ? 'page' : undefined}
+                              aria-label={`Go to page ${page}`}
+                              size="icon"
+                              variant={currentPage === page ? 'default' : 'outline'}
+                              className="h-8 w-8"
+                            >
+                              {page}
+                            </Button>
+                          ),
+                    )}
+                  <Button
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                    aria-label="Next page"
+                    disabled={currentPage >= totalPages}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Next
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 

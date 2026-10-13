@@ -30,7 +30,9 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'listing' && destination.section === 'editor') {
-    return resourceId ? `${notification.metadata?.status === 'REJECTED' ? '/my-listings?tab=pending' : '/my-listings?tab=approved'}` : '/my-listings';
+    if (!resourceId)
+      return '/my-listings';
+    return notification.metadata?.status === 'REJECTED' ? '/my-listings?tab=pending' : '/my-listings?tab=approved';
   }
 
   if (destination.resource === 'listing' && destination.section === 'detail') {

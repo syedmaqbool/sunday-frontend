@@ -131,7 +131,7 @@ const SHIPPING_METHODS = [
   'Bykea',
   'DHL',
   'FedEx',
-  'Other'
+  'Other',
 ];
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -1361,7 +1361,6 @@ function ReturnStatusBadge({ status }: { status: ComplaintStatus }) {
 }
 
 function ComplaintCard({ complaint, selected = false, showReturnAddressLink = false }: { complaint: Complaint; selected?: boolean; showReturnAddressLink?: boolean }) {
-  console.log('ComplaintCard render', complaint, selected);
   return (
     <Card aria-current={selected ? 'true' : undefined} data-selected={selected || undefined} className={selected ? 'border-primary ring-2 ring-primary/20' : undefined}>
       <CardContent className="
@@ -1401,17 +1400,17 @@ function ComplaintCard({ complaint, selected = false, showReturnAddressLink = fa
               <span className="font-medium">Admin note:</span>
               {' '}
               {complaint.adminNotes}
-              {showReturnAddressLink &&
-                complaint.status === 'RETURN_APPROVED' && (
-                  <p className="mt-2">
-                    <Link
-                      to="/profile?tab=sold"
-                      className="cursor-pointer text-primary underline"
-                    >
-                      Please provide the return address if you haven’t already.
-                    </Link>
-                  </p>
-                )}
+              {showReturnAddressLink
+                && complaint.status === 'RETURN_APPROVED' && (
+                <p className="mt-2">
+                  <Link
+                    to="/profile?tab=sold"
+                    className="cursor-pointer text-primary underline"
+                  >
+                    Please provide the return address if you haven’t already.
+                  </Link>
+                </p>
+              )}
             </p>
           )}
           <p className="text-xs text-muted-foreground">
@@ -1510,7 +1509,7 @@ export function ReturnsTab() {
           : (
               <div className="space-y-3">
                 {returnedToMe.map(c => (
-                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} showReturnAddressLink/>
+                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} showReturnAddressLink />
                 ))}
               </div>
             )}

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, MapPin, Package, Phone, Star } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, Package, Star } from 'lucide-react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';

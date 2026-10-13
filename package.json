@@ -1,12 +1,13 @@
 {
   "name": "vite_react_shadcn_ts",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "prepare": "husky",
     "dev": "vite",
     "build": "vite build",
+    "bump:patch": "npm version patch --no-git-tag-version --force",
     "typecheck": "tsc -b --noEmit",
     "typegen": "npx openapi-ts",
     "build:dev": "vite build --mode development",

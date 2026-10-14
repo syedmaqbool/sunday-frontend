@@ -7,9 +7,7 @@ export default {
   parser: {
     hooks: {
       symbols: {
-        getFilePath: (symbol: any) => {
-          return symbol.meta.resourceId;
-        },
+        getFilePath: (symbol: { meta: { resourceId: string } }) => symbol.meta.resourceId,
       },
     },
   },

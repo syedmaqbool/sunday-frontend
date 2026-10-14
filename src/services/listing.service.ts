@@ -2,6 +2,7 @@ import type {
   AdminListing,
   ModerateListingPayload,
 } from '@/types/adminListing.type';
+import type { RemoveAdminListingData, RestoreAdminListingData } from '@/types/generated-api';
 import type {
   AdminListingFeedbackEntry,
   AdminListingFeedbackParameters,
@@ -39,12 +40,30 @@ export function listAdminListings(
   return authInstance
     .get('/api/v1/admin/listings', {
       searchParams: {
+        isDeleted: parameters.isDeleted,
         page: parameters.page ?? 1,
         size: parameters.size ?? 100,
         status: parameters.status,
       },
     })
     .json<PaginatedResponse<AdminListing>>();
+}
+
+export function removeAdminListing(
+  listingId: RemoveAdminListingData['path']['listingId'],
+  payload: RemoveAdminListingData['body'],
+): Promise<Response> {
+  return authInstance
+    .delete(`/api/v1/admin/listings/${listingId}`, { json: payload })
+    .json<Response>();
+}
+
+export function restoreAdminListing(
+  listingId: RestoreAdminListingData['path']['listingId'],
+): Promise<Response> {
+  return authInstance
+    .post(`/api/v1/admin/listings/${listingId}/restore`)
+    .json<Response>();
 }
 
 export function moderateListing(

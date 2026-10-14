@@ -39,17 +39,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useAccessControl } from '@/hooks/useAccessControl';
 import { getWeightLabel } from '@/lib/constants';
 import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminListingsOptions,
   useModerateListingMutation,
+  useRemoveAdminListingMutation,
+  useRestoreAdminListingMutation,
 } from '@/queries/adminListing.query';
 
 const listingFeedbackSchema = z.object({ feedback: z.string() });
-const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD'] as const;
+const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD', 'DELETED'] as const;
 const REVIEW_LOOKUP_PAGE_SIZE = 100;
+const removalReasonSchema = z.object({ reason: z.string().trim().min(1, 'Enter a reason before removing this listing.') });
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -202,9 +206,9 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
 function ListingModeration() {
   const [searchParameters, setSearchParameters] = useSearchParams();
   const requestedFilter = searchParameters.get('status');
-  const filter: 'all' | ListingStatus = requestedFilter
+  const filter: 'all' | 'DELETED' | ListingStatus = requestedFilter
     && LISTING_FILTERS.includes(requestedFilter as (typeof LISTING_FILTERS)[number])
-    ? requestedFilter as 'all' | ListingStatus
+    ? requestedFilter as 'all' | 'DELETED' | ListingStatus
     : 'PENDING';
   const requestedListingId = searchParameters.get('listing');
   const feedbackForm = useForm<z.infer<typeof listingFeedbackSchema>>({
@@ -213,19 +217,33 @@ function ListingModeration() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const apiStatus = filter === 'all' ? undefined : filter;
+  const [isRemovalReasonDialogOpen, setIsRemovalReasonDialogOpen] = useState(false);
+  const [isRemovalConfirmationOpen, setIsRemovalConfirmationOpen] = useState(false);
+  const [listingToRemove, setListingToRemove] = useState<AdminListing | null>(null);
+  const accessControl = useAccessControl();
+  const canRemoveListings = accessControl.hasPermissions(['LISTINGS_READ', 'LISTINGS_DELETE']);
+  const removalReasonForm = useForm<z.infer<typeof removalReasonSchema>>({
+    defaultValues: { reason: '' },
+    resolver: zodResolver(removalReasonSchema),
+  });
+  const apiStatus = filter === 'all' || filter === 'DELETED' ? undefined : filter;
+  const isDeleted = filter === 'DELETED' ? true : undefined;
   const {
     data: listingsResponse,
     isLoading,
     isPlaceholderData,
   } = useQuery({
     ...getAdminListingsOptions({
+      isDeleted,
       page: currentPage,
       size: itemsPerPage,
       status: apiStatus,
     }),
-    placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[2] === apiStatus ? previousData : undefined,
+    placeholderData: (previousData, previousQuery) => {
+      const hasMatchingFilters = previousQuery?.queryKey[2] === apiStatus
+        && previousQuery?.queryKey[3] === isDeleted;
+      return hasMatchingFilters ? previousData : undefined;
+    },
   });
   const listings = listingsResponse?.data ?? [];
   const totalListings = listingsResponse?.pagination.total ?? 0;
@@ -245,6 +263,7 @@ function ListingModeration() {
     : undefined;
   const reviewListingsQuery = useQuery({
     ...getAdminListingsOptions({
+      isDeleted,
       page: 1,
       size: REVIEW_LOOKUP_PAGE_SIZE,
       status: apiStatus,
@@ -259,6 +278,49 @@ function ListingModeration() {
     ? selectedPageListing ?? reviewListingFromFirstPage ?? null
     : null;
   const moderateListing = useModerateListingMutation();
+  const removeListing = useRemoveAdminListingMutation();
+  const restoreListing = useRestoreAdminListingMutation();
+
+  const beginListingRemoval = (listing: AdminListing) => {
+    setListingToRemove(listing);
+    removalReasonForm.reset({ reason: '' });
+    setIsRemovalReasonDialogOpen(true);
+  };
+
+  const confirmListingRemoval = removalReasonForm.handleSubmit(() => {
+    setIsRemovalReasonDialogOpen(false);
+    setIsRemovalConfirmationOpen(true);
+  });
+
+  const submitListingRemoval = async () => {
+    if (!listingToRemove) {
+      return;
+    }
+
+    try {
+      await removeListing.mutateAsync({
+        listingId: listingToRemove.id,
+        reason: removalReasonForm.getValues('reason').trim(),
+      });
+      toast.success('Listing removed');
+      setIsRemovalConfirmationOpen(false);
+      setListingToRemove(null);
+      removalReasonForm.reset({ reason: '' });
+    }
+    catch (error: any) {
+      showErrorToast(error, 'Failed to remove listing');
+    }
+  };
+
+  const submitListingRestore = async (listing: AdminListing) => {
+    try {
+      await restoreListing.mutateAsync({ listingId: listing.id });
+      toast.success('Listing restored');
+    }
+    catch (error: any) {
+      showErrorToast(error, 'Failed to restore listing');
+    }
+  };
 
   const statusColor = (s: ListingStatus) => {
     if (s === 'APPROVED')
@@ -277,7 +339,7 @@ function ListingModeration() {
   const currentReviewIndex = reviewListing
     ? pendingListings.findIndex(l => l.id === reviewListing.id)
     : -1;
-  const updateReviewSelection = (listingId: string | null, nextFilter = filter) => {
+  const updateReviewSelection = (listingId: string | null, nextFilter: 'all' | 'DELETED' | ListingStatus = filter) => {
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.set('status', nextFilter);
     if (listingId)
@@ -356,7 +418,7 @@ function ListingModeration() {
         <Select
           onValueChange={(v) => {
             setCurrentPage(1);
-            updateReviewSelection(null, v as 'all' | ListingStatus);
+            updateReviewSelection(null, v as 'all' | 'DELETED' | ListingStatus);
           }}
           value={filter}
         >
@@ -369,6 +431,7 @@ function ListingModeration() {
             <SelectItem value="APPROVED">Approved</SelectItem>
             <SelectItem value="REJECTED">Rejected</SelectItem>
             <SelectItem value="NEEDS_REVISION">Needs Revision</SelectItem>
+            <SelectItem value="DELETED">Deleted</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -408,6 +471,7 @@ function ListingModeration() {
                               <Badge variant={statusColor(listing.status)}>
                                 {formatEnumLabel(listing.status)}
                               </Badge>
+                              {listing.deletedAt && <Badge variant="destructive">Deleted</Badge>}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {listing.brand}
@@ -583,6 +647,7 @@ function ListingModeration() {
                   <Badge variant={statusColor(reviewListing.status)}>
                     {formatEnumLabel(reviewListing.status)}
                   </Badge>
+                  {reviewListing.deletedAt && <Badge variant="destructive">Deleted</Badge>}
                 </div>
               </DialogHeader>
 
@@ -604,6 +669,15 @@ function ListingModeration() {
                       {reviewListing.description || 'No description provided'}
                     </p>
                   </div>
+
+                  {reviewListing.deletedAt && reviewListing.deletionReason && (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-destructive">
+                        Removal reason
+                      </h3>
+                      <p className="mt-1 text-sm text-foreground">{reviewListing.deletionReason}</p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3">
@@ -777,6 +851,29 @@ function ListingModeration() {
                     )}
                   </div>
 
+                  {canRemoveListings && reviewListing.deletedAt && (
+                    <Button
+                      onClick={() => submitListingRestore(reviewListing)}
+                      disabled={restoreListing.isPending}
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Restore
+                    </Button>
+                  )}
+                  {canRemoveListings && !reviewListing.deletedAt && !['RESERVED', 'SOLD'].includes(reviewListing.status) && (
+                    <Button
+                      onClick={() => beginListingRemoval(reviewListing)}
+                      disabled={removeListing.isPending}
+                      type="button"
+                      variant="destructive"
+                      className="w-full"
+                    >
+                      Delete listing
+                    </Button>
+                  )}
+
                   {currentReviewIndex >= 0 && pendingListings.length > 1 && (
                     <p className="text-center text-xs text-muted-foreground">
                       Reviewing
@@ -794,6 +891,74 @@ function ListingModeration() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        onOpenChange={(open) => {
+          setIsRemovalReasonDialogOpen(open);
+          if (!open && !isRemovalConfirmationOpen) {
+            setListingToRemove(null);
+            removalReasonForm.reset({ reason: '' });
+          }
+        }}
+        open={isRemovalReasonDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reason for removing listing</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={confirmListingRemoval} className="space-y-4">
+            <Textarea
+              {...removalReasonForm.register('reason')}
+              aria-invalid={!!removalReasonForm.formState.errors.reason}
+              aria-label="Removal reason"
+              placeholder="Enter a reason"
+              rows={4}
+            />
+            {removalReasonForm.formState.errors.reason && (
+              <p role="alert" className="text-sm text-destructive">
+                {removalReasonForm.formState.errors.reason.message}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setIsRemovalReasonDialogOpen(false)} type="button" variant="outline">
+                Cancel
+              </Button>
+              <Button type="submit" variant="destructive">Continue</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        onOpenChange={(open) => {
+          setIsRemovalConfirmationOpen(open);
+          if (!open) {
+            setListingToRemove(null);
+            removalReasonForm.reset({ reason: '' });
+          }
+        }}
+        open={isRemovalConfirmationOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{`Confirm removal of ${listingToRemove?.title ?? ''}`}</DialogTitle>
+          </DialogHeader>
+          <p>{`Remove ${listingToRemove?.title ?? ''}?`}</p>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setIsRemovalConfirmationOpen(false)} type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button
+              onClick={submitListingRemoval}
+              disabled={removeListing.isPending}
+              type="button"
+              variant="destructive"
+            >
+              Confirm removal
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

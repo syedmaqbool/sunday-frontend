@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
-const { feedbackMutation, listing, listings, moderationMutation } = vi.hoisted(() => ({
+const { feedbackMutation, listing, listings, moderationMutation, removeMutation, requestedQueries, restoreMutation, userPermissions } = vi.hoisted(() => ({
   feedbackMutation: vi.fn(),
   listing: {
     id: 'listing-1',
@@ -26,31 +26,46 @@ const { feedbackMutation, listing, listings, moderationMutation } = vi.hoisted((
   } as AdminListing,
   listings: [] as AdminListing[],
   moderationMutation: vi.fn(),
+  removeMutation: vi.fn(),
+  requestedQueries: [] as Array<{ isDeleted?: boolean; page: number; size: number; status?: string }>,
+  restoreMutation: vi.fn(),
+  userPermissions: ['LISTINGS_READ', 'LISTINGS_DELETE'] as string[],
 }));
 
 vi.mock('@/queries/adminListing.query', () => ({
-  getAdminListingsOptions: ({ page, size, status }: { page: number; size: number; status?: string }) => ({
-    queryFn: async () => {
-      const filteredListings = status
-        ? listings.filter(listing => listing.status === status)
-        : listings;
-      const total = filteredListings.length;
-      return {
-        data: filteredListings.slice((page - 1) * size, page * size),
-        pagination: {
-          currentPage: page,
-          lastPage: Math.max(1, Math.ceil(total / size)),
-          nextPage: null,
-          perPage: size,
-          prevPage: null,
-          total,
-        },
-      };
-    },
-    queryKey: ['admin-listings', 'list', status, page, size],
-  }),
+  getAdminListingsOptions: ({ isDeleted, page, size, status }: { isDeleted?: boolean; page: number; size: number; status?: string }) => {
+    requestedQueries.push({ isDeleted, page, size, status });
+    return {
+      queryFn: async () => {
+        const filteredListings = status
+          ? listings.filter(listing => listing.status === status)
+          : listings;
+        const total = filteredListings.length;
+        return {
+          data: filteredListings.slice((page - 1) * size, page * size),
+          pagination: {
+            currentPage: page,
+            lastPage: Math.max(1, Math.ceil(total / size)),
+            nextPage: null,
+            perPage: size,
+            prevPage: null,
+            total,
+          },
+        };
+      },
+      queryKey: ['admin-listings', 'list', status, isDeleted, page, size],
+    };
+  },
   useCreateAdminListingFeedbackMutation: () => ({ isPending: false, mutateAsync: feedbackMutation }),
   useModerateListingMutation: () => ({ isPending: false, mutateAsync: moderationMutation }),
+  useRemoveAdminListingMutation: () => ({ isPending: false, mutateAsync: removeMutation }),
+  useRestoreAdminListingMutation: () => ({ isPending: false, mutateAsync: restoreMutation }),
+}));
+
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { permissions: userPermissions.map(name => ({ name })), roleName: 'STAFF' },
+  }),
 }));
 
 vi.mock('@/components/AdminListingFeedbackWidgets', () => ({
@@ -71,7 +86,12 @@ function HistoryControls() {
 
 function LocationObserver() {
   const location = useLocation();
-  return <output data-testid="location">{location.pathname}</output>;
+  return (
+    <output data-testid="location">
+      {location.pathname}
+      {location.search}
+    </output>
+  );
 }
 
 function renderModeration(initialEntries: string[], initialIndex = initialEntries.length - 1) {
@@ -87,10 +107,93 @@ function renderModeration(initialEntries: string[], initialIndex = initialEntrie
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requestedQueries.length = 0;
+  userPermissions.splice(0, userPermissions.length, 'LISTINGS_READ', 'LISTINGS_DELETE');
   listings.splice(0, listings.length, listing);
 });
 
 describe('admin listing notification navigation', () => {
+  it('selects Deleted in the URL and requests deleted listings', async () => {
+    renderModeration(['/admin/listings']);
+
+    fireEvent.click(await screen.findByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Deleted' }));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/listings?status=DELETED'));
+    expect(requestedQueries).toContainEqual(expect.objectContaining({ isDeleted: true, status: undefined }));
+  });
+
+  it('shows removal only when both listing permissions are present', async () => {
+    userPermissions.splice(0, userPermissions.length, 'LISTINGS_READ');
+    renderModeration(['/admin/listings?listing=listing-1&status=PENDING']);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Notification listing' });
+    expect(within(dialog).queryByRole('button', { name: 'Delete listing' })).not.toBeInTheDocument();
+  });
+
+  it('requires a nonblank reason and a separate confirmation naming the listing before removal', async () => {
+    renderModeration(['/admin/listings?listing=listing-1&status=PENDING']);
+    const listingDialog = await screen.findByRole('dialog', { name: 'Notification listing' });
+    fireEvent.click(within(listingDialog).getByRole('button', { name: 'Delete listing' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a reason before removing this listing.');
+    expect(removeMutation).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Removal reason' }), {
+      target: { value: '   Duplicate listing  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Confirm removal of Notification listing' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm removal' }));
+
+    await waitFor(() => expect(removeMutation).toHaveBeenCalledWith({
+      listingId: 'listing-1',
+      reason: 'Duplicate listing',
+    }));
+  });
+
+  it('sends no removal request when either removal step is canceled', async () => {
+    renderModeration(['/admin/listings?listing=listing-1&status=PENDING']);
+    const listingDialog = await screen.findByRole('dialog', { name: 'Notification listing' });
+    fireEvent.click(within(listingDialog).getByRole('button', { name: 'Delete listing' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    expect(removeMutation).not.toHaveBeenCalled();
+
+    fireEvent.click(within(listingDialog).getByRole('button', { name: 'Delete listing' }));
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Removal reason' }), {
+      target: { value: 'Duplicate listing' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    expect(removeMutation).not.toHaveBeenCalled();
+  });
+
+  it.each(['RESERVED', 'SOLD'] as const)('does not offer removal for %s listings', async (status) => {
+    listings.splice(0, listings.length, { ...listing, status });
+    renderModeration([`/admin/listings?listing=listing-1&status=${status}`]);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Notification listing' });
+    expect(within(dialog).queryByRole('button', { name: 'Delete listing' })).not.toBeInTheDocument();
+  });
+
+  it('shows the removal reason and restores a deleted listing', async () => {
+    const deletedListing = {
+      ...listing,
+      deletionReason: 'Duplicate listing',
+      deletedAt: '2026-10-01T00:00:00.000Z',
+    } as AdminListing;
+    listings.splice(0, listings.length, deletedListing);
+    renderModeration(['/admin/listings?listing=listing-1&status=DELETED']);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Notification listing' });
+    expect(within(dialog).getByText('Duplicate listing')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+
+    await waitFor(() => expect(restoreMutation).toHaveBeenCalledWith({ listingId: 'listing-1' }));
+  });
+
   it('restores a selected listing from the URL through browser back and forward', async () => {
     renderModeration([
       '/admin/listings?status=PENDING',

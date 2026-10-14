@@ -94,6 +94,34 @@ export interface AcceptOfferErrors {
       message: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
 }
 
 export type AcceptOfferError = AcceptOfferErrors[keyof AcceptOfferErrors];
@@ -131,6 +159,7 @@ export interface AcceptOfferResponses {
          */
         url: string;
       } | null;
+      isPaused: boolean;
       listingPrice: number;
       listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
       listingTitle: string;

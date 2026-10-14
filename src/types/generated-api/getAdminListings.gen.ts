@@ -11,6 +11,7 @@ export interface GetAdminListingsData {
     /**
      * Number of records per page
      */
+    isDeleted?: boolean;
     size: number;
     status?: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
   };
@@ -89,6 +90,7 @@ export interface GetAdminListingsResponses {
     data: Array<{
       id: string;
       categoryId: string;
+      deletedByAdminId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
@@ -114,6 +116,7 @@ export interface GetAdminListingsResponses {
          */
         url: string;
       };
+      deletionReason: string | null;
       description: string;
       media: Array<{
         id: string;
@@ -154,6 +157,7 @@ export interface GetAdminListingsResponses {
       weight: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
       createdAt: string;
       updatedAt: string;
+      deletedAt: string | null;
     }>;
     message: string;
     pagination: {

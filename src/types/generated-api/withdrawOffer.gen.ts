@@ -159,6 +159,7 @@ export interface WithdrawOfferResponses {
          */
         url: string;
       } | null;
+      isPaused: boolean;
       listingPrice: number;
       listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
       listingTitle: string;

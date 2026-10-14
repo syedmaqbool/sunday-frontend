@@ -134,6 +134,7 @@ export interface CancelMyListingReservationResponses {
     data: {
       id: string;
       categoryId: string;
+      deletedByAdminId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
@@ -159,6 +160,7 @@ export interface CancelMyListingReservationResponses {
          */
         url: string;
       };
+      deletionReason: string | null;
       description: string;
       media: Array<{
         id: string;
@@ -198,6 +200,7 @@ export interface CancelMyListingReservationResponses {
       weight: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
       createdAt: string;
       updatedAt: string;
+      deletedAt: string | null;
     };
     message: string;
     statusCode: 200;

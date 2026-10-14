@@ -97,6 +97,34 @@ export interface ModerateAdminListingErrors {
       message: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
 }
 
 export type ModerateAdminListingError = ModerateAdminListingErrors[keyof ModerateAdminListingErrors];
@@ -109,6 +137,7 @@ export interface ModerateAdminListingResponses {
     data: {
       id: string;
       categoryId: string;
+      deletedByAdminId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
@@ -134,6 +163,7 @@ export interface ModerateAdminListingResponses {
          */
         url: string;
       };
+      deletionReason: string | null;
       description: string;
       media: Array<{
         id: string;
@@ -173,6 +203,7 @@ export interface ModerateAdminListingResponses {
       weight: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
       createdAt: string;
       updatedAt: string;
+      deletedAt: string | null;
     };
     message: string;
     statusCode: 200;

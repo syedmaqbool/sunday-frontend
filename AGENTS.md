@@ -1,3 +1,7 @@
+## Worktrees
+
+- Frontend worktrees live in the sibling directory `../sunday-frontend.worktrees/`.
+
 ## Query Conventions
 
 All TanStack Query cache keys in this repo must follow these rules:

@@ -192,6 +192,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                     <Badge variant={statusBadge(offer.status)}>
                       {formatEnumLabel(offer.status)}
                     </Badge>
+                    {offer.isPaused && <Badge variant="outline">Paused</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     From
@@ -233,7 +234,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                             },
                           },
                         )}
-                      disabled={respondToOffer.isPending}
+                      disabled={offer.isPaused || respondToOffer.isPending}
                       size="sm"
                       className="gap-1"
                     >
@@ -246,6 +247,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                         form.reset({ counterAmount: '' });
                         setCounterDialog(offer);
                       }}
+                      disabled={offer.isPaused}
                       size="sm"
                       variant="outline"
                       className="gap-1"

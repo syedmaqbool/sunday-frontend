@@ -184,6 +184,7 @@ function MyOffers() {
                                 <Badge variant={statusBadge(offer.status)}>
                                   {formatEnumLabel(offer.status)}
                                 </Badge>
+                                {offer.isPaused && <Badge variant="outline">Paused</Badge>}
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 Listed Rs
@@ -218,6 +219,37 @@ function MyOffers() {
                                     {offer.counterAmount.toLocaleString()}
                                   </p>
                                 </div>
+                              )}
+
+                              {offer.isPaused && offer.status === 'PENDING' && (
+                                <Button
+                                  onClick={() =>
+                                    withdrawOffer.mutate(offer.id, {
+                                      onError: (error: unknown) => showErrorToast(error, 'Failed to withdraw offer'),
+                                      onSuccess: () => toast.success('Offer withdrawn'),
+                                    })}
+                                  disabled={withdrawOffer.isPending}
+                                  size="sm"
+                                  variant="outline"
+                                  className="mt-2 h-8 text-destructive"
+                                >
+                                  Withdraw
+                                </Button>
+                              )}
+                              {offer.isPaused && offer.status === 'COUNTERED' && (
+                                <Button
+                                  onClick={() =>
+                                    withdrawOffer.mutate(offer.id, {
+                                      onError: (error: unknown) => showErrorToast(error, 'Failed to decline offer'),
+                                      onSuccess: () => toast.success('Offer declined'),
+                                    })}
+                                  disabled={withdrawOffer.isPending}
+                                  size="sm"
+                                  variant="outline"
+                                  className="mt-2 h-8 text-destructive"
+                                >
+                                  Decline
+                                </Button>
                               )}
 
                               {offer.status === 'ACCEPTED'

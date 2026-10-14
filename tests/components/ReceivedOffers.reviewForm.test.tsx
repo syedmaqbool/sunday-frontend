@@ -38,6 +38,7 @@ const firstAcceptedOffer = {
   buyerFullName: 'Buyer One',
   counterAmount: null,
   coverImage: null,
+  isPaused: false,
   listingPrice: 150,
   listingStatus: 'APPROVED',
   listingTitle: 'Vintage Lamp',
@@ -155,5 +156,41 @@ describe('received offer review form', () => {
 
     expect(await screen.findByText('✓ Reviewed')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Rate this buyer' })).not.toBeInTheDocument();
+  });
+});
+
+describe('received paused offers', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    listReceivedOffersMock.mockResolvedValue(page([{
+      ...firstAcceptedOffer,
+      isPaused: true,
+      status: 'PENDING',
+    }]));
+    listMyReviewsMock.mockResolvedValue(page([]));
+  });
+
+  it('keeps a paused offer visible and blocks accept and counter while allowing rejection', async () => {
+    renderReceivedOffers();
+
+    expect(await screen.findByText('Paused')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Counter' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reject' })).toBeEnabled();
+    expect(screen.getByText('Vintage Lamp')).toBeInTheDocument();
+  });
+
+  it('makes an offer actionable again when the response says it is no longer paused', async () => {
+    listReceivedOffersMock.mockResolvedValue(page([{
+      ...firstAcceptedOffer,
+      isPaused: false,
+      status: 'PENDING',
+    }]));
+
+    renderReceivedOffers();
+
+    expect(await screen.findByRole('button', { name: 'Accept' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Counter' })).toBeEnabled();
+    expect(screen.queryByText('Paused')).not.toBeInTheDocument();
   });
 });

@@ -4,9 +4,10 @@ import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-rou
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MyOffers from '@/pages/MyOffers';
 
-const { authState, useQueryMock } = vi.hoisted(() => ({
+const { authState, useQueryMock, withdrawOfferMock } = vi.hoisted(() => ({
   authState: { loading: false, user: { id: 'user-1' } as { id: string } | null },
   useQueryMock: vi.fn(),
+  withdrawOfferMock: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -17,6 +18,11 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => authState,
 }));
+
+vi.mock('@/services/offers.service', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/offers.service')>();
+  return { ...actual, withdrawOffer: withdrawOfferMock };
+});
 
 vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
@@ -32,6 +38,7 @@ const selectedOffer = {
   buyerFullName: 'Buyer',
   counterAmount: null,
   coverImage: null,
+  isPaused: false,
   listingPrice: 150,
   listingStatus: 'APPROVED',
   listingTitle: 'Test listing',
@@ -82,6 +89,7 @@ function renderPage(initialEntries: string[]) {
 afterEach(() => {
   authState.loading = false;
   authState.user = { id: 'user-1' };
+  withdrawOfferMock.mockReset();
 });
 
 describe('myOffers notification selection', () => {
@@ -134,5 +142,56 @@ describe('myOffers notification selection', () => {
 
     expect(await screen.findByTestId('selected-offer')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/my-offers?offer=offer-1');
+  });
+});
+
+describe('paused offers in My Offers', () => {
+  it('keeps a paused offer visible and lets the buyer withdraw it', async () => {
+    withdrawOfferMock.mockResolvedValue({ data: selectedOffer, statusCode: 200 });
+    useQueryMock.mockImplementation((options: any) => ({
+      data: options.queryKey.includes('mine')
+        ? { data: [{ ...selectedOffer, isPaused: true }] }
+        : { data: [] },
+      isLoading: false,
+    }) as any);
+
+    renderPage(['/my-offers']);
+
+    expect(await screen.findByText('Paused')).toBeInTheDocument();
+    expect(screen.getByText('Test listing')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }));
+    await waitFor(() => expect(withdrawOfferMock).toHaveBeenCalledWith('offer-1'));
+    expect(screen.queryByRole('button', { name: /accept/i })).not.toBeInTheDocument();
+  });
+
+  it('lets the buyer decline a paused counter-offer', async () => {
+    withdrawOfferMock.mockResolvedValue({ data: selectedOffer, statusCode: 200 });
+    useQueryMock.mockImplementation((options: any) => ({
+      data: options.queryKey.includes('mine')
+        ? { data: [{ ...selectedOffer, counterAmount: 120, isPaused: true, status: 'COUNTERED' }] }
+        : { data: [] },
+      isLoading: false,
+    }) as any);
+
+    renderPage(['/my-offers']);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Decline' }));
+    await waitFor(() => expect(withdrawOfferMock).toHaveBeenCalledWith('offer-1'));
+    expect(screen.queryByRole('button', { name: /accept/i })).not.toBeInTheDocument();
+  });
+
+  it('shows restored offers as unpaused when the backend reports isPaused false', async () => {
+    useQueryMock.mockImplementation((options: any) => ({
+      data: options.queryKey.includes('mine')
+        ? { data: [{ ...selectedOffer, isPaused: false }] }
+        : { data: [] },
+      isLoading: false,
+    }) as any);
+
+    renderPage(['/my-offers']);
+
+    expect(await screen.findByText('Test listing')).toBeInTheDocument();
+    expect(screen.queryByText('Paused')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Withdraw' })).not.toBeInTheDocument();
   });
 });

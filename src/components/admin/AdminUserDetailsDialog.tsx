@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useAccessControl } from '@/hooks/useAccessControl';
 import { formatDateOrValue, joinFirstAndLastName } from '@/lib/adminUserFormatters';
 import { showErrorToast } from '@/lib/errorToast';
 import {
@@ -65,6 +66,8 @@ export default function AdminUserDetailsDialog({
   onClose: () => void;
   open: boolean;
 }) {
+  const { can } = useAccessControl();
+  const canUpdateUsers = can(['USERS_READ', 'USERS_UPDATE']);
   const [auditPage, setAuditPage] = useState(1);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const form = useForm<ProfileEditFormValues>({
@@ -112,7 +115,7 @@ export default function AdminUserDetailsDialog({
   }, [form, user, userId]);
 
   const handleProfileSave = async (values: ProfileEditFormValues) => {
-    if (!user || !userId)
+    if (!canUpdateUsers || !user || !userId)
       return;
 
     const payload: UpdateAdminUserProfileInput = {};
@@ -143,7 +146,7 @@ export default function AdminUserDetailsDialog({
   };
 
   const handleStatusChange = async (values: StatusChangeFormValues) => {
-    if (!user || !userId)
+    if (!canUpdateUsers || !user || !userId)
       return;
 
     const payload: UpdateAdminUserStatusInput = {
@@ -173,7 +176,11 @@ export default function AdminUserDetailsDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>User details</DialogTitle>
-          <DialogDescription>Update the user’s profile, manage account status, and review admin history.</DialogDescription>
+          <DialogDescription>
+            {canUpdateUsers
+              ? 'Update the user’s profile, manage account status, and review admin history.'
+              : 'View the user’s profile and admin history.'}
+          </DialogDescription>
         </DialogHeader>
 
         {isLoading && (
@@ -217,6 +224,7 @@ export default function AdminUserDetailsDialog({
                   control={form.control}
                   error={form.formState.errors.firstName?.message}
                   label="First name"
+                  readOnly={!canUpdateUsers}
                 />
                 <EditableDetailField
                   id="admin-user-last-name"
@@ -224,6 +232,7 @@ export default function AdminUserDetailsDialog({
                   control={form.control}
                   error={form.formState.errors.lastName?.message}
                   label="Last name"
+                  readOnly={!canUpdateUsers}
                 />
                 <DetailField value={user.email} label="Email" />
                 <DetailField value={user.phone} label="Phone" />
@@ -233,6 +242,7 @@ export default function AdminUserDetailsDialog({
                   control={form.control}
                   error={form.formState.errors.address?.message}
                   label="Address"
+                  readOnly={!canUpdateUsers}
                 />
                 <DetailField value={formatOptionalDate(user.dateOfBirth)} label="Date of birth" />
                 <DetailField value={formatOptionalDate(user.createdAt)} label="Signup date" />
@@ -243,18 +253,20 @@ export default function AdminUserDetailsDialog({
                       {user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                     </Badge>
                   </dd>
-                  <Button
-                    onClick={() => {
-                      statusForm.reset({ reason: '' });
-                      setStatusDialogOpen(true);
-                    }}
-                    disabled={updateStatus.isPending}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {statusActionLabel}
-                  </Button>
+                  {canUpdateUsers && (
+                    <Button
+                      onClick={() => {
+                        statusForm.reset({ reason: '' });
+                        setStatusDialogOpen(true);
+                      }}
+                      disabled={updateStatus.isPending}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {statusActionLabel}
+                    </Button>
+                  )}
                 </div>
                 <DetailField
                   value={user.marketingEmailConsent ? 'Consented' : 'Not consented'}
@@ -369,64 +381,66 @@ export default function AdminUserDetailsDialog({
           <Button onClick={onClose} type="button" variant="outline">
             Close details
           </Button>
-          {user && (
+          {user && canUpdateUsers && (
             <Button disabled={updateProfile.isPending} form="admin-user-profile-form" type="submit">
               {updateProfile.isPending ? 'Saving…' : 'Save profile'}
             </Button>
           )}
         </DialogFooter>
       </DialogContent>
-      <Dialog
-        onOpenChange={(isOpen) => {
-          setStatusDialogOpen(isOpen);
-          if (!isOpen)
-            statusForm.reset({ reason: '' });
-        }}
-        open={statusDialogOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{statusActionLabel}</DialogTitle>
-            <DialogDescription>
-              Enter a reason for this status change. Admins can review the reason in user history.
-            </DialogDescription>
-          </DialogHeader>
+      {canUpdateUsers && (
+        <Dialog
+          onOpenChange={(isOpen) => {
+            setStatusDialogOpen(isOpen);
+            if (!isOpen)
+              statusForm.reset({ reason: '' });
+          }}
+          open={statusDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{statusActionLabel}</DialogTitle>
+              <DialogDescription>
+                Enter a reason for this status change. Admins can review the reason in user history.
+              </DialogDescription>
+            </DialogHeader>
 
-          <form id="admin-user-status-form" onSubmit={statusForm.handleSubmit(handleStatusChange)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="admin-user-status-reason">Reason</Label>
-              <Controller
-                name="reason"
-                control={statusForm.control}
-                render={({ field }) => <Textarea {...field} id="admin-user-status-reason" />}
-              />
-              {statusForm.formState.errors.reason?.message && (
-                <p role="alert" className="text-sm text-destructive">
-                  {statusForm.formState.errors.reason.message}
-                </p>
-              )}
-            </div>
-          </form>
+            <form id="admin-user-status-form" onSubmit={statusForm.handleSubmit(handleStatusChange)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="admin-user-status-reason">Reason</Label>
+                <Controller
+                  name="reason"
+                  control={statusForm.control}
+                  render={({ field }) => <Textarea {...field} id="admin-user-status-reason" />}
+                />
+                {statusForm.formState.errors.reason?.message && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {statusForm.formState.errors.reason.message}
+                  </p>
+                )}
+              </div>
+            </form>
 
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                setStatusDialogOpen(false);
-                statusForm.reset({ reason: '' });
-              }}
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button disabled={updateStatus.isPending} form="admin-user-status-form" type="submit">
-              {updateStatus.isPending
-                ? `${statusActionLabel === 'Suspend user' ? 'Suspending' : 'Reactivating'}…`
-                : statusConfirmLabel}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setStatusDialogOpen(false);
+                  statusForm.reset({ reason: '' });
+                }}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={updateStatus.isPending} form="admin-user-status-form" type="submit">
+                {updateStatus.isPending
+                  ? `${statusActionLabel === 'Suspend user' ? 'Suspending' : 'Reactivating'}…`
+                  : statusConfirmLabel}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }
@@ -437,12 +451,14 @@ function EditableDetailField({
   error,
   label,
   name,
+  readOnly,
 }: {
   id: string;
   control: ProfileEditControl;
   error: string | undefined;
   label: string;
   name: keyof ProfileEditFormValues;
+  readOnly: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -455,7 +471,7 @@ function EditableDetailField({
         <Controller
           name={name}
           control={control}
-          render={({ field }) => <Input {...field} id={id} />}
+          render={({ field }) => <Input {...field} id={id} readOnly={readOnly} />}
         />
         {error && <p role="alert" className="mt-1 text-sm text-destructive">{error}</p>}
       </dd>

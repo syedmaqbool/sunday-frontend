@@ -13,7 +13,19 @@ const userService = vi.hoisted(() => ({
   updateUserRole: vi.fn(),
 }));
 
+const authState = vi.hoisted(() => ({
+  permissions: [] as string[],
+}));
+
 vi.mock('@/services/user.service', () => userService);
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      permissions: authState.permissions.map(name => ({ name })),
+      roleName: 'STAFF',
+    },
+  }),
+}));
 
 const errorToast = vi.hoisted(() => vi.fn());
 
@@ -90,6 +102,7 @@ function renderDialog() {
 
 describe('admin user details dialog', () => {
   beforeEach(() => {
+    authState.permissions = ['USERS_READ', 'USERS_UPDATE'];
     userService.getAdminUserById.mockReset().mockResolvedValue(detailResponse);
     userService.getAdminUserAuditHistory.mockReset().mockResolvedValue(auditHistoryResponse);
     userService.updateAdminUserProfile.mockReset().mockResolvedValue(detailResponse);
@@ -139,6 +152,21 @@ describe('admin user details dialog', () => {
     expect(within(dialog).getByText('amina@example.com')).toBeInTheDocument();
     expect(within(dialog).getByText('+923001234567')).toBeInTheDocument();
     expect(within(dialog).getAllByRole('textbox')).toHaveLength(3);
+  });
+
+  it('keeps details visible and hides update actions without USERS_UPDATE', async () => {
+    authState.permissions = ['USERS_READ'];
+    renderDialog();
+
+    const dialog = await screen.findByRole('dialog', { name: 'User details' });
+    expect(await within(dialog).findByLabelText('First name')).toHaveAttribute('readonly');
+    expect(within(dialog).getByLabelText('Last name')).toHaveAttribute('readonly');
+    expect(within(dialog).getByLabelText('Address')).toHaveAttribute('readonly');
+    expect(within(dialog).getByText('amina@example.com')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Close details' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Save profile' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Suspend user' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Suspend user' })).not.toBeInTheDocument();
   });
 
   it('shows validation when no profile field changed', async () => {

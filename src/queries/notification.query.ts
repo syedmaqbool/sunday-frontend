@@ -1,6 +1,7 @@
 import type { NotificationReadStatus } from '@/types/notification.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tokenStorage } from '@/lib/tokenStorage';
+import { myListingsQueryKey } from '@/queries/myListings.query';
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -29,10 +30,15 @@ export function useMarkNotificationReadMutation() {
   return useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
 
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({
         queryKey: notificationsQueryKey.all(),
       });
+      if (response.data.type === 'LISTING_REMOVED' || response.data.type === 'LISTING_RESTORED') {
+        queryClient.invalidateQueries({
+          queryKey: myListingsQueryKey.all(),
+        });
+      }
     },
   });
 }
@@ -46,6 +52,9 @@ export function useMarkAllNotificationsReadMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: notificationsQueryKey.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: myListingsQueryKey.all(),
       });
     },
   });

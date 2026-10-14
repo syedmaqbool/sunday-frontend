@@ -27,13 +27,15 @@ vi.mock('@/components/MyListingFeedbackWidgets', () => ({ MyListingFeedbackInlin
 vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/ReceivedOffers', () => ({ ReceivedOffers: () => null }));
 
-function renderMyListings(status: string) {
+function renderMyListings(status: string, removal?: { deletedByAdminId: string; deletionReason: string }) {
   const tab = ['APPROVED', 'RESERVED'].includes(status)
     ? 'approved'
     : (status === 'SOLD' ? 'sold' : 'pending');
   listingsState.data = [{
     id: 'listing-1',
+    deletedByAdminId: removal?.deletedByAdminId ?? null,
     brand: 'Vintage',
+    deletionReason: removal?.deletionReason ?? null,
     price: 100,
     reservedUntil: status === 'RESERVED' ? '2099-01-01T00:00:00.000Z' : null,
     status,
@@ -80,5 +82,26 @@ describe('my Listings edit actions', () => {
     renderMyListings('RESERVED');
 
     expect(await screen.findByRole('button', { name: 'Cancel reservation' })).toBeInTheDocument();
+  });
+
+  it('shows why an admin removed a listing and hides edit while preserving seller deletion', async () => {
+    renderMyListings('PENDING', {
+      deletedByAdminId: 'admin-1',
+      deletionReason: 'Duplicate listing',
+    });
+
+    expect(await screen.findByText('Removed by admin')).toBeInTheDocument();
+    expect(screen.getByText('Duplicate listing')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+  });
+
+  it('shows a restored listing according to its current moderation status', async () => {
+    renderMyListings('PENDING');
+
+    await screen.findByText('Vintage jacket');
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.queryByText('Removed by admin')).not.toBeInTheDocument();
   });
 });

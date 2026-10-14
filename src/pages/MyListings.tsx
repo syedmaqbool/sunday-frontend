@@ -114,7 +114,15 @@ function MyListings() {
             <Badge variant={getStatusColor(listing.status)}>
               {formatEnumLabel(listing.status)}
             </Badge>
+            {listing.deletedByAdminId && (
+              <Badge variant="destructive">Removed by admin</Badge>
+            )}
           </div>
+          {listing.deletedByAdminId && listing.deletionReason && (
+            <p className="mt-1 text-sm text-destructive">
+              {listing.deletionReason}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {listing.brand}
             {' '}
@@ -187,7 +195,7 @@ function MyListings() {
               )}
             />
           )} */}
-          {isSellerEditableListingStatus(listing.status) && (
+          {!listing.deletedByAdminId && isSellerEditableListingStatus(listing.status) && (
             <Button
               onClick={() => navigate(`/edit-listing/${listing.id}`)}
               size="sm"

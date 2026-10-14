@@ -221,34 +221,19 @@ function MyOffers() {
                                 </div>
                               )}
 
-                              {offer.isPaused && offer.status === 'PENDING' && (
+                              {offer.isPaused && ['PENDING', 'COUNTERED'].includes(offer.status) && (
                                 <Button
                                   onClick={() =>
                                     withdrawOffer.mutate(offer.id, {
-                                      onError: (error: unknown) => showErrorToast(error, 'Failed to withdraw offer'),
-                                      onSuccess: () => toast.success('Offer withdrawn'),
+                                      onError: (error: unknown) => showErrorToast(error, `Failed to ${offer.status === 'COUNTERED' ? 'decline' : 'withdraw'} offer`),
+                                      onSuccess: () => toast.success(offer.status === 'COUNTERED' ? 'Offer declined' : 'Offer withdrawn'),
                                     })}
                                   disabled={withdrawOffer.isPending}
                                   size="sm"
                                   variant="outline"
                                   className="mt-2 h-8 text-destructive"
                                 >
-                                  Withdraw
-                                </Button>
-                              )}
-                              {offer.isPaused && offer.status === 'COUNTERED' && (
-                                <Button
-                                  onClick={() =>
-                                    withdrawOffer.mutate(offer.id, {
-                                      onError: (error: unknown) => showErrorToast(error, 'Failed to decline offer'),
-                                      onSuccess: () => toast.success('Offer declined'),
-                                    })}
-                                  disabled={withdrawOffer.isPending}
-                                  size="sm"
-                                  variant="outline"
-                                  className="mt-2 h-8 text-destructive"
-                                >
-                                  Decline
+                                  {offer.status === 'COUNTERED' ? 'Decline' : 'Withdraw'}
                                 </Button>
                               )}
 

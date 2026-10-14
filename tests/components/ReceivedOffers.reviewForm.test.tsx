@@ -3,8 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReceivedOffers } from '@/components/ReceivedOffers';
+import { offersQueryKey } from '@/queries/offers.query';
 
-const { createOfferReviewMock, listMyReviewsMock, listReceivedOffersMock } = vi.hoisted(() => ({
+const { counterOfferMock, createOfferReviewMock, listMyReviewsMock, listReceivedOffersMock } = vi.hoisted(() => ({
+  counterOfferMock: vi.fn(),
   createOfferReviewMock: vi.fn(),
   listMyReviewsMock: vi.fn(),
   listReceivedOffersMock: vi.fn(),
@@ -14,6 +16,7 @@ vi.mock('@/services/offers.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/offers.service')>();
   return {
     ...actual,
+    counterOffer: counterOfferMock,
     createOfferReview: createOfferReviewMock,
     listMyReviews: listMyReviewsMock,
     listReceivedOffers: listReceivedOffersMock,
@@ -67,13 +70,15 @@ function renderReceivedOffers() {
     defaultOptions: { queries: { retry: false } },
   });
 
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <ReceivedOffers />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+
+  return { ...view, queryClient };
 }
 
 describe('received offer review form', () => {
@@ -192,5 +197,29 @@ describe('received paused offers', () => {
     expect(await screen.findByRole('button', { name: 'Accept' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Counter' })).toBeEnabled();
     expect(screen.queryByText('Paused')).not.toBeInTheDocument();
+  });
+
+  it('blocks an already-open counter dialog after the offer becomes paused', async () => {
+    listReceivedOffersMock.mockResolvedValue(page([{
+      ...firstAcceptedOffer,
+      isPaused: false,
+      status: 'PENDING',
+    }]));
+
+    const { queryClient } = renderReceivedOffers();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Counter' }));
+    fireEvent.change(screen.getByPlaceholderText('e.g. 150'), { target: { value: '125' } });
+    queryClient.setQueryData(offersQueryKey.received('seller-1'), page([{
+      ...firstAcceptedOffer,
+      isPaused: true,
+      status: 'PENDING',
+    }]));
+
+    expect(await screen.findByText('Paused')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send Counter Offer' })).toBeDisabled();
+    fireEvent.submit(screen.getByRole('button', { name: 'Send Counter Offer' }).closest('form')!);
+
+    expect(counterOfferMock).not.toHaveBeenCalled();
   });
 });

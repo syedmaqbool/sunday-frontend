@@ -1,5 +1,9 @@
-import type { ModerateListingPayload } from '@/types/adminListing.type';
-import type { GetAdminListingsData, RemoveAdminListingData } from '@/types/generated-api';
+import type {
+  ModerateListingPayload,
+  RemoveAdminListingVariables,
+  RestoreAdminListingVariables,
+} from '@/types/adminListing.type';
+import type { GetAdminListingsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminListingFeedbackQueryKey } from '@/queries/adminListingFeedback.query';
 import { myListingFeedbackQueryKey } from '@/queries/myListingFeedback.query';
@@ -46,7 +50,7 @@ export function useModerateListingMutation() {
 export function useRemoveAdminListingMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId, reason }: { listingId: string; reason: RemoveAdminListingData['body']['reason'] }) =>
+    mutationFn: ({ listingId, reason }: RemoveAdminListingVariables) =>
       removeAdminListing(listingId, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
@@ -57,7 +61,7 @@ export function useRemoveAdminListingMutation() {
 export function useRestoreAdminListingMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId }: { listingId: string }) => restoreAdminListing(listingId),
+    mutationFn: ({ listingId }: RestoreAdminListingVariables) => restoreAdminListing(listingId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
     },

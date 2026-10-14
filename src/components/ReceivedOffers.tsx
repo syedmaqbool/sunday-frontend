@@ -93,6 +93,14 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
   const offersToDisplay = selectedOffer && received.every(offer => offer.id !== selectedOffer.id)
     ? [...received, selectedOffer]
     : received;
+  const activeCounterOffer = counterDialog
+    ? offersToDisplay.find(offer => offer.id === counterDialog.id)
+    : undefined;
+  const counterDialogUnavailable = counterDialog && (
+    !activeCounterOffer
+    || activeCounterOffer.isPaused
+    || activeCounterOffer.status !== 'PENDING'
+  );
 
   useEffect(() => {
     if (
@@ -347,7 +355,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
           </DialogHeader>
           <form
             onSubmit={form.handleSubmit((values) => {
-              if (!counterDialog)
+              if (!counterDialog || counterDialogUnavailable)
                 return;
               respondToOffer.mutate(
                 { id: counterDialog.id, action: 'counter', counterAmount: Number(values.counterAmount) },
@@ -379,7 +387,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
               />
             </div>
             <Button
-              disabled={respondToOffer.isPending}
+              disabled={respondToOffer.isPending || counterDialogUnavailable}
               type="submit"
               className="w-full"
             >

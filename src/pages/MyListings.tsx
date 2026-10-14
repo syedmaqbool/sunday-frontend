@@ -207,48 +207,50 @@ function MyListings() {
               Edit
             </Button>
           )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {' '}
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently remove "
-                  {listing.title}
-                  " and cannot be
-                  undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() =>
-                    deleteMutation.mutate(listing.id, {
-                      onError: (error: unknown) => showErrorToast(error, 'Failed to delete listing'),
-                      onSuccess: () => {
-                        toast.success('Listing deleted');
-                      },
-                    })}
-                  className="
-                    bg-destructive text-destructive-foreground
-                    hover:bg-destructive/90
-                  "
+          {!listing.deletedByAdminId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1 text-destructive"
                 >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {' '}
                   Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove "
+                    {listing.title}
+                    " and cannot be
+                    undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() =>
+                      deleteMutation.mutate(listing.id, {
+                        onError: (error: unknown) => showErrorToast(error, 'Failed to delete listing'),
+                        onSuccess: () => {
+                          toast.success('Listing deleted');
+                        },
+                      })}
+                    className="
+                      bg-destructive text-destructive-foreground
+                      hover:bg-destructive/90
+                    "
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </CardContent>
     </Card>

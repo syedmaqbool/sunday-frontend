@@ -93,7 +93,7 @@ describe('my Listings edit actions', () => {
     expect(await screen.findByText('Removed by admin')).toBeInTheDocument();
     expect(screen.getByText('Duplicate listing')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
   it('shows a restored listing according to its current moderation status', async () => {

@@ -16,6 +16,7 @@ import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,8 +49,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { isBoostPaidAndWithinActiveWindow } from '@/lib/boostStatus';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminBoostPackagesOptions,
@@ -253,10 +254,9 @@ function BoostManagement() {
     toast.success('Package deleted');
   };
 
-  const now = useMemo(() => new Date(), []);
+  const now = useMemo(() => Date.now(), []);
   const activeCount = boosts.filter(
-    b =>
-      new Date(b.endsAt) > now && ['PAID', 'MOCK'].includes(b.paymentStatus),
+    b => isBoostPaidAndWithinActiveWindow(b, now),
   ).length;
   const totalRevenue = boosts.reduce((s, b) => s + Number(b.pricePaid ?? 0), 0);
 
@@ -461,9 +461,7 @@ function BoostManagement() {
                           {boosts.map((b) => {
                             const M = placementMeta[b.placement];
                             const Icon = M.icon;
-                            const isActive
-                              = new Date(b.endsAt) > now
-                                && ['PAID', 'MOCK'].includes(b.paymentStatus);
+                            const isActive = isBoostPaidAndWithinActiveWindow(b, now);
                             return (
                               <TableRow key={b.id}>
                                 <TableCell className="max-w-[180px] truncate font-mono text-xs text-muted-foreground">

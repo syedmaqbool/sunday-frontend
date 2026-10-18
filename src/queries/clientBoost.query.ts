@@ -4,7 +4,7 @@ import type {
   BoostWithCampaignPayload,
   BoostWithPackagePayload,
   MyBoostPurchasesParameters,
-  ResubmitBoostPaymentProofPayload,
+  ResubmitBoostPaymentProofVariables,
 } from '@/types/boost.type';
 import type { GetMyBoostableListingsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,8 +15,8 @@ import {
   getListingBoostCampaignQuote,
   listBoostableListings,
   listBoostPackages,
-  listMyBoosts,
   listMyBoostPurchases,
+  listMyBoosts,
   resubmitBoostPaymentProof,
 } from '@/services/clientBoost.service';
 
@@ -24,12 +24,12 @@ export const clientBoostQueryKey = {
   all: () => ['client-boost'] as const,
   boostableListings: (parameters: BoostListParams = {}) =>
     [...clientBoostQueryKey.all(), 'boostable-listings', 'list', parameters] as const,
-  myBoosts: (parameters: BoostListParams = {}) =>
-    [...clientBoostQueryKey.all(), 'my-boosts', 'list', parameters] as const,
-  myBoostPurchases: (parameters: MyBoostPurchasesParameters = {}) =>
-    [...clientBoostQueryKey.all(), 'my-boost-purchases', 'list', parameters] as const,
   campaignQuote: (listingId: string, parameters: BoostCampaignQuoteParameters) =>
     [...clientBoostQueryKey.all(), 'campaign-quote', listingId, parameters] as const,
+  myBoostPurchases: (parameters: MyBoostPurchasesParameters = {}) =>
+    [...clientBoostQueryKey.all(), 'my-boost-purchases', 'list', parameters] as const,
+  myBoosts: (parameters: BoostListParams = {}) =>
+    [...clientBoostQueryKey.all(), 'my-boosts', 'list', parameters] as const,
   packages: () => [...clientBoostQueryKey.all(), 'packages', 'list'] as const,
 };
 
@@ -53,9 +53,15 @@ export function getMyBoostsOptions(parameters: BoostListParams = {}) {
 }
 
 export function getMyBoostPurchasesOptions(parameters: MyBoostPurchasesParameters = {}) {
+  const requestParameters = {
+    ...parameters,
+    page: parameters.page ?? 1,
+    size: parameters.size ?? 100,
+  };
+
   return queryOptions({
-    queryFn: () => listMyBoostPurchases({ ...parameters, size: parameters.size ?? 100 }),
-    queryKey: clientBoostQueryKey.myBoostPurchases(parameters),
+    queryFn: () => listMyBoostPurchases(requestParameters),
+    queryKey: clientBoostQueryKey.myBoostPurchases(requestParameters),
   });
 }
 
@@ -106,10 +112,8 @@ export function useBoostWithCampaignMutation() {
 export function useResubmitBoostPaymentProofMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId, purchaseId, ...payload }: {
-      listingId: string;
-      purchaseId: string;
-    } & ResubmitBoostPaymentProofPayload) => resubmitBoostPaymentProof(listingId, purchaseId, payload),
+    mutationFn: ({ listingId, purchaseId, ...payload }: ResubmitBoostPaymentProofVariables) =>
+      resubmitBoostPaymentProof(listingId, purchaseId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });

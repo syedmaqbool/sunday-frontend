@@ -1,21 +1,21 @@
 import type { ApiRequestBody, ApiRequestQuery, ApiResponseData, ApiResponseItem, ApiSuccessResponse } from './api.type';
 import type {
-  CreateListingBoostCampaignResponses,
   CreateListingBoostCampaignData,
+  CreateListingBoostCampaignResponses,
   CreateListingPackageBoostsData,
   CreateListingPackageBoostsResponses,
-  GetListingBoostCampaignQuoteData,
-  GetListingBoostCampaignQuoteResponses,
   GetActiveListingBoostsData,
   GetActiveListingBoostsResponses,
   GetAdminBoostsData,
   GetBoostPackagesResponses,
+  GetListingBoostCampaignQuoteData,
+  GetListingBoostCampaignQuoteResponses,
   GetMyBoostableListingsData,
   GetMyBoostableListingsResponses,
-  GetMyBoostsData,
-  GetMyBoostsResponses,
   GetMyBoostPurchasesData,
   GetMyBoostPurchasesResponses,
+  GetMyBoostsData,
+  GetMyBoostsResponses,
   ResubmitBoostPaymentProofData,
 } from '@/types/generated-api';
 
@@ -34,9 +34,13 @@ export type MyBoostParameters = Partial<ApiRequestQuery<GetMyBoostsData>>;
 export type MyBoostPurchasesParameters = Partial<ApiRequestQuery<GetMyBoostPurchasesData>>;
 export type BoostCampaignQuoteParameters = ApiRequestQuery<GetListingBoostCampaignQuoteData>;
 export type ResubmitBoostPaymentProofPayload = ApiRequestBody<ResubmitBoostPaymentProofData>;
+export type ResubmitBoostPaymentProofVariables = {
+  listingId: string;
+  purchaseId: string;
+} & ResubmitBoostPaymentProofPayload;
 export type BoostableListingsParameters = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
 export type BoostWithPackagePayload = ApiRequestBody<CreateListingPackageBoostsData>;
 export type BoostWithCampaignPayload = ApiRequestBody<CreateListingBoostCampaignData>;
-export type BoostPurchaseResponse =
-  | ApiSuccessResponse<CreateListingBoostCampaignResponses>
-  | ApiSuccessResponse<CreateListingPackageBoostsResponses>;
+export type BoostPurchaseResponse
+  = | ApiSuccessResponse<CreateListingBoostCampaignResponses>
+    | ApiSuccessResponse<CreateListingPackageBoostsResponses>;

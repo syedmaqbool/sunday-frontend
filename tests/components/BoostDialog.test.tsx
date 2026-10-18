@@ -1,21 +1,21 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BoostDialog from '@/components/BoostDialog';
 
 const {
   boostWithCampaignMock,
   boostWithPackageMock,
-  getPaymentInstructionsMock,
   getListingBoostCampaignQuoteMock,
+  getPaymentInstructionsMock,
   listBoostPackagesMock,
   toastSuccessMock,
   uploadPaymentProofMock,
 } = vi.hoisted(() => ({
   boostWithCampaignMock: vi.fn(),
   boostWithPackageMock: vi.fn(),
-  getPaymentInstructionsMock: vi.fn(),
   getListingBoostCampaignQuoteMock: vi.fn(),
+  getPaymentInstructionsMock: vi.fn(),
   listBoostPackagesMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   uploadPaymentProofMock: vi.fn(),
@@ -27,8 +27,8 @@ vi.mock('@/services/clientBoost.service', () => ({
   boostWithPackage: boostWithPackageMock,
   getListingBoostCampaignQuote: getListingBoostCampaignQuoteMock,
   listActiveBoosts: vi.fn(),
-  listBoostPackages: listBoostPackagesMock,
   listBoostableListings: vi.fn(),
+  listBoostPackages: listBoostPackagesMock,
   listMyBoosts: vi.fn(),
 }));
 vi.mock('@/services/checkout.service', () => ({
@@ -54,19 +54,19 @@ describe('seller boost purchase dialog', () => {
   beforeEach(() => {
     boostWithPackageMock.mockReset().mockResolvedValue({
       data: {
+        id: 'purchase-1',
+        listingId: 'listing-1',
+        sellerId: 'seller-1',
         amount: 1250,
         boosts: [{
-          endsAt: '2026-10-25T08:00:00.000Z',
           id: 'boost-1',
           listingId: 'listing-1',
           paymentStatus: 'PENDING',
           placement: 'FOR_YOU',
           pricePaid: 1250,
+          endsAt: '2026-10-25T08:00:00.000Z',
           startsAt: '2026-10-18T08:00:00.000Z',
         }],
-        createdAt: '2026-10-18T08:00:00.000Z',
-        id: 'purchase-1',
-        listingId: 'listing-1',
         paymentInstructions: {
           accountIban: 'PK00 1234',
           accountNumber: '123456789',
@@ -74,24 +74,24 @@ describe('seller boost purchase dialog', () => {
           bankOrWalletLabel: 'Example Bank',
         },
         paymentSubmission: {
-          createdAt: '2026-10-18T08:00:00.000Z',
           id: 'submission-1',
           proofFileId: 'proof-file-id',
           status: 'SUBMITTED',
+          createdAt: '2026-10-18T08:00:00.000Z',
         },
-        sellerId: 'seller-1',
         status: 'PENDING_REVIEW',
+        createdAt: '2026-10-18T08:00:00.000Z',
       },
       message: 'Payment proof submitted.',
       statusCode: 201,
     });
     listBoostPackagesMock.mockReset().mockResolvedValue({
       data: [{
+        id: 'package-1',
         active: true,
         credits: 100,
         description: 'One week of placement',
         durationDays: 7,
-        id: 'package-1',
         name: 'One week',
         placement: 'FOR_YOU',
         price: 1000,
@@ -130,6 +130,7 @@ describe('seller boost purchase dialog', () => {
     fireEvent.click(screen.getByText('One week'));
     fireEvent.click(screen.getByRole('button', { name: 'Continue to payment' }));
 
+    expect(await screen.findByText('Boost amount: Rs 1,000.00')).toBeInTheDocument();
     expect(await screen.findByText('Sunday Store')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Sender account title/name'), {
       target: { value: 'Jane Doe' },
@@ -143,8 +144,8 @@ describe('seller boost purchase dialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit payment proof' }));
 
     await waitFor(() => expect(boostWithPackageMock).toHaveBeenCalledWith('listing-1', {
-      packageIds: ['package-1'],
       proofFileId: 'proof-file-id',
+      packageIds: ['package-1'],
       senderAccountNumber: '123456789',
       senderAccountTitle: 'Jane Doe',
     }));
@@ -161,10 +162,16 @@ describe('seller boost purchase dialog', () => {
     expect(await screen.findByText('Rs 1,850.00')).toBeInTheDocument();
     expect(screen.getByText('Campaign duration: 5 days')).toBeInTheDocument();
     expect(getListingBoostCampaignQuoteMock).toHaveBeenCalledWith('listing-1', expect.objectContaining({
-      endsAt: expect.any(String),
       placement: 'FOR_YOU',
+      endsAt: expect.any(String),
       startsAt: expect.any(String),
     }));
     expect(screen.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to payment' }));
+    const paymentDialog = await screen.findByRole('dialog', { name: 'Complete manual payment' });
+    expect(within(paymentDialog).getByText('Boost amount: Rs 1,850.00')).toBeInTheDocument();
+    expect(within(paymentDialog).getByText('Campaign duration: 5 days')).toBeInTheDocument();
+    expect(within(paymentDialog).getByText(/Transfer the boost amount below/)).toBeInTheDocument();
   });
 });

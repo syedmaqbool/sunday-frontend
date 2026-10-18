@@ -62,6 +62,8 @@ interface ManualPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: ManualPaymentSubmissionValues) => Promise<void>;
   open: boolean;
+  paymentAmount?: number;
+  paymentDurationDays?: number;
   submitting?: boolean;
 }
 
@@ -94,6 +96,8 @@ export function ManualPaymentDialog({
   onOpenChange,
   onSubmit,
   open,
+  paymentAmount,
+  paymentDurationDays,
   submitting = false,
 }: ManualPaymentDialogProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -173,9 +177,32 @@ export function ManualPaymentDialog({
           <DialogDescription>
             {mode === 'resubmit'
               ? 'Send updated sender details and a new transaction screenshot for the store to review.'
-              : 'Transfer the order total to the account below, then send the account details and transaction screenshot.'}
+              : paymentAmount === undefined
+                ? 'Transfer the order total to the account below, then send the account details and transaction screenshot.'
+                : 'Transfer the boost amount below to the account, then send the account details and transaction screenshot.'}
           </DialogDescription>
         </DialogHeader>
+
+        {mode === 'create' && paymentAmount !== undefined && (
+          <div className="space-y-1 rounded-md border border-border p-3 text-sm">
+            <p className="font-medium text-foreground">
+              Boost amount:
+              {' '}
+              Rs
+              {' '}
+              {paymentAmount.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+            </p>
+            {paymentDurationDays !== undefined && (
+              <p className="text-muted-foreground">
+                Campaign duration:
+                {' '}
+                {paymentDurationDays}
+                {' '}
+                days
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-3 rounded-md border border-border bg-muted/40 p-4">
           <h3 className="font-medium text-foreground">Payment instructions</h3>

@@ -1,8 +1,12 @@
+import type { ManualPaymentSubmissionValues } from '@/components/ManualPaymentDialog';
+import type { BoostPurchaseDisplayStatus } from '@/lib/boostStatus';
 import type { BoostableListingItem, ListingBoost } from '@/types/boost.type';
+
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 
 import {
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Package,
   Rocket,
@@ -10,20 +14,25 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
-import { ManualPaymentDialog, type ManualPaymentSubmissionValues } from '@/components/ManualPaymentDialog';
+import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 import Navbar from '@/components/Navbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { toast } from 'sonner';
+import {
+
+  getBoostPurchaseDisplayStatus,
+  isBoostPaidAndWithinActiveWindow,
+} from '@/lib/boostStatus';
 import {
   getBoostableListingsOptions,
-  getMyBoostsOptions,
   getMyBoostPurchasesOptions,
+  getMyBoostsOptions,
   useResubmitBoostPaymentProofMutation,
 } from '@/queries/clientBoost.query';
 
@@ -41,20 +50,32 @@ const placementLabel: Record<string, string> = {
   TRENDING: 'Trending Now',
 };
 
+const purchaseStatusLabel: Record<BoostPurchaseDisplayStatus, string> = {
+  ACTIVE: 'Active',
+  APPROVED: 'Approved',
+  PENDING_REVIEW: 'Awaiting payment review',
+  REFUND_REQUIRED: 'Refund required',
+  REFUNDED: 'Refunded',
+  REJECTED: 'Rejected',
+  RESUBMISSION_REQUESTED: 'Replacement proof requested',
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function Boost() {
   const navigate = useNavigate();
+  const [purchasePage, setPurchasePage] = useState(1);
   const [resubmissionPurchaseId, setResubmissionPurchaseId] = useState<string | null>(null);
 
   const { data: boostsResponse, isLoading: boostsLoading }
     = useQuery(getMyBoostsOptions());
   const { data: purchasesResponse, isLoading: purchasesLoading }
-    = useQuery(getMyBoostPurchasesOptions());
+    = useQuery(getMyBoostPurchasesOptions({ page: purchasePage, size: 100 }));
   const { data: listingsResponse, isLoading: listingsLoading } = useQuery(getBoostableListingsOptions());
 
   const allBoosts: ListingBoost[] = boostsResponse?.data ?? [];
   const purchases = purchasesResponse?.data ?? [];
+  const purchasePagination = purchasesResponse?.pagination;
   const listings: BoostableListingItem[] = listingsResponse?.data ?? [];
   const resubmitPayment = useResubmitBoostPaymentProofMutation();
   const resubmissionPurchase = purchases.find(purchase => purchase.id === resubmissionPurchaseId) ?? null;
@@ -77,9 +98,7 @@ function Boost() {
 
   const now = useMemo(() => Date.now(), []);
   const activeBoosts = allBoosts.filter(
-    b => b.paymentStatus === 'PAID'
-      && new Date(b.startsAt).getTime() <= now
-      && new Date(b.endsAt).getTime() >= now,
+    b => isBoostPaidAndWithinActiveWindow(b, now),
   );
   const expiredBoosts = allBoosts.filter(
     b => b.paymentStatus === 'PAID' && new Date(b.endsAt).getTime() < now,
@@ -185,25 +204,9 @@ function Boost() {
                     {purchases.map((purchase) => {
                       const listingId = purchase.boosts[0]?.listingId;
                       const listing = listings.find(item => item.id === listingId);
-                      const now = Date.now();
-                      const active = purchase.status === 'APPROVED' && purchase.boosts.some(boost =>
-                        boost.paymentStatus === 'PAID'
-                        && new Date(boost.startsAt).getTime() <= now
-                        && new Date(boost.endsAt).getTime() >= now,
-                      );
-                      const statusLabel = active
-                        ? 'Active'
-                        : purchase.status === 'PENDING_REVIEW'
-                          ? 'Awaiting payment review'
-                          : purchase.status === 'RESUBMISSION_REQUESTED'
-                            ? 'Replacement proof requested'
-                            : purchase.status === 'REFUND_REQUIRED'
-                              ? 'Refund required'
-                              : purchase.status === 'REFUNDED'
-                                ? 'Refunded'
-                                : purchase.status === 'REJECTED'
-                                  ? 'Rejected'
-                                  : 'Approved';
+                      const status = getBoostPurchaseDisplayStatus(purchase);
+                      const active = status === 'ACTIVE';
+                      const statusLabel = purchaseStatusLabel[status];
                       const canResubmit = purchase.status === 'RESUBMISSION_REQUESTED'
                         && purchase.paymentSubmission?.status === 'RESUBMISSION_REQUESTED'
                         && Boolean(listingId);
@@ -222,7 +225,10 @@ function Boost() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge variant={active ? 'default' : 'secondary'}>{statusLabel}</Badge>
-                                <Badge variant="outline">Rs {Number(purchase.amount).toFixed(2)}</Badge>
+                                <Badge variant="outline">
+                                  Rs
+                                  {Number(purchase.amount).toFixed(2)}
+                                </Badge>
                               </div>
                             </div>
 
@@ -277,6 +283,41 @@ function Boost() {
                     })}
                   </div>
                 )}
+          {purchasePagination && purchasePagination.lastPage > 1 && (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button
+                onClick={() => setPurchasePage(purchasePagination.prevPage ?? 1)}
+                aria-label="Previous page"
+                disabled={!purchasePagination.prevPage || purchasesLoading}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Showing page
+                {' '}
+                {purchasePagination.currentPage}
+                {' '}
+                of
+                {' '}
+                {purchasePagination.lastPage}
+              </p>
+              <Button
+                onClick={() => setPurchasePage(purchasePagination.nextPage ?? purchasePagination.currentPage)}
+                aria-label="Next page"
+                disabled={!purchasePagination.nextPage || purchasesLoading}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </section>
 
         {/* Choose a listing to boost */}
@@ -388,9 +429,9 @@ function Boost() {
         )}
       </main>
       <ManualPaymentDialog
-        mode="resubmit"
         onOpenChange={open => !open && setResubmissionPurchaseId(null)}
         onSubmit={submitReplacementProof}
+        mode="resubmit"
         open={Boolean(resubmissionPurchase)}
         submitting={resubmitPayment.isPending}
       />

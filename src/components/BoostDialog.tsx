@@ -1,4 +1,5 @@
 import type { BoostPackage, BoostPlacement } from '@/hooks/useBoosts';
+import type { BoostCampaignQuoteParameters, BoostPurchaseResponse } from '@/types/boost.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
@@ -42,6 +43,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBoostPackagesOptions } from '@/hooks/useBoosts';
 import { cn } from '@/lib/utilities';
 import {
+  getListingBoostCampaignQuoteOptions,
   useBoostWithCampaignMutation,
   useBoostWithPackageMutation,
 } from '@/queries/clientBoost.query';
@@ -110,6 +112,39 @@ type PendingBoostPurchase
   = | { kind: 'package'; packageIds: string[] }
     | { kind: 'campaign'; placement: 'FOR_YOU' | 'SEARCH'; endsAt: string; startsAt: string };
 
+function purchaseStatusMessage(purchase: BoostPurchaseResponse['data']) {
+  const amount = Number(purchase.amount).toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  });
+
+  if (purchase.status === 'PENDING_REVIEW')
+    return `Payment proof submitted for Rs ${amount}. Your boost is awaiting payment review and is not active yet.`;
+
+  if (purchase.status === 'RESUBMISSION_REQUESTED')
+    return `Payment proof submitted for Rs ${amount}. The admin has requested replacement proof.`;
+
+  if (purchase.status === 'REJECTED')
+    return `Payment proof for Rs ${amount} was rejected.`;
+
+  if (purchase.status === 'REFUND_REQUIRED')
+    return `Payment verified for Rs ${amount}. Your boost was not activated and a refund is required.`;
+
+  if (purchase.status === 'REFUNDED')
+    return `Payment verified for Rs ${amount}. Your boost was not activated and the payment was refunded.`;
+
+  const now = Date.now();
+  const isActive = purchase.status === 'APPROVED' && purchase.boosts.some(boost =>
+    boost.paymentStatus === 'PAID'
+    && new Date(boost.startsAt).getTime() <= now
+    && new Date(boost.endsAt).getTime() >= now,
+  );
+
+  return isActive
+    ? `Payment verified for Rs ${amount}. Your boost is active.`
+    : `Payment verified for Rs ${amount}. Your boost is not active yet.`;
+}
+
 interface Props {
   listingId: string;
   listingTitle: string;
@@ -119,6 +154,7 @@ interface Props {
 function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('campaign');
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState<PendingBoostPurchase | null>(null);
   const [initialCampaignDates] = useState(() => {
@@ -147,18 +183,31 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     'endDate',
     'goal',
   ]);
+  const quoteParameters: BoostCampaignQuoteParameters = {
+    endsAt: endDate.toISOString(),
+    placement,
+    startsAt: startDate.toISOString(),
+  };
+  const {
+    data: campaignQuoteResponse,
+    error: campaignQuoteError,
+    isLoading: campaignQuoteLoading,
+  } = useQuery({
+    ...getListingBoostCampaignQuoteOptions(listingId, quoteParameters),
+    enabled: open && activeTab === 'campaign' && endDate > startDate,
+  });
   const selected = packageForm.watch('packageIds');
   const dailyRate
     = SUGGESTED_DAILY_RATE[placement] ?? 200;
 
   const days = Math.max(1, differenceInCalendarDays(endDate, startDate) + 1);
-  const budget = dailyRate * days;
+  const estimatedBudget = dailyRate * days;
   const rate = RATE_PER_EURO[placement];
-  const estImpressions = Math.round(budget * rate.impressions);
-  const estClicks = Math.round(budget * rate.clicks);
+  const estImpressions = Math.round(estimatedBudget * rate.impressions);
+  const estClicks = Math.round(estimatedBudget * rate.clicks);
   const cpm
-    = budget > 0 && estImpressions > 0 ? (budget / estImpressions) * 1000 : 0;
-  const cpc = estClicks > 0 ? budget / estClicks : 0;
+    = estimatedBudget > 0 && estImpressions > 0 ? (estimatedBudget / estImpressions) * 1000 : 0;
+  const cpc = estClicks > 0 ? estimatedBudget / estClicks : 0;
 
   const packagesTotal = packages
     .filter(p => selected.includes(p.id))
@@ -170,6 +219,10 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const launchCampaign = ({ endDate: campaignEndDate, placement: campaignPlacement, startDate: campaignStartDate }: CampaignFormValues) => {
     if (!user) {
       toast.error('Not authenticated');
+      return;
+    }
+    if (!campaignQuoteResponse) {
+      toast.error('Wait for the campaign quote before continuing.');
       return;
     }
     setPendingPurchase({
@@ -194,8 +247,9 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     if (!pendingPurchase)
       return;
 
+    let purchaseResponse: BoostPurchaseResponse;
     if (pendingPurchase.kind === 'package') {
-      await purchasePackages.mutateAsync({
+      purchaseResponse = await purchasePackages.mutateAsync({
         listingId,
         packageIds: pendingPurchase.packageIds,
         ...payment,
@@ -203,7 +257,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
       packageForm.reset({ packageIds: [] });
     }
     else {
-      await purchaseCampaign.mutateAsync({
+      purchaseResponse = await purchaseCampaign.mutateAsync({
         listingId,
         placement: pendingPurchase.placement,
         endsAt: pendingPurchase.endsAt,
@@ -212,7 +266,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
       });
     }
 
-    toast.success('Payment proof submitted. Your boost is pending review.');
+    toast.success(purchaseStatusMessage(purchaseResponse.data));
     setPaymentDialogOpen(false);
     setPendingPurchase(null);
     setOpen(false);
@@ -255,7 +309,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="campaign" className="mt-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="campaign">Custom Campaign</TabsTrigger>
             <TabsTrigger value="packages">Quick Packages</TabsTrigger>
@@ -451,9 +505,9 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Total budget</Label>
+                    <Label>Estimated campaign budget</Label>
                     <p className="text-[11px] text-muted-foreground">
-                      Fixed Rs
+                      Reach estimate at Rs
                       {' '}
                       {dailyRate}
                       /day for
@@ -465,7 +519,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                     <p className="text-lg font-semibold">
                       Rs
                       {' '}
-                      {budget.toLocaleString()}
+                      {estimatedBudget.toLocaleString()}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Rs
@@ -535,13 +589,24 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                     You'll be charged
                   </p>
                   <p className="font-heading text-2xl font-bold text-foreground">
-                    Rs
-                    {' '}
-                    {budget.toFixed(2)}
+                    {campaignQuoteLoading
+                      ? 'Calculating...'
+                      : campaignQuoteResponse
+                        ? `Rs ${Number(campaignQuoteResponse.data.amount).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`
+                        : campaignQuoteError ? 'Quote unavailable' : 'Select campaign dates'}
                   </p>
+                  {campaignQuoteResponse && (
+                    <p className="text-xs text-muted-foreground">
+                      Campaign duration:
+                      {' '}
+                      {campaignQuoteResponse.data.durationDays}
+                      {' '}
+                      days
+                    </p>
+                  )}
                 </div>
                 <Button
-                  disabled={paymentDialogOpen || budget <= 0}
+                  disabled={paymentDialogOpen || campaignQuoteLoading || !campaignQuoteResponse || !!campaignQuoteError}
                   type="submit"
                   className="gap-1"
                 >

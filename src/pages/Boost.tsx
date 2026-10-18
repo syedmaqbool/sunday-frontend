@@ -1,5 +1,6 @@
 import type { BoostableListingItem, ListingBoost } from '@/types/boost.type';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import {
   Loader2,
@@ -13,13 +14,17 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
+import { ManualPaymentDialog, type ManualPaymentSubmissionValues } from '@/components/ManualPaymentDialog';
 import Navbar from '@/components/Navbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
 import {
   getBoostableListingsOptions,
   getMyBoostsOptions,
+  getMyBoostPurchasesOptions,
+  useResubmitBoostPaymentProofMutation,
 } from '@/queries/clientBoost.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -40,20 +45,44 @@ const placementLabel: Record<string, string> = {
 
 function Boost() {
   const navigate = useNavigate();
+  const [resubmissionPurchaseId, setResubmissionPurchaseId] = useState<string | null>(null);
 
   const { data: boostsResponse, isLoading: boostsLoading }
     = useQuery(getMyBoostsOptions());
+  const { data: purchasesResponse, isLoading: purchasesLoading }
+    = useQuery(getMyBoostPurchasesOptions());
   const { data: listingsResponse, isLoading: listingsLoading } = useQuery(getBoostableListingsOptions());
 
   const allBoosts: ListingBoost[] = boostsResponse?.data ?? [];
+  const purchases = purchasesResponse?.data ?? [];
   const listings: BoostableListingItem[] = listingsResponse?.data ?? [];
+  const resubmitPayment = useResubmitBoostPaymentProofMutation();
+  const resubmissionPurchase = purchases.find(purchase => purchase.id === resubmissionPurchaseId) ?? null;
+
+  const submitReplacementProof = async (payment: ManualPaymentSubmissionValues) => {
+    const listingId = resubmissionPurchase?.boosts[0]?.listingId;
+    if (!resubmissionPurchase || !listingId)
+      return;
+
+    const response = await resubmitPayment.mutateAsync({
+      listingId,
+      purchaseId: resubmissionPurchase.id,
+      ...payment,
+    });
+    toast.success(response.data.status === 'PENDING_REVIEW'
+      ? 'Replacement proof submitted. Your payment is awaiting review.'
+      : `Payment status: ${response.data.status.replaceAll('_', ' ').toLowerCase()}.`);
+    setResubmissionPurchaseId(null);
+  };
 
   const now = useMemo(() => Date.now(), []);
   const activeBoosts = allBoosts.filter(
-    b => new Date(b.endsAt).getTime() > now,
+    b => b.paymentStatus === 'PAID'
+      && new Date(b.startsAt).getTime() <= now
+      && new Date(b.endsAt).getTime() >= now,
   );
   const expiredBoosts = allBoosts.filter(
-    b => new Date(b.endsAt).getTime() <= now,
+    b => b.paymentStatus === 'PAID' && new Date(b.endsAt).getTime() < now,
   );
 
   // group active boosts by listingId for the listings section
@@ -135,6 +164,119 @@ function Boost() {
                       })}
                     </div>
                   ))}
+        </section>
+
+        <section className="mt-10">
+          <h2 className="font-heading text-xl font-semibold text-foreground">
+            Boost Purchase History
+          </h2>
+          {purchasesLoading
+            ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )
+            : purchases.length === 0
+              ? (
+                  <p className="mt-3 text-sm text-muted-foreground">No boost purchases yet.</p>
+                )
+              : (
+                  <div className="mt-3 space-y-3">
+                    {purchases.map((purchase) => {
+                      const listingId = purchase.boosts[0]?.listingId;
+                      const listing = listings.find(item => item.id === listingId);
+                      const now = Date.now();
+                      const active = purchase.status === 'APPROVED' && purchase.boosts.some(boost =>
+                        boost.paymentStatus === 'PAID'
+                        && new Date(boost.startsAt).getTime() <= now
+                        && new Date(boost.endsAt).getTime() >= now,
+                      );
+                      const statusLabel = active
+                        ? 'Active'
+                        : purchase.status === 'PENDING_REVIEW'
+                          ? 'Awaiting payment review'
+                          : purchase.status === 'RESUBMISSION_REQUESTED'
+                            ? 'Replacement proof requested'
+                            : purchase.status === 'REFUND_REQUIRED'
+                              ? 'Refund required'
+                              : purchase.status === 'REFUNDED'
+                                ? 'Refunded'
+                                : purchase.status === 'REJECTED'
+                                  ? 'Rejected'
+                                  : 'Approved';
+                      const canResubmit = purchase.status === 'RESUBMISSION_REQUESTED'
+                        && purchase.paymentSubmission?.status === 'RESUBMISSION_REQUESTED'
+                        && Boolean(listingId);
+
+                      return (
+                        <Card key={purchase.id}>
+                          <CardContent className="space-y-3 p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-foreground">
+                                  {listing?.title ?? 'Listing'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {purchase.boosts.map(boost => `${placementLabel[boost.placement] ?? boost.placement}${boost.packageName ? ` · ${boost.packageName}` : ''}`).join(', ')}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={active ? 'default' : 'secondary'}>{statusLabel}</Badge>
+                                <Badge variant="outline">Rs {Number(purchase.amount).toFixed(2)}</Badge>
+                              </div>
+                            </div>
+
+                            {purchase.paymentSubmission && (
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <p>
+                                  Latest proof:
+                                  {' '}
+                                  {purchase.paymentSubmission.status.replaceAll('_', ' ').toLowerCase()}
+                                </p>
+                                {purchase.paymentSubmission.reviewNote && (
+                                  <p>
+                                    Review note:
+                                    {' '}
+                                    {purchase.paymentSubmission.reviewNote}
+                                  </p>
+                                )}
+                                {purchase.paymentSubmission.reviewedAt && (
+                                  <p>
+                                    Reviewed
+                                    {' '}
+                                    {new Date(purchase.paymentSubmission.reviewedAt).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {purchase.status === 'REFUND_REQUIRED' && (
+                              <p className="text-sm text-destructive">
+                                This boost was not activated. A refund is required.
+                              </p>
+                            )}
+                            {purchase.refundCompletedAt && (
+                              <p className="text-sm text-muted-foreground">
+                                Refund completed
+                                {' '}
+                                {new Date(purchase.refundCompletedAt).toLocaleString()}
+                              </p>
+                            )}
+                            {canResubmit && (
+                              <Button
+                                onClick={() => setResubmissionPurchaseId(purchase.id)}
+                                size="sm"
+                                type="button"
+                              >
+                                Resubmit payment proof
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
         </section>
 
         {/* Choose a listing to boost */}
@@ -245,6 +387,13 @@ function Boost() {
           </section>
         )}
       </main>
+      <ManualPaymentDialog
+        mode="resubmit"
+        onOpenChange={open => !open && setResubmissionPurchaseId(null)}
+        onSubmit={submitReplacementProof}
+        open={Boolean(resubmissionPurchase)}
+        submitting={resubmitPayment.isPending}
+      />
       <Footer />
     </div>
   );

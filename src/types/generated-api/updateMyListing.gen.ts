@@ -16,6 +16,7 @@ export interface UpdateMyListingData {
     }>;
     price?: number & number;
     size?: '35' | '36' | '37' | '38' | '39' | '40' | '41' | '42' | '43' | '44' | '45' | '46' | '47' | '48' | 'L' | 'M' | 'One Size' | 'S' | 'XL' | 'XS' | 'XXL' | 'XXS';
+    styles?: Array<'casual' | 'eastern' | 'formal' | 'semi_formal' | 'western'>;
     title?: string;
     weight?: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
   };
@@ -180,6 +181,7 @@ export interface UpdateMyListingResponses {
       reservedUntil: string | null;
       size: '35' | '36' | '37' | '38' | '39' | '40' | '41' | '42' | '43' | '44' | '45' | '46' | '47' | '48' | 'L' | 'M' | 'One Size' | 'S' | 'XL' | 'XS' | 'XXL' | 'XXS';
       status: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
+      styles: Array<'casual' | 'eastern' | 'formal' | 'semi_formal' | 'western'>;
       subcategoryLabel: string;
       subcategoryValue: string;
       title: string;

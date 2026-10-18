@@ -55,6 +55,14 @@ import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
 const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
+const LISTING_STYLE_VALUES = ['eastern', 'western', 'casual', 'formal', 'semi_formal'] as const;
+const LISTING_STYLE_LABELS: Record<typeof LISTING_STYLE_VALUES[number], string> = {
+  eastern: 'Eastern',
+  western: 'Western',
+  casual: 'Casual',
+  formal: 'Formal',
+  semi_formal: 'Semi Formal',
+};
 const listingMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
 const existingMediaSchema = z.object({ fileId: z.string(), url: z.string() });
 
@@ -77,6 +85,7 @@ const listingSchema = z.object({
     isListingSize,
     'Select a valid size.',
   ),
+  styles: z.array(z.enum(LISTING_STYLE_VALUES)),
   subCategory: z.string().min(1, 'Subcategory is required.'),
   title: z.string().trim().min(1, 'Title is required.'),
   videoFile: listingMediaFileSchema.nullable(),
@@ -84,6 +93,9 @@ const listingSchema = z.object({
     value => !value || WEIGHT_OPTIONS.some(option => option.value === value),
     'Select a valid weight.',
   ),
+});
+const createListingSchema = listingSchema.extend({
+  styles: listingSchema.shape.styles.min(1, 'Choose at least one style.'),
 });
 
 type ListingFormValues = z.infer<typeof listingSchema>;
@@ -100,6 +112,7 @@ const defaultListingValues: ListingFormValues = {
   parentCategory: '',
   price: '',
   size: '',
+  styles: [],
   subCategory: '',
   title: '',
   videoFile: null,
@@ -140,7 +153,7 @@ function CreateListing() {
   const listingForm = useForm<ListingFormValues>({
     defaultValues: defaultListingValues,
     mode: 'all',
-    resolver: zodResolver(listingSchema),
+    resolver: zodResolver(isEditing ? listingSchema : createListingSchema),
   });
   const {
     control,
@@ -207,6 +220,7 @@ function CreateListing() {
       parentCategory: parts[0] || '',
       price: String(existingListing.price),
       size: existingListing.size,
+      styles: existingListing.styles ?? [],
       subCategory: parts[1] || '',
       title: existingListing.title,
       videoFile: null,
@@ -342,6 +356,7 @@ function CreateListing() {
           media,
           price: Number(values.price),
           size: values.size as CreateListingPayload['size'],
+          styles: values.styles,
           title: values.title,
           weight,
         });
@@ -376,6 +391,7 @@ function CreateListing() {
           media,
           price: Number(values.price),
           size: values.size as CreateListingPayload['size'],
+          styles: values.styles,
           title: values.title,
           weight,
         });
@@ -724,6 +740,34 @@ function CreateListing() {
               />
               {errors.brand && <p className="text-sm text-destructive">{errors.brand.message}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Styles</Label>
+            <Controller
+              name="styles"
+              control={control}
+              render={({ field }) => (
+                <div role="group" aria-label="Listing styles" className="flex flex-wrap gap-2">
+                  {LISTING_STYLE_VALUES.map(style => (
+                    <Button
+                      key={style}
+                      aria-pressed={field.value.includes(style)}
+                      onClick={() => field.onChange(
+                        field.value.includes(style)
+                          ? field.value.filter(value => value !== style)
+                          : [...field.value, style],
+                      )}
+                      type="button"
+                      variant={field.value.includes(style) ? 'secondary' : 'outline'}
+                    >
+                      {LISTING_STYLE_LABELS[style]}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            />
+            {errors.styles && <p className="text-sm text-destructive">{errors.styles.message}</p>}
           </div>
 
           <div className="space-y-2">

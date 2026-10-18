@@ -2,6 +2,7 @@
 
 export type { AcceptCounterOfferData, AcceptCounterOfferError, AcceptCounterOfferErrors, AcceptCounterOfferResponse, AcceptCounterOfferResponses } from './acceptCounterOffer.gen';
 export type { AcceptOfferData, AcceptOfferError, AcceptOfferErrors, AcceptOfferResponse, AcceptOfferResponses } from './acceptOffer.gen';
+export type { ApproveAdminBoostPaymentData, ApproveAdminBoostPaymentError, ApproveAdminBoostPaymentErrors, ApproveAdminBoostPaymentResponse, ApproveAdminBoostPaymentResponses } from './approveAdminBoostPayment.gen';
 export type { ApproveAdminFinanceAdjustmentData, ApproveAdminFinanceAdjustmentError, ApproveAdminFinanceAdjustmentErrors, ApproveAdminFinanceAdjustmentResponse, ApproveAdminFinanceAdjustmentResponses } from './approveAdminFinanceAdjustment.gen';
 export type { ApproveAdminManualPaymentData, ApproveAdminManualPaymentError, ApproveAdminManualPaymentErrors, ApproveAdminManualPaymentResponse, ApproveAdminManualPaymentResponses } from './approveAdminManualPayment.gen';
 export type { ApproveAdminQuickBooksClosedPeriodDateShiftData, ApproveAdminQuickBooksClosedPeriodDateShiftError, ApproveAdminQuickBooksClosedPeriodDateShiftErrors, ApproveAdminQuickBooksClosedPeriodDateShiftResponse, ApproveAdminQuickBooksClosedPeriodDateShiftResponses } from './approveAdminQuickBooksClosedPeriodDateShift.gen';
@@ -10,6 +11,7 @@ export type { CancelAdminFinanceAdjustmentData, CancelAdminFinanceAdjustmentErro
 export type { CancelAdminOrderData, CancelAdminOrderError, CancelAdminOrderErrors, CancelAdminOrderResponse, CancelAdminOrderResponses } from './cancelAdminOrder.gen';
 export type { CancelMyAwaitingPaymentOrderData, CancelMyAwaitingPaymentOrderError, CancelMyAwaitingPaymentOrderErrors, CancelMyAwaitingPaymentOrderResponse, CancelMyAwaitingPaymentOrderResponses } from './cancelMyAwaitingPaymentOrder.gen';
 export type { CancelMyListingReservationData, CancelMyListingReservationError, CancelMyListingReservationErrors, CancelMyListingReservationResponse, CancelMyListingReservationResponses } from './cancelMyListingReservation.gen';
+export type { CompleteAdminBoostRefundData, CompleteAdminBoostRefundError, CompleteAdminBoostRefundErrors, CompleteAdminBoostRefundResponse, CompleteAdminBoostRefundResponses } from './completeAdminBoostRefund.gen';
 export type { CompleteQuickBooksOAuthCallbackData, CompleteQuickBooksOAuthCallbackError, CompleteQuickBooksOAuthCallbackErrors } from './completeQuickBooksOAuthCallback.gen';
 export type { CounterOfferData, CounterOfferError, CounterOfferErrors, CounterOfferResponse, CounterOfferResponses } from './counterOffer.gen';
 export type { CreateAdminBrandData, CreateAdminBrandError, CreateAdminBrandErrors, CreateAdminBrandResponse, CreateAdminBrandResponses } from './createAdminBrand.gen';
@@ -58,6 +60,7 @@ export type { ExportAdminMarketingLeadsData, ExportAdminMarketingLeadsError, Exp
 export type { ForgotUserPasswordData, ForgotUserPasswordError, ForgotUserPasswordErrors, ForgotUserPasswordResponse, ForgotUserPasswordResponses } from './forgotUserPassword.gen';
 export type { GetActiveListingBoostsData, GetActiveListingBoostsError, GetActiveListingBoostsErrors, GetActiveListingBoostsResponse, GetActiveListingBoostsResponses } from './getActiveListingBoosts.gen';
 export type { GetAdminAnalyticsData, GetAdminAnalyticsError, GetAdminAnalyticsErrors, GetAdminAnalyticsResponse, GetAdminAnalyticsResponses } from './getAdminAnalytics.gen';
+export type { GetAdminBoostPaymentSubmissionsData, GetAdminBoostPaymentSubmissionsError, GetAdminBoostPaymentSubmissionsErrors, GetAdminBoostPaymentSubmissionsResponse, GetAdminBoostPaymentSubmissionsResponses } from './getAdminBoostPaymentSubmissions.gen';
 export type { GetAdminBoostsData, GetAdminBoostsError, GetAdminBoostsErrors, GetAdminBoostsResponse, GetAdminBoostsResponses } from './getAdminBoosts.gen';
 export type { GetAdminBrandByIdData, GetAdminBrandByIdError, GetAdminBrandByIdErrors, GetAdminBrandByIdResponse, GetAdminBrandByIdResponses } from './getAdminBrandById.gen';
 export type { GetAdminBrandsData, GetAdminBrandsError, GetAdminBrandsErrors, GetAdminBrandsResponse, GetAdminBrandsResponses } from './getAdminBrands.gen';
@@ -123,6 +126,7 @@ export type { GetContactInfoData, GetContactInfoError, GetContactInfoErrors, Get
 export type { GetConversationMessagesData, GetConversationMessagesError, GetConversationMessagesErrors, GetConversationMessagesResponse, GetConversationMessagesResponses } from './getConversationMessages.gen';
 export type { GetCurrentUserData, GetCurrentUserError, GetCurrentUserErrors, GetCurrentUserResponse, GetCurrentUserResponses } from './getCurrentUser.gen';
 export type { GetFeaturedListingsData, GetFeaturedListingsError, GetFeaturedListingsErrors, GetFeaturedListingsResponse, GetFeaturedListingsResponses } from './getFeaturedListings.gen';
+export type { GetForYouListingsData, GetForYouListingsError, GetForYouListingsErrors, GetForYouListingsResponse, GetForYouListingsResponses } from './getForYouListings.gen';
 export type { GetHealthData, GetHealthError, GetHealthErrors, GetHealthResponse, GetHealthResponses } from './getHealth.gen';
 export type { GetHelpCategoriesData, GetHelpCategoriesError, GetHelpCategoriesErrors, GetHelpCategoriesResponse, GetHelpCategoriesResponses } from './getHelpCategories.gen';
 export type { GetHelpFaqsData, GetHelpFaqsError, GetHelpFaqsErrors, GetHelpFaqsResponse, GetHelpFaqsResponses } from './getHelpFaqs.gen';
@@ -180,6 +184,7 @@ export type { RecordAdminPayoutRunItemPaymentData, RecordAdminPayoutRunItemPayme
 export type { RefreshAdminQuickBooksConnectionData, RefreshAdminQuickBooksConnectionError, RefreshAdminQuickBooksConnectionErrors, RefreshAdminQuickBooksConnectionResponse, RefreshAdminQuickBooksConnectionResponses } from './refreshAdminQuickBooksConnection.gen';
 export type { RefreshUserTokenData, RefreshUserTokenError, RefreshUserTokenErrors, RefreshUserTokenResponse, RefreshUserTokenResponses } from './refreshUserToken.gen';
 export type { RegisterUserData, RegisterUserError, RegisterUserErrors, RegisterUserResponse, RegisterUserResponses } from './registerUser.gen';
+export type { RejectAdminBoostPaymentData, RejectAdminBoostPaymentError, RejectAdminBoostPaymentErrors, RejectAdminBoostPaymentResponse, RejectAdminBoostPaymentResponses } from './rejectAdminBoostPayment.gen';
 export type { RejectAdminFinanceAdjustmentData, RejectAdminFinanceAdjustmentError, RejectAdminFinanceAdjustmentErrors, RejectAdminFinanceAdjustmentResponse, RejectAdminFinanceAdjustmentResponses } from './rejectAdminFinanceAdjustment.gen';
 export type { RejectAdminManualPaymentData, RejectAdminManualPaymentError, RejectAdminManualPaymentErrors, RejectAdminManualPaymentResponse, RejectAdminManualPaymentResponses } from './rejectAdminManualPayment.gen';
 export type { RejectOfferData, RejectOfferError, RejectOfferErrors, RejectOfferResponse, RejectOfferResponses } from './rejectOffer.gen';
@@ -187,10 +192,12 @@ export type { RemoveAdminListingData, RemoveAdminListingError, RemoveAdminListin
 export type { ReplaceMyPreferencesData, ReplaceMyPreferencesError, ReplaceMyPreferencesErrors, ReplaceMyPreferencesResponse, ReplaceMyPreferencesResponses } from './replaceMyPreferences.gen';
 export type { ReplyToMySupportTicketData, ReplyToMySupportTicketError, ReplyToMySupportTicketErrors, ReplyToMySupportTicketResponse, ReplyToMySupportTicketResponses } from './replyToMySupportTicket.gen';
 export type { ReplyToSupportTicketAsAdminData, ReplyToSupportTicketAsAdminError, ReplyToSupportTicketAsAdminErrors, ReplyToSupportTicketAsAdminResponse, ReplyToSupportTicketAsAdminResponses } from './replyToSupportTicketAsAdmin.gen';
+export type { RequestAdminBoostPaymentResubmissionData, RequestAdminBoostPaymentResubmissionError, RequestAdminBoostPaymentResubmissionErrors, RequestAdminBoostPaymentResubmissionResponse, RequestAdminBoostPaymentResubmissionResponses } from './requestAdminBoostPaymentResubmission.gen';
 export type { RequestAdminManualPaymentResubmissionData, RequestAdminManualPaymentResubmissionError, RequestAdminManualPaymentResubmissionErrors, RequestAdminManualPaymentResubmissionResponse, RequestAdminManualPaymentResubmissionResponses } from './requestAdminManualPaymentResubmission.gen';
 export type { ResetUserPasswordData, ResetUserPasswordError, ResetUserPasswordErrors, ResetUserPasswordResponse, ResetUserPasswordResponses } from './resetUserPassword.gen';
 export type { ResolveAdminReportData, ResolveAdminReportError, ResolveAdminReportErrors, ResolveAdminReportResponse, ResolveAdminReportResponses } from './resolveAdminReport.gen';
 export type { RestoreAdminListingData, RestoreAdminListingError, RestoreAdminListingErrors, RestoreAdminListingResponse, RestoreAdminListingResponses } from './restoreAdminListing.gen';
+export type { ResubmitBoostPaymentProofData, ResubmitBoostPaymentProofError, ResubmitBoostPaymentProofErrors, ResubmitBoostPaymentProofResponse, ResubmitBoostPaymentProofResponses } from './resubmitBoostPaymentProof.gen';
 export type { ResubmitMyManualPaymentOrderData, ResubmitMyManualPaymentOrderError, ResubmitMyManualPaymentOrderErrors, ResubmitMyManualPaymentOrderResponse, ResubmitMyManualPaymentOrderResponses } from './resubmitMyManualPaymentOrder.gen';
 export type { RetryAdminQuickBooksSyncEventData, RetryAdminQuickBooksSyncEventError, RetryAdminQuickBooksSyncEventErrors, RetryAdminQuickBooksSyncEventResponse, RetryAdminQuickBooksSyncEventResponses } from './retryAdminQuickBooksSyncEvent.gen';
 export type { SendConversationMessageData, SendConversationMessageError, SendConversationMessageErrors, SendConversationMessageResponse, SendConversationMessageResponses } from './sendConversationMessage.gen';

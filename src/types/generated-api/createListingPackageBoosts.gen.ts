@@ -5,8 +5,10 @@ export interface CreateListingPackageBoostsData {
     listingId: string;
   };
   body: {
+    proofFileId: string;
     packageIds: Array<string>;
-    paymentStatus?: 'MOCK' | 'PAID';
+    senderAccountNumber: string;
+    senderAccountTitle: string;
   };
   query?: never;
   url: '/api/v1/me/listings/{listingId}/boosts/package';
@@ -134,21 +136,43 @@ export interface CreateListingPackageBoostsResponses {
    * Default Response
    */
   201: {
-    data: Array<{
+    data: {
       id: string;
       listingId: string;
-      packageId: string | null;
       sellerId: string;
-      isActive?: boolean;
-      packageName: string | null;
-      paymentStatus: 'CANCELLED' | 'MOCK' | 'PAID';
-      placement: 'FOR_YOU' | 'SEARCH' | 'TRENDING';
-      pricePaid: number;
-      endsAt: string;
-      startsAt: string;
+      amount: number;
+      boosts: Array<{
+        id: string;
+        boostPurchaseId: string | null;
+        listingId: string;
+        packageId: string | null;
+        sellerId: string;
+        durationDays: number | null;
+        isActive?: boolean;
+        packageName: string | null;
+        paymentStatus: 'CANCELLED' | 'MOCK' | 'PAID' | 'PENDING';
+        placement: 'FOR_YOU' | 'SEARCH' | 'TRENDING';
+        pricePaid: number;
+        endsAt: string;
+        startsAt: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+      paymentInstructions: {
+        accountIban: string;
+        accountNumber: string;
+        accountTitle: string;
+        bankOrWalletLabel: string;
+      };
+      paymentSubmission: {
+        id: string;
+        proofFileId: string;
+        status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
+        createdAt: string;
+      };
+      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
       createdAt: string;
-      updatedAt: string;
-    }>;
+    };
     message: string;
     statusCode: 201;
   };

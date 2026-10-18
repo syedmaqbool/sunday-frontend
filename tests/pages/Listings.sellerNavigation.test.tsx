@@ -63,6 +63,7 @@ const listing: MarketplaceListing = {
   },
   size: 'M',
   status: 'APPROVED',
+  styles: [],
   subcategoryLabel: 'Jackets',
   subcategoryValue: 'jackets',
   title: 'Vintage Jacket',

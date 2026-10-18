@@ -87,12 +87,14 @@ export interface GetMyBoostsResponses {
     };
     data: Array<{
       id: string;
+      boostPurchaseId: string | null;
       listingId: string;
       packageId: string | null;
       sellerId: string;
+      durationDays: number | null;
       isActive?: boolean;
       packageName: string | null;
-      paymentStatus: 'CANCELLED' | 'MOCK' | 'PAID';
+      paymentStatus: 'CANCELLED' | 'MOCK' | 'PAID' | 'PENDING';
       placement: 'FOR_YOU' | 'SEARCH' | 'TRENDING';
       pricePaid: number;
       endsAt: string;

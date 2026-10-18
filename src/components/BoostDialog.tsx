@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
+import { ManualPaymentDialog, type ManualPaymentSubmissionValues } from '@/components/ManualPaymentDialog';
 import {
   Dialog,
   DialogContent,
@@ -39,8 +40,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getBoostPackagesOptions } from '@/hooks/useBoosts';
-import { trackEvent } from '@/lib/analytics';
-import { showErrorToast } from '@/lib/errorToast';
 import { cn } from '@/lib/utilities';
 import {
   useBoostWithCampaignMutation,
@@ -107,6 +106,10 @@ const packageSelectionSchema = z.object({
 type CampaignFormValues = z.infer<typeof campaignSchema>;
 type PackageSelectionFormValues = z.infer<typeof packageSelectionSchema>;
 
+type PendingBoostPurchase
+  = | { kind: 'package'; packageIds: string[] }
+    | { kind: 'campaign'; placement: 'FOR_YOU' | 'SEARCH'; endsAt: string; startsAt: string };
+
 interface Props {
   listingId: string;
   listingTitle: string;
@@ -116,6 +119,8 @@ interface Props {
 function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [pendingPurchase, setPendingPurchase] = useState<PendingBoostPurchase | null>(null);
   const [initialCampaignDates] = useState(() => {
     const startDate = new Date();
     return { endDate: addDays(startDate, 7), startDate };
@@ -167,29 +172,13 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
       toast.error('Not authenticated');
       return;
     }
-    purchaseCampaign.mutate(
-      {
-        listingId,
-        paymentStatus: 'MOCK',
-        placement: campaignPlacement,
-        endsAt: campaignEndDate.toISOString(),
-        startsAt: campaignStartDate.toISOString(),
-      },
-      {
-        onError: (error: any) => showErrorToast(error, 'Failed to launch campaign'),
-        onSuccess: () => {
-          trackEvent('boost_purchased', {
-            currency: 'PKR',
-            listing_id: listingId,
-            placement: campaignPlacement,
-            type: 'campaign',
-            value: budget,
-          });
-          toast.success('Campaign launched! (Mock payment)');
-          setOpen(false);
-        },
-      },
-    );
+    setPendingPurchase({
+      kind: 'campaign',
+      placement: campaignPlacement,
+      endsAt: campaignEndDate.toISOString(),
+      startsAt: campaignStartDate.toISOString(),
+    });
+    setPaymentDialogOpen(true);
   };
 
   const purchaseSelectedPackages = ({ packageIds }: PackageSelectionFormValues) => {
@@ -197,23 +186,36 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
       toast.error('Not authenticated');
       return;
     }
-    purchasePackages.mutate(
-      { listingId, packageIds, paymentStatus: 'MOCK' },
-      {
-        onError: (error: any) => showErrorToast(error, 'Failed to activate boost'),
-        onSuccess: () => {
-          trackEvent('boost_purchased', {
-            currency: 'PKR',
-            listing_id: listingId,
-            type: 'package',
-            value: packagesTotal,
-          });
-          toast.success('Boost activated! (Mock payment)');
-          packageForm.reset({ packageIds: [] });
-          setOpen(false);
-        },
-      },
-    );
+    setPendingPurchase({ kind: 'package', packageIds });
+    setPaymentDialogOpen(true);
+  };
+
+  const submitPaymentProof = async (payment: ManualPaymentSubmissionValues) => {
+    if (!pendingPurchase)
+      return;
+
+    if (pendingPurchase.kind === 'package') {
+      await purchasePackages.mutateAsync({
+        listingId,
+        packageIds: pendingPurchase.packageIds,
+        ...payment,
+      });
+      packageForm.reset({ packageIds: [] });
+    }
+    else {
+      await purchaseCampaign.mutateAsync({
+        listingId,
+        placement: pendingPurchase.placement,
+        endsAt: pendingPurchase.endsAt,
+        startsAt: pendingPurchase.startsAt,
+        ...payment,
+      });
+    }
+
+    toast.success('Payment proof submitted. Your boost is pending review.');
+    setPaymentDialogOpen(false);
+    setPendingPurchase(null);
+    setOpen(false);
   };
 
   const grouped = useMemo(() => {
@@ -227,7 +229,8 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
   }, [packages]);
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <>
+      <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="sm" variant="outline" className="gap-1">
@@ -538,7 +541,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                   </p>
                 </div>
                 <Button
-                  disabled={purchaseCampaign.isPending || budget <= 0}
+                  disabled={paymentDialogOpen || budget <= 0}
                   type="submit"
                   className="gap-1"
                 >
@@ -549,7 +552,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                     : (
                         <Rocket className="h-4 w-4" />
                       )}
-                  Launch Campaign (Mock)
+                  Continue to payment
                 </Button>
               </div>
             </form>
@@ -658,7 +661,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                   </p>
                 </div>
                 <Button
-                  disabled={selected.length === 0 || purchasePackages.isPending}
+                  disabled={selected.length === 0 || paymentDialogOpen}
                   type="submit"
                   className="gap-1"
                 >
@@ -669,19 +672,26 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                     : (
                         <Rocket className="h-4 w-4" />
                       )}
-                  Activate Boost (Mock)
+                  Continue to payment
                 </Button>
               </div>
             </form>
           </TabsContent>
         </Tabs>
 
-        <p className="-mt-1 text-center text-[11px] text-muted-foreground">
-          Mock mode — no real payment is taken. Stripe will be enabled once your
-          country is configured.
-        </p>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <ManualPaymentDialog
+        onOpenChange={(nextOpen) => {
+          setPaymentDialogOpen(nextOpen);
+          if (!nextOpen)
+            setPendingPurchase(null);
+        }}
+        onSubmit={submitPaymentProof}
+        open={paymentDialogOpen}
+        submitting={purchasePackages.isPending || purchaseCampaign.isPending}
+      />
+    </>
   );
 }
 

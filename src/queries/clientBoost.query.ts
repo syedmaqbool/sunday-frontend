@@ -1,4 +1,5 @@
 import type { ApiRequestQuery } from '@/types/api.type';
+import type { BoostWithCampaignPayload, BoostWithPackagePayload } from '@/types/boost.type';
 import type { GetMyBoostableListingsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { boostsQueryKey } from '@/queries/boosts.query';
@@ -51,15 +52,8 @@ export function getBoostableListingsOptions(parameters: BoostListParams = {}) {
 export function useBoostWithPackageMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      listingId,
-      packageIds,
-      paymentStatus,
-    }: {
-      listingId: string;
-      packageIds: string[];
-      paymentStatus?: 'MOCK' | 'PAID';
-    }) => boostWithPackage(listingId, { packageIds, paymentStatus }),
+    mutationFn: ({ listingId, ...payload }: { listingId: string } & BoostWithPackagePayload) =>
+      boostWithPackage(listingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
@@ -70,25 +64,8 @@ export function useBoostWithPackageMutation() {
 export function useBoostWithCampaignMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      listingId,
-      paymentStatus,
-      placement,
-      endsAt,
-      startsAt,
-    }: {
-      listingId: string;
-      paymentStatus?: 'MOCK' | 'PAID';
-      placement: 'FOR_YOU' | 'SEARCH';
-      endsAt: string;
-      startsAt: string;
-    }) =>
-      boostWithCampaign(listingId, {
-        paymentStatus,
-        placement,
-        endsAt,
-        startsAt,
-      }),
+    mutationFn: ({ listingId, ...payload }: { listingId: string } & BoostWithCampaignPayload) =>
+      boostWithCampaign(listingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
       queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });

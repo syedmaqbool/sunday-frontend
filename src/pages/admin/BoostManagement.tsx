@@ -48,6 +48,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
+import { useAccessControl } from '@/hooks/useAccessControl';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminBoostPackagesOptions,
@@ -232,6 +234,7 @@ function PackageDialog({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 function BoostManagement() {
+  const access = useAccessControl();
   const { data: packages = [], isLoading: packageLoading } = useQuery(getAdminBoostPackagesOptions());
   const updatePackages = useUpdateBoostPackagesMutation();
 
@@ -316,6 +319,7 @@ function BoostManagement() {
         <TabsList>
           <TabsTrigger value="packages">Packages</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="payment-review">Payment review</TabsTrigger>
         </TabsList>
 
         {/* ── Packages tab ── */}
@@ -514,6 +518,10 @@ function BoostManagement() {
                     Campaign data not available yet.
                   </Card>
                 )}
+        </TabsContent>
+
+        <TabsContent value="payment-review" className="pt-4">
+          <AdminBoostPaymentReviewQueue canReview={access.can('BOOSTS_UPDATE')} />
         </TabsContent>
       </Tabs>
     </div>

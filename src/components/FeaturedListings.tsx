@@ -1,14 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
-import {
-  getUserPreferencesOptions,
-  personalizeListings,
-} from '@/hooks/useUserPreferences';
-import { getFeaturedListingsOptions } from '@/queries/marketplace.query';
+import { getForYouListingsOptions, getFeaturedListingsOptions } from '@/queries/marketplace.query';
+import { getUserPreferencesOptions } from '@/queries/userPreferences.query';
 import ListingCard from './ListingCard';
 
 interface FeaturedListingsProps {
@@ -21,25 +17,24 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const { user } = useAuth();
-  const { data: preferencesResponse } = useQuery(getUserPreferencesOptions(user?.id));
+  const { data: preferencesResponse } = useQuery({
+    ...getUserPreferencesOptions(user?.id),
+    enabled: variant === 'personalized' && !!user?.id,
+  });
   const preferences = preferencesResponse?.data;
 
-  const boostMap = useBoostScoreMap('FOR_YOU');
+  const isPersonalized = variant === 'personalized'
+    && !!user?.id
+    && !!preferences?.onboardingCompleted;
 
-  const { data: databaseListings = [] } = useQuery(getFeaturedListingsOptions());
-
-  const isPersonalized
-    = variant === 'personalized' && preferences?.onboardingCompleted;
-
-  const listings = useMemo(() => {
-    if (variant === 'personalized') {
-      return applyBoostRanking(
-        personalizeListings([...databaseListings], preferences, item => item.categoryValue),
-        boostMap,
-      );
-    }
-    return databaseListings;
-  }, [databaseListings, preferences, boostMap, variant]);
+  const { data: featuredResponse } = useQuery({
+    ...getFeaturedListingsOptions(),
+    enabled: variant === 'fresh',
+  });
+  const { data: forYouResponse } = useQuery(getForYouListingsOptions(user?.id, isPersonalized));
+  const listings = variant === 'personalized'
+    ? forYouResponse?.data ?? []
+    : featuredResponse?.data ?? [];
 
   const checkScroll = useCallback(() => {
     const element = scrollReference.current;

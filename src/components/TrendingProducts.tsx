@@ -1,19 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
-import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
 import { getTrendingListingsOptions } from '@/queries/marketplace.query';
 import ListingCard from './ListingCard';
 
 export default function TrendingProducts() {
-  const boostMap = useBoostScoreMap('TRENDING');
-  const { data: databaseTrending = [] } = useQuery(getTrendingListingsOptions());
-
-  const trending = useMemo(
-    () => applyBoostRanking(databaseTrending, boostMap),
-    [databaseTrending, boostMap],
-  );
+  const { data: trendingResponse } = useQuery(getTrendingListingsOptions());
+  const trending = trendingResponse?.data ?? [];
 
   if (trending.length === 0)
     return null;

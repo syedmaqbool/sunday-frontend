@@ -1,5 +1,10 @@
 import type { ApiResponseData } from '@/types/api.type';
-import type { GetMyOfferAmountByIdResponses } from '@/types/generated-api';
+import type {
+  GetFeaturedListingsResponses,
+  GetForYouListingsResponses,
+  GetMyOfferAmountByIdResponses,
+  GetTrendingListingsResponses,
+} from '@/types/generated-api';
 import type {
   MarketplaceEditableListing,
   MarketplaceListing,
@@ -58,6 +63,8 @@ export const marketplaceQueryKey = {
     [...marketplaceQueryKey.all(), 'edit-listing', 'detail', listingId ?? null] as const,
   featuredListings: () =>
     [...marketplaceQueryKey.all(), 'featured-listings', 'list'] as const,
+  forYouListings: (userId?: string) =>
+    [...marketplaceQueryKey.all(), 'for-you-listings', 'list', userId ?? null] as const,
   listing: (listingId?: string, isAuthenticated?: boolean) =>
     [...marketplaceQueryKey.all(), 'listing', 'detail', listingId ?? null, isAuthenticated ? 'auth' : 'public'] as const,
   listings: () => [...marketplaceQueryKey.all(), 'listings', 'list'] as const,
@@ -137,32 +144,40 @@ export function getReservedOfferAmountOptions(
 
 export function getFeaturedListingsOptions() {
   return queryOptions({
-    queryFn: async (): Promise<MarketplaceListing[]> => {
-      const response = await publicApi.get('/api/v1/listings/featured', {
+    queryFn: async () =>
+      publicApi.get('/api/v1/listings/featured', {
         searchParams: {
           page: 1,
           size: 12,
         },
-      }).json<PaginatedResponse<MarketplaceListing>>();
-
-      return response.data ?? [];
-    },
+      }).json<GetFeaturedListingsResponses[200]>(),
     queryKey: marketplaceQueryKey.featuredListings(),
+  });
+}
+
+export function getForYouListingsOptions(userId?: string, enabled = false) {
+  return queryOptions({
+    enabled: !!userId && enabled,
+    queryFn: async () =>
+      authInstance.get('/api/v1/listings/for-you', {
+        searchParams: {
+          page: 1,
+          size: 12,
+        },
+      }).json<GetForYouListingsResponses[200]>(),
+    queryKey: marketplaceQueryKey.forYouListings(userId),
   });
 }
 
 export function getTrendingListingsOptions() {
   return queryOptions({
-    queryFn: async (): Promise<MarketplaceListing[]> => {
-      const response = await publicApi.get('/api/v1/listings/trending', {
+    queryFn: async () =>
+      publicApi.get('/api/v1/listings/trending', {
         searchParams: {
           page: 1,
           size: 6,
         },
-      }).json<PaginatedResponse<MarketplaceListing>>();
-
-      return response.data ?? [];
-    },
+      }).json<GetTrendingListingsResponses[200]>(),
     queryKey: marketplaceQueryKey.trendingListings(),
   });
 }

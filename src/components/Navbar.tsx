@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
   LifeBuoy,
@@ -29,16 +29,35 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { getCategoriesOptions } from '@/hooks/useCategories';
+import { getSubcategoriesOptions } from '@/queries/categories.query';
+import { getClothingTypesOptions } from '@/queries/clothing-types.query';
 import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
 
 const sundayLogo = '/sunday-logo.png';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openCategoryMenu, setOpenCategoryMenu] = useState('');
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { canAccessAdminPortal } = useAccessControl();
   const { data: categories = [] } = useQuery(getCategoriesOptions());
+  const subcategoryQueries = useQueries({
+    queries: categories.map(category => getSubcategoriesOptions(category.id)),
+  });
+  const subcategoriesByCategory = categories.map((category, index) => ({
+    category,
+    subcategories: subcategoryQueries[index]?.data ?? [],
+  }));
+  const { data: clothingTypes = [] } = useQuery(getClothingTypesOptions());
   const { data: heroData } = useQuery(getPublicHeroImageOptions());
 
   const siteLogo = (heroData as any)?.siteLogoUrl || sundayLogo;
@@ -78,18 +97,64 @@ export default function Navbar() {
           >
             Browse
           </Link>
-          {categories.map(cat => (
-            <Link
-              key={cat.id}
-              to={`/listings?parent=${cat.value}`}
-              className="
-                text-sm font-medium text-muted-foreground transition-colors
-                hover:text-foreground
-              "
-            >
-              {cat.label}
-            </Link>
-          ))}
+          <NavigationMenu value={openCategoryMenu} onValueChange={setOpenCategoryMenu}>
+            <NavigationMenuList className="gap-4 space-x-0">
+              {subcategoriesByCategory.map(({ category, subcategories }) => (
+                <NavigationMenuItem key={category.id} value={category.id}>
+                  <NavigationMenuTrigger
+                    className="h-auto rounded-none bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground focus:bg-transparent data-[state=open]:bg-transparent"
+                    onFocus={() => setOpenCategoryMenu(category.id)}
+                  >
+                    {category.label}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="min-w-52 rounded-md border bg-popover p-3 shadow-md">
+                    <ul className="flex min-w-48 flex-col gap-1">
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            className="block rounded-sm px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            to={`/listings?parent=${category.value}`}
+                          >
+                            Browse
+                            {' '}
+                            {category.label}
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      {subcategories.map(subcategory => (
+                        <li key={subcategory.id}>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              className="block rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              to={`/listings?category=${category.value}-${subcategory.value}`}
+                            >
+                              {subcategory.label}
+                            </Link>
+                          </NavigationMenuLink>
+                          {subcategory.value === 'clothes' && clothingTypes.length > 0 && (
+                            <ul className="ml-4 border-l pl-2">
+                              {clothingTypes.map(clothingType => (
+                                <li key={clothingType.id}>
+                                  <NavigationMenuLink asChild>
+                                    <Link
+                                      className="block rounded-sm px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                      to={`/listings?category=${category.value}-${subcategory.value}&clothing_type=${clothingType.value}`}
+                                    >
+                                      {clothingType.label}
+                                    </Link>
+                                  </NavigationMenuLink>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
         </nav>
 
         <div className="
@@ -216,6 +281,7 @@ export default function Navbar() {
 
           <Button
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             size="icon"
             variant="ghost"
             className="

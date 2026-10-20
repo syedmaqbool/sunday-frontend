@@ -29,17 +29,33 @@ export function getSubcategoriesOptions(categoryId?: string) {
   return queryOptions({
     enabled: !!categoryId,
     queryFn: async () => {
-      const response = await authInstance
+      const firstPage = await authInstance
         .get('/api/v1/subcategories', {
           searchParams: {
-            categoryId,
+            categoryId: categoryId!,
             page: 1,
             size: 100,
           },
         })
         .json<PaginatedResponse<Subcategory>>();
 
-      return response.data;
+      let subcategories = firstPage.data ?? [];
+      const lastPage = firstPage.pagination?.lastPage ?? 1;
+
+      for (let page = 2; page <= lastPage; page++) {
+        const response = await authInstance
+          .get('/api/v1/subcategories', {
+            searchParams: {
+              categoryId: categoryId!,
+              page,
+              size: 100,
+            },
+          })
+          .json<PaginatedResponse<Subcategory>>();
+        subcategories = [...subcategories, ...response.data ?? []];
+      }
+
+      return subcategories;
     },
     queryKey: categoriesQueryKey.subcategories(categoryId),
   });

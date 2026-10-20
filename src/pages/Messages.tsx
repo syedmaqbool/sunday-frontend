@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getConversationMessagesOptions,
   getConversationsOptions,
+  useMarkConversationReadMutation,
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
 
@@ -54,6 +55,10 @@ function Messages() {
   const [activeConvo, setActiveConvo] = useState<string | null>(
     searchParameters.get('conversation'),
   );
+  const [documentVisible, setDocumentVisible] = useState(
+    () => document.visibilityState === 'visible',
+  );
+  const markReadInFlight = useRef(new Set<string>());
   const focusedMessageId = searchParameters.get('message');
 
   const messagesEndReference = useRef<HTMLDivElement>(null);
@@ -104,6 +109,33 @@ function Messages() {
   const { data: messagesResponse, isLoading: msgsLoading }
     = useQuery(getConversationMessagesOptions(activeConvo || undefined));
   const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse?.data]);
+
+  const markConversationRead = useMarkConversationReadMutation();
+
+  useEffect(() => {
+    const updateDocumentVisibility = () => {
+      setDocumentVisible(document.visibilityState === 'visible');
+    };
+
+    document.addEventListener('visibilitychange', updateDocumentVisibility);
+    return () => document.removeEventListener('visibilitychange', updateDocumentVisibility);
+  }, []);
+
+  useEffect(() => {
+    if (!activeConvo || msgsLoading || !documentVisible || !user)
+      return;
+
+    const hasUnreadIncomingMessage = messages.some(
+      message => message.senderId !== user.id && !message.readAt,
+    );
+    if (!hasUnreadIncomingMessage || markReadInFlight.current.has(activeConvo))
+      return;
+
+    markReadInFlight.current.add(activeConvo);
+    markConversationRead.mutate(activeConvo, {
+      onSettled: () => markReadInFlight.current.delete(activeConvo),
+    });
+  }, [activeConvo, documentVisible, markConversationRead, messages, msgsLoading, user]);
 
   useEffect(() => {
     if (!activeConvo || msgsLoading || !focusedMessageId)

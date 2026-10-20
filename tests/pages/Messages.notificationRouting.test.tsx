@@ -28,6 +28,7 @@ vi.mock('@/hooks/useConverstion', () => ({
     }] }),
     queryKey: ['test-conversations'],
   }),
+  useMarkConversationReadMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
 

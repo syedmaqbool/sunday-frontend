@@ -96,6 +96,7 @@ vi.mock('@/hooks/useConverstion', () => ({
     queryFn: async () => ({ data: [offerlessConversation, deletedListingConversation, directConversation] }),
     queryKey: ['test-conversations'],
   }),
+  useMarkConversationReadMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
 

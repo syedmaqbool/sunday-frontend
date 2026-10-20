@@ -11,6 +11,8 @@ import {
   Eye,
   Loader2,
   MessageSquare,
+  MoveLeft,
+  MoveRight,
   Package,
   Pencil,
   Ruler,
@@ -49,6 +51,7 @@ import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminListingsOptions,
   useModerateListingMutation,
+  useReorderAdminListingMediaMutation,
   useRemoveAdminListingMutation,
   useRestoreAdminListingMutation,
   useUpdateAdminListingTitleMutation,
@@ -208,6 +211,137 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
   );
 }
 
+function MediaReorderPanel({
+  isSaving,
+  media,
+  onCancel,
+  onSave,
+}: {
+  isSaving: boolean;
+  media: AdminListing['media'];
+  onCancel: () => void;
+  onSave: (mediaIds: string[]) => void;
+}) {
+  const [mediaIds, setMediaIds] = useState(() => [...media]
+    .sort((firstMedia, secondMedia) => firstMedia.sortOrder - secondMedia.sortOrder)
+    .map(mediaItem => mediaItem.id));
+  const [draggedMediaId, setDraggedMediaId] = useState<string | null>(null);
+  const orderedMedia = mediaIds.flatMap(mediaId => {
+    const mediaItem = media.find(item => item.id === mediaId);
+    return mediaItem ? [mediaItem] : [];
+  });
+  const coverMediaId = orderedMedia.find(mediaItem => mediaItem.type === 'IMAGE')?.id;
+
+  const moveMedia = (mediaId: string, targetIndex: number) => {
+    setMediaIds((currentIds) => {
+      const sourceIndex = currentIds.indexOf(mediaId);
+      if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= currentIds.length) {
+        return currentIds;
+      }
+
+      const nextIds = [...currentIds];
+      nextIds.splice(sourceIndex, 1);
+      nextIds.splice(targetIndex, 0, mediaId);
+      return nextIds;
+    });
+  };
+
+  const moveMediaBy = (mediaId: string, direction: -1 | 1) => {
+    const index = mediaIds.indexOf(mediaId);
+    moveMedia(mediaId, index + direction);
+  };
+
+  const dropMedia = (sourceMediaId: string, targetMediaId: string) => {
+    if (sourceMediaId === targetMediaId) {
+      return;
+    }
+
+    const sourceIndex = mediaIds.indexOf(sourceMediaId);
+    const targetIndex = mediaIds.indexOf(targetMediaId);
+    moveMedia(sourceMediaId, sourceIndex < targetIndex ? targetIndex - 1 : targetIndex);
+    setDraggedMediaId(null);
+  };
+
+  return (
+    <section aria-label="Reorder listing media" className="space-y-4">
+      <p className="text-sm text-muted-foreground">Drag media or use the arrow controls to change its order.</p>
+      <ol className="grid gap-3 sm:grid-cols-2" aria-label="Listing media order">
+        {orderedMedia.map((mediaItem, index) => {
+          const filename = mediaItem.file?.filename ?? `${mediaItem.type.toLowerCase()} ${index + 1}`;
+          const isCover = mediaItem.id === coverMediaId;
+
+          return (
+            <li
+              key={mediaItem.id}
+              aria-label={`${mediaItem.type === 'VIDEO' ? 'Video' : 'Image'} ${filename}`}
+              className="flex min-w-0 items-center gap-3 rounded-md border border-border p-3"
+              draggable={!isSaving}
+              onDragEnd={() => setDraggedMediaId(null)}
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', mediaItem.id);
+                setDraggedMediaId(mediaItem.id);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const sourceMediaId = event.dataTransfer.getData('text/plain') || draggedMediaId;
+                if (sourceMediaId) {
+                  dropMedia(sourceMediaId, mediaItem.id);
+                }
+              }}
+            >
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted">
+                {mediaItem.file?.url && mediaItem.type === 'VIDEO'
+                  ? <video aria-label={filename} src={mediaItem.file.url} muted preload="metadata" className="h-full w-full object-cover" />
+                  : mediaItem.file?.url
+                    ? <img src={mediaItem.file.url} alt="" className="h-full w-full object-cover" />
+                    : <span className="flex h-full items-center justify-center text-xs">{mediaItem.type}</span>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{filename}</p>
+                {isCover && <Badge variant="secondary">Cover</Badge>}
+                {mediaItem.type === 'VIDEO' && <p className="text-xs text-muted-foreground">Video</p>}
+              </div>
+              <div className="flex shrink-0">
+                <Button
+                  aria-label={`Move ${filename} left`}
+                  disabled={isSaving || index === 0}
+                  onClick={() => moveMediaBy(mediaItem.id, -1)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <MoveLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  aria-label={`Move ${filename} right`}
+                  disabled={isSaving || index === orderedMedia.length - 1}
+                  onClick={() => moveMediaBy(mediaItem.id, 1)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <MoveRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="flex justify-end gap-2">
+        <Button disabled={isSaving} onClick={onCancel} type="button" variant="outline">Cancel</Button>
+        <Button disabled={isSaving} onClick={() => onSave(mediaIds)} type="button">
+          {isSaving ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Save order
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 function ListingModeration() {
   const [searchParameters, setSearchParameters] = useSearchParams();
   const requestedFilter = searchParameters.get('status');
@@ -227,6 +361,7 @@ function ListingModeration() {
   const [listingToRemove, setListingToRemove] = useState<AdminListing | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [updatedTitle, setUpdatedTitle] = useState<{ listingId: string; title: string } | null>(null);
+  const [isReorderingMedia, setIsReorderingMedia] = useState(false);
   const accessControl = useAccessControl();
   const canRemoveListings = accessControl.hasPermissions(['LISTINGS_READ', 'LISTINGS_DELETE']);
   const removalReasonForm = useForm<z.infer<typeof removalReasonSchema>>({
@@ -291,6 +426,7 @@ function ListingModeration() {
     ? selectedPageListing ?? reviewListingFromFirstPage ?? null
     : null;
   const moderateListing = useModerateListingMutation();
+  const reorderMedia = useReorderAdminListingMediaMutation();
   const removeListing = useRemoveAdminListingMutation();
   const restoreListing = useRestoreAdminListingMutation();
   const updateListingTitle = useUpdateAdminListingTitleMutation();
@@ -364,6 +500,21 @@ function ListingModeration() {
       showErrorToast(error, 'Failed to restore listing');
     }
   };
+
+  const submitMediaOrder = async (listing: AdminListing, mediaIds: string[]) => {
+    try {
+      await reorderMedia.mutateAsync({ listingId: listing.id, mediaIds });
+      toast.success('Media order updated');
+      setIsReorderingMedia(false);
+    }
+    catch (error: any) {
+      showErrorToast(error, 'Failed to update media order');
+    }
+  };
+
+  useEffect(() => {
+    setIsReorderingMedia(false);
+  }, [reviewListing?.id]);
 
   const statusColor = (s: ListingStatus) => {
     if (s === 'APPROVED')
@@ -670,7 +821,7 @@ function ListingModeration() {
       {/* Full review modal */}
       <Dialog
         onOpenChange={(open) => {
-          if (open) {
+          if (open || reorderMedia.isPending || updateListingTitle.isPending) {
             return;
           }
 
@@ -679,6 +830,7 @@ function ListingModeration() {
             return;
           }
 
+          setIsReorderingMedia(false);
           updateReviewSelection(null);
           feedbackForm.reset({ feedback: '' });
         }}
@@ -753,7 +905,31 @@ function ListingModeration() {
               "
               >
                 {/* Images */}
-                <DetailGallery media={reviewListing.media || []} />
+                <div className="space-y-3">
+                  {isReorderingMedia
+                    ? (
+                        <MediaReorderPanel
+                          isSaving={reorderMedia.isPending}
+                          media={reviewListing.media || []}
+                          onCancel={() => setIsReorderingMedia(false)}
+                          onSave={mediaIds => submitMediaOrder(reviewListing, mediaIds)}
+                        />
+                      )
+                    : (
+                        <>
+                          <DetailGallery media={reviewListing.media || []} />
+                          {reviewListing.media.length > 1 && (
+                            <Button
+                              onClick={() => setIsReorderingMedia(true)}
+                              type="button"
+                              variant="outline"
+                            >
+                              Reorder media
+                            </Button>
+                          )}
+                        </>
+                      )}
+                </div>
 
                 {/* Details */}
                 <div className="space-y-4">

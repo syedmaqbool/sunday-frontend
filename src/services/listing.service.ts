@@ -1,9 +1,12 @@
 import type {
   AdminListing,
   ModerateListingPayload,
+  ReorderedAdminListing,
+  ReorderListingMediaPayload,
 } from '@/types/adminListing.type';
 import type {
   RemoveAdminListingData,
+  ReorderAdminListingMediaData,
   RestoreAdminListingData,
   UpdateAdminListingTitleData,
 } from '@/types/generated-api';
@@ -77,6 +80,15 @@ export function updateAdminListingTitle(
   return authInstance
     .patch(`/api/v1/admin/listings/${listingId}/title`, { json: payload })
     .json<Response<AdminListing>>();
+}
+
+export function reorderAdminListingMedia(
+  listingId: ReorderAdminListingMediaData['path']['listingId'],
+  payload: ReorderListingMediaPayload,
+): Promise<Response<ReorderedAdminListing>> {
+  return authInstance
+    .patch(`/api/v1/admin/listings/${listingId}/media-order`, { json: payload })
+    .json<Response<ReorderedAdminListing>>();
 }
 
 export function moderateListing(

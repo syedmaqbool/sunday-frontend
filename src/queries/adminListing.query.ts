@@ -1,6 +1,7 @@
 import type {
   ModerateListingPayload,
   RemoveAdminListingVariables,
+  ReorderListingMediaPayload,
   RestoreAdminListingVariables,
   UpdateAdminListingTitleVariables,
 } from '@/types/adminListing.type';
@@ -12,6 +13,7 @@ import {
   createAdminListingFeedback,
   listAdminListings,
   moderateListing,
+  reorderAdminListingMedia,
   removeAdminListing,
   restoreAdminListing,
   updateAdminListingTitle,
@@ -78,6 +80,17 @@ export function useUpdateAdminListingTitleMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
     },
+  });
+}
+
+export function useReorderAdminListingMediaMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      listingId,
+      ...payload
+    }: { listingId: string } & ReorderListingMediaPayload) => reorderAdminListingMedia(listingId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() }),
   });
 }
 

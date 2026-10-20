@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Navbar from '@/components/Navbar';
@@ -99,22 +99,25 @@ describe('navbar category menus', () => {
   it('shows each category with only its related subcategories and matching browse destinations', async () => {
     renderNavbar();
 
-    const apparel = await screen.findByRole('button', { name: 'Apparel' });
-    fireEvent.click(apparel);
+    const apparel = await screen.findByRole('link', { name: 'Apparel' });
+    const apparelMenu = apparel.parentElement!;
 
-    expect(await screen.findByRole('link', { name: 'Browse Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
-    expect(screen.getByRole('link', { name: 'Clothes' })).toHaveAttribute('href', '/listings?category=apparel-clothes');
-    expect(screen.getByRole('link', { name: 'Footwear' })).toHaveAttribute('href', '/listings?category=apparel-shoes');
-    expect(screen.queryByRole('link', { name: 'Decor' })).not.toBeInTheDocument();
+    expect(apparel).toHaveAttribute('href', '/listings?parent=apparel');
+    expect(within(apparelMenu).getByRole('link', { name: 'View all Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
+    expect(within(apparelMenu).getByRole('link', { name: 'Clothes' })).toHaveAttribute('href', '/listings?category=apparel-clothes');
+    expect(within(apparelMenu).getByRole('link', { name: 'Footwear' })).toHaveAttribute('href', '/listings?category=apparel-shoes');
+    expect(within(apparelMenu).queryByRole('link', { name: 'Decor' })).not.toBeInTheDocument();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Home Goods' }));
-    expect(await screen.findByRole('link', { name: 'Decor' })).toHaveAttribute('href', '/listings?category=home-goods-decor');
-    expect(screen.queryByRole('link', { name: 'Footwear' })).not.toBeInTheDocument();
+    const homeGoods = await screen.findByRole('link', { name: 'Home Goods' });
+    const homeGoodsMenu = homeGoods.parentElement!;
+    expect(homeGoods).toHaveAttribute('href', '/listings?parent=home-goods');
+    expect(within(homeGoodsMenu).getByRole('link', { name: 'Decor' })).toHaveAttribute('href', '/listings?category=home-goods-decor');
+    expect(within(homeGoodsMenu).queryByRole('link', { name: 'Footwear' })).not.toBeInTheDocument();
   });
 
   it('links active clothing types under the Clothes subcategory using the Listings URL contract', async () => {
     renderNavbar();
-    fireEvent.click(await screen.findByRole('button', { name: 'Apparel' }));
+    await screen.findByRole('link', { name: 'Apparel' });
 
     expect(await screen.findByRole('link', { name: 'Tops' })).toHaveAttribute('href', '/listings?category=apparel-clothes&clothing_type=tops');
     expect(screen.getByRole('link', { name: 'Bottoms' })).toHaveAttribute('href', '/listings?category=apparel-clothes&clothing_type=bottoms');
@@ -123,14 +126,15 @@ describe('navbar category menus', () => {
   it('opens category menus on keyboard focus and keeps mobile category links available', async () => {
     renderNavbar();
 
-    const apparel = await screen.findByRole('button', { name: 'Apparel' });
+    const apparel = await screen.findByRole('link', { name: 'Apparel' });
     act(() => apparel.focus());
     expect(apparel).toHaveFocus();
-    expect(await screen.findByRole('link', { name: 'Browse Apparel' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'View all Apparel' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    expect(await screen.findByRole('link', { name: 'Browse All' })).toHaveAttribute('href', '/listings');
-    expect(screen.getByRole('link', { name: 'Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
+    const mobileNavigation = screen.getAllByRole('navigation')[1];
+    expect(within(mobileNavigation).getByRole('link', { name: 'Browse All' })).toHaveAttribute('href', '/listings');
+    expect(within(mobileNavigation).getByRole('link', { name: 'Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
   });
 
   it('loads subcategories once for each resolved category and uses the shared clothing-type query', async () => {

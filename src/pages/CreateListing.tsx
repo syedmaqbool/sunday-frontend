@@ -909,8 +909,8 @@ function CreateListing() {
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select clothing type" />
+                    <SelectTrigger className="w-full sm:w-[260px]">
+                      <SelectValue placeholder="Top, bottom, dress..." />
                     </SelectTrigger>
                     <SelectContent>
                       {clothingTypes.map(clothingType => (

@@ -63,12 +63,25 @@ function Listings() {
   const { data: preferencesResponse } = useQuery(getUserPreferencesOptions());
   const prefs = preferencesResponse?.data;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
-  const { data: subCategoryPages = [] } = useQuery(getSubcategoriesOptions());
+  const selectedParentCategoryId = parentCategories.find(
+    category => category.value === parentCat,
+  )?.id;
+  const { data: subCategoryPages = [] } = useQuery(
+    getSubcategoriesOptions(selectedParentCategoryId),
+  );
   const subCategoriesList = subCategoryPages.flatMap(page => page.data);
   const { data: clothingTypePages = [], isSuccess: clothingTypesLoaded } = useQuery(getClothingTypesOptions());
   const clothingTypes = clothingTypePages.flatMap(page => page.data);
+  const selectedClothingTypeId = clothingTypes.find(
+    type => type.value === clothingType,
+  )?.id;
 
-  const { data: listings = [], isLoading } = useQuery(getMarketplaceListingsOptions());
+  const { data: listings = [], isLoading } = useQuery(
+    getMarketplaceListingsOptions(
+      selectedClothingTypeId,
+      clothingType === 'all' || !!selectedClothingTypeId,
+    ),
+  );
 
   const sellerIds = useMemo(() => listings.map(l => l.sellerId), [listings]);
   const { data: sellerRatingsMap } = useQuery(getSellerRatingsOptions(sellerIds));
@@ -121,9 +134,6 @@ function Listings() {
     if (subCat !== 'all') {
       items = items.filter(index => index.categoryValue.endsWith(`-${subCat}`));
     }
-    if (subCat === 'clothes' && clothingType !== 'all') {
-      items = items.filter(index => index.clothingTypeValue === clothingType);
-    }
     if (condition !== 'all')
       items = items.filter(index => index.condition === condition);
     if (size !== 'all')
@@ -149,7 +159,6 @@ function Listings() {
     search,
     parentCat,
     subCat,
-    clothingType,
     condition,
     size,
     sort,
@@ -201,11 +210,11 @@ function Listings() {
       </Select>
       {subCat === 'clothes' && (
         <Select onValueChange={setClothingType} value={clothingType}>
-          <SelectTrigger aria-label="Clothing type" className="w-[160px]">
+          <SelectTrigger aria-label="Clothing type" className="w-[150px]">
             <SelectValue placeholder="Clothing type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Clothing Types</SelectItem>
+            <SelectItem value="all">All Clothing</SelectItem>
             {clothingTypes.map(type => (
               <SelectItem key={type.id} value={type.value}>
                 {type.label}
@@ -280,7 +289,7 @@ function Listings() {
               variant="outline"
               className="
                 gap-1
-                lg:hidden
+                md:hidden
               "
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -289,7 +298,7 @@ function Listings() {
             </Button>
             <div className="
               hidden gap-2
-              lg:flex
+              md:flex
             "
             >
               {filterSelects}
@@ -320,7 +329,7 @@ function Listings() {
         {showFilters && (
           <div className="
             mt-4 flex flex-wrap gap-2
-            lg:hidden
+            md:hidden
           "
           >
             {filterSelects}

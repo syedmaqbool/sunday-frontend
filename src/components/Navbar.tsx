@@ -1,6 +1,7 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
+  ChevronDown,
   LifeBuoy,
   LogOut,
   Mail,
@@ -25,14 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -45,7 +38,6 @@ const sundayLogo = '/sunday-logo.png';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openCategoryMenu, setOpenCategoryMenu] = useState('');
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { canAccessAdminPortal } = useAccessControl();
@@ -98,64 +90,50 @@ export default function Navbar() {
           >
             Browse
           </Link>
-          <NavigationMenu value={openCategoryMenu} onValueChange={setOpenCategoryMenu}>
-            <NavigationMenuList className="gap-4 space-x-0">
-              {subcategoriesByCategory.map(({ category, subcategories }) => (
-                <NavigationMenuItem key={category.id} value={category.id}>
-                  <NavigationMenuTrigger
-                    className="h-auto rounded-none bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground focus:bg-transparent data-[state=open]:bg-transparent"
-                    onFocus={() => setOpenCategoryMenu(category.id)}
+          {subcategoriesByCategory.map(({ category, subcategories }) => (
+            <div key={category.id} className="group relative flex h-16 items-center">
+              <Link
+                aria-haspopup="true"
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground focus-visible:text-foreground"
+                to={`/listings?parent=${category.value}`}
+              >
+                {category.label}
+                {' '}
+                <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180 group-focus-within:rotate-180" />
+              </Link>
+              <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-0 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div className="max-h-[70vh] min-w-[220px] overflow-y-auto rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-lg">
+                  <Link
+                    className="block rounded px-3 py-2 text-sm font-semibold hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+                    to={`/listings?parent=${category.value}`}
                   >
+                    View all
+                    {' '}
                     {category.label}
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent className="min-w-52 rounded-md border bg-popover p-3 shadow-md">
-                    <ul className="flex min-w-48 flex-col gap-1">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            className="block rounded-sm px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                            to={`/listings?parent=${category.value}`}
-                          >
-                            Browse
-                            {' '}
-                            {category.label}
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      {subcategories.map(subcategory => (
-                        <li key={subcategory.id}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              className="block rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              to={`/listings?category=${category.value}-${subcategory.value}`}
-                            >
-                              {subcategory.label}
-                            </Link>
-                          </NavigationMenuLink>
-                          {subcategory.value === 'clothes' && clothingTypes.length > 0 && (
-                            <ul className="ml-4 border-l pl-2">
-                              {clothingTypes.map(clothingType => (
-                                <li key={clothingType.id}>
-                                  <NavigationMenuLink asChild>
-                                    <Link
-                                      className="block rounded-sm px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                      to={`/listings?category=${category.value}-${subcategory.value}&clothing_type=${clothingType.value}`}
-                                    >
-                                      {clothingType.label}
-                                    </Link>
-                                  </NavigationMenuLink>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
+                  </Link>
+                  {subcategories.map(subcategory => (
+                    <div key={subcategory.id}>
+                      <Link
+                        className="block rounded px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+                        to={`/listings?category=${category.value}-${subcategory.value}`}
+                      >
+                        {subcategory.label}
+                      </Link>
+                      {subcategory.value === 'clothes' && clothingTypes.map(clothingType => (
+                        <Link
+                          key={clothingType.id}
+                          className="block rounded py-1.5 pl-6 pr-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+                          to={`/listings?category=${category.value}-clothes&clothing_type=${clothingType.value}`}
+                        >
+                          {clothingType.label}
+                        </Link>
                       ))}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="

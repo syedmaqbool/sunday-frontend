@@ -235,7 +235,7 @@ describe('edit listing moderation rules', () => {
     expect(screen.queryByText('Clothing type')).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('combobox')[1]);
     fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
-    expect(screen.getAllByRole('combobox')[2]).toHaveTextContent('Select clothing type');
+    expect(screen.getAllByRole('combobox')[2]).toHaveTextContent('Top, bottom, dress...');
   });
 
   it('requires a clothing type for a Clothes listing', async () => {

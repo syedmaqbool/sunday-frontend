@@ -3,6 +3,7 @@ import type {
   GetFeaturedListingsResponses,
   GetForYouListingsResponses,
   GetMyOfferAmountByIdResponses,
+  GetPublicListingsData,
   GetTrendingListingsResponses,
 } from '@/types/generated-api';
 import type {
@@ -67,7 +68,10 @@ export const marketplaceQueryKey = {
     [...marketplaceQueryKey.all(), 'for-you-listings', 'list', userId ?? null] as const,
   listing: (listingId?: string, isAuthenticated?: boolean) =>
     [...marketplaceQueryKey.all(), 'listing', 'detail', listingId ?? null, isAuthenticated ? 'auth' : 'public'] as const,
-  listings: () => [...marketplaceQueryKey.all(), 'listings', 'list'] as const,
+  listings: (clothingTypeId?: GetPublicListingsData['query']['clothingTypeId']) =>
+    clothingTypeId
+      ? [...marketplaceQueryKey.all(), 'listings', 'list', { clothingTypeId }] as const
+      : [...marketplaceQueryKey.all(), 'listings', 'list'] as const,
   reservedOfferAmount: (offerId?: string | null) =>
     [...marketplaceQueryKey.all(), 'reserved-offer-amount', 'detail', offerId ?? null] as const,
   sellerListings: (sellerId?: string) =>
@@ -78,8 +82,11 @@ export const marketplaceQueryKey = {
     [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
 };
 
-export async function fetchMarketplaceListings(): Promise<MarketplaceListing[]> {
+export async function fetchMarketplaceListings(
+  clothingTypeId?: GetPublicListingsData['query']['clothingTypeId'],
+): Promise<MarketplaceListing[]> {
   return fetchAllMarketplaceListings({
+    clothingTypeId,
     sortOrder: 'desc',
     sortBy: 'createdAt',
   });
@@ -102,10 +109,14 @@ export async function fetchMarketplaceListing(listingId: string): Promise<Market
   }
 }
 
-export function getMarketplaceListingsOptions() {
+export function getMarketplaceListingsOptions(
+  clothingTypeId?: GetPublicListingsData['query']['clothingTypeId'],
+  enabled = true,
+) {
   return queryOptions({
-    queryFn: fetchMarketplaceListings,
-    queryKey: marketplaceQueryKey.listings(),
+    enabled,
+    queryFn: () => fetchMarketplaceListings(clothingTypeId),
+    queryKey: marketplaceQueryKey.listings(clothingTypeId),
   });
 }
 

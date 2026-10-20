@@ -16,6 +16,7 @@ export interface GetPublicListingsData {
      * Search term to filter results (applied to supported fields)
      */
     categoryId?: string;
+    clothingTypeId?: string;
     sellerId?: string;
     subcategoryId?: string;
     brand?: string;

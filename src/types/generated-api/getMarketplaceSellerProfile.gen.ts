@@ -52,6 +52,7 @@ export interface GetMarketplaceSellerProfileResponses {
       userId: string;
       avatarUrl: string | null;
       bio: string;
+      canReceiveMessages: boolean;
       fullName: string;
       image: {
         /**

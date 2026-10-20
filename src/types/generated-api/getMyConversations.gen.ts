@@ -68,10 +68,11 @@ export interface GetMyConversationsResponses {
       counterAmount: number | null;
       lastMessageContent: string | null;
       listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD' | null;
-      listingTitle: string;
+      listingTitle: string | null;
       offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN' | null;
       reservedUntil: string | null;
       sellerFullName: string;
+      type: 'DIRECT' | 'LISTING';
       unreadCount: number;
       lastMessageCreatedAt: string | null;
       createdAt: string;

@@ -89,15 +89,16 @@ export interface GetAdminFlaggedMessagesResponses {
       id: string;
       buyerId: string;
       conversationId: string;
-      listingId: string;
+      listingId: string | null;
       sellerId: string;
       senderId: string;
       buyerFullName: string;
       content: string;
       flagReasons: Array<string>;
       isFlagged: boolean;
-      listingTitle: string;
+      listingTitle: string | null;
       sellerFullName: string;
+      type: 'DIRECT' | 'LISTING';
       conversationCreatedAt: string;
       readAt: string | null;
       createdAt: string;

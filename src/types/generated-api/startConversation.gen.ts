@@ -2,8 +2,13 @@
 
 export interface StartConversationData {
   path?: never;
-  body: {
+  body: ({
     listingId: string;
+  } | {
+    recipientUserId: string;
+  }) & {
+    listingId?: string;
+    recipientUserId?: string;
     content: string;
   };
   query?: never;
@@ -94,6 +99,8 @@ export interface StartConversationErrors {
       field: string;
       message: string;
     }>;
+  } & {
+    code: 'APP_CONVERSATION_OWN_LISTING_FORBIDDEN' | 'APP_CONVERSATION_SELF_FORBIDDEN';
   };
   /**
    * Default Response
@@ -107,6 +114,36 @@ export interface StartConversationErrors {
      * Http status code of the error response
      */
     statusCode: 404;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  } & {
+    code: 'APP_CONVERSATION_LISTING_ID_NOT_FOUND' | 'APP_CONVERSATION_RECIPIENT_NOT_FOUND';
+  };
+  /**
+   * Default Response
+   */
+  429: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 429;
     /**
      * Detailed human-readable error message
      */
@@ -143,10 +180,11 @@ export interface StartConversationResponses {
       counterAmount: number | null;
       lastMessageContent: string | null;
       listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD' | null;
-      listingTitle: string;
+      listingTitle: string | null;
       offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN' | null;
       reservedUntil: string | null;
       sellerFullName: string;
+      type: 'DIRECT' | 'LISTING';
       unreadCount: number;
       lastMessageCreatedAt: string | null;
       createdAt: string;

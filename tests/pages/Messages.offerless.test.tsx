@@ -19,6 +19,7 @@ const offerlessConversation = {
   offerStatus: null,
   reservedUntil: null,
   sellerFullName: 'Seller',
+  type: 'LISTING' as const,
   unreadCount: 2,
   lastMessageCreatedAt: '2026-10-07T12:00:00.000Z',
   createdAt: '2026-10-07T12:00:00.000Z',
@@ -35,6 +36,17 @@ const deletedListingConversation = {
   unreadCount: 0,
 };
 
+const directConversation = {
+  ...offerlessConversation,
+  id: 'conversation-direct',
+  listingId: null,
+  lastMessageContent: 'I have a question about your shop.',
+  listingStatus: null,
+  listingTitle: null,
+  type: 'DIRECT' as const,
+  unreadCount: 1,
+};
+
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ loading: false, user: { id: 'user-1' } }),
 }));
@@ -43,9 +55,10 @@ vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }));
 vi.mock('@/hooks/useConverstion', () => ({
   getConversationMessagesOptions: (conversationId?: string) => queryOptions({
-    queryFn: async () => ({
-      data: conversationId === deletedListingConversation.id
-        ? [{
+    queryFn: async () => {
+      if (conversationId === deletedListingConversation.id) {
+        return {
+          data: [{
             id: 'message-deleted-listing',
             conversationId,
             senderId: 'seller-1',
@@ -55,13 +68,32 @@ vi.mock('@/hooks/useConverstion', () => ({
             readAt: null,
             createdAt: '2026-10-07T12:01:00.000Z',
             updatedAt: '2026-10-07T12:01:00.000Z',
-          }]
-        : [],
-    }),
+          }],
+        };
+      }
+
+      if (conversationId === directConversation.id) {
+        return {
+          data: [{
+            id: 'message-direct',
+            conversationId,
+            senderId: 'seller-1',
+            content: 'I have a question about your shop.',
+            flagReasons: [],
+            isFlagged: false,
+            readAt: null,
+            createdAt: '2026-10-07T12:01:00.000Z',
+            updatedAt: '2026-10-07T12:01:00.000Z',
+          }],
+        };
+      }
+
+      return { data: [] };
+    },
     queryKey: ['test-messages', conversationId],
   }),
   getConversationsOptions: () => queryOptions({
-    queryFn: async () => ({ data: [offerlessConversation, deletedListingConversation] }),
+    queryFn: async () => ({ data: [offerlessConversation, deletedListingConversation, directConversation] }),
     queryKey: ['test-conversations'],
   }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
@@ -105,5 +137,25 @@ describe('offerless conversations in Messages', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location').textContent).toBe('/messages?conversation=conversation-deleted-listing');
     });
+  });
+
+  it('shows General enquiry in the direct conversation row and chat header', async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages']}>
+          <Routes>
+            <Route element={<Messages />} path="/messages" />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('I have a question about your shop.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Seller 1 General enquiry I have a question about your shop/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Seller 1 General enquiry I have a question about your shop/ }));
+
+    expect(screen.getAllByText('General enquiry')).toHaveLength(2);
+    expect(screen.getByText('I have a question about your shop.')).toBeInTheDocument();
   });
 });

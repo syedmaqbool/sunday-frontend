@@ -23,6 +23,7 @@ vi.mock('@/hooks/useConverstion', () => ({
       lastMessageContent: 'Hello',
       listingTitle: 'Listing',
       sellerFullName: 'Seller',
+      type: 'LISTING',
       unreadCount: 0,
     }] }),
     queryKey: ['test-conversations'],

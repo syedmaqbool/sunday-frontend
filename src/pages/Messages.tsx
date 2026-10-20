@@ -26,10 +26,13 @@ import {
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
 
+import { getConversationContextLabel } from '@/lib/conversationContext';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { conversationsQueryKey } from '@/queries/conversation.query';
 
-/* TYPES */
+/*
+ * TYPES
+ */
 
 const messageSchema = z.object({
   content: z.string().trim().min(1).max(2000),
@@ -37,7 +40,9 @@ const messageSchema = z.object({
 
 type MessageFormValues = z.infer<typeof messageSchema>;
 
-/* COMPONENT */
+/*
+ * COMPONENT
+ */
 
 function Messages() {
   const { loading: authLoading, user } = useAuth();
@@ -59,7 +64,9 @@ function Messages() {
   });
   const messageContent = messageForm.watch('content');
 
-  /* AUTH */
+  /*
+   * AUTH
+   */
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -67,7 +74,9 @@ function Messages() {
     }
   }, [user, authLoading, navigate]);
 
-  /* FETCH CONVERSATIONS */
+  /*
+   * FETCH CONVERSATIONS
+   */
 
   const { data: conversationsResponse, isLoading: convosLoading }
     = useQuery(getConversationsOptions());
@@ -88,7 +97,9 @@ function Messages() {
     setSearchParameters(nextParameters, { replace: true });
   }, [activeConvo, conversations, convosLoading, searchParameters, setSearchParameters]);
 
-  /* FETCH MESSAGES */
+  /*
+   * FETCH MESSAGES
+   */
 
   const { data: messagesResponse, isLoading: msgsLoading }
     = useQuery(getConversationMessagesOptions(activeConvo || undefined));
@@ -122,7 +133,9 @@ function Messages() {
     setSearchParameters(nextParameters);
   };
 
-  /* SEND MESSAGE */
+  /*
+   * SEND MESSAGE
+   */
 
   const sendMessage = useSendMessageMutation();
 
@@ -143,7 +156,9 @@ function Messages() {
     );
   };
 
-  /* WEBSOCKET */
+  /*
+   * WEBSOCKET
+   */
 
   useEffect(() => {
     if (!user)
@@ -199,7 +214,9 @@ function Messages() {
     };
   }, [user, activeConvo, queryClient]);
 
-  /* AUTO SCROLL */
+  /*
+   * AUTO SCROLL
+   */
 
   useEffect(() => {
     if (!focusedMessageId)
@@ -287,7 +304,7 @@ function Messages() {
                                 </div>
 
                                 <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {conversation.listingTitle}
+                                  {getConversationContextLabel(conversation.type, conversation.listingTitle)}
                                 </p>
 
                                 <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -340,7 +357,7 @@ function Messages() {
                         </p>
 
                         <p className="text-xs text-muted-foreground">
-                          {activeConversation.listingTitle}
+                          {getConversationContextLabel(activeConversation.type, activeConversation.listingTitle)}
                         </p>
                       </div>
                     </div>

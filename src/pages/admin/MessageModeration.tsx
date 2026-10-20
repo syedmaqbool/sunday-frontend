@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { getConversationContextLabel } from '@/lib/conversationContext';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getFlaggedMessagesOptions,
@@ -112,6 +113,9 @@ function MessageModeration() {
                           <p className="mt-0.5 truncate text-sm text-muted-foreground">
                             {message.content}
                           </p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {getConversationContextLabel(message.type, message.listingTitle)}
+                          </p>
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             {format(new Date(message.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
                           </p>
@@ -174,7 +178,7 @@ function MessageModeration() {
                 <p className="text-sm text-muted-foreground">
                   Listing:
                   {' '}
-                  {selected.listingTitle}
+                  {getConversationContextLabel(selected.type, selected.listingTitle)}
                 </p>
               </DialogHeader>
 
@@ -218,7 +222,9 @@ function MessageModeration() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Listing</span>
-                  <span className="font-medium">{selected.listingTitle}</span>
+                  <span className="font-medium">
+                    {getConversationContextLabel(selected.type, selected.listingTitle)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">

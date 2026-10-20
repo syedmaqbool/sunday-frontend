@@ -401,6 +401,11 @@ function ListingDetail() {
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium capitalize text-secondary-foreground">
                 {listing.categoryValue}
               </span>
+              {listing.clothingTypeLabel && listing.clothingTypeValue && (
+                <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                  {`${listing.clothingTypeLabel} (${listing.clothingTypeValue})`}
+                </span>
+              )}
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
                   <Weight className="h-3 w-3" />

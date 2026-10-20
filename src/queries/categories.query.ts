@@ -39,7 +39,7 @@ export function getSubcategoriesOptions(categoryId?: string) {
         })
         .json<PaginatedResponse<Subcategory>>();
 
-      let subcategories = firstPage.data ?? [];
+      const pages = [firstPage];
       const lastPage = firstPage.pagination?.lastPage ?? 1;
 
       for (let page = 2; page <= lastPage; page++) {
@@ -52,10 +52,10 @@ export function getSubcategoriesOptions(categoryId?: string) {
             },
           })
           .json<PaginatedResponse<Subcategory>>();
-        subcategories = [...subcategories, ...response.data ?? []];
+        pages.push(response);
       }
 
-      return subcategories;
+      return pages;
     },
     queryKey: categoriesQueryKey.subcategories(categoryId),
   });

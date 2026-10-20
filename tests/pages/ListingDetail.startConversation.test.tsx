@@ -107,6 +107,14 @@ describe('start a conversation from listing detail', () => {
     expect(screen.queryByRole('button', { name: 'Message seller' })).not.toBeInTheDocument();
   });
 
+  it('shows the clothing type label and value returned with the listing', async () => {
+    listingState.listing.clothingTypeLabel = 'Tops';
+    listingState.listing.clothingTypeValue = 'tops';
+    renderListingDetail();
+
+    expect(await screen.findByText('Tops (tops)')).toBeInTheDocument();
+  });
+
   it('hides messaging from the listing owner', async () => {
     userState.user = { id: 'seller-1' };
     renderListingDetail();

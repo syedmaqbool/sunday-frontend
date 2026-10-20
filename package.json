@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "type": "module",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": true,
   "scripts": {
     "prepare": "husky",

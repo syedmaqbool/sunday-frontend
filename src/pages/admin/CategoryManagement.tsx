@@ -1,8 +1,7 @@
 import type { Category, ClothingType, Subcategory } from '@/types/adminCategory.type';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-import { HTTPError } from 'ky';
 import { useQuery } from '@tanstack/react-query';
+import { HTTPError } from 'ky';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -103,7 +102,8 @@ function CategoryManagement() {
 
   const { data: categories = [], isLoading: loadingCats } = useQuery(getAdminCategoriesOptions());
   const { data: subcategories = [], isLoading: loadingSubs } = useQuery(getAdminSubcategoriesOptions());
-  const { data: clothingTypes = [], isLoading: loadingClothingTypes } = useQuery(getAdminClothingTypesOptions());
+  const { data: clothingTypePages = [], isLoading: loadingClothingTypes } = useQuery(getAdminClothingTypesOptions());
+  const clothingTypes = clothingTypePages.flatMap(page => page.data);
 
   const createCat = useCreateCategoryMutation();
   const updateCat = useUpdateCategoryMutation();
@@ -411,7 +411,7 @@ function CategoryManagement() {
               ? <p className="text-sm text-muted-foreground">No clothing types yet.</p>
               : (
                   <div className="divide-y divide-border">
-                    {[...clothingTypes].sort((first, second) => first.sortOrder - second.sortOrder).map(clothingType => (
+                    {clothingTypes.toSorted((first, second) => first.sortOrder - second.sortOrder).map(clothingType => (
                       <div key={clothingType.id} className="flex items-center justify-between py-3">
                         <div>
                           <p className="font-medium text-foreground">{clothingType.label}</p>

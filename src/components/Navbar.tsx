@@ -25,13 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/hooks/useAccessControl';
-import { getCategoriesOptions } from '@/hooks/useCategories';
-import { getSubcategoriesOptions } from '@/queries/categories.query';
-import { getClothingTypesOptions } from '@/queries/clothing-types.query';
-import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -40,6 +33,13 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { getCategoriesOptions } from '@/hooks/useCategories';
+import { getSubcategoriesOptions } from '@/queries/categories.query';
+import { getClothingTypesOptions } from '@/queries/clothing-types.query';
+import { getPublicHeroImageOptions } from '@/queries/siteSettings.query';
 
 const sundayLogo = '/sunday-logo.png';
 
@@ -55,9 +55,10 @@ export default function Navbar() {
   });
   const subcategoriesByCategory = categories.map((category, index) => ({
     category,
-    subcategories: subcategoryQueries[index]?.data ?? [],
+    subcategories: subcategoryQueries[index]?.data?.flatMap(page => page.data) ?? [],
   }));
-  const { data: clothingTypes = [] } = useQuery(getClothingTypesOptions());
+  const { data: clothingTypePages = [] } = useQuery(getClothingTypesOptions());
+  const clothingTypes = clothingTypePages.flatMap(page => page.data);
   const { data: heroData } = useQuery(getPublicHeroImageOptions());
 
   const siteLogo = (heroData as any)?.siteLogoUrl || sundayLogo;

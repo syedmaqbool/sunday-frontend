@@ -187,8 +187,10 @@ function CreateListing() {
   const formValues = watch();
   const sizeFieldError = errors.size;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
-  const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));
-  const { data: clothingTypes = [] } = useQuery(getClothingTypesOptions());
+  const { data: subCategoryPages = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));
+  const subCategories = subCategoryPages.flatMap(page => page.data);
+  const { data: clothingTypePages = [] } = useQuery(getClothingTypesOptions());
+  const clothingTypes = clothingTypePages.flatMap(page => page.data);
   const [submitting, setSubmitting] = useState(false);
 
   const imageFiles = formValues.imageFiles;

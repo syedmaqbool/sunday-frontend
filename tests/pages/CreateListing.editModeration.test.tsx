@@ -28,20 +28,20 @@ vi.mock('@/hooks/useCategories', () => ({
     queryKey: ['categories'],
   }),
   getSubcategoriesOptions: () => ({
-    queryFn: async () => [
+    queryFn: async () => [{ data: [
       { id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' },
       { id: 'subcategory-clothes', icon: '👚', label: 'Clothes', sortOrder: 1, value: 'clothes' },
-    ],
+    ] }],
     queryKey: ['subcategories'],
   }),
 }));
 
 vi.mock('@/queries/clothing-types.query', () => ({
   getClothingTypesOptions: () => ({
-    queryFn: async () => [
+    queryFn: async () => [{ data: [
       { id: 'type-tops', label: 'Tops', sortOrder: 0, value: 'tops' },
       { id: 'type-bottoms', label: 'Bottoms', sortOrder: 1, value: 'bottoms' },
-    ],
+    ] }],
     queryKey: ['clothing-types', 'list'],
   }),
 }));
@@ -260,8 +260,10 @@ describe('edit listing moderation rules', () => {
     renderEditListing();
 
     await screen.findByText('Clothing type');
-    fireEvent.click((await screen.findAllByRole('combobox'))[2]);
-    expect(await screen.findByRole('option', { name: 'Bottoms' })).toHaveAttribute('aria-selected', 'true');
+    const comboboxes = await screen.findAllByRole('combobox');
+    fireEvent.click(comboboxes[2]);
+    const savedClothingTypeOption = await screen.findByRole('option', { name: 'Bottoms' });
+    expect(savedClothingTypeOption).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(document.activeElement, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());

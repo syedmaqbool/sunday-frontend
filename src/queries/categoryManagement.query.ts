@@ -36,14 +36,14 @@ export function getAdminClothingTypesOptions() {
   return queryOptions({
     queryFn: async () => {
       const firstPage = await listClothingTypes({ page: 1, size: CLOTHING_TYPE_PAGE_SIZE });
-      const clothingTypes = [...firstPage.data];
+      const pages = [firstPage];
 
       for (let page = 2; page <= firstPage.pagination.lastPage; page += 1) {
         const response = await listClothingTypes({ page, size: CLOTHING_TYPE_PAGE_SIZE });
-        clothingTypes.push(...response.data);
+        pages.push(response);
       }
 
-      return clothingTypes;
+      return pages;
     },
     queryKey: categoryManagementQueryKey.clothingTypes(),
   });

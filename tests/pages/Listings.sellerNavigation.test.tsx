@@ -18,17 +18,17 @@ vi.mock('@/hooks/useBoosts', () => ({
 }));
 vi.mock('@/hooks/useCategories', () => ({
   getCategoriesOptions: () => ({ queryFn: async () => [], queryKey: ['categories'] }),
-  getSubcategoriesOptions: () => ({ queryFn: async () => [
+  getSubcategoriesOptions: () => ({ queryFn: async () => [{ data: [
     { id: 'subcategory-clothes', icon: '👚', label: 'Clothes', sortOrder: 1, value: 'clothes' },
     { id: 'subcategory-shoes', icon: '👞', label: 'Shoes', sortOrder: 2, value: 'shoes' },
-  ], queryKey: ['subcategories'] }),
+  ] }], queryKey: ['subcategories'] }),
 }));
 vi.mock('@/queries/clothing-types.query', () => ({
   getClothingTypesOptions: () => ({
-    queryFn: async () => [
+    queryFn: async () => [{ data: [
       { id: 'clothing-type-tops', label: 'Tops', sortOrder: 1, value: 'tops' },
       { id: 'clothing-type-dresses', label: 'Dresses', sortOrder: 2, value: 'dresses' },
-    ],
+    ] }],
     queryKey: ['clothing-types', 'list'],
   }),
 }));
@@ -239,7 +239,7 @@ describe('listing clothing type filter', () => {
 
     const visibleListings = screen.getByRole('main');
     expect(visibleListings.textContent?.indexOf('Cotton Shirt')).toBeLessThan(
-      visibleListings.textContent?.indexOf('Vintage Tee') ?? Number.POSITIVE_INFINITY,
+      visibleListings.textContent?.indexOf('Vintage Tee') ?? Infinity,
     );
 
     fireEvent.click(screen.getAllByRole('combobox')[3]);

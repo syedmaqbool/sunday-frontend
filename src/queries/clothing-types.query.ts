@@ -1,4 +1,3 @@
-import type { ClothingType } from '@/types/clothing-type.type';
 import { queryOptions } from '@tanstack/react-query';
 import { listClothingTypes } from '@/services/clothing-type.service';
 
@@ -13,14 +12,14 @@ export function getClothingTypesOptions() {
   return queryOptions({
     queryFn: async () => {
       const firstPage = await listClothingTypes();
-      let clothingTypes: ClothingType[] = firstPage.data;
+      const pages = [firstPage];
 
       for (let page = 2; page <= firstPage.pagination.lastPage; page++) {
         const response = await listClothingTypes(page);
-        clothingTypes = [...clothingTypes, ...response.data];
+        pages.push(response);
       }
 
-      return clothingTypes;
+      return pages;
     },
     queryKey: clothingTypesQueryKey.list(),
     staleTime: 5 * 60 * 1000,

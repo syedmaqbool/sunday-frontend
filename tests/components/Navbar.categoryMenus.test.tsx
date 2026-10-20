@@ -70,23 +70,23 @@ function renderNavbar() {
   );
 }
 
-describe('Navbar category menus', () => {
+describe('navbar category menus', () => {
   beforeEach(() => {
     subcategoryQueryFns.clear();
     clothingTypesQueryFn.mockClear();
-    clothingTypesQueryFn.mockResolvedValue(clothingTypes);
+    clothingTypesQueryFn.mockResolvedValue([{ data: clothingTypes }]);
     getCategoriesOptionsMock.mockReturnValue({
       queryFn: async () => categories,
       queryKey: ['categories'],
     });
     getSubcategoriesOptionsMock.mockImplementation((categoryId: keyof typeof subcategoriesByCategory) => {
-      let queryFn = subcategoryQueryFns.get(categoryId);
-      if (!queryFn) {
-        queryFn = vi.fn(async () => subcategoriesByCategory[categoryId]);
-        subcategoryQueryFns.set(categoryId, queryFn);
+      let queryFunction = subcategoryQueryFns.get(categoryId);
+      if (!queryFunction) {
+        queryFunction = vi.fn(async () => [{ data: subcategoriesByCategory[categoryId] }]);
+        subcategoryQueryFns.set(categoryId, queryFunction);
       }
       return {
-        queryFn,
+        queryFn: queryFunction,
         queryKey: ['subcategories', categoryId],
       };
     });

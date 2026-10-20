@@ -63,8 +63,10 @@ function Listings() {
   const { data: preferencesResponse } = useQuery(getUserPreferencesOptions());
   const prefs = preferencesResponse?.data;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
-  const { data: subCategoriesList = [] } = useQuery(getSubcategoriesOptions());
-  const { data: clothingTypes = [], isSuccess: clothingTypesLoaded } = useQuery(getClothingTypesOptions());
+  const { data: subCategoryPages = [] } = useQuery(getSubcategoriesOptions());
+  const subCategoriesList = subCategoryPages.flatMap(page => page.data);
+  const { data: clothingTypePages = [], isSuccess: clothingTypesLoaded } = useQuery(getClothingTypesOptions());
+  const clothingTypes = clothingTypePages.flatMap(page => page.data);
 
   const { data: listings = [], isLoading } = useQuery(getMarketplaceListingsOptions());
 
@@ -95,7 +97,7 @@ function Listings() {
     if (
       clothingTypesLoaded
       && clothingType !== 'all'
-      && !clothingTypes.some(type => type.value === clothingType)
+      && clothingTypes.every(type => type.value !== clothingType)
     ) {
       setClothingType('all');
     }

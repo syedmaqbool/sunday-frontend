@@ -60,6 +60,7 @@ vi.mock('@/queries/adminListing.query', () => ({
   useModerateListingMutation: () => ({ isPending: false, mutateAsync: moderationMutation }),
   useRemoveAdminListingMutation: () => ({ isPending: false, mutateAsync: removeMutation }),
   useRestoreAdminListingMutation: () => ({ isPending: false, mutateAsync: restoreMutation }),
+  useUpdateAdminListingTitleMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));
 
 vi.mock('@/contexts/AuthContext', () => ({

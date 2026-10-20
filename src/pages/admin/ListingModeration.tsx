@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
+  Check,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
@@ -11,6 +12,7 @@ import {
   Loader2,
   MessageSquare,
   Package,
+  Pencil,
   Ruler,
   Tag,
   Weight,
@@ -25,6 +27,7 @@ import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/compone
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -48,12 +51,14 @@ import {
   useModerateListingMutation,
   useRemoveAdminListingMutation,
   useRestoreAdminListingMutation,
+  useUpdateAdminListingTitleMutation,
 } from '@/queries/adminListing.query';
 
 const listingFeedbackSchema = z.object({ feedback: z.string() });
 const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD', 'DELETED'] as const;
 const REVIEW_LOOKUP_PAGE_SIZE = 100;
 const removalReasonSchema = z.object({ reason: z.string().trim().min(1, 'Enter a reason before removing this listing.') });
+const listingTitleSchema = z.object({ title: z.string().trim().min(1).max(120) });
 
 function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const [index, setIndex] = useState(0);
@@ -220,12 +225,20 @@ function ListingModeration() {
   const [isRemovalReasonDialogOpen, setIsRemovalReasonDialogOpen] = useState(false);
   const [isRemovalConfirmationOpen, setIsRemovalConfirmationOpen] = useState(false);
   const [listingToRemove, setListingToRemove] = useState<AdminListing | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [updatedTitle, setUpdatedTitle] = useState<{ listingId: string; title: string } | null>(null);
   const accessControl = useAccessControl();
   const canRemoveListings = accessControl.hasPermissions(['LISTINGS_READ', 'LISTINGS_DELETE']);
   const removalReasonForm = useForm<z.infer<typeof removalReasonSchema>>({
     defaultValues: { reason: '' },
     resolver: zodResolver(removalReasonSchema),
   });
+  const titleForm = useForm<z.infer<typeof listingTitleSchema>>({
+    defaultValues: { title: '' },
+    mode: 'onChange',
+    resolver: zodResolver(listingTitleSchema),
+  });
+  const titleDraft = titleForm.watch('title');
   const apiStatus = filter === 'all' || filter === 'DELETED' ? undefined : filter;
   const isDeleted = filter === 'DELETED' ? true : undefined;
   const {
@@ -280,6 +293,36 @@ function ListingModeration() {
   const moderateListing = useModerateListingMutation();
   const removeListing = useRemoveAdminListingMutation();
   const restoreListing = useRestoreAdminListingMutation();
+  const updateListingTitle = useUpdateAdminListingTitleMutation();
+
+  const beginTitleEdit = (listing: AdminListing) => {
+    titleForm.reset({ title: listing.title });
+    setIsEditingTitle(true);
+  };
+
+  const cancelTitleEdit = () => {
+    setIsEditingTitle(false);
+    titleForm.reset({ title: '' });
+  };
+
+  const saveTitleEdit = async ({ title }: z.infer<typeof listingTitleSchema>) => {
+    if (!reviewListing || updateListingTitle.isPending) {
+      return;
+    }
+
+    try {
+      const response = await updateListingTitle.mutateAsync({
+        listingId: reviewListing.id,
+        title,
+      });
+      setUpdatedTitle({ listingId: reviewListing.id, title: response.data.title });
+      cancelTitleEdit();
+      toast.success('Listing title updated');
+    }
+    catch (error: any) {
+      showErrorToast(error, 'Failed to update listing title');
+    }
+  };
 
   const beginListingRemoval = (listing: AdminListing) => {
     setListingToRemove(listing);
@@ -631,6 +674,11 @@ function ListingModeration() {
             return;
           }
 
+          if (isEditingTitle) {
+            cancelTitleEdit();
+            return;
+          }
+
           updateReviewSelection(null);
           feedbackForm.reset({ feedback: '' });
         }}
@@ -641,9 +689,57 @@ function ListingModeration() {
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3">
-                  <DialogTitle className="font-heading text-xl">
-                    {reviewListing.title}
-                  </DialogTitle>
+                  {isEditingTitle
+                    ? (
+                        <form className="flex flex-1 items-center gap-2" onSubmit={titleForm.handleSubmit(saveTitleEdit)}>
+                          <Input
+                            aria-label="Listing title"
+                            autoFocus
+                            maxLength={120}
+                            {...titleForm.register('title')}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                cancelTitleEdit();
+                              }
+                              else if (event.key === 'Enter') {
+                                event.preventDefault();
+                                void titleForm.handleSubmit(saveTitleEdit)();
+                              }
+                            }}
+                          />
+                          <Button
+                            aria-label="Save title"
+                            disabled={!titleDraft.trim() || titleDraft.length > 120 || updateListingTitle.isPending}
+                            size="icon"
+                            type="submit"
+                          >
+                            {updateListingTitle.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          </Button>
+                          <Button aria-label="Cancel title edit" onClick={cancelTitleEdit} size="icon" type="button" variant="ghost">
+                            Cancel
+                          </Button>
+                        </form>
+                      )
+                    : (
+                        <div className="flex items-center gap-2">
+                          <DialogTitle className="font-heading text-xl">
+                            {updatedTitle?.listingId === reviewListing.id ? updatedTitle.title : reviewListing.title}
+                          </DialogTitle>
+                          {accessControl.hasPermission('LISTINGS_UPDATE') && (
+                            <Button
+                              aria-label="Edit title"
+                              onClick={() => beginTitleEdit(reviewListing)}
+                              size="icon"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                   <Badge variant={statusColor(reviewListing.status)}>
                     {formatEnumLabel(reviewListing.status)}
                   </Badge>

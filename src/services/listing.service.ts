@@ -2,7 +2,11 @@ import type {
   AdminListing,
   ModerateListingPayload,
 } from '@/types/adminListing.type';
-import type { RemoveAdminListingData, RestoreAdminListingData } from '@/types/generated-api';
+import type {
+  RemoveAdminListingData,
+  RestoreAdminListingData,
+  UpdateAdminListingTitleData,
+} from '@/types/generated-api';
 import type {
   AdminListingFeedbackEntry,
   AdminListingFeedbackParameters,
@@ -64,6 +68,15 @@ export function restoreAdminListing(
   return authInstance
     .post(`/api/v1/admin/listings/${listingId}/restore`)
     .json<Response>();
+}
+
+export function updateAdminListingTitle(
+  listingId: UpdateAdminListingTitleData['path']['listingId'],
+  payload: UpdateAdminListingTitleData['body'],
+): Promise<Response<AdminListing>> {
+  return authInstance
+    .patch(`/api/v1/admin/listings/${listingId}/title`, { json: payload })
+    .json<Response<AdminListing>>();
 }
 
 export function moderateListing(

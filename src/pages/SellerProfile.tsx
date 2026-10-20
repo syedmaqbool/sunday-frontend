@@ -5,10 +5,12 @@ import { ArrowLeft, Loader2, MapPin, Package, Star } from 'lucide-react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';
+import { MessageSellerButton } from '@/components/MessageSellerButton';
 import Navbar from '@/components/Navbar';
 import { ReviewsList } from '@/components/ReviewsList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
 import {
   getSellerListingsOptions,
@@ -18,6 +20,7 @@ import {
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
   const [searchParameters, setSearchParameters] = useSearchParams();
+  const { user } = useAuth();
   const focusedReviewId = searchParameters.get('review');
   const selectedTab = searchParameters.get('tab') === 'reviews' || focusedReviewId
     ? 'reviews'
@@ -180,6 +183,15 @@ function SellerProfile() {
               </div>
             )}
           </div>
+          {profile.canReceiveMessages && user?.id !== profile.userId && (
+            <div className="
+              w-full
+              sm:w-auto
+            "
+            >
+              <MessageSellerButton recipientUserId={profile.userId} />
+            </div>
+          )}
         </div>
 
         {/* Tabs */}

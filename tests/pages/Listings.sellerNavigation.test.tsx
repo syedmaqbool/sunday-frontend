@@ -18,7 +18,19 @@ vi.mock('@/hooks/useBoosts', () => ({
 }));
 vi.mock('@/hooks/useCategories', () => ({
   getCategoriesOptions: () => ({ queryFn: async () => [], queryKey: ['categories'] }),
-  getSubcategoriesOptions: () => ({ queryFn: async () => [], queryKey: ['subcategories'] }),
+  getSubcategoriesOptions: () => ({ queryFn: async () => [
+    { id: 'subcategory-clothes', icon: '👚', label: 'Clothes', sortOrder: 1, value: 'clothes' },
+    { id: 'subcategory-shoes', icon: '👞', label: 'Shoes', sortOrder: 2, value: 'shoes' },
+  ], queryKey: ['subcategories'] }),
+}));
+vi.mock('@/queries/clothing-types.query', () => ({
+  getClothingTypesOptions: () => ({
+    queryFn: async () => [
+      { id: 'clothing-type-tops', label: 'Tops', sortOrder: 1, value: 'tops' },
+      { id: 'clothing-type-dresses', label: 'Dresses', sortOrder: 2, value: 'dresses' },
+    ],
+    queryKey: ['clothing-types', 'list'],
+  }),
 }));
 vi.mock('@/hooks/useSellerRating', () => ({
   getSellerRatingsOptions: () => ({ queryFn: async () => new Map(), queryKey: ['seller-ratings'] }),
@@ -80,16 +92,22 @@ function LocationObserver() {
   return <output data-testid="location">{location.pathname}</output>;
 }
 
-function renderListings() {
+function renderListings({
+  initialEntry = '/listings',
+  listings = [listing],
+}: {
+  initialEntry?: string;
+  listings?: MarketplaceListing[];
+} = {}) {
   marketplaceListingsOptionsMock.mockReturnValue({
-    queryFn: async () => [listing],
+    queryFn: async () => listings,
     queryKey: ['marketplace', 'listings'],
   });
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/listings']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <LocationObserver />
         <Routes>
           <Route element={<Listings />} path="/listings" />
@@ -137,5 +155,123 @@ describe('listing seller navigation', () => {
     fireEvent.click(listingLink);
     expect(await screen.findByText('Item detail page')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1');
+  });
+});
+
+describe('listing clothing type filter', () => {
+  it('shows active clothing types for Clothes and filters the loaded listings', async () => {
+    const clothingListings = [
+      { ...listing, id: 'top-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Cotton Top' },
+      { ...listing, id: 'dress-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'dresses', title: 'Summer Dress' },
+    ];
+
+    renderListings({ initialEntry: '/listings?category=women-clothes', listings: clothingListings });
+
+    await screen.findByText('2 items');
+    fireEvent.click(screen.getByRole('combobox', { name: /clothing type/i }));
+    expect(await screen.findByRole('option', { name: 'Tops' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: 'Tops' }));
+
+    expect(screen.getByText('1 items')).toBeInTheDocument();
+    expect(screen.getByText('Cotton Top')).toBeInTheDocument();
+    expect(screen.queryByText('Summer Dress')).not.toBeInTheDocument();
+  });
+
+  it('hides the clothing type filter when another subcategory is selected', async () => {
+    renderListings({
+      initialEntry: '/listings?category=women-shoes',
+      listings: [{ ...listing, categoryValue: 'women-shoes', subcategoryValue: 'shoes' }],
+    });
+
+    await screen.findByText('1 items');
+    expect(screen.queryByRole('combobox', { name: 'Clothing type' })).not.toBeInTheDocument();
+  });
+
+  it('initializes the selected type from the clothing_type URL parameter', async () => {
+    const clothingListings = [
+      { ...listing, id: 'top-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Cotton Top' },
+      { ...listing, id: 'dress-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'dresses', title: 'Summer Dress' },
+    ];
+
+    renderListings({
+      initialEntry: '/listings?category=women-clothes&clothing_type=dresses',
+      listings: clothingListings,
+    });
+
+    expect(await screen.findByText('1 items')).toBeInTheDocument();
+    expect(screen.getByText('Summer Dress')).toBeInTheDocument();
+    expect(screen.queryByText('Cotton Top')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Clothing type' })).toHaveTextContent('Dresses');
+  });
+
+  it('keeps the reset option available for an unavailable URL type', async () => {
+    const clothingListings = [
+      { ...listing, id: 'top-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Cotton Top' },
+      { ...listing, id: 'dress-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'dresses', title: 'Summer Dress' },
+    ];
+
+    renderListings({
+      initialEntry: '/listings?category=women-clothes&clothing_type=retired-type',
+      listings: clothingListings,
+    });
+
+    expect(await screen.findByText('2 items')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Clothing type' }));
+    expect(await screen.findByRole('option', { name: 'All Clothing Types' })).toBeInTheDocument();
+  });
+
+  it('preserves search, condition, size, category, and sort while filtering by clothing type', async () => {
+    const clothingListings: MarketplaceListing[] = [
+      { ...listing, id: 'vintage-tee', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Vintage Tee', condition: 'new_with_tags', size: 'L', price: 3500 },
+      { ...listing, id: 'cotton-shirt', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Cotton Shirt', condition: 'new_with_tags', size: 'M', price: 1500 },
+      { ...listing, id: 'summer-dress', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'dresses', title: 'Summer Dress', condition: 'good', size: 'L', price: 800 },
+    ];
+
+    renderListings({ initialEntry: '/listings?category=women-clothes', listings: clothingListings });
+
+    await screen.findByText('3 items');
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.click(selects[2]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Tops' }));
+    expect(await screen.findByText('2 items')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('combobox')[5]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Price: Low to High' }));
+
+    const visibleListings = screen.getByRole('main');
+    expect(visibleListings.textContent?.indexOf('Cotton Shirt')).toBeLessThan(
+      visibleListings.textContent?.indexOf('Vintage Tee') ?? Number.POSITIVE_INFINITY,
+    );
+
+    fireEvent.click(screen.getAllByRole('combobox')[3]);
+    fireEvent.click(await screen.findByRole('option', { name: 'New with tags' }));
+    fireEvent.click(screen.getAllByRole('combobox')[4]);
+    fireEvent.click(await screen.findByRole('option', { name: 'L' }));
+    fireEvent.change(screen.getByPlaceholderText('Search by name or brand...'), { target: { value: 'Vintage' } });
+
+    expect(await screen.findByText('1 items')).toBeInTheDocument();
+    expect(screen.getByText('Vintage Tee')).toBeInTheDocument();
+    expect(screen.queryByText('Cotton Shirt')).not.toBeInTheDocument();
+    expect(screen.queryByText('Summer Dress')).not.toBeInTheDocument();
+  });
+
+  it('clears the type selection when changing away from Clothes', async () => {
+    const clothingListings = [
+      { ...listing, id: 'top-listing', categoryValue: 'women-clothes', subcategoryValue: 'clothes', clothingTypeValue: 'tops', title: 'Cotton Top' },
+      { ...listing, id: 'shoe-listing', categoryValue: 'women-shoes', subcategoryValue: 'shoes', clothingTypeValue: null, title: 'Leather Shoes' },
+    ];
+
+    renderListings({ initialEntry: '/listings?category=women-clothes', listings: clothingListings });
+
+    await screen.findByText('1 items');
+    fireEvent.click(screen.getByRole('combobox', { name: 'Clothing type' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Tops' }));
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Shoes' }));
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
+
+    expect(await screen.findByText('1 items')).toBeInTheDocument();
+    expect(screen.getByText('Cotton Top')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Clothing type' })).toHaveTextContent('All Clothing Types');
   });
 });

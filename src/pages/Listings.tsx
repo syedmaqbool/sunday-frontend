@@ -31,6 +31,7 @@ import {
 } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
 import { formatEnumLabel } from '@/lib/utilities';
+import { getClothingTypesOptions } from '@/queries/clothing-types.query';
 import {
   getListingMediaUrls,
   getMarketplaceListingsOptions,
@@ -47,9 +48,13 @@ function Listings() {
     = initialCategory !== 'all' && initialCategory.includes('-')
       ? initialCategory.split('-', 2)[1]
       : 'all';
+  const initialClothingType = searchParameters.get('clothing_type') || 'all';
 
   const [parentCat, setParentCat] = useState(initialParent);
   const [subCat, setSubCat] = useState(initialSub);
+  const [clothingType, setClothingType] = useState(
+    initialSub === 'clothes' ? initialClothingType : 'all',
+  );
   const [condition, setCondition] = useState('all');
   const [size, setSize] = useState('all');
   const [sort, setSort] = useState('newest');
@@ -59,6 +64,7 @@ function Listings() {
   const prefs = preferencesResponse?.data;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const { data: subCategoriesList = [] } = useQuery(getSubcategoriesOptions());
+  const { data: clothingTypes = [], isSuccess: clothingTypesLoaded } = useQuery(getClothingTypesOptions());
 
   const { data: listings = [], isLoading } = useQuery(getMarketplaceListingsOptions());
 
@@ -78,7 +84,22 @@ function Listings() {
 
     setParentCat(parent);
     setSubCat(sub);
+    setClothingType(
+      sub === 'clothes'
+        ? searchParameters.get('clothing_type') || 'all'
+        : 'all',
+    );
   }, [searchParameters]);
+
+  useEffect(() => {
+    if (
+      clothingTypesLoaded
+      && clothingType !== 'all'
+      && !clothingTypes.some(type => type.value === clothingType)
+    ) {
+      setClothingType('all');
+    }
+  }, [clothingType, clothingTypes, clothingTypesLoaded]);
 
   const filtered = useMemo(() => {
     let items = [...listings];
@@ -97,6 +118,9 @@ function Listings() {
 
     if (subCat !== 'all') {
       items = items.filter(index => index.categoryValue.endsWith(`-${subCat}`));
+    }
+    if (subCat === 'clothes' && clothingType !== 'all') {
+      items = items.filter(index => index.clothingTypeValue === clothingType);
     }
     if (condition !== 'all')
       items = items.filter(index => index.condition === condition);
@@ -123,6 +147,7 @@ function Listings() {
     search,
     parentCat,
     subCat,
+    clothingType,
     condition,
     size,
     sort,
@@ -152,7 +177,14 @@ function Listings() {
           ))}
         </SelectContent>
       </Select>
-      <Select onValueChange={setSubCat} value={subCat}>
+      <Select
+        onValueChange={(value) => {
+          setSubCat(value);
+          if (value !== 'clothes')
+            setClothingType('all');
+        }}
+        value={subCat}
+      >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
@@ -165,6 +197,21 @@ function Listings() {
           ))}
         </SelectContent>
       </Select>
+      {subCat === 'clothes' && (
+        <Select onValueChange={setClothingType} value={clothingType}>
+          <SelectTrigger aria-label="Clothing type" className="w-[160px]">
+            <SelectValue placeholder="Clothing type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Clothing Types</SelectItem>
+            {clothingTypes.map(type => (
+              <SelectItem key={type.id} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <Select onValueChange={setCondition} value={condition}>
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Condition" />

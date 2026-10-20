@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import Footer from '@/components/Footer';
@@ -351,9 +351,25 @@ function Messages() {
 
                       <div>
                         <p className="text-sm font-medium">
-                          {activeConversation.buyerId === user?.id
-                            ? activeConversation.sellerFullName
-                            : activeConversation.buyerFullName}
+                          {activeConversation.type === 'DIRECT'
+                            ? (
+                                <Link
+                                  to={`/seller/${activeConversation.buyerId === user?.id
+                                    ? activeConversation.sellerId
+                                    : activeConversation.buyerId}`}
+                                  className="
+                                    rounded-sm
+                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+                                  "
+                                >
+                                  {activeConversation.buyerId === user?.id
+                                    ? activeConversation.sellerFullName
+                                    : activeConversation.buyerFullName}
+                                </Link>
+                              )
+                            : activeConversation.buyerId === user?.id
+                              ? activeConversation.sellerFullName
+                              : activeConversation.buyerFullName}
                         </p>
 
                         <p className="text-xs text-muted-foreground">

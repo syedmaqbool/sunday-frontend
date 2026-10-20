@@ -35,11 +35,14 @@ vi.mock('@/queries/marketplace.query', () => ({
 const listing: MarketplaceListing = {
   id: 'listing-1',
   categoryId: 'category-1',
+  clothingTypeId: null,
   sellerId: 'seller-1',
   subcategoryId: 'subcategory-1',
   brand: 'Example Brand',
   categoryLabel: 'Clothing',
   categoryValue: 'women-clothing',
+  clothingTypeLabel: null,
+  clothingTypeValue: null,
   condition: 'NEW',
   coverImage: {
     id: 'image-1',

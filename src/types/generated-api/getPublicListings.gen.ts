@@ -77,11 +77,14 @@ export interface GetPublicListingsResponses {
     data: Array<{
       id: string;
       categoryId: string;
+      clothingTypeId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
       categoryLabel: string;
       categoryValue: string;
+      clothingTypeLabel: string | null;
+      clothingTypeValue: string | null;
       condition: string;
       coverImage: {
         /**

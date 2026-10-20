@@ -108,12 +108,15 @@ export interface RemoveAdminListingResponses {
     data: {
       id: string;
       categoryId: string;
+      clothingTypeId: string | null;
       deletedByAdminId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
       categoryLabel: string;
       categoryValue: string;
+      clothingTypeLabel: string | null;
+      clothingTypeValue: string | null;
       condition: string;
       coverImage: {
         /**

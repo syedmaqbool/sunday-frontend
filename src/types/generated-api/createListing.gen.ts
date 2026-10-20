@@ -4,6 +4,7 @@ export interface CreateListingData {
   path?: never;
   body: {
     categoryId: string;
+    clothingTypeId?: string | null;
     subcategoryId: string;
     brand: string;
     condition: string;
@@ -119,12 +120,15 @@ export interface CreateListingResponses {
     data: {
       id: string;
       categoryId: string;
+      clothingTypeId: string | null;
       deletedByAdminId: string | null;
       sellerId: string;
       subcategoryId: string;
       brand: string;
       categoryLabel: string;
       categoryValue: string;
+      clothingTypeLabel: string | null;
+      clothingTypeValue: string | null;
       condition: string;
       coverImage: {
         /**

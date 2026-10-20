@@ -28,8 +28,21 @@ vi.mock('@/hooks/useCategories', () => ({
     queryKey: ['categories'],
   }),
   getSubcategoriesOptions: () => ({
-    queryFn: async () => [{ id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' }],
+    queryFn: async () => [
+      { id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' },
+      { id: 'subcategory-clothes', icon: '👚', label: 'Clothes', sortOrder: 1, value: 'clothes' },
+    ],
     queryKey: ['subcategories'],
+  }),
+}));
+
+vi.mock('@/queries/clothing-types.query', () => ({
+  getClothingTypesOptions: () => ({
+    queryFn: async () => [
+      { id: 'type-tops', label: 'Tops', sortOrder: 0, value: 'tops' },
+      { id: 'type-bottoms', label: 'Bottoms', sortOrder: 1, value: 'bottoms' },
+    ],
+    queryKey: ['clothing-types', 'list'],
   }),
 }));
 
@@ -66,6 +79,7 @@ function editableListing(status: string, sellerId = 'seller-1') {
     subcategoryId: 'subcategory-1',
     brand: 'Vintage',
     categoryValue: 'women-jackets',
+    clothingTypeId: null,
     condition: 'good',
     description: 'A vintage jacket.',
     media: [
@@ -202,9 +216,64 @@ describe('edit listing moderation rules', () => {
     await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
     expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({ styles: [] });
   });
+
+  it('shows clothing type only for the Clothes subcategory', async () => {
+    renderCreateListing();
+
+    expect(screen.queryByText('Clothing type')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Women' }));
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
+
+    expect(await screen.findByText('Clothing type')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('combobox')[2]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Tops' }));
+    expect(screen.getAllByRole('combobox')[2]).toHaveTextContent('Tops');
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Jackets' }));
+    expect(screen.queryByText('Clothing type')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
+    expect(screen.getAllByRole('combobox')[2]).toHaveTextContent('Select clothing type');
+  });
+
+  it('requires a clothing type for a Clothes listing', async () => {
+    renderCreateListing();
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Women' }));
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Listing' }));
+
+    expect(await screen.findByText('Choose a clothing type.')).toBeInTheDocument();
+    expect(createListingMock).not.toHaveBeenCalled();
+  });
+
+  it('preselects and submits the saved clothing type while editing', async () => {
+    listingState.listing = {
+      ...editableListing('PENDING'),
+      categoryValue: 'women-clothes',
+      clothingTypeId: 'type-bottoms',
+      subcategoryId: 'subcategory-clothes',
+    };
+    renderEditListing();
+
+    await screen.findByText('Clothing type');
+    fireEvent.click((await screen.findAllByRole('combobox'))[2]);
+    expect(await screen.findByRole('option', { name: 'Bottoms' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
+    expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({ clothingTypeId: 'type-bottoms' });
+  });
 });
 
 describe('create listing styles', () => {
+  beforeEach(() => {
+    createListingMock.mockReset();
+  });
+
   it('requires at least one supported style for a new listing', async () => {
     renderCreateListing();
     fireEvent.click(screen.getByRole('button', { name: 'Submit Listing' }));
@@ -258,5 +327,44 @@ describe('create listing styles', () => {
 
     await waitFor(() => expect(createListingMock).toHaveBeenCalled());
     expect(createListingMock.mock.calls[0][0]).toMatchObject({ styles: ['eastern', 'semi_formal'] });
+    expect(createListingMock.mock.calls[0][0]).toMatchObject({ clothingTypeId: null });
+  });
+
+  it('submits a selected clothing type when creating a Clothes listing', async () => {
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:clothes-listing-media') }));
+    getMyProfileMock.mockResolvedValue({
+      data: { bankAccountHolder: 'Seller', bankAccountNumber: '123456', bankName: 'Bank' },
+    });
+    uploadFileMock
+      .mockResolvedValueOnce({ data: { id: 'clothes-image' } })
+      .mockResolvedValueOnce({ data: { id: 'clothes-video' } });
+    createListingMock.mockResolvedValue({ data: { id: 'clothes-listing' } });
+    const { container } = renderCreateListing();
+
+    fireEvent.change(container.querySelector('#title'), { target: { value: 'Linen top' } });
+    fireEvent.change(container.querySelector('#brand'), { target: { value: 'Vintage' } });
+    fireEvent.change(container.querySelector('#description'), { target: { value: 'A linen top.' } });
+    fireEvent.change(container.querySelector('#price'), { target: { value: '150' } });
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Women' }));
+    fireEvent.click(screen.getAllByRole('combobox')[1]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Clothes' }));
+    fireEvent.click(screen.getAllByRole('combobox')[2]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Tops' }));
+    fireEvent.click(screen.getAllByRole('combobox')[4]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Good' }));
+    fireEvent.click(screen.getAllByRole('combobox')[5]);
+    fireEvent.click(await screen.findByRole('option', { name: 'M' }));
+    fireEvent.change(container.querySelector('input[accept="image/*"]'), {
+      target: { files: [new File(['image'], 'top.jpg', { type: 'image/jpeg' })] },
+    });
+    fireEvent.change(container.querySelector('input[accept="video/*"]'), {
+      target: { files: [new File(['video'], 'top.mp4', { type: 'video/mp4' })] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Eastern' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Listing' }));
+
+    await waitFor(() => expect(createListingMock).toHaveBeenCalled());
+    expect(createListingMock.mock.calls[0][0]).toMatchObject({ clothingTypeId: 'type-tops' });
   });
 });

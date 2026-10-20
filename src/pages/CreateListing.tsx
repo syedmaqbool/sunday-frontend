@@ -44,6 +44,7 @@ import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { uploadFile } from '@/lib/uploadFile';
+import { getClothingTypesOptions } from '@/queries/clothing-types.query';
 import {
   getEditListingOptions,
 } from '@/queries/marketplace.query';
@@ -75,6 +76,7 @@ const listingSchema = z.object({
   subcategoryId: z.string().min(1, 'Subcategory is required.'),
   brand: z.string().trim().min(1, 'Brand is required.'),
   condition: z.string().min(1, 'Condition is required.'),
+  clothingTypeId: z.string().nullable(),
   description: z.string().trim().min(1, 'Description is required.'),
   existingImages: z.array(existingMediaSchema),
   existingVideo: existingMediaSchema.nullable(),
@@ -96,6 +98,23 @@ const listingSchema = z.object({
 });
 const createListingSchema = listingSchema.extend({
   styles: listingSchema.shape.styles.min(1, 'Choose at least one style.'),
+}).superRefine((values, context) => {
+  if (values.subCategory === 'clothes' && !values.clothingTypeId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Choose a clothing type.',
+      path: ['clothingTypeId'],
+    });
+  }
+});
+const editListingSchema = listingSchema.superRefine((values, context) => {
+  if (values.subCategory === 'clothes' && !values.clothingTypeId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Choose a clothing type.',
+      path: ['clothingTypeId'],
+    });
+  }
 });
 
 type ListingFormValues = z.infer<typeof listingSchema>;
@@ -105,6 +124,7 @@ const defaultListingValues: ListingFormValues = {
   subcategoryId: '',
   brand: '',
   condition: '',
+  clothingTypeId: null,
   description: '',
   existingImages: [],
   existingVideo: null,
@@ -153,7 +173,7 @@ function CreateListing() {
   const listingForm = useForm<ListingFormValues>({
     defaultValues: defaultListingValues,
     mode: 'all',
-    resolver: zodResolver(isEditing ? listingSchema : createListingSchema),
+    resolver: zodResolver(isEditing ? editListingSchema : createListingSchema),
   });
   const {
     control,
@@ -168,6 +188,7 @@ function CreateListing() {
   const sizeFieldError = errors.size;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const { data: subCategories = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));
+  const { data: clothingTypes = [] } = useQuery(getClothingTypesOptions());
   const [submitting, setSubmitting] = useState(false);
 
   const imageFiles = formValues.imageFiles;
@@ -213,6 +234,7 @@ function CreateListing() {
       subcategoryId: existingListing.subcategoryId,
       brand: existingListing.brand || '',
       condition: existingListing.condition,
+      clothingTypeId: existingListing.clothingTypeId ?? null,
       description: existingListing.description || '',
       existingImages: [],
       existingVideo: null,
@@ -352,6 +374,7 @@ function CreateListing() {
           subcategoryId: values.subcategoryId,
           brand: values.brand,
           condition: values.condition,
+          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           description: values.description,
           media,
           price: Number(values.price),
@@ -387,6 +410,7 @@ function CreateListing() {
           subcategoryId: values.subcategoryId,
           brand: values.brand,
           condition: values.condition,
+          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           description: values.description,
           media,
           price: Number(values.price),
@@ -811,6 +835,7 @@ function CreateListing() {
                       setValue('categoryId', cat?.id ?? '', { shouldDirty: true, shouldValidate: true });
                       setValue('subcategoryId', '', { shouldDirty: true, shouldValidate: true });
                       setValue('subCategory', '', { shouldDirty: true, shouldValidate: true });
+                      setValue('clothingTypeId', null, { shouldDirty: true, shouldValidate: true });
                       setValue('size', '', { shouldDirty: true, shouldValidate: true });
                     }}
                     value={field.value}
@@ -844,6 +869,8 @@ function CreateListing() {
                       const sub = subCategories.find(c => c.value === v);
                       field.onChange(v);
                       setValue('subcategoryId', sub?.id ?? '', { shouldDirty: true, shouldValidate: true });
+                      if (v !== 'clothes')
+                        setValue('clothingTypeId', null, { shouldDirty: true, shouldValidate: true });
                       setValue('size', '', { shouldDirty: true, shouldValidate: true });
                     }}
                     value={field.value}
@@ -871,6 +898,31 @@ function CreateListing() {
               {errors.subCategory && <p className="text-sm text-destructive">{errors.subCategory.message}</p>}
             </div>
           </div>
+
+          {formValues.subCategory === 'clothes' && (
+            <div className="space-y-2">
+              <Label>Clothing type</Label>
+              <Controller
+                name="clothingTypeId"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select clothing type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clothingTypes.map(clothingType => (
+                        <SelectItem key={clothingType.id} value={clothingType.id}>
+                          {clothingType.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.clothingTypeId && <p className="text-sm text-destructive">{errors.clothingTypeId.message}</p>}
+            </div>
+          )}
 
           <div className="
             grid gap-4

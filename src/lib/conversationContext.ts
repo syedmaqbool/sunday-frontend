@@ -1,5 +1,7 @@
+import type { Conversation } from '@/types/conversation.type';
+
 export function getConversationContextLabel(
-  type: 'DIRECT' | 'LISTING',
+  type: Conversation['type'],
   listingTitle: string | null,
 ) {
   if (type === 'DIRECT' || listingTitle === null)

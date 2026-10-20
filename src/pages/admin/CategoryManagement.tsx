@@ -1,6 +1,7 @@
-import type { Category, Subcategory } from '@/types/adminCategory.type';
+import type { Category, ClothingType, Subcategory } from '@/types/adminCategory.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { HTTPError } from 'ky';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -27,12 +28,16 @@ import { useToast } from '@/hooks/use-toast';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import {
   getAdminCategoriesOptions,
+  getAdminClothingTypesOptions,
   getAdminSubcategoriesOptions,
   useCreateCategoryMutation,
+  useCreateClothingTypeMutation,
   useCreateSubcategoryMutation,
   useDeleteCategoryMutation,
+  useDeleteClothingTypeMutation,
   useDeleteSubcategoryMutation,
   useUpdateCategoryMutation,
+  useUpdateClothingTypeMutation,
   useUpdateSubcategoryMutation,
 } from '@/queries/categoryManagement.query';
 
@@ -46,9 +51,14 @@ const categoryFormSchema = z.object({
 const subcategoryFormSchema = categoryFormSchema.extend({
   categoryId: z.string().min(1, 'Choose a parent category.'),
 });
+const clothingTypeFormSchema = z.object({
+  label: z.string().trim().min(1, 'Label is required.'),
+  sortOrder: z.number().int().min(0),
+});
 
 type CatForm = z.infer<typeof categoryFormSchema>;
 type SubForm = z.infer<typeof subcategoryFormSchema>;
+type ClothingTypeForm = z.infer<typeof clothingTypeFormSchema>;
 
 const emptyCat: CatForm = { icon: '📦', label: '', sortOrder: 0, value: '' };
 const emptySub: SubForm = {
@@ -58,6 +68,27 @@ const emptySub: SubForm = {
   sortOrder: 0,
   value: '',
 };
+const emptyClothingType: ClothingTypeForm = { label: '', sortOrder: 0 };
+
+async function getClothingTypeDeleteErrorToastOptions(error: unknown) {
+  if (error instanceof HTTPError) {
+    try {
+      const body = await error.response.clone().json() as { message?: unknown };
+      if (typeof body.message === 'string' && body.message.trim()) {
+        return {
+          description: body.message,
+          title: `Error ${error.response.status}`,
+          variant: 'destructive' as const,
+        };
+      }
+    }
+    catch {
+      // Fall through to the standard error message when the response is not JSON.
+    }
+  }
+
+  return getErrorToastOptions(error, 'This clothing type is still used by a listing.');
+}
 
 function autoSlug(label: string) {
   return label
@@ -72,6 +103,7 @@ function CategoryManagement() {
 
   const { data: categories = [], isLoading: loadingCats } = useQuery(getAdminCategoriesOptions());
   const { data: subcategories = [], isLoading: loadingSubs } = useQuery(getAdminSubcategoriesOptions());
+  const { data: clothingTypes = [], isLoading: loadingClothingTypes } = useQuery(getAdminClothingTypesOptions());
 
   const createCat = useCreateCategoryMutation();
   const updateCat = useUpdateCategoryMutation();
@@ -79,6 +111,9 @@ function CategoryManagement() {
   const createSub = useCreateSubcategoryMutation();
   const updateSub = useUpdateSubcategoryMutation();
   const deleteSub = useDeleteSubcategoryMutation();
+  const createClothingType = useCreateClothingTypeMutation();
+  const updateClothingType = useUpdateClothingTypeMutation();
+  const deleteClothingType = useDeleteClothingTypeMutation();
 
   // ── Category dialog state ──────────────────────────────────────────────────
   const [catOpen, setCatOpen] = useState(false);
@@ -152,6 +187,9 @@ function CategoryManagement() {
   const [subOpen, setSubOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<Subcategory | null>(null);
   const subForm = useForm<SubForm>({ defaultValues: emptySub, resolver: zodResolver(subcategoryFormSchema) });
+  const [clothingTypeOpen, setClothingTypeOpen] = useState(false);
+  const [editingClothingType, setEditingClothingType] = useState<ClothingType | null>(null);
+  const clothingTypeForm = useForm<ClothingTypeForm>({ defaultValues: emptyClothingType, resolver: zodResolver(clothingTypeFormSchema) });
 
   const openNewSub = () => {
     setEditingSub(null);
@@ -219,11 +257,59 @@ function CategoryManagement() {
     });
   };
 
+  const openNewClothingType = () => {
+    setEditingClothingType(null);
+    clothingTypeForm.reset(emptyClothingType);
+    setClothingTypeOpen(true);
+  };
+
+  const openEditClothingType = (clothingType: ClothingType) => {
+    setEditingClothingType(clothingType);
+    clothingTypeForm.reset({ label: clothingType.label, sortOrder: clothingType.sortOrder });
+    setClothingTypeOpen(true);
+  };
+
+  const handleSaveClothingType = (values: ClothingTypeForm) => {
+    if (editingClothingType) {
+      updateClothingType.mutate(
+        { id: editingClothingType.id, payload: values },
+        {
+          onError: (error: any) => toast(getErrorToastOptions(error)),
+          onSuccess: () => {
+            toast({ title: 'Clothing type updated' });
+            setClothingTypeOpen(false);
+          },
+        },
+      );
+    }
+    else {
+      createClothingType.mutate(
+        { label: values.label },
+        {
+          onError: (error: any) => toast(getErrorToastOptions(error)),
+          onSuccess: () => {
+            toast({ title: 'Clothing type created' });
+            setClothingTypeOpen(false);
+          },
+        },
+      );
+    }
+  };
+
+  const handleDeleteClothingType = (id: string) => {
+    deleteClothingType.mutate(id, {
+      onError: async (error: any) => toast(await getClothingTypeDeleteErrorToastOptions(error)),
+      onSuccess: () => toast({ title: 'Clothing type deleted' }),
+    });
+  };
+
   const busy
     = createCat.isPending
       || updateCat.isPending
       || createSub.isPending
-      || updateSub.isPending;
+      || updateSub.isPending
+      || createClothingType.isPending
+      || updateClothingType.isPending;
 
   if (loadingCats || loadingSubs) {
     return (
@@ -301,6 +387,55 @@ function CategoryManagement() {
                   ))}
                 </div>
               )}
+        </CardContent>
+      </Card>
+
+      {/* ── Clothing Types ── */}
+      <Card>
+        <CardHeader className="
+          flex flex-col items-start justify-between gap-3
+          sm:flex-row sm:items-center
+        "
+        >
+          <CardTitle>Clothing Types</CardTitle>
+          <Button onClick={openNewClothingType} size="sm" className="gap-1">
+            <Plus className="h-4 w-4" />
+            {' '}
+            Add Clothing Type
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loadingClothingTypes
+            ? <p className="text-sm text-muted-foreground">Loading clothing types…</p>
+            : clothingTypes.length === 0
+              ? <p className="text-sm text-muted-foreground">No clothing types yet.</p>
+              : (
+                  <div className="divide-y divide-border">
+                    {[...clothingTypes].sort((first, second) => first.sortOrder - second.sortOrder).map(clothingType => (
+                      <div key={clothingType.id} className="flex items-center justify-between py-3">
+                        <div>
+                          <p className="font-medium text-foreground">{clothingType.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {clothingType.value}
+                            {' '}
+                            · order
+                            {' '}
+                            {clothingType.sortOrder}
+                            {!clothingType.active && <span className="ml-2">· Inactive</span>}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button aria-label={`Edit ${clothingType.label}`} onClick={() => openEditClothingType(clothingType)} size="icon" variant="ghost">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button aria-label={`Delete ${clothingType.label}`} disabled={deleteClothingType.isPending} onClick={() => handleDeleteClothingType(clothingType.id)} size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
         </CardContent>
       </Card>
 
@@ -466,6 +601,40 @@ function CategoryManagement() {
             >
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingCat ? 'Save Changes' : 'Create Category'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Clothing Type Dialog ── */}
+      <Dialog
+        onOpenChange={(open) => {
+          setClothingTypeOpen(open);
+          if (!open) {
+            clothingTypeForm.reset(emptyClothingType);
+            setEditingClothingType(null);
+          }
+        }}
+        open={clothingTypeOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingClothingType ? 'Edit Clothing Type' : 'Add Clothing Type'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={clothingTypeForm.handleSubmit(handleSaveClothingType)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="clothing-type-label">Label</Label>
+              <Controller name="label" control={clothingTypeForm.control} render={({ field }) => <Input {...field} id="clothing-type-label" placeholder="e.g. Tops" />} />
+            </div>
+            {editingClothingType && (
+              <div className="space-y-2">
+                <Label htmlFor="clothing-type-sort-order">Sort Order</Label>
+                <Controller name="sortOrder" control={clothingTypeForm.control} render={({ field }) => <Input id="clothing-type-sort-order" name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))} ref={field.ref} value={field.value} type="number" />} />
+              </div>
+            )}
+            <Button disabled={busy} type="submit" className="w-full">
+              {(createClothingType.isPending || updateClothingType.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingClothingType ? 'Save Changes' : 'Create Clothing Type'}
             </Button>
           </form>
         </DialogContent>

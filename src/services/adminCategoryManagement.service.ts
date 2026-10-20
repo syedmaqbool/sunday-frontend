@@ -1,9 +1,13 @@
 import type {
   Category,
+  ClothingType,
   CreateCategoryPayload,
+  CreateClothingTypePayload,
+  ListClothingTypesQuery,
   CreateSubcategoryPayload,
   Subcategory,
   UpdateCategoryPayload,
+  UpdateClothingTypePayload,
   UpdateSubcategoryPayload,
 } from '@/types/adminCategory.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
@@ -13,6 +17,33 @@ export function listCategories() {
   return authInstance
     .get('/api/v1/admin/categories')
     .json<PaginatedResponse<Category>>();
+}
+
+export function listClothingTypes(query: ListClothingTypesQuery) {
+  return authInstance
+    .get('/api/v1/admin/clothing-types', { searchParams: query })
+    .json<PaginatedResponse<ClothingType>>();
+}
+
+export function createClothingType(payload: CreateClothingTypePayload) {
+  return authInstance
+    .post('/api/v1/admin/clothing-types', { json: payload })
+    .json<Response<ClothingType>>();
+}
+
+export function updateClothingType(
+  clothingTypeId: string,
+  payload: UpdateClothingTypePayload,
+) {
+  return authInstance
+    .patch(`/api/v1/admin/clothing-types/${clothingTypeId}`, { json: payload })
+    .json<Response<ClothingType>>();
+}
+
+export function deleteClothingType(clothingTypeId: string) {
+  return authInstance
+    .delete(`/api/v1/admin/clothing-types/${clothingTypeId}`)
+    .json<Response>();
 }
 
 export function createCategory(payload: CreateCategoryPayload) {

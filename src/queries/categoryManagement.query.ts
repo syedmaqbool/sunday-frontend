@@ -1,27 +1,83 @@
 import type {
   CreateCategoryPayload,
+  CreateClothingTypePayload,
   CreateSubcategoryPayload,
   UpdateCategoryPayload,
+  UpdateClothingTypePayload,
   UpdateSubcategoryPayload,
 } from '@/types/adminCategory.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createCategory,
+  createClothingType,
   createSubcategory,
   deleteCategory,
+  deleteClothingType,
   deleteSubcategory,
   listCategories,
+  listClothingTypes,
   listSubcategories,
   updateCategory,
+  updateClothingType,
   updateSubcategory,
 } from '@/services/adminCategoryManagement.service';
+
+const CLOTHING_TYPE_PAGE_SIZE = 100;
 
 export const categoryManagementQueryKey = {
   all: () => ['admin-category-management'] as const,
   categories: () => [...categoryManagementQueryKey.all(), 'categories', 'list'] as const,
+  clothingTypes: () => [...categoryManagementQueryKey.all(), 'clothing-types', 'list'] as const,
   subcategories: () =>
     [...categoryManagementQueryKey.all(), 'subcategories', 'list'] as const,
 };
+
+export function getAdminClothingTypesOptions() {
+  return queryOptions({
+    queryFn: async () => {
+      const firstPage = await listClothingTypes({ page: 1, size: CLOTHING_TYPE_PAGE_SIZE });
+      const clothingTypes = [...firstPage.data];
+
+      for (let page = 2; page <= firstPage.pagination.lastPage; page += 1) {
+        const response = await listClothingTypes({ page, size: CLOTHING_TYPE_PAGE_SIZE });
+        clothingTypes.push(...response.data);
+      }
+
+      return clothingTypes;
+    },
+    queryKey: categoryManagementQueryKey.clothingTypes(),
+  });
+}
+
+export function useCreateClothingTypeMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateClothingTypePayload) => createClothingType(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: categoryManagementQueryKey.clothingTypes() }),
+  });
+}
+
+export function useUpdateClothingTypeMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateClothingTypePayload;
+    }) => updateClothingType(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: categoryManagementQueryKey.clothingTypes() }),
+  });
+}
+
+export function useDeleteClothingTypeMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteClothingType(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: categoryManagementQueryKey.clothingTypes() }),
+  });
+}
 
 // ── Categories ────────────────────────────────────────────────────────────────
 export function getAdminCategoriesOptions() {

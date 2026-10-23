@@ -204,17 +204,31 @@ function Analytics() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const dateRange = useMemo(() => getAnalyticsDateRange(dateFilter), [dateFilter]);
   const exportInProgress = useRef(false);
+  const [leadsPage, setLeadsPage] = useState(1);
+  const leadsPageSize = 50;
 
   const { data: analyticsResult, isLoading } = useQuery(getAdminAnalyticsQueryOptions(dateRange));
-  const { data: leadsResult, isLoading: leadsLoading } = useQuery(getAdminMarketingLeadsQueryOptions({
-    ...dateRange,
-    leadStatus: leadStatusFilter || undefined,
-    search: leadSearch || undefined,
-    size: 50,
-  }));
+  const { data: leadsResult, isLoading: leadsLoading } = useQuery(
+    getAdminMarketingLeadsQueryOptions({
+      ...dateRange,
+      leadStatus: leadStatusFilter || undefined,
+      search: leadSearch || undefined,
+      page: leadsPage,
+      size: leadsPageSize,
+    }),
+  );
 
   const leads = leadsResult?.data ?? [];
   const leadsTotal = leadsResult?.pagination?.total ?? 0;
+  const totalPages = Math.ceil(leadsTotal / leadsPageSize);
+
+    const startRecord =
+      leadsTotal === 0 ? 0 : (leadsPage - 1) * leadsPageSize + 1;
+
+    const endRecord = Math.min(
+      leadsPage * leadsPageSize,
+      leadsTotal,
+    );
   const data = analyticsResult?.data;
   const exportMarketingLeads = useExportAdminMarketingLeadsMutation();
 
@@ -355,7 +369,13 @@ function Analytics() {
           sm:flex-row sm:items-center
         "
         >
-          <AnalyticsPeriodFilter onChange={setDateFilter} value={dateFilter} />
+          <AnalyticsPeriodFilter
+              onChange={(value) => {
+                setDateFilter(value);
+                setLeadsPage(1);
+              }}
+              value={dateFilter}
+            />
           <Button
             onClick={handleExportMarketingLeads}
             disabled={exportMarketingLeads.isPending}
@@ -810,7 +830,10 @@ function Analytics() {
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                onChange={event => setLeadSearch(event.target.value)}
+                onChange={(event) => {
+                  setLeadSearch(event.target.value);
+                  setLeadsPage(1);
+                }}
                 value={leadSearch}
                 placeholder="Filter leads…"
                 className="
@@ -909,19 +932,43 @@ function Analytics() {
                   </TableBody>
                 </Table>
               )}
-          {leadsTotal > leads.length && (
-            <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-              Showing
-              {' '}
-              {leads.length}
-              {' '}
-              of
-              {' '}
-              {leadsTotal}
-              {' '}
-              leads
+          
+          {leadsTotal > 0 && (
+            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Showing {startRecord}–{endRecord} of {leadsTotal} leads
+              </p>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={leadsPage <= 1 || leadsLoading}
+                  onClick={() =>
+                    setLeadsPage(page => Math.max(1, page - 1))
+                  }
+                >
+                  Previous
+                </Button>
+
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
+                  Page {leadsPage} of {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={leadsPage >= totalPages || leadsLoading}
+                  onClick={() =>
+                    setLeadsPage(page => Math.min(totalPages, page + 1))
+                  }
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
+
         </CardContent>
       </Card>
     </div>

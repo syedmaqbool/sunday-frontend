@@ -54,11 +54,11 @@ export default function Footer() {
                   List an Item
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link to="/auth" className="hover:opacity-100">
                   Seller Dashboard
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
           <div>

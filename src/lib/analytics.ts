@@ -1,5 +1,5 @@
-// Google Analytics 4 helper
-// Replace the placeholder Measurement ID below with your real G-XXXXXXXXXX value.
+
+ // Google Analytics 4 helper
 export const GA_MEASUREMENT_ID = 'G-7RBJ8C6PD9';
 
 declare global {
@@ -11,6 +11,7 @@ declare global {
 
 const analyticsState = {
   initialized: false,
+  scriptRequested: false,
 };
 
 function getAnalyticsTarget() {
@@ -18,44 +19,71 @@ function getAnalyticsTarget() {
 }
 
 export function initGA() {
-  if (analyticsState.initialized)
-    return;
-  if (typeof window === 'undefined')
-    return;
-  if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.includes('XXXX')) {
-    // Still set up dataLayer so calls don't break; just don't load script.
-    const analyticsTarget = getAnalyticsTarget();
-    analyticsTarget.dataLayer = analyticsTarget.dataLayer || [];
-    analyticsTarget.gtag = (...arguments_: any[]) => {
-      analyticsTarget.dataLayer.push(arguments_);
-    };
-    analyticsState.initialized = true;
-
-    console.warn('[analytics] GA placeholder in use; replace GA_MEASUREMENT_ID in src/lib/analytics.ts');
+  if (analyticsState.initialized || typeof window === 'undefined') {
     return;
   }
 
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-  document.head.append(script);
-
   const analyticsTarget = getAnalyticsTarget();
+
   analyticsTarget.dataLayer = analyticsTarget.dataLayer || [];
-  analyticsTarget.gtag = (...arguments_: any[]) => {
-    analyticsTarget.dataLayer.push(arguments_);
-  };
+  analyticsTarget.gtag =
+    analyticsTarget.gtag ||
+    function (...arguments_: any[]) {
+      analyticsTarget.dataLayer.push(arguments_);
+    };
+
+  // Avoid loading an invalid placeholder ID.
+  if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.includes('XXXX')) {
+    analyticsState.initialized = true;
+    console.warn('[analytics] Replace GA_MEASUREMENT_ID with your real GA4 ID.');
+    return;
+  }
+
+  // Queue configuration before the external script loads.
   analyticsTarget.gtag('js', new Date());
-  analyticsTarget.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
+  analyticsTarget.gtag('config', GA_MEASUREMENT_ID, {
+    send_page_view: false,
+  });
+
   analyticsState.initialized = true;
+
+  const loadScript = () => {
+    if (analyticsState.scriptRequested) {
+      return;
+    }
+
+    analyticsState.scriptRequested = true;
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.src =
+      `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+
+    document.head.appendChild(script);
+  };
+
+  // Let the page's initial resources finish before requesting GA.
+  if (document.readyState === 'complete') {
+    window.setTimeout(loadScript, 2000);
+  } else {
+    window.addEventListener(
+      'load',
+      () => window.setTimeout(loadScript, 2000),
+      { once: true },
+    );
+  }
 }
 
 export function trackPageView(path: string, title?: string) {
-  if (typeof document === 'undefined')
+  if (typeof document === 'undefined') {
     return;
+  }
+
   const browserWindow = document.defaultView;
-  if (browserWindow === null || !browserWindow.gtag)
+  if (!browserWindow?.gtag) {
     return;
+  }
+
   browserWindow.gtag('event', 'page_view', {
     page_location: location.href,
     page_path: path,
@@ -63,23 +91,39 @@ export function trackPageView(path: string, title?: string) {
   });
 }
 
-export function trackEvent(name: string, parameters: Record<string, any> = {}) {
-  if (typeof document === 'undefined')
+export function trackEvent(
+  name: string,
+  parameters: Record<string, any> = {},
+) {
+  if (typeof document === 'undefined') {
     return;
+  }
+
   const browserWindow = document.defaultView;
-  if (browserWindow === null || !browserWindow.gtag)
+  if (!browserWindow?.gtag) {
     return;
+  }
+
   browserWindow.gtag('event', name, parameters);
 }
 
 export function setUser(userId: string | null) {
-  if (typeof document === 'undefined')
+  if (typeof document === 'undefined') {
     return;
+  }
+
   const browserWindow = document.defaultView;
-  if (browserWindow === null || !browserWindow.gtag)
+  if (!browserWindow?.gtag) {
     return;
-  browserWindow.gtag('set', { user_id: userId ?? undefined });
+  }
+
+  browserWindow.gtag('set', {
+    user_id: userId ?? undefined,
+  });
+
   if (GA_MEASUREMENT_ID && !GA_MEASUREMENT_ID.includes('XXXX')) {
-    browserWindow.gtag('config', GA_MEASUREMENT_ID, { user_id: userId ?? undefined });
+    browserWindow.gtag('config', GA_MEASUREMENT_ID, {
+      user_id: userId ?? undefined,
+    });
   }
 }

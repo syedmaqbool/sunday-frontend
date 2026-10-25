@@ -1,6 +1,6 @@
 // Google Analytics 4 helper
 // Replace the placeholder Measurement ID below with your real G-XXXXXXXXXX value.
-export const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+export const GA_MEASUREMENT_ID = 'G-7RBJ8C6PD9';
 
 declare global {
   interface Window {

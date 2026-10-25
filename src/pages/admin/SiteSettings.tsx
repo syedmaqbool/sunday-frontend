@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import heroFallback from '@/assets/hero-fashion.jpg';
+import heroFallback from '@/assets/hero-fashion.webp';
 import { Button } from '@/components/ui/button';
 import {
   Card,

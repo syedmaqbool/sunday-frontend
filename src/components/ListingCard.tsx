@@ -60,7 +60,9 @@ function ListingCard({
                   decoding="async"
                   width={300}
                   height={400}
-                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                  ref={(node) => {
+                    node?.setAttribute('fetchpriority', 'high');
+                  }}
                   className={`
                     h-full w-full object-cover transition-transform duration-500
                     group-hover:scale-105

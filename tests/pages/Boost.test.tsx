@@ -162,6 +162,9 @@ describe('seller boost status', () => {
   });
 
   it('shows purchase decisions and offers resubmission only when replacement proof is requested', async () => {
+    const activeWindowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const activeWindowEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
     listMyBoostPurchasesMock.mockResolvedValue({
       data: [
         {
@@ -203,8 +206,8 @@ describe('seller boost status', () => {
             paymentStatus: 'PAID',
             placement: 'FOR_YOU',
             pricePaid: 2000,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
+            endsAt: activeWindowEnd,
+            startsAt: activeWindowStart,
             createdAt: '2026-10-18T08:00:00.000Z',
             updatedAt: '2026-10-18T08:00:00.000Z',
           }],

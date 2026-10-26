@@ -11,6 +11,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    isolate: true,
+    maxWorkers: '50%',
     setupFiles: ['./tests/setup.ts'],
   },
 });

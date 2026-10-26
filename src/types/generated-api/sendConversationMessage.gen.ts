@@ -5,13 +5,42 @@ export interface SendConversationMessageData {
     conversationId: string;
   };
   body: {
-    content: string;
+    attachments?: Array<Blob | File>;
+    content?: string;
   };
   query?: never;
   url: '/api/v1/me/conversations/{conversationId}/messages';
 }
 
 export interface SendConversationMessageErrors {
+  /**
+   * Default Response
+   */
+  400: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 400;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
   /**
    * Default Response
    */
@@ -109,6 +138,20 @@ export interface SendConversationMessageResponses {
       id: string;
       conversationId: string;
       senderId: string;
+      /**
+       * Attachments in message order. Empty for text-only messages.
+       */
+      attachments: Array<{
+        id: string;
+        filename: string;
+        mimetype: string;
+        size: number;
+        type: 'IMAGE' | 'VIDEO';
+        /**
+         * Signed private view URL that expires after one hour.
+         */
+        url: string;
+      }>;
       content: string;
       flagReasons: Array<string>;
       isFlagged: boolean;

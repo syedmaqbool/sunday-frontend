@@ -119,6 +119,20 @@ export interface GetConversationMessagesResponses {
       id: string;
       conversationId: string;
       senderId: string;
+      /**
+       * Attachments in message order. Empty for text-only messages.
+       */
+      attachments: Array<{
+        id: string;
+        filename: string;
+        mimetype: string;
+        size: number;
+        type: 'IMAGE' | 'VIDEO';
+        /**
+         * Signed private view URL that expires after one hour.
+         */
+        url: string;
+      }>;
       content: string;
       flagReasons: Array<string>;
       isFlagged: boolean;

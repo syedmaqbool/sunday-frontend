@@ -109,7 +109,7 @@ describe('admin boost payment review queue', () => {
     expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
     expect(screen.getByText('Jane Seller')).toBeInTheDocument();
     expect(screen.getByText(/jane@example.com/)).toBeInTheDocument();
-    expect(screen.getByText('Rs 1,200')).toBeInTheDocument();
+    expect(screen.getByText('Purchase').parentElement).toHaveTextContent(/Rs\s*1,200/);
     expect(screen.getByText('Trending week')).toBeInTheDocument();
     expect(screen.getByText('123456789012')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByAltText('Submitted boost payment proof')).toHaveAttribute('src', 'blob:boost-payment-proof'));

@@ -208,7 +208,7 @@ const DEFAULTS: Required<
   Omit<HeroContent, 'alt' | 'badgeIconUrl' | 'mobileUrl' | 'url'>
 > = {
   badgeText: '',
-  headlineLine1: "",
+  headlineLine1: '',
   headlineLine1Color: '',
   headlineLine2: '',
   headlineLine2Color: '',
@@ -235,17 +235,15 @@ function HeroSection() {
     getPublicHeroImageOptions(),
   );
 
-  // Don't render default content while the API request is pending.
-  // All hooks must be declared before any conditional return.
-  // if (isLoading || (!data && !isError)) {
-  //   return (
-  //     <section
-  //       aria-label="Loading hero"
-  //       role="status"
-  //       className="min-h-[85vh] bg-muted"
-  //     />
-  //   );
-  // }
+  if (isLoading || (!data && !isError)) {
+    return (
+      <section
+        aria-label="Loading hero"
+        role="status"
+        className="min-h-[85vh] bg-muted"
+      />
+    );
+  }
 
   // Filter out empty values and bare origin URLs.
   const cleaned = Object.fromEntries(
@@ -260,11 +258,10 @@ function HeroSection() {
     }),
   ) as HeroContent;
 
-
   const c = { ...DEFAULTS, ...cleaned };
 
-    const heroImage =
-    (isMobile && isValidUrl(cleaned.mobileUrl)
+  const heroImage
+    = (isMobile && isValidUrl(cleaned.mobileUrl)
       ? cleaned.mobileUrl
       : isValidUrl(cleaned.url)
         ? cleaned.url
@@ -351,45 +348,48 @@ function HeroSection() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-           
-              {data && (
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Button
-                    onClick={() => navigate('/listings')}
-                    size="lg"
-                    style={{
-                      ...(c.primaryCtaBg && {
-                        backgroundColor: c.primaryCtaBg,
-                        borderColor: c.primaryCtaBg,
-                      }),
-                      ...(c.primaryCtaTextColor && {
-                        color: c.primaryCtaTextColor,
-                      }),
-                    }}
-                    className="gap-2"
-                  >
-                    {c.primaryCtaLabel}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
 
-                  <Button
-                    onClick={() => navigate('/create-listing')}
-                    size="lg"
-                    style={{
-                      ...(c.secondaryCtaBorderColor && {
-                        borderColor: c.secondaryCtaBorderColor,
-                      }),
-                      ...(c.secondaryCtaTextColor && {
-                        color: c.secondaryCtaTextColor,
-                      }),
-                    }}
-                    variant="outline"
-                    className="border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground hover:bg-surface-dark-foreground/10"
-                  >
-                    {c.secondaryCtaLabel}
-                  </Button>
-                </div>
-              )}
+            {data && (
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  onClick={() => navigate('/listings')}
+                  size="lg"
+                  style={{
+                    ...(c.primaryCtaBg && {
+                      backgroundColor: c.primaryCtaBg,
+                      borderColor: c.primaryCtaBg,
+                    }),
+                    ...(c.primaryCtaTextColor && {
+                      color: c.primaryCtaTextColor,
+                    }),
+                  }}
+                  className="gap-2"
+                >
+                  {c.primaryCtaLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  onClick={() => navigate('/create-listing')}
+                  size="lg"
+                  style={{
+                    ...(c.secondaryCtaBorderColor && {
+                      borderColor: c.secondaryCtaBorderColor,
+                    }),
+                    ...(c.secondaryCtaTextColor && {
+                      color: c.secondaryCtaTextColor,
+                    }),
+                  }}
+                  variant="outline"
+                  className="
+                    border-surface-dark-foreground/30 bg-transparent text-surface-dark-foreground
+                    hover:bg-surface-dark-foreground/10
+                  "
+                >
+                  {c.secondaryCtaLabel}
+                </Button>
+              </div>
+            )}
 
           </div>
         </motion.div>

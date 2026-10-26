@@ -280,7 +280,7 @@ describe('listing clothing type filter', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'New with tags' }));
     fireEvent.click(screen.getAllByRole('combobox')[4]);
     fireEvent.click(await screen.findByRole('option', { name: 'L' }));
-    fireEvent.change(screen.getByPlaceholderText('Search by name or brand...'), { target: { value: 'Vintage' } });
+    fireEvent.change(screen.getByPlaceholderText('Search by listing, brand, or seller name...'), { target: { value: 'Vintage' } });
 
     expect(await screen.findByText('1 items')).toBeInTheDocument();
     expect(screen.getByText('Vintage Tee')).toBeInTheDocument();

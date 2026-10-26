@@ -87,11 +87,25 @@ export interface GetAdminFlaggedMessagesResponses {
     };
     data: Array<{
       id: string;
-      buyerId: string;
       conversationId: string;
+      senderId: string;
+      /**
+       * Attachments in message order. Empty for text-only messages.
+       */
+      buyerId: string;
       listingId: string | null;
       sellerId: string;
-      senderId: string;
+      attachments?: Array<{
+        id: string;
+        filename: string;
+        mimetype: string;
+        size: number;
+        type: 'IMAGE' | 'VIDEO';
+        /**
+         * Signed private view URL that expires after one hour.
+         */
+        url: string;
+      }>;
       buyerFullName: string;
       content: string;
       flagReasons: Array<string>;

@@ -865,6 +865,15 @@ function Messages() {
     (conversation: Conversation) => conversation.id === activeConvo,
   );
   const hasActiveConversation = Boolean(activeConvo && activeConversation);
+  const reloadConversationMessages = () => {
+    if (!activeConvo) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: conversationsQueryKey.messages(activeConvo),
+    });
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -1040,7 +1049,10 @@ function Messages() {
                                           ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted'}
                                         `}
                                         >
-                                          <ConversationMessageAttachments attachments={message.attachments} />
+                                          <ConversationMessageAttachments
+                                            onReload={reloadConversationMessages}
+                                            attachments={message.attachments}
+                                          />
                                           {message.content && (
                                             <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                                           )}
@@ -1181,7 +1193,13 @@ function ChatAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =>
   );
 }
 
-function ConversationMessageAttachments({ attachments = [] }: { attachments?: Message['attachments'] }) {
+function ConversationMessageAttachments({
+  attachments = [],
+  onReload,
+}: {
+  attachments?: Message['attachments'];
+  onReload: () => void;
+}) {
   if (attachments.length === 0) {
     return null;
   }
@@ -1189,27 +1207,59 @@ function ConversationMessageAttachments({ attachments = [] }: { attachments?: Me
   return (
     <div className="mb-1 grid grid-cols-2 gap-1.5">
       {attachments.map(attachment => (
-        attachment.type === 'VIDEO'
-          ? (
-              <video
-                key={attachment.id}
-                src={attachment.url}
-                aria-label={attachment.filename}
-                controls
-                className="h-40 w-full rounded-lg bg-muted object-cover"
-              />
-            )
-          : (
-              <a key={attachment.id} href={attachment.url} rel="noreferrer" target="_blank">
-                <img
-                  src={attachment.url}
-                  alt={attachment.filename}
-                  className="h-28 w-full rounded-lg object-cover"
-                />
-              </a>
-            )
+        <ConversationMessageAttachment
+          key={attachment.id}
+          onReload={onReload}
+          attachment={attachment}
+        />
       ))}
     </div>
+  );
+}
+
+function ConversationMessageAttachment({
+  attachment,
+  onReload,
+}: {
+  attachment: Message['attachments'][number];
+  onReload: () => void;
+}) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (failedUrl === attachment.url) {
+    return (
+      <div className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg bg-muted p-2 text-center">
+        <p role="alert" className="text-xs text-muted-foreground">
+          Media is unavailable. Reload the conversation to refresh it.
+        </p>
+        <Button onClick={onReload} size="sm" type="button" variant="outline">
+          Reload conversation
+        </Button>
+      </div>
+    );
+  }
+
+  if (attachment.type === 'VIDEO') {
+    return (
+      <video
+        src={attachment.url}
+        onError={() => setFailedUrl(attachment.url)}
+        aria-label={attachment.filename}
+        controls
+        className="h-40 w-full rounded-lg bg-muted object-cover"
+      />
+    );
+  }
+
+  return (
+    <a href={attachment.url} rel="noreferrer" target="_blank">
+      <img
+        src={attachment.url}
+        onError={() => setFailedUrl(attachment.url)}
+        alt={attachment.filename}
+        className="h-28 w-full rounded-lg object-cover"
+      />
+    </a>
   );
 }
 

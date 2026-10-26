@@ -58,11 +58,11 @@ const MAX_PHOTOS = 20;
 const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
 const LISTING_STYLE_VALUES = ['eastern', 'western', 'casual', 'formal', 'semi_formal'] as const;
 const LISTING_STYLE_LABELS: Record<typeof LISTING_STYLE_VALUES[number], string> = {
-  eastern: 'Eastern',
-  western: 'Western',
   casual: 'Casual',
+  eastern: 'Eastern',
   formal: 'Formal',
   semi_formal: 'Semi Formal',
+  western: 'Western',
 };
 const listingMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
 const existingMediaSchema = z.object({ fileId: z.string(), url: z.string() });
@@ -73,10 +73,10 @@ function isListingSize(value: string): boolean {
 
 const listingSchema = z.object({
   categoryId: z.string().min(1, 'Category is required.'),
+  clothingTypeId: z.string().nullable(),
   subcategoryId: z.string().min(1, 'Subcategory is required.'),
   brand: z.string().trim().min(1, 'Brand is required.'),
   condition: z.string().min(1, 'Condition is required.'),
-  clothingTypeId: z.string().nullable(),
   description: z.string().trim().min(1, 'Description is required.'),
   existingImages: z.array(existingMediaSchema),
   existingVideo: existingMediaSchema.nullable(),
@@ -101,18 +101,18 @@ const createListingSchema = listingSchema.extend({
 }).superRefine((values, context) => {
   if (values.subCategory === 'clothes' && !values.clothingTypeId) {
     context.addIssue({
+      path: ['clothingTypeId'],
       code: z.ZodIssueCode.custom,
       message: 'Choose a clothing type.',
-      path: ['clothingTypeId'],
     });
   }
 });
 const editListingSchema = listingSchema.superRefine((values, context) => {
   if (values.subCategory === 'clothes' && !values.clothingTypeId) {
     context.addIssue({
+      path: ['clothingTypeId'],
       code: z.ZodIssueCode.custom,
       message: 'Choose a clothing type.',
-      path: ['clothingTypeId'],
     });
   }
 });
@@ -121,10 +121,10 @@ type ListingFormValues = z.infer<typeof listingSchema>;
 
 const defaultListingValues: ListingFormValues = {
   categoryId: '',
+  clothingTypeId: null,
   subcategoryId: '',
   brand: '',
   condition: '',
-  clothingTypeId: null,
   description: '',
   existingImages: [],
   existingVideo: null,
@@ -233,10 +233,10 @@ function CreateListing() {
 
     reset({
       categoryId: existingListing.categoryId,
+      clothingTypeId: existingListing.clothingTypeId ?? null,
       subcategoryId: existingListing.subcategoryId,
       brand: existingListing.brand || '',
       condition: existingListing.condition,
-      clothingTypeId: existingListing.clothingTypeId ?? null,
       description: existingListing.description || '',
       existingImages: [],
       existingVideo: null,
@@ -373,10 +373,10 @@ function CreateListing() {
 
         const { data: updatedListing } = await updateMyListing(id!, {
           categoryId: values.categoryId,
+          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           subcategoryId: values.subcategoryId,
           brand: values.brand,
           condition: values.condition,
-          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           description: values.description,
           media,
           price: Number(values.price),
@@ -409,10 +409,10 @@ function CreateListing() {
 
         const { data: newListing } = await createListing({
           categoryId: values.categoryId,
+          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           subcategoryId: values.subcategoryId,
           brand: values.brand,
           condition: values.condition,
-          clothingTypeId: values.subCategory === 'clothes' ? values.clothingTypeId : null,
           description: values.description,
           media,
           price: Number(values.price),
@@ -774,16 +774,16 @@ function CreateListing() {
               name="styles"
               control={control}
               render={({ field }) => (
-                <div role="group" aria-label="Listing styles" className="flex flex-wrap gap-2">
+                <div aria-label="Listing styles" role="group" className="flex flex-wrap gap-2">
                   {LISTING_STYLE_VALUES.map(style => (
                     <Button
                       key={style}
-                      aria-pressed={field.value.includes(style)}
                       onClick={() => field.onChange(
                         field.value.includes(style)
                           ? field.value.filter(value => value !== style)
                           : [...field.value, style],
                       )}
+                      aria-pressed={field.value.includes(style)}
                       type="button"
                       variant={field.value.includes(style) ? 'secondary' : 'outline'}
                     >
@@ -909,7 +909,11 @@ function CreateListing() {
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <SelectTrigger className="w-full sm:w-[260px]">
+                    <SelectTrigger className="
+                      w-full
+                      sm:w-[260px]
+                    "
+                    >
                       <SelectValue placeholder="Top, bottom, dress..." />
                     </SelectTrigger>
                     <SelectContent>

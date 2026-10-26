@@ -1,3 +1,4 @@
+import type { ApiSuccessResponse } from '@/types/api.type';
 import type {
   ActiveBoostParameters,
   ActiveListingBoost,
@@ -15,9 +16,8 @@ import type {
   MyBoostPurchasesParameters,
   ResubmitBoostPaymentProofPayload,
 } from '@/types/boost.type';
-import type { PaginatedResponse, Response } from '@/types/response.type';
-import type { ApiSuccessResponse } from '@/types/api.type';
 import type { ResubmitBoostPaymentProofResponses } from '@/types/generated-api';
+import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listActiveBoosts(parameters: ActiveBoostParameters = {}): Promise<Response<ActiveListingBoost[]>> {

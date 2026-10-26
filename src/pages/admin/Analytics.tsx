@@ -212,8 +212,8 @@ function Analytics() {
     getAdminMarketingLeadsQueryOptions({
       ...dateRange,
       leadStatus: leadStatusFilter || undefined,
-      search: leadSearch || undefined,
       page: leadsPage,
+      search: leadSearch || undefined,
       size: leadsPageSize,
     }),
   );
@@ -222,13 +222,13 @@ function Analytics() {
   const leadsTotal = leadsResult?.pagination?.total ?? 0;
   const totalPages = Math.ceil(leadsTotal / leadsPageSize);
 
-    const startRecord =
-      leadsTotal === 0 ? 0 : (leadsPage - 1) * leadsPageSize + 1;
+  const startRecord
+    = leadsTotal === 0 ? 0 : (leadsPage - 1) * leadsPageSize + 1;
 
-    const endRecord = Math.min(
-      leadsPage * leadsPageSize,
-      leadsTotal,
-    );
+  const endRecord = Math.min(
+    leadsPage * leadsPageSize,
+    leadsTotal,
+  );
   const data = analyticsResult?.data;
   const exportMarketingLeads = useExportAdminMarketingLeadsMutation();
 
@@ -370,12 +370,12 @@ function Analytics() {
         "
         >
           <AnalyticsPeriodFilter
-              onChange={(value) => {
-                setDateFilter(value);
-                setLeadsPage(1);
-              }}
-              value={dateFilter}
-            />
+            onChange={(value) => {
+              setDateFilter(value);
+              setLeadsPage(1);
+            }}
+            value={dateFilter}
+          />
           <Button
             onClick={handleExportMarketingLeads}
             disabled={exportMarketingLeads.isPending}
@@ -932,36 +932,54 @@ function Analytics() {
                   </TableBody>
                 </Table>
               )}
-          
+
           {leadsTotal > 0 && (
-            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="
+              flex flex-col gap-3 border-t border-border px-4 py-3
+              sm:flex-row sm:items-center sm:justify-between
+            "
+            >
               <p className="text-xs text-muted-foreground">
-                Showing {startRecord}–{endRecord} of {leadsTotal} leads
+                Showing
+                {' '}
+                {startRecord}
+                –
+                {endRecord}
+                {' '}
+                of
+                {' '}
+                {leadsTotal}
+                {' '}
+                leads
               </p>
 
               <div className="flex items-center justify-end gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={leadsPage <= 1 || leadsLoading}
                   onClick={() =>
-                    setLeadsPage(page => Math.max(1, page - 1))
-                  }
+                    setLeadsPage(page => Math.max(1, page - 1))}
+                  disabled={leadsPage <= 1 || leadsLoading}
+                  size="sm"
+                  variant="outline"
                 >
                   Previous
                 </Button>
 
                 <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  Page {leadsPage} of {totalPages}
+                  Page
+                  {' '}
+                  {leadsPage}
+                  {' '}
+                  of
+                  {' '}
+                  {totalPages}
                 </span>
 
                 <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={leadsPage >= totalPages || leadsLoading}
                   onClick={() =>
-                    setLeadsPage(page => Math.min(totalPages, page + 1))
-                  }
+                    setLeadsPage(page => Math.min(totalPages, page + 1))}
+                  disabled={leadsPage >= totalPages || leadsLoading}
+                  size="sm"
+                  variant="outline"
                 >
                   Next
                 </Button>

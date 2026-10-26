@@ -1,6 +1,5 @@
 import type { AdminSettings, AdminSettingsUpdatePayload, UpdateBoostPackagesPayload } from '@/types/adminSettings.type';
 import type { AdminBoostListParameters, ListingBoost } from '@/types/boost.type';
-import type { PaginatedResponse, Response } from '@/types/response.type';
 import type {
   ApproveAdminBoostPaymentData,
   ApproveAdminBoostPaymentResponse,
@@ -12,6 +11,7 @@ import type {
   RequestAdminBoostPaymentResubmissionData,
   RequestAdminBoostPaymentResubmissionResponse,
 } from '@/types/generated-api';
+import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export async function getBoostPackages() {

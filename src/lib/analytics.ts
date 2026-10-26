@@ -1,5 +1,4 @@
-
- // Google Analytics 4 helper
+// Google Analytics 4 helper
 export const GA_MEASUREMENT_ID = 'G-7RBJ8C6PD9';
 
 declare global {
@@ -26,11 +25,11 @@ export function initGA() {
   const analyticsTarget = getAnalyticsTarget();
 
   analyticsTarget.dataLayer = analyticsTarget.dataLayer || [];
-  analyticsTarget.gtag =
-    analyticsTarget.gtag ||
-    function (...arguments_: any[]) {
-      analyticsTarget.dataLayer.push(arguments_);
-    };
+  analyticsTarget.gtag
+    = analyticsTarget.gtag
+      || function (...arguments_: any[]) {
+        analyticsTarget.dataLayer.push(arguments_);
+      };
 
   // Avoid loading an invalid placeholder ID.
   if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.includes('XXXX')) {
@@ -56,19 +55,20 @@ export function initGA() {
 
     const script = document.createElement('script');
     script.async = true;
-    script.src =
-      `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    script.src
+      = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
 
-    document.head.appendChild(script);
+    document.head.append(script);
   };
 
   // Let the page's initial resources finish before requesting GA.
   if (document.readyState === 'complete') {
-    window.setTimeout(loadScript, 2000);
-  } else {
+    setTimeout(loadScript, 2000);
+  }
+  else {
     window.addEventListener(
       'load',
-      () => window.setTimeout(loadScript, 2000),
+      () => setTimeout(loadScript, 2000),
       { once: true },
     );
   }

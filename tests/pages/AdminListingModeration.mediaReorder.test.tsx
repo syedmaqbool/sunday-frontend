@@ -14,8 +14,8 @@ vi.mock('@/services/listing.service', () => ({
   createAdminListingFeedback: vi.fn(),
   listAdminListings,
   moderateListing: vi.fn(),
-  reorderAdminListingMedia,
   removeAdminListing: vi.fn(),
+  reorderAdminListingMedia,
   restoreAdminListing: vi.fn(),
 }));
 
@@ -104,8 +104,8 @@ beforeEach(() => {
     }));
     listingState.current = {
       ...listing,
-      media: orderedMedia,
       coverImage: orderedMedia.find(mediaItem => mediaItem.type === 'IMAGE')?.file ?? null,
+      media: orderedMedia,
     } as AdminListing;
     return {
       data: listingState.current,

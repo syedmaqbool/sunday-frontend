@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
 
 const state = vi.hoisted(() => ({
-  completeRefund: vi.fn(),
   approve: vi.fn(),
   canReview: true,
+  completeRefund: vi.fn(),
   entries: [] as any[],
   proofError: false,
   reject: vi.fn(),
@@ -15,10 +15,6 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('@/queries/adminBoost.query', () => ({
-  getAdminBoostPaymentSubmissionsOptions: () => ({
-    queryFn: async () => ({ data: state.entries }),
-    queryKey: ['admin-boost', 'payment-submissions', 'list'],
-  }),
   getAdminBoostPaymentProofOptions: (fileId: string | undefined) => ({
     enabled: Boolean(fileId),
     queryFn: async () => {
@@ -28,10 +24,14 @@ vi.mock('@/queries/adminBoost.query', () => ({
     },
     queryKey: ['admin-boost', 'payment-proof', fileId],
   }),
+  getAdminBoostPaymentSubmissionsOptions: () => ({
+    queryFn: async () => ({ data: state.entries }),
+    queryKey: ['admin-boost', 'payment-submissions', 'list'],
+  }),
   useApproveAdminBoostPaymentMutation: () => ({ isPending: false, mutateAsync: state.approve }),
+  useCompleteAdminBoostRefundMutation: () => ({ isPending: false, mutateAsync: state.completeRefund }),
   useRejectAdminBoostPaymentMutation: () => ({ isPending: false, mutateAsync: state.reject }),
   useRequestAdminBoostPaymentResubmissionMutation: () => ({ isPending: false, mutateAsync: state.requestResubmission }),
-  useCompleteAdminBoostRefundMutation: () => ({ isPending: false, mutateAsync: state.completeRefund }),
 }));
 
 function makeSubmission(overrides: Record<string, unknown> = {}) {
@@ -93,7 +93,7 @@ describe('admin boost payment review queue', () => {
     state.canReview = true;
     state.proofError = false;
     state.entries = [makeSubmission()];
-    state.approve.mockReset().mockResolvedValue({ data: { refundRequired: true, purchase: { status: 'REFUND_REQUIRED' }, paymentSubmission: { status: 'APPROVED' } } });
+    state.approve.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'APPROVED' }, purchase: { status: 'REFUND_REQUIRED' }, refundRequired: true } });
     state.reject.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'REJECTED' } } });
     state.requestResubmission.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'RESUBMISSION_REQUESTED' } } });
     state.completeRefund.mockReset().mockResolvedValue({ data: { status: 'REFUNDED' } });

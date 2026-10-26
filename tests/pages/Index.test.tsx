@@ -17,22 +17,27 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 const featuredListings = [
-  { id: 'shared-listing', title: 'Shared listing', brand: 'Brand', categoryValue: 'fashion', price: 100, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
-  { id: 'fresh-second', title: 'Fresh second listing', brand: 'Brand', categoryValue: 'fashion', price: 200, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
+  { id: 'shared-listing', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 100, size: 'M', status: 'APPROVED', title: 'Shared listing' },
+  { id: 'fresh-second', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 200, size: 'M', status: 'APPROVED', title: 'Fresh second listing' },
 ];
 const trendingListings = [
-  { id: 'shared-listing', title: 'Shared listing', brand: 'Brand', categoryValue: 'fashion', price: 100, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
-  { id: 'boosted-second', title: 'Boosted second listing', brand: 'Brand', categoryValue: 'fashion', price: 300, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
+  { id: 'shared-listing', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 100, size: 'M', status: 'APPROVED', title: 'Shared listing' },
+  { id: 'boosted-second', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 300, size: 'M', status: 'APPROVED', title: 'Boosted second listing' },
 ];
 const personalizedListings = [
-  { id: 'for-you-second', title: 'Picked second listing', brand: 'Brand', categoryValue: 'fashion', price: 400, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
-  { id: 'for-you-first', title: 'Picked first listing', brand: 'Brand', categoryValue: 'fashion', price: 500, condition: 'NEW', size: 'M', status: 'APPROVED', images: [] },
+  { id: 'for-you-second', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 400, size: 'M', status: 'APPROVED', title: 'Picked second listing' },
+  { id: 'for-you-first', brand: 'Brand', categoryValue: 'fashion', condition: 'NEW', images: [], price: 500, size: 'M', status: 'APPROVED', title: 'Picked first listing' },
 ];
-let onboardingCompleted = true;
-let emptyFeed: 'featured' | 'trending' | 'for-you' | null = null;
+const homepageMockState: {
+  emptyFeed: 'featured' | 'for-you' | 'trending' | null;
+  isOnboardingCompleted: boolean;
+} = {
+  emptyFeed: null,
+  isOnboardingCompleted: true,
+};
 
 function response(data: unknown[]) {
-  return new Response(JSON.stringify({ data, pagination: { lastPage: 1 } }), {
+  return Response.json({ data, pagination: { lastPage: 1 } }, {
     headers: { 'Content-Type': 'application/json' },
     status: 200,
   });
@@ -51,21 +56,22 @@ function renderHomepage() {
 
 beforeEach(() => {
   authState.user = { id: 'buyer-1' };
-  onboardingCompleted = true;
-  emptyFeed = null;
+  homepageMockState.isOnboardingCompleted = true;
+  homepageMockState.emptyFeed = null;
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = input instanceof Request ? input.url : String(input);
     if (url.includes('/api/v1/listings/featured'))
-      return response(emptyFeed === 'featured' ? [] : featuredListings);
+      return response(homepageMockState.emptyFeed === 'featured' ? [] : featuredListings);
     if (url.includes('/api/v1/listings/trending'))
-      return response(emptyFeed === 'trending' ? [] : trendingListings);
+      return response(homepageMockState.emptyFeed === 'trending' ? [] : trendingListings);
     if (url.includes('/api/v1/listings/for-you'))
-      return response(emptyFeed === 'for-you' ? [] : personalizedListings);
-    if (url.includes('/api/v1/preferences/me'))
-      return new Response(JSON.stringify({ data: { onboardingCompleted } }), {
+      return response(homepageMockState.emptyFeed === 'for-you' ? [] : personalizedListings);
+    if (url.includes('/api/v1/preferences/me')) {
+      return Response.json({ data: { onboardingCompleted: homepageMockState.isOnboardingCompleted } }, {
         headers: { 'Content-Type': 'application/json' },
         status: 200,
       });
+    }
     if (url.includes('/api/v1/boosts/active'))
       return response([{ listingId: 'boosted-second' }]);
     if (url.includes('/api/v1/boosts'))
@@ -132,7 +138,7 @@ describe('index page composition', () => {
   });
 
   it('hides Picked for You when onboarding is incomplete', async () => {
-    onboardingCompleted = false;
+    homepageMockState.isOnboardingCompleted = false;
     renderHomepage();
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Fresh Drops' })).toBeInTheDocument());
@@ -144,7 +150,7 @@ describe('index page composition', () => {
     ['trending', 'Trending Now'],
     ['for-you', 'Picked for You'],
   ] as const)('hides only the %s section when its response is empty', async (feed, hiddenSection) => {
-    emptyFeed = feed;
+    homepageMockState.emptyFeed = feed;
     renderHomepage();
 
     await waitFor(() => expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(2));

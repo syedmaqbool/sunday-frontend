@@ -175,8 +175,6 @@
 
 // export default HeroSection;
 
-
-
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -210,7 +208,7 @@ const DEFAULTS: Required<
   Omit<HeroContent, 'alt' | 'badgeIconUrl' | 'mobileUrl' | 'url'>
 > = {
   badgeText: 'Pre-loved fashion',
-  headlineLine1: "Style doesn't",
+  headlineLine1: 'Style doesn\'t',
   headlineLine1Color: '',
   headlineLine2: 'expire.',
   headlineLine2Color: '',
@@ -233,7 +231,7 @@ function isValidUrl(url?: string) {
 function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { data, isLoading, isError } = useQuery(
+  const { data, isError, isLoading } = useQuery(
     getPublicHeroImageOptions(),
   );
 
@@ -252,19 +250,20 @@ function HeroSection() {
   // Filter out empty values and bare origin URLs.
   const cleaned = Object.fromEntries(
     Object.entries(data ?? {}).filter(([_, value]) => {
-      if (!value || value === '') return false;
+      if (!value || value === '')
+        return false;
 
       return !(
-        typeof value === 'string' &&
-        /^https?:\/\/[^/]+\/?$/.test(value)
+        typeof value === 'string'
+        && /^https?:\/\/[^/]+\/?$/.test(value)
       );
     }),
   ) as HeroContent;
 
   const c = { ...DEFAULTS, ...cleaned };
 
-  const heroImage =
-    (isMobile && isValidUrl(cleaned.mobileUrl)
+  const heroImage
+    = (isMobile && isValidUrl(cleaned.mobileUrl)
       ? cleaned.mobileUrl
       : isValidUrl(cleaned.url)
         ? cleaned.url
@@ -274,13 +273,13 @@ function HeroSection() {
     <section className="relative flex min-h-[85vh] items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
+          src={heroImage}
           ref={(node) => {
             node?.setAttribute('fetchpriority', 'high');
           }}
-          src={heroImage}
           alt={cleaned.alt || 'Fashion editorial'}
-          loading="eager"
           decoding="async"
+          loading="eager"
           className="h-full w-full object-cover transition-opacity duration-500"
         />
       </div>
@@ -292,19 +291,21 @@ function HeroSection() {
           transition={{ duration: 0.7, ease: 'easeOut' }}
           className="max-w-xl"
         >
-          {isValidUrl(c.badgeIconUrl) ? (
-            <img
-              src={c.badgeIconUrl}
-              alt={c.badgeText || 'Badge'}
-              className="mb-4 h-12 w-auto object-contain"
-            />
-          ) : (
-            c.badgeText?.trim() && (
-              <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
-                {c.badgeText}
-              </span>
-            )
-          )}
+          {isValidUrl(c.badgeIconUrl)
+            ? (
+                <img
+                  src={c.badgeIconUrl}
+                  alt={c.badgeText || 'Badge'}
+                  className="mb-4 h-12 w-auto object-contain"
+                />
+              )
+            : (
+                c.badgeText?.trim() && (
+                  <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
+                    {c.badgeText}
+                  </span>
+                )
+              )}
 
           <h1
             className="

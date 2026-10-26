@@ -8,14 +8,14 @@ const {
   createClothingTypeMock,
   deleteClothingTypeMock,
   listClothingTypesMock,
-  updateClothingTypeMock,
   toastMock,
+  updateClothingTypeMock,
 } = vi.hoisted(() => ({
   createClothingTypeMock: vi.fn(),
   deleteClothingTypeMock: vi.fn(),
   listClothingTypesMock: vi.fn(),
-  updateClothingTypeMock: vi.fn(),
   toastMock: vi.fn(),
+  updateClothingTypeMock: vi.fn(),
 }));
 
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: toastMock }) }));

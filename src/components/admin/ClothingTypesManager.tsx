@@ -79,27 +79,27 @@ function ClothingTypeRow({
   });
 
   return (
-    <form className="flex items-center gap-2 rounded-md border border-border p-2" onSubmit={save}>
+    <form onSubmit={save} className="flex items-center gap-2 rounded-md border border-border p-2">
       <Controller
-        control={form.control}
         name="sortOrder"
+        control={form.control}
         render={({ field }) => (
           <Input
-            aria-label={`Sort order for ${clothingType.label}`}
-            className="w-20"
-            disabled={isSaving}
             name={field.name}
             onBlur={field.onBlur}
             onChange={event => field.onChange(Number(event.target.value))}
             ref={field.ref}
-            type="number"
             value={field.value}
+            aria-label={`Sort order for ${clothingType.label}`}
+            disabled={isSaving}
+            type="number"
+            className="w-20"
           />
         )}
       />
       <Controller
-        control={form.control}
         name="label"
+        control={form.control}
         render={({ field }) => (
           <Input
             {...field}
@@ -118,13 +118,13 @@ function ClothingTypeRow({
         <Save className="h-4 w-4" />
       </Button>
       <Button
-        aria-label={`Delete ${clothingType.label}`}
-        className="text-destructive"
-        disabled={isDeleting}
         onClick={() => void onDelete(clothingType.id)}
+        aria-label={`Delete ${clothingType.label}`}
+        disabled={isDeleting}
         size="icon"
         type="button"
         variant="ghost"
+        className="text-destructive"
       >
         <Trash2 className="h-4 w-4" />
       </Button>
@@ -187,10 +187,10 @@ export default function ClothingTypesManager() {
         <CardTitle>Clothing types (shown when type is Clothes)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <form className="flex gap-2" onSubmit={addClothingType}>
+        <form onSubmit={addClothingType} className="flex gap-2">
           <Controller
-            control={createForm.control}
             name="label"
+            control={createForm.control}
             render={({ field }) => (
               <Input
                 {...field}
@@ -201,9 +201,9 @@ export default function ClothingTypesManager() {
             )}
           />
           <Button
-            className="gap-1"
             disabled={!createForm.watch('label').trim() || createClothingType.isPending}
             type="submit"
+            className="gap-1"
           >
             <Plus className="h-4 w-4" />
             {' '}
@@ -213,11 +213,11 @@ export default function ClothingTypesManager() {
         {clothingTypes.map(clothingType => (
           <ClothingTypeRow
             key={clothingType.id}
+            onDelete={removeClothingType}
+            onSave={saveClothingType}
             clothingType={clothingType}
             isDeleting={deleteClothingType.isPending}
             isSaving={updateClothingType.isPending}
-            onDelete={removeClothingType}
-            onSave={saveClothingType}
           />
         ))}
       </CardContent>

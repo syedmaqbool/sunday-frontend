@@ -58,8 +58,8 @@ vi.mock('@/queries/adminListing.query', () => ({
   },
   useCreateAdminListingFeedbackMutation: () => ({ isPending: false, mutateAsync: feedbackMutation }),
   useModerateListingMutation: () => ({ isPending: false, mutateAsync: moderationMutation }),
-  useReorderAdminListingMediaMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
   useRemoveAdminListingMutation: () => ({ isPending: false, mutateAsync: removeMutation }),
+  useReorderAdminListingMediaMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
   useRestoreAdminListingMutation: () => ({ isPending: false, mutateAsync: restoreMutation }),
   useUpdateAdminListingTitleMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));

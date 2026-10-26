@@ -131,17 +131,28 @@ function ReviewSubmission({
         </Badge>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="
+        grid gap-4
+        sm:grid-cols-2
+        lg:grid-cols-3
+      "
+      >
         <Summary title="Purchase">
           <p>{submission.boosts.map(boost => boost.packageName ?? 'Custom campaign').join(', ')}</p>
           <p>{submission.boosts.map(boost => boost.placement.replaceAll('_', ' ')).join(', ')}</p>
-          <p>Rs {submission.boostPurchase.amount.toLocaleString()}</p>
+          <p>
+            Rs
+            {submission.boostPurchase.amount.toLocaleString()}
+          </p>
           <p>{submission.boosts.map(boost => boost.durationDays ? `${boost.durationDays} days` : 'Campaign').join(', ')}</p>
         </Summary>
         <Summary title="Sender account">
           <p className="font-mono">{submission.paymentSubmission.senderAccountNumber}</p>
           <p>{submission.paymentSubmission.senderAccountTitle}</p>
-          <p>Submitted {format(new Date(submission.paymentSubmission.createdAt), 'PPp')}</p>
+          <p>
+            Submitted
+            {format(new Date(submission.paymentSubmission.createdAt), 'PPp')}
+          </p>
         </Summary>
         <Summary title="Listing">
           <p>{submission.listing.status.replaceAll('_', ' ')}</p>
@@ -157,9 +168,19 @@ function ReviewSubmission({
         <p className="text-xs font-semibold uppercase text-muted-foreground">Payment proof</p>
         <div className="mt-3 flex min-h-40 items-center justify-center rounded-md bg-muted/40 p-3">
           {proofQuery.isPending
-            ? <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading protected proof…</div>
+            ? (
+                <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading protected proof…
+                </div>
+              )
             : proofQuery.isError || previewFailed
-              ? <div className="text-center text-sm text-muted-foreground"><FileWarning className="mx-auto mb-2 h-5 w-5" />Proof is unavailable or access was denied.</div>
+              ? (
+                  <div className="text-center text-sm text-muted-foreground">
+                    <FileWarning className="mx-auto mb-2 h-5 w-5" />
+                    Proof is unavailable or access was denied.
+                  </div>
+                )
               : previewUrl
                 ? <img src={previewUrl} onError={() => setPreviewFailed(true)} alt="Submitted boost payment proof" className="max-h-80 rounded object-contain" />
                 : <p className="text-sm text-muted-foreground">Proof preview is unavailable.</p>}
@@ -174,15 +195,26 @@ function ReviewSubmission({
       </div>
 
       {paymentSubmissionStatus === 'SUBMITTED' && !canReview && (
-        <Alert><Clock3 className="h-4 w-4" /><AlertDescription>BOOSTS_UPDATE permission is required to review payments.</AlertDescription></Alert>
+        <Alert>
+          <Clock3 className="h-4 w-4" />
+          <AlertDescription>BOOSTS_UPDATE permission is required to review payments.</AlertDescription>
+        </Alert>
       )}
-      {actionError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{actionError}</AlertDescription></Alert>}
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      )}
 
       {isActionable && (
         <div className="space-y-3">
-          <Textarea aria-label="Reason for rejection or replacement proof" value={reviewNote} onChange={event => setReviewNote(event.target.value)} disabled={isMutating} placeholder="Required for reject and request replacement proof" rows={3} />
+          <Textarea onChange={event => setReviewNote(event.target.value)} value={reviewNote} aria-label="Reason for rejection or replacement proof" disabled={isMutating} placeholder="Required for reject and request replacement proof" rows={3} />
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void runReview('approve')} disabled={isMutating} type="button"><CheckCircle2 className="h-4 w-4" />Approve payment</Button>
+            <Button onClick={() => void runReview('approve')} disabled={isMutating} type="button">
+              <CheckCircle2 className="h-4 w-4" />
+              Approve payment
+            </Button>
             <Button onClick={() => void runReview('resubmit')} disabled={isMutating} type="button" variant="outline">Request replacement proof</Button>
             <Button onClick={() => void runReview('reject')} disabled={isMutating} type="button" variant="destructive">Reject payment</Button>
           </div>
@@ -195,13 +227,24 @@ function ReviewSubmission({
           Record refund completed
         </Button>
       )}
-      {isRefunded && <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>Refund completed</AlertTitle><AlertDescription>The manual refund has been recorded.</AlertDescription></Alert>}
+      {isRefunded && (
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>Refund completed</AlertTitle>
+          <AlertDescription>The manual refund has been recorded.</AlertDescription>
+        </Alert>
+      )}
     </Card>
   );
 }
 
 function Summary({ children, title }: { children: React.ReactNode; title: string }) {
-  return <div className="rounded-md bg-muted/40 p-3 text-sm"><p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{title}</p>{children}</div>;
+  return (
+    <div className="rounded-md bg-muted/40 p-3 text-sm">
+      <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{title}</p>
+      {children}
+    </div>
+  );
 }
 
 export function AdminBoostPaymentReviewQueue({ canReview }: { canReview: boolean }) {
@@ -210,10 +253,23 @@ export function AdminBoostPaymentReviewQueue({ canReview }: { canReview: boolean
   const submissions = submissionsQuery.data?.data ?? [];
   const lastPage = submissionsQuery.data?.pagination?.lastPage ?? 1;
 
-  if (submissionsQuery.isPending)
-    return <div role="status" className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><span className="sr-only">Loading boost payment reviews</span></div>;
-  if (submissionsQuery.isError)
-    return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Review queue unavailable</AlertTitle><AlertDescription>Boost payment submissions could not be loaded. Try again.</AlertDescription></Alert>;
+  if (submissionsQuery.isPending) {
+    return (
+      <div role="status" className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="sr-only">Loading boost payment reviews</span>
+      </div>
+    );
+  }
+  if (submissionsQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Review queue unavailable</AlertTitle>
+        <AlertDescription>Boost payment submissions could not be loaded. Try again.</AlertDescription>
+      </Alert>
+    );
+  }
   if (submissions.length === 0)
     return <Card className="p-8 text-center text-sm text-muted-foreground">No boost payment submissions need review.</Card>;
 
@@ -223,11 +279,19 @@ export function AdminBoostPaymentReviewQueue({ canReview }: { canReview: boolean
       {lastPage > 1 && (
         <div className="flex items-center justify-between gap-3">
           <Button onClick={() => setPage(currentPage => currentPage - 1)} disabled={page <= 1 || submissionsQuery.isFetching} type="button" variant="outline">
-            <ChevronLeft className="h-4 w-4" />Previous
+            <ChevronLeft className="h-4 w-4" />
+            Previous
           </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {lastPage}</span>
+          <span className="text-sm text-muted-foreground">
+            Page
+            {page}
+            {' '}
+            of
+            {lastPage}
+          </span>
           <Button onClick={() => setPage(currentPage => currentPage + 1)} disabled={page >= lastPage || submissionsQuery.isFetching} type="button" variant="outline">
-            Next<ChevronRight className="h-4 w-4" />
+            Next
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}

@@ -5,17 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Navbar from '@/components/Navbar';
 
 const {
-  getCategoriesOptionsMock,
-  getSubcategoriesOptionsMock,
-  getClothingTypesOptionsMock,
-  subcategoryQueryFns,
   clothingTypesQueryFn,
+  getCategoriesOptionsMock,
+  getClothingTypesOptionsMock,
+  getSubcategoriesOptionsMock,
+  subcategoryQueryFns,
 } = vi.hoisted(() => ({
-  getCategoriesOptionsMock: vi.fn(),
-  getSubcategoriesOptionsMock: vi.fn(),
-  getClothingTypesOptionsMock: vi.fn(),
-  subcategoryQueryFns: new Map<string, ReturnType<typeof vi.fn>>(),
   clothingTypesQueryFn: vi.fn(),
+  getCategoriesOptionsMock: vi.fn(),
+  getClothingTypesOptionsMock: vi.fn(),
+  getSubcategoriesOptionsMock: vi.fn(),
+  subcategoryQueryFns: new Map<string, ReturnType<typeof vi.fn>>(),
 }));
 
 vi.mock('@/hooks/useCategories', () => ({

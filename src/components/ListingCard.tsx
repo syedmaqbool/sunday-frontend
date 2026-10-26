@@ -52,27 +52,27 @@ function ListingCard({
         />
         <div className="pointer-events-none relative">
           <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-muted">
-            
-                <img
-                  src={previewImage}
-                  alt={listing.title}
-                  loading={index < 2 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  width={300}
-                  height={400}
-                  ref={(node) => {
-                    node?.setAttribute('fetchpriority', 'high');
-                  }}
-                  className={`
-                    h-full w-full object-cover transition-transform duration-500
-                    group-hover:scale-105
-                    ${
-                      status === 'sold' || status === 'reserved'
-                        ? 'opacity-60 grayscale'
-                        : ''
-                    }
-                  `}
-                />
+
+            <img
+              src={previewImage}
+              ref={(node) => {
+                node?.setAttribute('fetchpriority', 'high');
+              }}
+              alt={listing.title}
+              decoding="async"
+              height={400}
+              loading={index < 2 ? 'eager' : 'lazy'}
+              width={300}
+              className={`
+                h-full w-full object-cover transition-transform duration-500
+                group-hover:scale-105
+                ${
+    status === 'sold' || status === 'reserved'
+      ? 'opacity-60 grayscale'
+      : ''
+    }
+              `}
+            />
 
             {status === 'sold' && (
               <div className="absolute inset-0 flex items-center justify-center">

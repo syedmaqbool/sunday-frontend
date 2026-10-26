@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { getForYouListingsOptions, getFeaturedListingsOptions } from '@/queries/marketplace.query';
+import { getFeaturedListingsOptions, getForYouListingsOptions } from '@/queries/marketplace.query';
 import { getUserPreferencesOptions } from '@/queries/userPreferences.query';
 import ListingCard from './ListingCard';
 

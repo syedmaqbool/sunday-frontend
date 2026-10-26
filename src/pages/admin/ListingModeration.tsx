@@ -1232,7 +1232,6 @@
 
 // export default ListingModeration;
 
-
 import type { AdminListing, ListingStatus, ModerateListingPayload } from '@/types/adminListing.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -1298,7 +1297,8 @@ const removalReasonSchema = z.object({ reason: z.string().trim().min(1, 'Enter a
 const listingTitleSchema = z.object({ title: z.string().trim().min(1).max(120) });
 
 function formatVideoTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  if (!Number.isFinite(seconds) || seconds < 0)
+    return '0:00';
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -1328,14 +1328,6 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
                 <video
                   key={current.url}
                   src={current.url}
-                  preload="metadata"
-                  onLoadedMetadata={(event) => {
-                    const duration = event.currentTarget.duration;
-                    if (Number.isFinite(duration)) {
-                      setVideoDurations(previous => ({ ...previous, [current.url]: duration }));
-                    }
-                  }}
-                  onTimeUpdate={(event) => setCurrentVideoTime(event.currentTarget.currentTime)}
                   onClick={(event) => {
                     const video = event.currentTarget;
 
@@ -1346,6 +1338,13 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
                       video.pause();
                     }
                   }}
+                  onLoadedMetadata={(event) => {
+                    const duration = event.currentTarget.duration;
+                    if (Number.isFinite(duration)) {
+                      setVideoDurations(previous => ({ ...previous, [current.url]: duration }));
+                    }
+                  }}
+                  onTimeUpdate={event => setCurrentVideoTime(event.currentTarget.currentTime)}
                   onVolumeChange={(event) => {
                     const video = event.currentTarget;
 
@@ -1357,6 +1356,7 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
                   controls={false}
                   muted
                   playsInline
+                  preload="metadata"
                   className="h-full w-full bg-black object-contain"
                 />
 
@@ -1382,7 +1382,10 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
                 </button>
 
                 <span className="absolute bottom-3 right-3 rounded-md bg-black/75 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  {formatVideoTime(currentVideoTime)} / {formatVideoTime(videoDurations[current.url] ?? 0)}
+                  {formatVideoTime(currentVideoTime)}
+                  {' '}
+                  /
+                  {formatVideoTime(videoDurations[current.url] ?? 0)}
                 </span>
                 <span className="absolute left-3 top-3 rounded-md bg-black/75 px-2 py-1 text-xs text-white backdrop-blur-sm">Muted</span>
               </div>
@@ -1420,7 +1423,11 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <span className={`absolute right-2 rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm ${current.isVideo ? 'top-2' : 'bottom-2'}`}>
+            <span className={`
+              absolute right-2 rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm
+              ${current.isVideo ? 'top-2' : 'bottom-2'}
+            `}
+            >
               {index + 1}
               /
               {images.length}
@@ -1452,14 +1459,14 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
                     <>
                       <video
                         src={img.url}
-                        muted
-                        preload="metadata"
                         onLoadedMetadata={(event) => {
                           const duration = event.currentTarget.duration;
                           if (Number.isFinite(duration)) {
                             setVideoDurations(previous => ({ ...previous, [img.url]: duration }));
                           }
                         }}
+                        muted
+                        preload="metadata"
                         className="h-full w-full bg-black object-cover"
                       />
                       <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">▶</span>
@@ -1536,7 +1543,7 @@ function MediaReorderPanel({
   return (
     <section aria-label="Reorder listing media" className="space-y-3 rounded-lg border border-border p-3">
       <p className="text-xs text-muted-foreground">Drag thumbnails or use the arrows. The first image is the cover.</p>
-      <div role="list" aria-label="Listing media order" className="grid grid-cols-4 gap-2">
+      <div aria-label="Listing media order" role="list" className="grid grid-cols-4 gap-2">
         {orderedMedia.map((mediaItem, index) => {
           const filename = mediaItem.file?.filename ?? `${mediaItem.type.toLowerCase()} ${index + 1}`;
           const isCover = mediaItem.id === coverMediaId;
@@ -1544,10 +1551,6 @@ function MediaReorderPanel({
           return (
             <div
               key={mediaItem.id}
-              role="listitem"
-              aria-label={`${mediaItem.type === 'VIDEO' ? 'Video' : 'Image'} ${filename}`}
-              className={`relative aspect-square cursor-move overflow-hidden rounded border-2 ${draggedMediaId === mediaItem.id ? 'border-primary opacity-50' : 'border-border'}`}
-              draggable={!isSaving}
               onDragEnd={() => setDraggedMediaId(null)}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -1564,10 +1567,17 @@ function MediaReorderPanel({
                   dropMedia(sourceMediaId, mediaItem.id);
                 }
               }}
+              aria-label={`${mediaItem.type === 'VIDEO' ? 'Video' : 'Image'} ${filename}`}
+              draggable={!isSaving}
+              role="listitem"
+              className={`
+                relative aspect-square cursor-move overflow-hidden rounded border-2
+                ${draggedMediaId === mediaItem.id ? 'border-primary opacity-50' : 'border-border'}
+              `}
             >
               <div className="h-full w-full bg-muted">
                 {mediaItem.file?.url && mediaItem.type === 'VIDEO'
-                  ? <video aria-label={filename} src={mediaItem.file.url} muted preload="metadata" className="h-full w-full object-cover" />
+                  ? <video src={mediaItem.file.url} aria-label={filename} muted preload="metadata" className="h-full w-full object-cover" />
                   : mediaItem.file?.url
                     ? <img src={mediaItem.file.url} alt="" className="h-full w-full object-cover" />
                     : <span className="flex h-full items-center justify-center text-xs">{mediaItem.type}</span>}
@@ -1575,20 +1585,28 @@ function MediaReorderPanel({
               {isCover && <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">Cover</span>}
               <div className="absolute inset-x-0 bottom-0 flex justify-between p-0.5">
                 <button
+                  onClick={() => moveMediaBy(mediaItem.id, -1)}
                   aria-label={`Move ${filename} left`}
                   disabled={isSaving || index === 0}
-                  onClick={() => moveMediaBy(mediaItem.id, -1)}
                   type="button"
-                  className="rounded bg-background/80 p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                  className="
+                    rounded bg-background/80 p-0.5
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                    disabled:opacity-30
+                  "
                 >
                   <ChevronLeft className="h-3 w-3" />
                 </button>
                 <button
+                  onClick={() => moveMediaBy(mediaItem.id, 1)}
                   aria-label={`Move ${filename} right`}
                   disabled={isSaving || index === orderedMedia.length - 1}
-                  onClick={() => moveMediaBy(mediaItem.id, 1)}
                   type="button"
-                  className="rounded bg-background/80 p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                  className="
+                    rounded bg-background/80 p-0.5
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                    disabled:opacity-30
+                  "
                 >
                   <ChevronRight className="h-3 w-3" />
                 </button>
@@ -1598,11 +1616,11 @@ function MediaReorderPanel({
         })}
       </div>
       <div className="flex gap-2">
-        <Button disabled={isSaving} onClick={() => onSave(mediaIds)} type="button">
+        <Button onClick={() => onSave(mediaIds)} disabled={isSaving} type="button">
           {isSaving ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : null}
           Save order
         </Button>
-        <Button disabled={isSaving} onClick={onCancel} type="button" variant="outline">Cancel</Button>
+        <Button onClick={onCancel} disabled={isSaving} type="button" variant="outline">Cancel</Button>
       </div>
     </section>
   );
@@ -2102,14 +2120,14 @@ function ListingModeration() {
         }}
         open={!!reviewListing}
       >
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90dvh] overflow-x-hidden overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto overflow-x-hidden">
           {reviewListing && (
             <>
               <DialogHeader>
                 <div className="flex min-w-0 flex-wrap items-center gap-3">
                   {isEditingTitle
                     ? (
-                        <form className="flex flex-1 items-center gap-2" onSubmit={titleForm.handleSubmit(saveTitleEdit)}>
+                        <form onSubmit={titleForm.handleSubmit(saveTitleEdit)} className="flex flex-1 items-center gap-2">
                           <Input
                             aria-label="Listing title"
                             autoFocus
@@ -2135,7 +2153,7 @@ function ListingModeration() {
                           >
                             {updateListingTitle.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                           </Button>
-                          <Button aria-label="Cancel title edit" onClick={cancelTitleEdit} size="icon" type="button" variant="ghost">
+                          <Button onClick={cancelTitleEdit} aria-label="Cancel title edit" size="icon" type="button" variant="ghost">
                             <X className="h-4 w-4" />
                           </Button>
                         </form>
@@ -2147,8 +2165,8 @@ function ListingModeration() {
                           </DialogTitle>
                           {accessControl.hasPermission('LISTINGS_UPDATE') && (
                             <Button
-                              aria-label="Edit title"
                               onClick={() => beginTitleEdit(reviewListing)}
+                              aria-label="Edit title"
                               size="icon"
                               type="button"
                               variant="ghost"
@@ -2175,10 +2193,10 @@ function ListingModeration() {
                   {isReorderingMedia
                     ? (
                         <MediaReorderPanel
-                          isSaving={reorderMedia.isPending}
-                          media={reviewListing.media || []}
                           onCancel={() => setIsReorderingMedia(false)}
                           onSave={mediaIds => submitMediaOrder(reviewListing, mediaIds)}
+                          isSaving={reorderMedia.isPending}
+                          media={reviewListing.media || []}
                         />
                       )
                     : (

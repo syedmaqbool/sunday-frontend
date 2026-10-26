@@ -94,18 +94,36 @@ export default function Navbar() {
             <div key={category.id} className="group relative flex h-16 items-center">
               <Link
                 aria-haspopup="true"
-                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground focus-visible:text-foreground"
                 to={`/listings?parent=${category.value}`}
+                className="
+                  flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors
+                  focus-visible:text-foreground
+                  group-hover:text-foreground
+                "
               >
                 {category.label}
                 {' '}
-                <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180 group-focus-within:rotate-180" />
+                <ChevronDown className="
+                  h-3 w-3 transition-transform
+                  group-focus-within:rotate-180
+                  group-hover:rotate-180
+                "
+                />
               </Link>
-              <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-0 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div className="
+                invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-0 opacity-0 transition-opacity
+                group-focus-within:visible group-focus-within:opacity-100
+                group-hover:visible group-hover:opacity-100
+              "
+              >
                 <div className="max-h-[70vh] min-w-[220px] overflow-y-auto rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-lg">
                   <Link
-                    className="block rounded px-3 py-2 text-sm font-semibold hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
                     to={`/listings?parent=${category.value}`}
+                    className="
+                      block rounded px-3 py-2 text-sm font-semibold
+                      hover:bg-accent hover:text-accent-foreground
+                      focus-visible:bg-accent focus-visible:text-accent-foreground
+                    "
                   >
                     View all
                     {' '}
@@ -114,16 +132,24 @@ export default function Navbar() {
                   {subcategories.map(subcategory => (
                     <div key={subcategory.id}>
                       <Link
-                        className="block rounded px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
                         to={`/listings?category=${category.value}-${subcategory.value}`}
+                        className="
+                          block rounded px-3 py-2 text-sm font-medium
+                          hover:bg-accent hover:text-accent-foreground
+                          focus-visible:bg-accent focus-visible:text-accent-foreground
+                        "
                       >
                         {subcategory.label}
                       </Link>
                       {subcategory.value === 'clothes' && clothingTypes.map(clothingType => (
                         <Link
                           key={clothingType.id}
-                          className="block rounded py-1.5 pl-6 pr-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
                           to={`/listings?category=${category.value}-clothes&clothing_type=${clothingType.value}`}
+                          className="
+                            block rounded py-1.5 pl-6 pr-3 text-sm text-muted-foreground
+                            hover:bg-accent hover:text-accent-foreground
+                            focus-visible:bg-accent focus-visible:text-accent-foreground
+                          "
                         >
                           {clothingType.label}
                         </Link>

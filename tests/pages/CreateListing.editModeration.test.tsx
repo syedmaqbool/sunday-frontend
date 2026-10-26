@@ -75,11 +75,11 @@ function editableListing(status: string, sellerId = 'seller-1') {
   return {
     id: 'listing-1',
     categoryId: 'category-1',
+    clothingTypeId: null,
     sellerId,
     subcategoryId: 'subcategory-1',
     brand: 'Vintage',
     categoryValue: 'women-jackets',
-    clothingTypeId: null,
     condition: 'good',
     description: 'A vintage jacket.',
     media: [
@@ -253,9 +253,9 @@ describe('edit listing moderation rules', () => {
   it('preselects and submits the saved clothing type while editing', async () => {
     listingState.listing = {
       ...editableListing('PENDING'),
-      categoryValue: 'women-clothes',
       clothingTypeId: 'type-bottoms',
       subcategoryId: 'subcategory-clothes',
+      categoryValue: 'women-clothes',
     };
     renderEditListing();
 

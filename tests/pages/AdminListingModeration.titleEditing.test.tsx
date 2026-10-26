@@ -102,7 +102,7 @@ describe('admin listing title editing', () => {
     const input = within(dialog).getByRole('textbox', { name: 'Listing title' });
 
     expect(input).toHaveAttribute('maxLength', '120');
-    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.change(input, { target: { value: ' '.repeat(3) } });
     expect(within(dialog).getByRole('button', { name: 'Save title' })).toBeDisabled();
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     expect(updateAdminListingTitle).not.toHaveBeenCalled();
@@ -122,9 +122,12 @@ describe('admin listing title editing', () => {
 
   it('disables saving while the title update is pending', async () => {
     let resolveUpdate!: (response: { data: AdminListing }) => void;
-    updateAdminListingTitle.mockImplementationOnce(() => new Promise((resolve) => {
+    updateAdminListingTitle.mockImplementationOnce(() => {
+      // @ts-expect-error -- The Node test runtime supports this API; the app lib targets ES2023.
+      const { promise, resolve } = Promise.withResolvers<{ data: AdminListing }>();
       resolveUpdate = resolve;
-    }));
+      return promise;
+    });
     renderModeration();
     const dialog = await screen.findByRole('dialog', { name: 'Original listing title' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Edit title' }));
@@ -140,7 +143,7 @@ describe('admin listing title editing', () => {
 
   it('discards the title draft on Escape and Cancel', async () => {
     renderModeration();
-    let dialog = await screen.findByRole('dialog', { name: 'Original listing title' });
+    const dialog = await screen.findByRole('dialog', { name: 'Original listing title' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Edit title' }));
     let input = within(dialog).getByRole('textbox', { name: 'Listing title' });
     fireEvent.change(input, { target: { value: 'Draft title' } });

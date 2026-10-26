@@ -122,7 +122,8 @@ function Listings() {
       items = items.filter(
         index =>
           index.title.toLowerCase().includes(search.toLowerCase())
-          || index.brand.toLowerCase().includes(search.toLowerCase()),
+          || index.brand.toLowerCase().includes(search.toLowerCase())
+          || (index.seller?.fullName ?? "").toLowerCase().includes(search.toLowerCase()),
       );
     }
     if (parentCat !== 'all') {
@@ -278,7 +279,7 @@ function Listings() {
             <Input
               onChange={event => setSearch(event.target.value)}
               value={search}
-              placeholder="Search by name or brand..."
+              placeholder="Search by listing, brand, or seller name..."
               className="pl-9"
             />
           </div>

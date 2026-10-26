@@ -8,7 +8,14 @@ export interface GetAdminOrdersData {
     search?: string;
     size?: number;
     sortOrder?: 'asc' | 'desc';
-    status?: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+    status?:
+      | 'AWAITING_PAYMENT'
+      | 'CANCELLED'
+      | 'CONFIRMED'
+      | 'DELIVERED'
+      | 'PARTIALLY_DELIVERED'
+      | 'PARTIALLY_SHIPPED'
+      | 'SHIPPED';
     sortBy?: 'createdAt' | 'updatedAt';
   };
   url: '/api/v1/admin/orders';
@@ -220,7 +227,14 @@ export interface GetAdminOrdersResponses {
       shippingLastName: string;
       shippingPhone: string;
       shippingPostal: string;
-      status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+      status:
+        | 'AWAITING_PAYMENT'
+        | 'CANCELLED'
+        | 'CONFIRMED'
+        | 'DELIVERED'
+        | 'PARTIALLY_DELIVERED'
+        | 'PARTIALLY_SHIPPED'
+        | 'SHIPPED';
       /**
        * PKR amount as a number.
        */

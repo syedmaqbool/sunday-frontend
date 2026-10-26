@@ -129,7 +129,8 @@ export interface ResubmitBoostPaymentProofErrors {
   };
 }
 
-export type ResubmitBoostPaymentProofError = ResubmitBoostPaymentProofErrors[keyof ResubmitBoostPaymentProofErrors];
+export type ResubmitBoostPaymentProofError =
+  ResubmitBoostPaymentProofErrors[keyof ResubmitBoostPaymentProofErrors];
 
 export interface ResubmitBoostPaymentProofResponses {
   /**
@@ -150,11 +151,18 @@ export interface ResubmitBoostPaymentProofResponses {
         status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
         createdAt: string;
       };
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
     };
     message: string;
     statusCode: 200;
   };
 }
 
-export type ResubmitBoostPaymentProofResponse = ResubmitBoostPaymentProofResponses[keyof ResubmitBoostPaymentProofResponses];
+export type ResubmitBoostPaymentProofResponse =
+  ResubmitBoostPaymentProofResponses[keyof ResubmitBoostPaymentProofResponses];

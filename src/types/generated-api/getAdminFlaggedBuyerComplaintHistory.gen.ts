@@ -105,7 +105,8 @@ export interface GetAdminFlaggedBuyerComplaintHistoryErrors {
   };
 }
 
-export type GetAdminFlaggedBuyerComplaintHistoryError = GetAdminFlaggedBuyerComplaintHistoryErrors[keyof GetAdminFlaggedBuyerComplaintHistoryErrors];
+export type GetAdminFlaggedBuyerComplaintHistoryError =
+  GetAdminFlaggedBuyerComplaintHistoryErrors[keyof GetAdminFlaggedBuyerComplaintHistoryErrors];
 
 export interface GetAdminFlaggedBuyerComplaintHistoryResponses {
   /**
@@ -152,4 +153,5 @@ export interface GetAdminFlaggedBuyerComplaintHistoryResponses {
   };
 }
 
-export type GetAdminFlaggedBuyerComplaintHistoryResponse = GetAdminFlaggedBuyerComplaintHistoryResponses[keyof GetAdminFlaggedBuyerComplaintHistoryResponses];
+export type GetAdminFlaggedBuyerComplaintHistoryResponse =
+  GetAdminFlaggedBuyerComplaintHistoryResponses[keyof GetAdminFlaggedBuyerComplaintHistoryResponses];

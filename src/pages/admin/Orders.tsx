@@ -4,11 +4,21 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
 import { HTTPError } from 'ky';
-import { AlertTriangle, ExternalLink, Loader2, MessageSquareWarning, Package, Search } from 'lucide-react';
+import {
+  AlertTriangle,
+  ExternalLink,
+  Loader2,
+  MessageSquareWarning,
+  Package,
+  Search,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AdminManualPaymentReviewDialog, maskSenderAccountNumber } from '@/components/admin/AdminManualPaymentReviewDialog';
+import {
+  AdminManualPaymentReviewDialog,
+  maskSenderAccountNumber,
+} from '@/components/admin/AdminManualPaymentReviewDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +51,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import {
-  getAdminComplaintsForOrdersOptions,
-} from '@/queries/adminComplaint.query';
+import { getAdminComplaintsForOrdersOptions } from '@/queries/adminComplaint.query';
 import {
   getAdminOrderOptions,
   getAdminOrdersOptions,
@@ -68,29 +76,29 @@ interface Row {
 
 function dateFilterStart(filter: DateFilter) {
   const now = new Date();
-  if (filter === 'today')
-    return startOfDay(now);
-  if (filter === '7d')
-    return subDays(startOfDay(now), 6);
-  if (filter === 'month')
-    return startOfMonth(now);
+  if (filter === 'today') return startOfDay(now);
+  if (filter === '7d') return subDays(startOfDay(now), 6);
+  if (filter === 'month') return startOfMonth(now);
   return null;
 }
 
 // Item-level status → display label (CONFIRMED→sold, SHIPPED→shipped, DELIVERED→delivered)
-function effectiveStatus(status: AdminOrderItem['status'], orderStatus?: AdminOrder['status']): EffectiveStatus {
-  if (orderStatus === 'CANCELLED')
-    return 'cancelled';
-  if (['AWAITING_PAYMENT', 'CANCELLED', 'CONFIRMED'].includes(status))
-    return 'sold';
-  if (status === 'SHIPPED')
-    return 'shipped';
+function effectiveStatus(
+  status: AdminOrderItem['status'],
+  orderStatus?: AdminOrder['status'],
+): EffectiveStatus {
+  if (orderStatus === 'CANCELLED') return 'cancelled';
+  if (['AWAITING_PAYMENT', 'CANCELLED', 'CONFIRMED'].includes(status)) return 'sold';
+  if (status === 'SHIPPED') return 'shipped';
   return 'delivered';
 }
 
 function latestManualPaymentSubmission(order: AdminOrder | AdminOrderDetail) {
-  return [...order.manualPaymentSubmissions]
-    .toSorted((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
+  return (
+    [...order.manualPaymentSubmissions].toSorted(
+      (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+    )[0] ?? null
+  );
 }
 
 function hasActionableManualPayment(order: AdminOrder) {
@@ -99,8 +107,7 @@ function hasActionableManualPayment(order: AdminOrder) {
 
 function rowFromOrderDetail(order: AdminOrderDetail, selectedItemId: string | null): Row | null {
   const item = order.items.find(orderItem => orderItem.id === selectedItemId) ?? order.items[0];
-  if (!item)
-    return null;
+  if (!item) return null;
 
   return {
     orderId: order.id,
@@ -149,7 +156,9 @@ function AdminOrders() {
     }),
     placeholderData: keepPreviousData,
   });
-  const { data: reservedResponse, isLoading: reservedLoading } = useQuery(getAdminReservedListingsOptions(statusFilter === 'reserved'));
+  const { data: reservedResponse, isLoading: reservedLoading } = useQuery(
+    getAdminReservedListingsOptions(statusFilter === 'reserved'),
+  );
   const orders = ordersResponse?.data;
   const orderIds = useMemo(() => orders?.map(order => order.id) ?? [], [orders]);
   const {
@@ -173,7 +182,12 @@ function AdminOrders() {
   useEffect(() => {
     if (hasNextComplaintsPage && !isFetchingNextComplaintsPage && !isFetchNextComplaintsPageError)
       void fetchNextComplaintsPage();
-  }, [fetchNextComplaintsPage, hasNextComplaintsPage, isFetchNextComplaintsPageError, isFetchingNextComplaintsPage]);
+  }, [
+    fetchNextComplaintsPage,
+    hasNextComplaintsPage,
+    isFetchNextComplaintsPageError,
+    isFetchingNextComplaintsPage,
+  ]);
 
   // Flatten orders → item rows
   const rows = useMemo<Row[]>(() => {
@@ -182,21 +196,17 @@ function AdminOrders() {
     const orderList = orders ?? [];
 
     for (const o of orderList) {
-      if (start && new Date(o.createdAt) < start)
-        continue;
-      if (statusFilter === 'manual-review' && !hasActionableManualPayment(o))
-        continue;
-      const buyerName
-        = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(' ')
-          || '—';
+      if (start && new Date(o.createdAt) < start) continue;
+      if (statusFilter === 'manual-review' && !hasActionableManualPayment(o)) continue;
+      const buyerName = [o.shippingFirstName, o.shippingLastName].filter(Boolean).join(' ') || '—';
 
       for (const item of o.items) {
         const eff = effectiveStatus(item.status, o.status);
         if (
-          statusFilter !== 'all'
-          && statusFilter !== 'reserved'
-          && statusFilter !== 'manual-review'
-          && eff !== statusFilter
+          statusFilter !== 'all' &&
+          statusFilter !== 'reserved' &&
+          statusFilter !== 'manual-review' &&
+          eff !== statusFilter
         ) {
           continue;
         }
@@ -216,8 +226,7 @@ function AdminOrders() {
   }, [orders, statusFilter, dateFilter]);
 
   useEffect(() => {
-    if (isLoading)
-      return;
+    if (isLoading) return;
     if (!selectedOrderId) {
       setSelected(null);
       return;
@@ -225,35 +234,42 @@ function AdminOrders() {
 
     const matchingOrderRows = rows.filter(row => row.orderId === selectedOrderId);
     if (matchingOrderRows.length > 0) {
-      const selectedRow = matchingOrderRows.find(row => row.item.id === selectedItemId)
-        ?? matchingOrderRows[0];
+      const selectedRow =
+        matchingOrderRows.find(row => row.item.id === selectedItemId) ?? matchingOrderRows[0];
       setSelected(selectedRow);
 
       if (selectedItemId && matchingOrderRows.every(row => row.item.id !== selectedItemId)) {
-        setSearchParams((current) => {
-          const next = new URLSearchParams(current);
-          next.delete('item');
-          return next;
-        }, { replace: true });
+        setSearchParams(
+          current => {
+            const next = new URLSearchParams(current);
+            next.delete('item');
+            return next;
+          },
+          { replace: true },
+        );
       }
       return;
     }
 
-    if (selectedOrderDetailQuery.isLoading)
-      return;
+    if (selectedOrderDetailQuery.isLoading) return;
 
     if (selectedOrderDetailQuery.isError) {
-      if (!(selectedOrderDetailQuery.error instanceof HTTPError)
-        || selectedOrderDetailQuery.error.response.status !== 404) {
+      if (
+        !(selectedOrderDetailQuery.error instanceof HTTPError) ||
+        selectedOrderDetailQuery.error.response.status !== 404
+      ) {
         return;
       }
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current);
-        next.delete('order');
-        next.delete('item');
-        next.delete('paymentSubmission');
-        return next;
-      }, { replace: true });
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current);
+          next.delete('order');
+          next.delete('item');
+          next.delete('paymentSubmission');
+          return next;
+        },
+        { replace: true },
+      );
       setSelected(null);
       return;
     }
@@ -261,45 +277,75 @@ function AdminOrders() {
     const order = selectedOrderDetailQuery.data?.data;
     const selectedRow = order ? rowFromOrderDetail(order, selectedItemId) : null;
     if (!selectedRow) {
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current);
-        next.delete('order');
-        next.delete('item');
-        next.delete('paymentSubmission');
-        return next;
-      }, { replace: true });
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current);
+          next.delete('order');
+          next.delete('item');
+          next.delete('paymentSubmission');
+          return next;
+        },
+        { replace: true },
+      );
       setSelected(null);
       return;
     }
 
     setSelected(selectedRow);
     if (selectedItemId && !order?.items.some(item => item.id === selectedItemId)) {
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current);
-        next.delete('item');
-        return next;
-      }, { replace: true });
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current);
+          next.delete('item');
+          return next;
+        },
+        { replace: true },
+      );
     }
-  }, [isLoading, rows, selectedItemId, selectedOrderDetailQuery.data, selectedOrderDetailQuery.error, selectedOrderDetailQuery.isError, selectedOrderDetailQuery.isLoading, selectedOrderId, setSearchParams]);
+  }, [
+    isLoading,
+    rows,
+    selectedItemId,
+    selectedOrderDetailQuery.data,
+    selectedOrderDetailQuery.error,
+    selectedOrderDetailQuery.isError,
+    selectedOrderDetailQuery.isLoading,
+    selectedOrderId,
+    setSearchParams,
+  ]);
 
   useEffect(() => {
     if (!selectedPaymentSubmissionId || !selectedOrderId || selectedOrderDetailQuery.isLoading)
       return;
-    if (selectedOrderDetailQuery.isError)
-      return;
+    if (selectedOrderDetailQuery.isError) return;
 
     const order = selectedOrderDetailQuery.data?.data;
-    if (!order || order.manualPaymentSubmissions.some(submission => submission.id === selectedPaymentSubmissionId))
+    if (
+      !order ||
+      order.manualPaymentSubmissions.some(
+        submission => submission.id === selectedPaymentSubmissionId,
+      )
+    )
       return;
 
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      next.delete('order');
-      next.delete('item');
-      next.delete('paymentSubmission');
-      return next;
-    }, { replace: true });
-  }, [selectedOrderDetailQuery.data, selectedOrderDetailQuery.isError, selectedOrderDetailQuery.isLoading, selectedOrderId, selectedPaymentSubmissionId, setSearchParams]);
+    setSearchParams(
+      current => {
+        const next = new URLSearchParams(current);
+        next.delete('order');
+        next.delete('item');
+        next.delete('paymentSubmission');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [
+    selectedOrderDetailQuery.data,
+    selectedOrderDetailQuery.isError,
+    selectedOrderDetailQuery.isLoading,
+    selectedOrderId,
+    selectedPaymentSubmissionId,
+    setSearchParams,
+  ]);
 
   // KPI counts are returned with the generated order list response.
   const counts = useMemo(() => {
@@ -311,10 +357,8 @@ function AdminOrders() {
     let completed = 0;
 
     for (const o of orderList) {
-      if (start && new Date(o.createdAt) < start)
-        continue;
-      if (o.status === 'CANCELLED')
-        continue;
+      if (start && new Date(o.createdAt) < start) continue;
+      if (o.status === 'CANCELLED') continue;
       sold += o.itemStatusCounts.confirmed;
       shipped += o.itemStatusCounts.shipped;
       received += o.itemStatusCounts.received;
@@ -332,29 +376,24 @@ function AdminOrders() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">
-          Orders
-        </h1>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">Orders</h1>
         <p className="text-sm text-muted-foreground">
           Track sold and shipped items across the marketplace.
         </p>
       </div>
 
-      <div className="
-        grid gap-3
-        sm:grid-cols-2
-        lg:grid-cols-5
-      "
+      <div
+        className="
+          grid gap-3
+          sm:grid-cols-2
+          lg:grid-cols-5
+        "
       >
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs uppercase text-muted-foreground">
-                Total items
-              </p>
-              <p className="font-heading text-2xl font-semibold">
-                {counts.total}
-              </p>
+              <p className="text-xs uppercase text-muted-foreground">Total items</p>
+              <p className="font-heading text-2xl font-semibold">{counts.total}</p>
             </div>
             <Package className="h-5 w-5 text-muted-foreground" />
           </CardContent>
@@ -368,25 +407,19 @@ function AdminOrders() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Shipped</p>
-            <p className="font-heading text-2xl font-semibold">
-              {counts.shipped}
-            </p>
+            <p className="font-heading text-2xl font-semibold">{counts.shipped}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Received</p>
-            <p className="font-heading text-2xl font-semibold">
-              {counts.received}
-            </p>
+            <p className="font-heading text-2xl font-semibold">{counts.received}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">Completed</p>
-            <p className="font-heading text-2xl font-semibold">
-              {counts.completed}
-            </p>
+            <p className="font-heading text-2xl font-semibold">{counts.completed}</p>
           </CardContent>
         </Card>
       </div>
@@ -420,10 +453,11 @@ function AdminOrders() {
           </TabsList>
         </Tabs>
         {statusFilter !== 'reserved' && (
-          <div className="
-            relative ml-auto w-full
-            sm:w-64
-          "
+          <div
+            className="
+              relative ml-auto w-full
+              sm:w-64
+            "
           >
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -437,237 +471,207 @@ function AdminOrders() {
         )}
       </div>
 
-      {statusFilter === 'reserved'
-        ? (
-            <Card>
-              <CardContent className="p-0">
-                {reservedLoading
-                  ? (
-                      <div className="flex items-center justify-center p-12">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    )
-                  : (reservedListings.length === 0
-                      ? (
-                          <p className="p-12 text-center text-sm text-muted-foreground">
-                            No reserved listings right now.
-                          </p>
+      {statusFilter === 'reserved' ? (
+        <Card>
+          <CardContent className="p-0">
+            {reservedLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : reservedListings.length === 0 ? (
+              <p className="p-12 text-center text-sm text-muted-foreground">
+                No reserved listings right now.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Seller</TableHead>
+                    <TableHead>Reserved for</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reservedListings.map(l => {
+                    const expiresAt = l.reservationExpiresAt
+                      ? new Date(l.reservationExpiresAt)
+                      : null;
+                    const isExpired = expiresAt !== null && expiresAt.getTime() < Date.now();
+                    return (
+                      <TableRow key={l.reservationId}>
+                        <TableCell className="font-medium">
+                          <Link
+                            to={`/listing/${l.listingId}`}
+                            className="
+                              inline-flex items-center gap-1
+                              hover:underline
+                            "
+                          >
+                            {l.title} <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-sm">{l.sellerFullName}</TableCell>
+                        <TableCell className="text-sm">{l.buyerFullName}</TableCell>
+                        <TableCell>
+                          <Badge variant={isExpired ? 'destructive' : 'secondary'}>
+                            {expiresAt ? format(expiresAt, 'MMM d, p') : 'Awaiting admin review'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          Rs {l.price.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : rows.length === 0 ? (
+              <p className="p-12 text-center text-sm text-muted-foreground">
+                No orders match these filters.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order #</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment review</TableHead>
+                    <TableHead>Sender account</TableHead>
+                    <TableHead>Tracking</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map(r => {
+                    const submission = latestManualPaymentSubmission(r.order);
+                    const complaint = canReadComplaints
+                      ? complaints.find(
+                          item =>
+                            item.orderItemId === r.item.id && item.listingId === r.item.listingId,
                         )
-                      : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Item</TableHead>
-                                <TableHead>Seller</TableHead>
-                                <TableHead>Reserved for</TableHead>
-                                <TableHead>Expires</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {reservedListings.map((l) => {
-                                const expiresAt = l.reservationExpiresAt ? new Date(l.reservationExpiresAt) : null;
-                                const isExpired = expiresAt !== null && expiresAt.getTime() < Date.now();
-                                return (
-                                  <TableRow key={l.reservationId}>
-                                    <TableCell className="font-medium">
-                                      <Link
-                                        to={`/listing/${l.listingId}`}
-                                        className="
-                                          inline-flex items-center gap-1
-                                          hover:underline
-                                        "
-                                      >
-                                        {l.title}
-                                        {' '}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </Link>
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                      {l.sellerFullName}
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                      {l.buyerFullName}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge
-                                        variant={isExpired ? 'destructive' : 'secondary'}
-                                      >
-                                        {expiresAt ? format(expiresAt, 'MMM d, p') : 'Awaiting admin review'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      Rs
-                                      {' '}
-                                      {l.price.toLocaleString()}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        ))}
-              </CardContent>
-            </Card>
-          )
-        : (
-            <Card>
-              <CardContent className="p-0">
-                {isLoading
-                  ? (
-                      <div className="flex items-center justify-center p-12">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    )
-                  : (rows.length === 0
-                      ? (
-                          <p className="p-12 text-center text-sm text-muted-foreground">
-                            No orders match these filters.
-                          </p>
-                        )
-                      : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Order #</TableHead>
-                                <TableHead>Item</TableHead>
-                                <TableHead>Buyer</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Payment review</TableHead>
-                                <TableHead>Sender account</TableHead>
-                                <TableHead>Tracking</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {rows.map((r) => {
-                                const submission = latestManualPaymentSubmission(r.order);
-                                const complaint = canReadComplaints
-                                  ? complaints.find(item => item.orderItemId === r.item.id && item.listingId === r.item.listingId)
-                                  : undefined;
+                      : undefined;
 
-                                return (
-                                  <TableRow
-                                    key={r.item.id}
-                                    onClick={() => {
-                                      setSearchParams((current) => {
-                                        const next = new URLSearchParams(current);
-                                        next.set('order', r.orderId);
-                                        next.set('item', r.item.id);
-                                        return next;
-                                      });
-                                    }}
-                                    className="cursor-pointer"
-                                  >
-                                    <TableCell>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-mono text-xs text-muted-foreground">
-                                          #
-                                          {r.orderId.slice(0, 8)}
-                                        </span>
-                                        {complaint && (
-                                          <ComplaintBadge
-                                            onClick={() => setSelectedComplaint(complaint)}
-                                            complaint={complaint}
-                                          />
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                      {r.item.title}
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="text-sm">{r.buyerName}</div>
-                                      {r.city && (
-                                        <div className="text-xs text-muted-foreground">
-                                          {r.city}
-                                        </div>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge
-                                        variant={
-                                          r.effective === 'shipped' ? 'default' : 'secondary'
-                                        }
-                                      >
-                                        {r.effective}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      {submission
-                                        ? (
-                                            <Badge variant={submission.status === 'SUBMITTED' ? 'outline' : 'secondary'}>
-                                              {submission.status.replaceAll('_', ' ')}
-                                            </Badge>
-                                          )
-                                        : '—'}
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                      {submission
-                                        ? (
-                                            <div className="space-y-1">
-                                              <span className="font-mono text-xs">
-                                                {maskSenderAccountNumber(submission.senderAccountNumber)}
-                                              </span>
-                                              {submission.status === 'SUBMITTED' && (
-                                                <Button
-                                                  onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    setSearchParams((current) => {
-                                                      const next = new URLSearchParams(current);
-                                                      next.set('order', r.orderId);
-                                                      next.set('paymentSubmission', submission.id);
-                                                      return next;
-                                                    });
-                                                  }}
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="block"
-                                                >
-                                                  Review payment
-                                                </Button>
-                                              )}
-                                            </div>
-                                          )
-                                        : '—'}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {r.item.trackingNumber
-                                        ? (
-                                            <div>
-                                              <div>{r.item.shippingMethod ?? '—'}</div>
-                                              <div className="font-mono text-xs">
-                                                {r.item.trackingNumber}
-                                              </div>
-                                            </div>
-                                          )
-                                        : (
-                                            '—'
-                                          )}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {format(new Date(r.created_at), 'MMM d, yyyy')}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      Rs
-                                      {' '}
-                                      {r.item.price.toLocaleString()}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        ))}
-              </CardContent>
-            </Card>
-          )}
+                    return (
+                      <TableRow
+                        key={r.item.id}
+                        onClick={() => {
+                          setSearchParams(current => {
+                            const next = new URLSearchParams(current);
+                            next.set('order', r.orderId);
+                            next.set('item', r.item.id);
+                            return next;
+                          });
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-muted-foreground">
+                              #{r.orderId.slice(0, 8)}
+                            </span>
+                            {complaint && (
+                              <ComplaintBadge
+                                onClick={() => setSelectedComplaint(complaint)}
+                                complaint={complaint}
+                              />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{r.item.title}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">{r.buyerName}</div>
+                          {r.city && <div className="text-xs text-muted-foreground">{r.city}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={r.effective === 'shipped' ? 'default' : 'secondary'}>
+                            {r.effective}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {submission ? (
+                            <Badge
+                              variant={submission.status === 'SUBMITTED' ? 'outline' : 'secondary'}
+                            >
+                              {submission.status.replaceAll('_', ' ')}
+                            </Badge>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {submission ? (
+                            <div className="space-y-1">
+                              <span className="font-mono text-xs">
+                                {maskSenderAccountNumber(submission.senderAccountNumber)}
+                              </span>
+                              {submission.status === 'SUBMITTED' && (
+                                <Button
+                                  onClick={event => {
+                                    event.stopPropagation();
+                                    setSearchParams(current => {
+                                      const next = new URLSearchParams(current);
+                                      next.set('order', r.orderId);
+                                      next.set('paymentSubmission', submission.id);
+                                      return next;
+                                    });
+                                  }}
+                                  size="sm"
+                                  variant="outline"
+                                  className="block"
+                                >
+                                  Review payment
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {r.item.trackingNumber ? (
+                            <div>
+                              <div>{r.item.shippingMethod ?? '—'}</div>
+                              <div className="font-mono text-xs">{r.item.trackingNumber}</div>
+                            </div>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(r.created_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          Rs {r.item.price.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <OrderDetailDialog
         onClose={() => {
           setSelected(null);
-          setSearchParams((current) => {
+          setSearchParams(current => {
             const next = new URLSearchParams(current);
             next.delete('order');
             next.delete('item');
@@ -677,15 +681,12 @@ function AdminOrders() {
         canCancel={canReviewPayments}
         row={selectedReviewOrderId ? null : selected}
       />
-      <ComplaintDialog
-        onClose={() => setSelectedComplaint(null)}
-        complaint={selectedComplaint}
-      />
+      <ComplaintDialog onClose={() => setSelectedComplaint(null)} complaint={selectedComplaint} />
       <AdminManualPaymentReviewDialog
         orderId={selectedReviewOrderId}
         submissionId={selectedPaymentSubmissionId}
         onClose={() => {
-          setSearchParams((current) => {
+          setSearchParams(current => {
             const next = new URLSearchParams(current);
             next.delete('order');
             next.delete('item');
@@ -699,10 +700,16 @@ function AdminOrders() {
   );
 }
 
-function ComplaintBadge({ complaint, onClick }: { complaint: AdminComplaint; onClick: () => void }) {
+function ComplaintBadge({
+  complaint,
+  onClick,
+}: {
+  complaint: AdminComplaint;
+  onClick: () => void;
+}) {
   return (
     <button
-      onClick={(event) => {
+      onClick={event => {
         event.stopPropagation();
         onClick();
       }}
@@ -710,7 +717,10 @@ function ComplaintBadge({ complaint, onClick }: { complaint: AdminComplaint; onC
       title="View complaint details"
       type="button"
     >
-      <Badge variant={isActiveComplaint(complaint.status) ? 'destructive' : 'secondary'} className="gap-1">
+      <Badge
+        variant={isActiveComplaint(complaint.status) ? 'destructive' : 'secondary'}
+        className="gap-1"
+      >
         <MessageSquareWarning className="h-3 w-3" />
         Complaint
       </Badge>
@@ -718,9 +728,14 @@ function ComplaintBadge({ complaint, onClick }: { complaint: AdminComplaint; onC
   );
 }
 
-function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | null; onClose: () => void }) {
-  if (!complaint)
-    return null;
+function ComplaintDialog({
+  complaint,
+  onClose,
+}: {
+  complaint: AdminComplaint | null;
+  onClose: () => void;
+}) {
+  if (!complaint) return null;
 
   const active = isActiveComplaint(complaint.status);
   return (
@@ -728,16 +743,16 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-heading">
-            <AlertTriangle className={`
-              h-5 w-5
-              ${active ? 'text-destructive' : 'text-muted-foreground'}
-            `}
+            <AlertTriangle
+              className={`
+                h-5 w-5
+                ${active ? 'text-destructive' : 'text-muted-foreground'}
+              `}
             />
             Order Complaint
           </DialogTitle>
           <DialogDescription>
-            Order #
-            {complaint.orderId.slice(0, 8)}
+            Order #{complaint.orderId.slice(0, 8)}
             {' · raised '}
             {format(new Date(complaint.createdAt), 'PPp')}
           </DialogDescription>
@@ -758,7 +773,9 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
 
           {complaint.adminNotes && (
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Admin notes</p>
+              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                Admin notes
+              </p>
               <p>{complaint.adminNotes}</p>
             </div>
           )}
@@ -769,7 +786,11 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
               <div className="flex flex-wrap gap-2">
                 {complaint.evidenceUrls.map((url, index) => (
                   <a key={url} href={url} rel="noreferrer" target="_blank">
-                    <img src={url} alt={`Evidence ${index + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                    <img
+                      src={url}
+                      alt={`Evidence ${index + 1}`}
+                      className="h-16 w-16 rounded-md object-cover"
+                    />
                   </a>
                 ))}
               </div>
@@ -778,11 +799,17 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
 
           {complaint.returnProofUrls.length > 0 && (
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Return proof</p>
+              <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                Return proof
+              </p>
               <div className="flex flex-wrap gap-2">
                 {complaint.returnProofUrls.map((url, index) => (
                   <a key={url} href={url} rel="noreferrer" target="_blank">
-                    <img src={url} alt={`Return proof ${index + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                    <img
+                      src={url}
+                      alt={`Return proof ${index + 1}`}
+                      className="h-16 w-16 rounded-md object-cover"
+                    />
                   </a>
                 ))}
               </div>
@@ -791,9 +818,7 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
 
           <div className="flex items-center justify-between border-t pt-3">
             <span className="text-xs text-muted-foreground">
-              Last updated
-              {' '}
-              {format(new Date(complaint.updatedAt), 'PPp')}
+              Last updated {format(new Date(complaint.updatedAt), 'PPp')}
             </span>
             <Link
               onClick={onClose}
@@ -803,9 +828,7 @@ function ComplaintDialog({ complaint, onClose }: { complaint: AdminComplaint | n
                 hover:underline
               "
             >
-              Open Complaints section
-              {' '}
-              <ExternalLink className="h-3 w-3" />
+              Open Complaints section <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
         </div>
@@ -826,8 +849,7 @@ function OrderDetailDialog({
 }) {
   const cancelMutation = useCancelAdminOrderMutation();
 
-  if (!row)
-    return null;
+  if (!row) return null;
 
   const { item, order } = row;
   const cancelOrder = async () => {
@@ -835,16 +857,13 @@ function OrderDetailDialog({
       await cancelMutation.mutateAsync(order.id);
       toast.success('Order cancelled and items relisted');
       onClose();
-    }
-    catch (error) {
-      toast.error(`Could not cancel order: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error) {
+      toast.error(
+        `Could not cancel order: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   };
-  const shippingAddr = [
-    order.shippingAddress,
-    order.shippingCity,
-    order.shippingPostal,
-  ]
+  const shippingAddr = [order.shippingAddress, order.shippingCity, order.shippingPostal]
     .filter(Boolean)
     .join(', ');
 
@@ -854,19 +873,15 @@ function OrderDetailDialog({
         <DialogHeader>
           <DialogTitle className="font-heading">{item.title}</DialogTitle>
           <DialogDescription>
-            Order #
-            {order.id.slice(0, 8)}
-            {' '}
-            ·
-            {' '}
-            {format(new Date(order.createdAt), 'PPp')}
+            Order #{order.id.slice(0, 8)} · {format(new Date(order.createdAt), 'PPp')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-end">
-          {order.status === 'CANCELLED'
-            ? <Badge variant="secondary">Order cancelled</Badge>
-            : canCancel && (
+          {order.status === 'CANCELLED' ? (
+            <Badge variant="secondary">Order cancelled</Badge>
+          ) : (
+            canCancel && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button disabled={cancelMutation.isPending} size="sm" variant="destructive">
@@ -876,19 +891,16 @@ function OrderDetailDialog({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Cancel order #
-                      {order.id.slice(0, 8)}
-                      ?
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Cancel order #{order.id.slice(0, 8)}?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      The whole order will be marked cancelled and its sold items will be listed for sale again. This can&apos;t be undone.
+                      The whole order will be marked cancelled and its sold items will be listed for
+                      sale again. This can&apos;t be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep order</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={(event) => {
+                      onClick={event => {
                         event.preventDefault();
                         void cancelOrder();
                       }}
@@ -903,23 +915,18 @@ function OrderDetailDialog({
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            )}
+            )
+          )}
         </div>
 
         <div className="space-y-5">
           <div className="flex items-center gap-4">
             {item.imageUrl && (
-              <img
-                src={item.imageUrl}
-                alt=""
-                className="h-24 w-24 rounded-md object-cover"
-              />
+              <img src={item.imageUrl} alt="" className="h-24 w-24 rounded-md object-cover" />
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <Badge
-                  variant={row.effective === 'shipped' ? 'default' : 'secondary'}
-                >
+                <Badge variant={row.effective === 'shipped' ? 'default' : 'secondary'}>
                   {row.effective}
                 </Badge>
                 <Link
@@ -929,34 +936,27 @@ function OrderDetailDialog({
                     hover:underline
                   "
                 >
-                  View listing
-                  {' '}
-                  <ExternalLink className="h-3 w-3" />
+                  View listing <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Price: Rs
-                {' '}
-                {item.price.toLocaleString()}
+                Price: Rs {item.price.toLocaleString()}
               </p>
             </div>
           </div>
 
-          <div className="
-            grid gap-4
-            sm:grid-cols-2
-          "
+          <div
+            className="
+              grid gap-4
+              sm:grid-cols-2
+            "
           >
             <Card>
               <CardContent className="p-4">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-                  Buyer
-                </p>
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Buyer</p>
                 <p className="text-sm font-medium">{item.buyerFullName}</p>
                 {order.shippingPhone && (
-                  <p className="text-xs text-muted-foreground">
-                    {order.shippingPhone}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{order.shippingPhone}</p>
                 )}
                 <Link
                   to={`/seller/${item.buyerId}`}
@@ -965,18 +965,14 @@ function OrderDetailDialog({
                     hover:underline
                   "
                 >
-                  View profile
-                  {' '}
-                  <ExternalLink className="h-3 w-3" />
+                  View profile <ExternalLink className="h-3 w-3" />
                 </Link>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-4">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-                  Seller
-                </p>
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Seller</p>
                 <p className="text-sm font-medium">{item.sellerFullName}</p>
                 <Link
                   to={`/seller/${item.sellerId}`}
@@ -985,9 +981,7 @@ function OrderDetailDialog({
                     hover:underline
                   "
                 >
-                  View profile
-                  {' '}
-                  <ExternalLink className="h-3 w-3" />
+                  View profile <ExternalLink className="h-3 w-3" />
                 </Link>
               </CardContent>
             </Card>
@@ -997,24 +991,16 @@ function OrderDetailDialog({
             <Card>
               <CardContent className="flex justify-between gap-4 p-4 text-sm">
                 <span className="text-muted-foreground">Seller incentive bonus</span>
-                <span className="font-medium">
-                  Rs
-                  {' '}
-                  {item.sellerIncentiveBonus.toLocaleString()}
-                </span>
+                <span className="font-medium">Rs {item.sellerIncentiveBonus.toLocaleString()}</span>
               </CardContent>
             </Card>
           )}
 
           <Card>
             <CardContent className="space-y-2 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">
-                Timeline
-              </p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Timeline</p>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Sold (order placed)
-                </span>
+                <span className="text-muted-foreground">Sold (order placed)</span>
                 <span>{format(new Date(order.createdAt), 'PPp')}</span>
               </div>
               {item.shippedAt && (
@@ -1031,23 +1017,17 @@ function OrderDetailDialog({
               )}
               {item.expectedDelivery && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Expected delivery
-                  </span>
+                  <span className="text-muted-foreground">Expected delivery</span>
                   <span>{format(new Date(item.expectedDelivery), 'PPp')}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {(item.trackingNumber
-            || item.shippingMethod
-            || item.proofImageUrl) && (
+          {(item.trackingNumber || item.shippingMethod || item.proofImageUrl) && (
             <Card>
               <CardContent className="space-y-2 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">
-                  Shipping
-                </p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Shipping</p>
                 {item.shippingMethod && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Method</span>
@@ -1057,9 +1037,7 @@ function OrderDetailDialog({
                 {item.trackingNumber && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tracking</span>
-                    <span className="font-mono text-xs">
-                      {item.trackingNumber}
-                    </span>
+                    <span className="font-mono text-xs">{item.trackingNumber}</span>
                   </div>
                 )}
                 {item.proofImageUrl && (

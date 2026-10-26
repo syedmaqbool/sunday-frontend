@@ -1,7 +1,12 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import type { CreateOfferReviewPayload, CreateReviewPayload, Review } from '@/types/offer.type';
 import type { PaginatedResponse } from '@/types/response.type';
-import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { offersQueryKey } from '@/queries/offers.query';
 import { sellerRatingQueryKey } from '@/queries/sellerRating.query';
 import {
@@ -45,7 +50,8 @@ export function getUserReviewsOptions(userId: string, limit = 10) {
     enabled: !!userId,
     getNextPageParam: page => page.pagination.nextPage ?? undefined,
     initialPageParam: 1,
-    queryFn: async ({ pageParam }) => await listReviews({ reviewedId: userId, page: pageParam, size: limit }),
+    queryFn: async ({ pageParam }) =>
+      await listReviews({ reviewedId: userId, page: pageParam, size: limit }),
     queryKey: reviewQueryKey.userReviews(userId, limit),
   });
 }
@@ -54,14 +60,13 @@ export function useCreateOrderItemReviewMutation(userId?: string, sellerId?: str
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ listingId: _listingId, ...payload }: CreateReviewPayload & { listingId: string }) => createReview(payload),
+    mutationFn: ({
+      listingId: _listingId,
+      ...payload
+    }: CreateReviewPayload & { listingId: string }) => createReview(payload),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
-        queryKey: reviewQueryKey.orderItem(
-          variables.orderId,
-          variables.listingId,
-          userId,
-        ),
+        queryKey: reviewQueryKey.orderItem(variables.orderId, variables.listingId, userId),
       });
       qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
       if (sellerId) {

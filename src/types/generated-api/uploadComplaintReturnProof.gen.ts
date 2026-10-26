@@ -129,7 +129,8 @@ export interface UploadComplaintReturnProofErrors {
   };
 }
 
-export type UploadComplaintReturnProofError = UploadComplaintReturnProofErrors[keyof UploadComplaintReturnProofErrors];
+export type UploadComplaintReturnProofError =
+  UploadComplaintReturnProofErrors[keyof UploadComplaintReturnProofErrors];
 
 export interface UploadComplaintReturnProofResponses {
   /**
@@ -160,7 +161,15 @@ export interface UploadComplaintReturnProofResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -171,4 +180,5 @@ export interface UploadComplaintReturnProofResponses {
   };
 }
 
-export type UploadComplaintReturnProofResponse = UploadComplaintReturnProofResponses[keyof UploadComplaintReturnProofResponses];
+export type UploadComplaintReturnProofResponse =
+  UploadComplaintReturnProofResponses[keyof UploadComplaintReturnProofResponses];

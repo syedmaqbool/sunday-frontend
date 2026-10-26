@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
 import SiteSettings from '@/pages/admin/SiteSettings';
 import { getPublicHeroImageOptions, siteSettingsQueryKey } from '@/queries/siteSettings.query';
 
@@ -54,7 +54,9 @@ describe('site settings', () => {
     const queryClient = createQueryClient();
     const publicHero = { url: '/public-banner.jpg' };
     const adminHero = { url: '/admin-banner.jpg' };
-    const adminRequest = promiseConstructorWithResolvers.withResolvers<{ data: { value: typeof adminHero } }>();
+    const adminRequest = promiseConstructorWithResolvers.withResolvers<{
+      data: { value: typeof adminHero };
+    }>();
 
     getPublicHeroImageMock.mockResolvedValue({ data: { value: publicHero } });
     getHeroImageMock.mockReturnValue(adminRequest.promise);
@@ -80,7 +82,10 @@ describe('site settings', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute('src', '/admin-banner.jpg');
+      expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute(
+        'src',
+        '/admin-banner.jpg',
+      );
     });
     expect(screen.queryByRole('status', { name: 'Loading site settings' })).not.toBeInTheDocument();
   });
@@ -104,7 +109,10 @@ describe('site settings', () => {
     fireEvent.click(retryButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute('src', '/admin-banner.jpg');
+      expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute(
+        'src',
+        '/admin-banner.jpg',
+      );
     });
     expect(getHeroImageMock).toHaveBeenCalledTimes(2);
   });
@@ -119,13 +127,15 @@ describe('site settings', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByDisplayValue('Style doesn\'t')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("Style doesn't")).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('preserves unsaved form edits when settings refresh', async () => {
     const queryClient = createQueryClient();
-    const refreshRequest = promiseConstructorWithResolvers.withResolvers<{ data: { value: { url: string } } }>();
+    const refreshRequest = promiseConstructorWithResolvers.withResolvers<{
+      data: { value: { url: string } };
+    }>();
     getHeroImageMock
       .mockResolvedValueOnce({ data: { value: { url: '/initial-banner.jpg' } } })
       .mockReturnValueOnce(refreshRequest.promise);
@@ -142,7 +152,9 @@ describe('site settings', () => {
 
     let refreshPromise = Promise.resolve();
     await act(async () => {
-      refreshPromise = queryClient.invalidateQueries({ queryKey: siteSettingsQueryKey.adminHeroImage() });
+      refreshPromise = queryClient.invalidateQueries({
+        queryKey: siteSettingsQueryKey.adminHeroImage(),
+      });
     });
 
     await waitFor(() => expect(getHeroImageMock).toHaveBeenCalledTimes(2));
@@ -156,7 +168,10 @@ describe('site settings', () => {
 
     expect(getHeroImageMock).toHaveBeenCalledTimes(2);
     expect(desktopUrlInput).toHaveValue('/unsaved-banner.jpg');
-    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute('src', '/unsaved-banner.jpg');
+    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute(
+      'src',
+      '/unsaved-banner.jpg',
+    );
   });
 
   it('applies refreshed settings when the form has no unsaved edits', async () => {
@@ -179,12 +194,17 @@ describe('site settings', () => {
     });
 
     await waitFor(() => expect(desktopUrlInput).toHaveValue('/refreshed-banner.jpg'));
-    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute('src', '/refreshed-banner.jpg');
+    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute(
+      'src',
+      '/refreshed-banner.jpg',
+    );
   });
 
   it('keeps edits made while a save request is in flight', async () => {
     const queryClient = createQueryClient();
-    const saveRequest = promiseConstructorWithResolvers.withResolvers<{ data: { value: { url: string } } }>();
+    const saveRequest = promiseConstructorWithResolvers.withResolvers<{
+      data: { value: { url: string } };
+    }>();
     getHeroImageMock
       .mockResolvedValueOnce({ data: { value: { url: '/initial-banner.jpg' } } })
       .mockResolvedValueOnce({ data: { value: { url: '/submitted-banner.jpg' } } });
@@ -210,6 +230,9 @@ describe('site settings', () => {
 
     await waitFor(() => expect(getHeroImageMock).toHaveBeenCalledTimes(2));
     expect(desktopUrlInput).toHaveValue('/newer-unsaved-banner.jpg');
-    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute('src', '/newer-unsaved-banner.jpg');
+    expect(screen.getByRole('img', { name: 'Desktop hero preview' })).toHaveAttribute(
+      'src',
+      '/newer-unsaved-banner.jpg',
+    );
   });
 });

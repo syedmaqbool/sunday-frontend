@@ -77,8 +77,7 @@ export function getListingBoostCampaignQuoteOptions(
 
 export function getBoostableListingsOptions(parameters: BoostListParams = {}) {
   return queryOptions({
-    queryFn: () =>
-      listBoostableListings({ ...parameters, size: parameters.size ?? 100 }),
+    queryFn: () => listBoostableListings({ ...parameters, size: parameters.size ?? 100 }),
     queryKey: clientBoostQueryKey.boostableListings(parameters),
   });
 }

@@ -1,13 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import {
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Loader2,
-  Package,
-  Users,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Loader2, Package, Users } from 'lucide-react';
 import AccessDenied from '@/components/admin/AccessDenied';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -73,24 +66,21 @@ export default function Overview() {
 
   return (
     <div>
-      <h1 className="font-heading text-3xl font-bold text-foreground">
-        Dashboard
-      </h1>
+      <h1 className="font-heading text-3xl font-bold text-foreground">Dashboard</h1>
 
       <p className="mt-1 text-muted-foreground">Overview of your marketplace</p>
 
-      <div className="
-        mt-8 grid gap-4
-        sm:grid-cols-2
-        lg:grid-cols-4
-      "
+      <div
+        className="
+          mt-8 grid gap-4
+          sm:grid-cols-2
+          lg:grid-cols-4
+        "
       >
         {cards.map(c => (
           <Card key={c.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {c.label}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
 
               <c.icon className={cn('h-5 w-5', c.color)} />
             </CardHeader>

@@ -1,18 +1,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { ReceivedOffers } from '@/components/ReceivedOffers';
 import { offersQueryKey } from '@/queries/offers.query';
 
-const { counterOfferMock, createOfferReviewMock, listMyReviewsMock, listReceivedOffersMock } = vi.hoisted(() => ({
-  counterOfferMock: vi.fn(),
-  createOfferReviewMock: vi.fn(),
-  listMyReviewsMock: vi.fn(),
-  listReceivedOffersMock: vi.fn(),
-}));
+const { counterOfferMock, createOfferReviewMock, listMyReviewsMock, listReceivedOffersMock } =
+  vi.hoisted(() => ({
+    counterOfferMock: vi.fn(),
+    createOfferReviewMock: vi.fn(),
+    listMyReviewsMock: vi.fn(),
+    listReceivedOffersMock: vi.fn(),
+  }));
 
-vi.mock('@/services/offers.service', async (importOriginal) => {
+vi.mock('@/services/offers.service', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/offers.service')>();
   return {
     ...actual,
@@ -119,7 +120,10 @@ describe('received offer review form', () => {
     expect(screen.queryByRole('region', { name: 'Rate this buyer' })).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'Leave Review' })[0]);
 
-    expect(screen.getByRole('button', { name: 'Rate 5 out of 5 stars' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Rate 5 out of 5 stars' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     expect(screen.getByPlaceholderText('Share your experience (optional)')).toHaveValue('');
   });
 
@@ -152,11 +156,13 @@ describe('received offer review form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit Review' }));
 
     await waitFor(() => {
-      expect(createOfferReviewMock).toHaveBeenCalledWith(expect.objectContaining({
-        offerId: 'offer-1',
-        rating: 5,
-        role: 'SELLER',
-      }));
+      expect(createOfferReviewMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offerId: 'offer-1',
+          rating: 5,
+          role: 'SELLER',
+        }),
+      );
     });
 
     expect(await screen.findByText('✓ Reviewed')).toBeInTheDocument();
@@ -167,11 +173,15 @@ describe('received offer review form', () => {
 describe('received paused offers', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    listReceivedOffersMock.mockResolvedValue(page([{
-      ...firstAcceptedOffer,
-      isPaused: true,
-      status: 'PENDING',
-    }]));
+    listReceivedOffersMock.mockResolvedValue(
+      page([
+        {
+          ...firstAcceptedOffer,
+          isPaused: true,
+          status: 'PENDING',
+        },
+      ]),
+    );
     listMyReviewsMock.mockResolvedValue(page([]));
   });
 
@@ -186,11 +196,15 @@ describe('received paused offers', () => {
   });
 
   it('makes an offer actionable again when the response says it is no longer paused', async () => {
-    listReceivedOffersMock.mockResolvedValue(page([{
-      ...firstAcceptedOffer,
-      isPaused: false,
-      status: 'PENDING',
-    }]));
+    listReceivedOffersMock.mockResolvedValue(
+      page([
+        {
+          ...firstAcceptedOffer,
+          isPaused: false,
+          status: 'PENDING',
+        },
+      ]),
+    );
 
     renderReceivedOffers();
 
@@ -200,21 +214,30 @@ describe('received paused offers', () => {
   });
 
   it('blocks an already-open counter dialog after the offer becomes paused', async () => {
-    listReceivedOffersMock.mockResolvedValue(page([{
-      ...firstAcceptedOffer,
-      isPaused: false,
-      status: 'PENDING',
-    }]));
+    listReceivedOffersMock.mockResolvedValue(
+      page([
+        {
+          ...firstAcceptedOffer,
+          isPaused: false,
+          status: 'PENDING',
+        },
+      ]),
+    );
 
     const { queryClient } = renderReceivedOffers();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Counter' }));
     fireEvent.change(screen.getByPlaceholderText('e.g. 150'), { target: { value: '125' } });
-    queryClient.setQueryData(offersQueryKey.received('seller-1'), page([{
-      ...firstAcceptedOffer,
-      isPaused: true,
-      status: 'PENDING',
-    }]));
+    queryClient.setQueryData(
+      offersQueryKey.received('seller-1'),
+      page([
+        {
+          ...firstAcceptedOffer,
+          isPaused: true,
+          status: 'PENDING',
+        },
+      ]),
+    );
 
     expect(await screen.findByText('Paused')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send Counter Offer' })).toBeDisabled();

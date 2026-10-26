@@ -124,7 +124,8 @@ export interface CompleteAdminBoostRefundErrors {
   };
 }
 
-export type CompleteAdminBoostRefundError = CompleteAdminBoostRefundErrors[keyof CompleteAdminBoostRefundErrors];
+export type CompleteAdminBoostRefundError =
+  CompleteAdminBoostRefundErrors[keyof CompleteAdminBoostRefundErrors];
 
 export interface CompleteAdminBoostRefundResponses {
   /**
@@ -137,7 +138,13 @@ export interface CompleteAdminBoostRefundResponses {
       refundCompletedById: string | null;
       sellerId: string;
       amount: number;
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
       refundCompletedAt: string | null;
       createdAt: string;
       updatedAt: string;
@@ -147,4 +154,5 @@ export interface CompleteAdminBoostRefundResponses {
   };
 }
 
-export type CompleteAdminBoostRefundResponse = CompleteAdminBoostRefundResponses[keyof CompleteAdminBoostRefundResponses];
+export type CompleteAdminBoostRefundResponse =
+  CompleteAdminBoostRefundResponses[keyof CompleteAdminBoostRefundResponses];

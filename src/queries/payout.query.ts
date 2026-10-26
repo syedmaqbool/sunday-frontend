@@ -40,9 +40,7 @@ export const payoutQueryKey = {
   sellerPayouts: () => [...payoutQueryKey.all(), 'seller-payouts'] as const,
 };
 
-export function getEligibleSellerPayoutItemsOptions(
-  parameters: EligibleSellerPayoutItemsParams,
-) {
+export function getEligibleSellerPayoutItemsOptions(parameters: EligibleSellerPayoutItemsParams) {
   return queryOptions({
     queryFn: () => listEligibleSellerPayoutItems(parameters),
     queryKey: payoutQueryKey.eligibleItemList(parameters),
@@ -138,8 +136,7 @@ export function useCreateSellerPayoutMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateSellerPayoutPayload) =>
-      createSellerPayout(payload),
+    mutationFn: (payload: CreateSellerPayoutPayload) => createSellerPayout(payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

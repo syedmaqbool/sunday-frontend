@@ -1,13 +1,15 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { getSubcategoriesOptions } from '@/queries/categories.query';
 import { getAdminClothingTypesOptions } from '@/queries/categoryManagement.query';
 import { getClothingTypesOptions } from '@/queries/clothing-types.query';
 
-const { listAdminClothingTypesMock, listClothingTypesMock, subcategoryGetMock } = vi.hoisted(() => ({
-  listAdminClothingTypesMock: vi.fn(),
-  listClothingTypesMock: vi.fn(),
-  subcategoryGetMock: vi.fn(),
-}));
+const { listAdminClothingTypesMock, listClothingTypesMock, subcategoryGetMock } = vi.hoisted(
+  () => ({
+    listAdminClothingTypesMock: vi.fn(),
+    listClothingTypesMock: vi.fn(),
+    subcategoryGetMock: vi.fn(),
+  }),
+);
 
 vi.mock('@/services/adminCategoryManagement.service', () => ({
   createCategory: vi.fn(),
@@ -52,7 +54,8 @@ describe('paginated category and clothing type queries', () => {
   it('keeps every public clothing type page intact', async () => {
     const firstPage = page([{ id: 'type-one', label: 'Tops', value: 'tops' }], 1, 2);
     const secondPage = page([{ id: 'type-two', label: 'Dresses', value: 'dresses' }], 2, 2);
-    listClothingTypesMock.mockReset()
+    listClothingTypesMock
+      .mockReset()
       .mockResolvedValueOnce(firstPage)
       .mockResolvedValueOnce(secondPage);
 
@@ -66,7 +69,8 @@ describe('paginated category and clothing type queries', () => {
   it('keeps every admin clothing type page intact', async () => {
     const firstPage = page([{ id: 'type-one', label: 'Tops', value: 'tops' }], 1, 2);
     const secondPage = page([{ id: 'type-two', label: 'Dresses', value: 'dresses' }], 2, 2);
-    listAdminClothingTypesMock.mockReset()
+    listAdminClothingTypesMock
+      .mockReset()
       .mockResolvedValueOnce(firstPage)
       .mockResolvedValueOnce(secondPage);
 

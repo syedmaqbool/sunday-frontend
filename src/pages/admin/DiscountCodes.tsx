@@ -52,7 +52,8 @@ import {
 
 const positiveWholeNumberOrBlankSchema = z.union([
   z.literal(''),
-  z.string()
+  z
+    .string()
     .min(1, 'Enter a positive whole number.')
     .transform(Number)
     .pipe(z.number().int().min(1, 'Enter a positive whole number.'))
@@ -62,7 +63,8 @@ const positiveWholeNumberOrBlankSchema = z.union([
 const discountCodeFormSchema = z.object({
   code: z.string().trim().min(1, 'Enter a code.'),
   discountType: z.enum(['PERCENTAGE', 'FIXED']),
-  discountValue: z.string()
+  discountValue: z
+    .string()
     .min(1, 'Enter a discount value.')
     .transform(Number)
     .pipe(z.number().positive('Enter a value greater than zero.'))
@@ -71,16 +73,14 @@ const discountCodeFormSchema = z.object({
   maxUsesPerUser: positiveWholeNumberOrBlankSchema,
   minOrder: z.union([
     z.literal(''),
-    z.string()
+    z
+      .string()
       .min(1, 'Enter zero or more.')
       .transform(Number)
       .pipe(z.number().min(0, 'Enter zero or more.'))
       .transform(String),
   ]),
-  expiresAt: z.union([
-    z.literal(''),
-    z.string().datetime({ local: true }),
-  ]),
+  expiresAt: z.union([z.literal(''), z.string().datetime({ local: true })]),
 });
 
 type DiscountCodeFormValues = z.infer<typeof discountCodeFormSchema>;
@@ -167,8 +167,7 @@ function DiscountCodes() {
 
       setDialogOpen(false);
       resetForm();
-    }
-    catch (error) {
+    } catch (error) {
       toast(getErrorToastOptions(error));
     }
   };
@@ -185,15 +184,13 @@ function DiscountCodes() {
       toast({
         title: 'Status updated',
       });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
   };
 
   const editPerBuyerCap = async (values: EditDiscountCodeCapValues) => {
-    if (!editingCode)
-      return;
+    if (!editingCode) return;
 
     try {
       await updateMutation.mutateAsync({
@@ -207,8 +204,7 @@ function DiscountCodes() {
         title: 'Per-buyer cap updated',
       });
       setEditingCode(null);
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
   };
@@ -220,8 +216,7 @@ function DiscountCodes() {
       toast({
         title: 'Code deleted',
       });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
   };
@@ -238,22 +233,15 @@ function DiscountCodes() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">
-            Discount Codes
-          </h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">Discount Codes</h1>
 
-          <p className="text-sm text-muted-foreground">
-            {codes.length}
-            {' '}
-            total codes
-          </p>
+          <p className="text-sm text-muted-foreground">{codes.length} total codes</p>
         </div>
 
         <Dialog
-          onOpenChange={(o) => {
+          onOpenChange={o => {
             setDialogOpen(o);
-            if (!o)
-              resetForm();
+            if (!o) resetForm();
           }}
           open={dialogOpen}
         >
@@ -370,9 +358,11 @@ function DiscountCodes() {
                 />
 
                 <Button disabled={createMutation.isPending} type="submit">
-                  {createMutation.isPending
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : 'Create Code'}
+                  {createMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Create Code'
+                  )}
                 </Button>
               </form>
             </Form>
@@ -380,110 +370,99 @@ function DiscountCodes() {
         </Dialog>
       </div>
 
-      {codes.length === 0
-        ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-              <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
+      {codes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
+          <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
 
-              <p className="text-sm text-muted-foreground">No discount codes yet</p>
-            </div>
-          )
-        : (
-            <div className="rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Discount</TableHead>
-                    <TableHead>Min Order</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead className="w-10" />
-                  </TableRow>
-                </TableHeader>
+          <p className="text-sm text-muted-foreground">No discount codes yet</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Discount</TableHead>
+                <TableHead>Min Order</TableHead>
+                <TableHead>Usage</TableHead>
+                <TableHead>Expires</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
 
-                <TableBody>
-                  {codes.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-mono font-semibold text-foreground">
-                        {c.code}
-                      </TableCell>
+            <TableBody>
+              {codes.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-mono font-semibold text-foreground">
+                    {c.code}
+                  </TableCell>
 
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {c.discountType === 'PERCENTAGE'
-                            ? `${c.discountValue}%`
-                            : `Rs ${c.discountValue.toLocaleString()}`}
-                        </Badge>
-                      </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {c.discountType === 'PERCENTAGE'
+                        ? `${c.discountValue}%`
+                        : `Rs ${c.discountValue.toLocaleString()}`}
+                    </Badge>
+                  </TableCell>
 
-                      <TableCell className="text-muted-foreground">
-                        {c.minOrderAmount > 0
-                          ? `Rs ${c.minOrderAmount.toLocaleString()}`
-                          : '—'}
-                      </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.minOrderAmount > 0 ? `Rs ${c.minOrderAmount.toLocaleString()}` : '—'}
+                  </TableCell>
 
-                      <TableCell className="text-muted-foreground">
-                        {c.currentUses}
-                        {c.maxUses === null ? '' : ` / ${c.maxUses}`}
-                        <div className="text-xs">
-                          Per buyer:
-                          {' '}
-                          {c.maxUsesPerUser ?? 'Unlimited'}
-                        </div>
-                      </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.currentUses}
+                    {c.maxUses === null ? '' : ` / ${c.maxUses}`}
+                    <div className="text-xs">Per buyer: {c.maxUsesPerUser ?? 'Unlimited'}</div>
+                  </TableCell>
 
-                      <TableCell className="text-xs text-muted-foreground">
-                        {c.expiresAt
-                          ? new Date(c.expiresAt).toLocaleDateString()
-                          : 'Never'}
-                      </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}
+                  </TableCell>
 
-                      <TableCell>
-                        <Switch
-                          onCheckedChange={() => toggleActive(c.id, c.active)}
-                          checked={c.active}
-                        />
-                      </TableCell>
+                  <TableCell>
+                    <Switch
+                      onCheckedChange={() => toggleActive(c.id, c.active)}
+                      checked={c.active}
+                    />
+                  </TableCell>
 
-                      <TableCell>
-                        <Button
-                          onClick={() => {
-                            editCapForm.reset({
-                              maxUsesPerUser: c.maxUsesPerUser === null ? '' : String(c.maxUsesPerUser),
-                            });
-                            setEditingCode(c);
-                          }}
-                          aria-label={`Edit per-buyer cap for ${c.code}`}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteCode(c.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="
-                            h-7 w-7 text-muted-foreground
-                            hover:text-destructive
-                          "
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  <TableCell>
+                    <Button
+                      onClick={() => {
+                        editCapForm.reset({
+                          maxUsesPerUser: c.maxUsesPerUser === null ? '' : String(c.maxUsesPerUser),
+                        });
+                        setEditingCode(c);
+                      }}
+                      aria-label={`Edit per-buyer cap for ${c.code}`}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => deleteCode(c.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="
+                        h-7 w-7 text-muted-foreground
+                        hover:text-destructive
+                      "
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <Dialog
-        onOpenChange={(open) => {
-          if (!open)
-            setEditingCode(null);
+        onOpenChange={open => {
+          if (!open) setEditingCode(null);
         }}
         open={editingCode !== null}
       >
@@ -497,9 +476,11 @@ function DiscountCodes() {
               <MaxUsesPerUserFormField control={editCapForm.control} min={1} step={1} />
 
               <Button disabled={updateMutation.isPending} type="submit">
-                {updateMutation.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : 'Save cap'}
+                {updateMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Save cap'
+                )}
               </Button>
             </form>
           </Form>

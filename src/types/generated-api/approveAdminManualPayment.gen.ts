@@ -124,7 +124,8 @@ export interface ApproveAdminManualPaymentErrors {
   };
 }
 
-export type ApproveAdminManualPaymentError = ApproveAdminManualPaymentErrors[keyof ApproveAdminManualPaymentErrors];
+export type ApproveAdminManualPaymentError =
+  ApproveAdminManualPaymentErrors[keyof ApproveAdminManualPaymentErrors];
 
 export interface ApproveAdminManualPaymentResponses {
   /**
@@ -149,4 +150,5 @@ export interface ApproveAdminManualPaymentResponses {
   };
 }
 
-export type ApproveAdminManualPaymentResponse = ApproveAdminManualPaymentResponses[keyof ApproveAdminManualPaymentResponses];
+export type ApproveAdminManualPaymentResponse =
+  ApproveAdminManualPaymentResponses[keyof ApproveAdminManualPaymentResponses];

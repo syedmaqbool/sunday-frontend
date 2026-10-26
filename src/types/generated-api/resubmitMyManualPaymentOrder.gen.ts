@@ -128,7 +128,8 @@ export interface ResubmitMyManualPaymentOrderErrors {
   };
 }
 
-export type ResubmitMyManualPaymentOrderError = ResubmitMyManualPaymentOrderErrors[keyof ResubmitMyManualPaymentOrderErrors];
+export type ResubmitMyManualPaymentOrderError =
+  ResubmitMyManualPaymentOrderErrors[keyof ResubmitMyManualPaymentOrderErrors];
 
 export interface ResubmitMyManualPaymentOrderResponses {
   /**
@@ -150,4 +151,5 @@ export interface ResubmitMyManualPaymentOrderResponses {
   };
 }
 
-export type ResubmitMyManualPaymentOrderResponse = ResubmitMyManualPaymentOrderResponses[keyof ResubmitMyManualPaymentOrderResponses];
+export type ResubmitMyManualPaymentOrderResponse =
+  ResubmitMyManualPaymentOrderResponses[keyof ResubmitMyManualPaymentOrderResponses];

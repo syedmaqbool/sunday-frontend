@@ -120,4 +120,5 @@ export interface CreateAdminCategoryResponses {
   };
 }
 
-export type CreateAdminCategoryResponse = CreateAdminCategoryResponses[keyof CreateAdminCategoryResponses];
+export type CreateAdminCategoryResponse =
+  CreateAdminCategoryResponses[keyof CreateAdminCategoryResponses];

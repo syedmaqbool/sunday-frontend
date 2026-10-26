@@ -97,7 +97,8 @@ export interface UpdateAdminFlaggedBuyerRulesErrors {
   };
 }
 
-export type UpdateAdminFlaggedBuyerRulesError = UpdateAdminFlaggedBuyerRulesErrors[keyof UpdateAdminFlaggedBuyerRulesErrors];
+export type UpdateAdminFlaggedBuyerRulesError =
+  UpdateAdminFlaggedBuyerRulesErrors[keyof UpdateAdminFlaggedBuyerRulesErrors];
 
 export interface UpdateAdminFlaggedBuyerRulesResponses {
   /**
@@ -113,4 +114,5 @@ export interface UpdateAdminFlaggedBuyerRulesResponses {
   };
 }
 
-export type UpdateAdminFlaggedBuyerRulesResponse = UpdateAdminFlaggedBuyerRulesResponses[keyof UpdateAdminFlaggedBuyerRulesResponses];
+export type UpdateAdminFlaggedBuyerRulesResponse =
+  UpdateAdminFlaggedBuyerRulesResponses[keyof UpdateAdminFlaggedBuyerRulesResponses];

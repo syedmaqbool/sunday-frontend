@@ -1,7 +1,4 @@
-import type {
-  CreateTaxSettingPayload,
-  UpdateTaxSettingPayload,
-} from '@/types/taxSetting.type';
+import type { CreateTaxSettingPayload, UpdateTaxSettingPayload } from '@/types/taxSetting.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createTaxSetting,

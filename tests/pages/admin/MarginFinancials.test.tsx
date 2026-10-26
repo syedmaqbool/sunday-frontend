@@ -6,7 +6,7 @@ import type {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import AppRoutes from '@/AppRoutes';
 import MarginFinancials, { getAdminMarginDateRange } from '@/pages/admin/MarginFinancials';
 
@@ -45,21 +45,25 @@ function createOrder(overrides: Partial<AdminMarginReportOrder> = {}): AdminMarg
     sellerCouponDiscount: 100,
     sellerIncentiveBonus: 125,
     sellerPayout: 1900,
-    sellers: [{
-      sellerId: 'seller-1',
-      bankName: 'HBL',
-      estimatedPayout: 1900,
-      estimatedPayoutFee: 20,
-      grossItemValue: 2000,
-      items: [{
-        commissionAmount: 300,
-        quantity: 2,
-        title: 'Vintage jacket',
-        unitPrice: 1000,
-      }],
-      sellerIncentiveBonus: 125,
-      sellerName: 'Seller One',
-    }],
+    sellers: [
+      {
+        sellerId: 'seller-1',
+        bankName: 'HBL',
+        estimatedPayout: 1900,
+        estimatedPayoutFee: 20,
+        grossItemValue: 2000,
+        items: [
+          {
+            commissionAmount: 300,
+            quantity: 2,
+            title: 'Vintage jacket',
+            unitPrice: 1000,
+          },
+        ],
+        sellerIncentiveBonus: 125,
+        sellerName: 'Seller One',
+      },
+    ],
     sellerShare: 100,
     status: 'DELIVERED',
     createdAt: '2026-09-28T15:00:00.000Z',
@@ -142,7 +146,7 @@ describe('admin margin report page', () => {
     });
   });
 
-  it.each([7, 30, 90] as const)('converts the trailing %i-day preset to UTC instants', (days) => {
+  it.each([7, 30, 90] as const)('converts the trailing %i-day preset to UTC instants', days => {
     const referenceDate = new Date(2026, 8, 29, 12, 34, 56, 789);
     const startDate = new Date(referenceDate.getTime() - days * 24 * 60 * 60 * 1000);
 
@@ -159,9 +163,11 @@ describe('admin margin report page', () => {
   it('explains when orders appear in the report', async () => {
     renderPage();
 
-    expect(await screen.findByText(
-      'Orders with items appear in this report only after every item is delivered, either when the buyer confirms receipt or when delivery completes automatically.',
-    )).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Orders with items appear in this report only after every item is delivered, either when the buyer confirms receipt or when delivery completes automatically.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('renders API rows, pagination, and aggregates without order-status filtering', async () => {
@@ -215,12 +221,14 @@ describe('admin margin report page', () => {
 
     expect(await screen.findByText('Seller incentive marketing cost')).toBeInTheDocument();
     expect(screen.getAllByText('−Rs 125')).toHaveLength(2);
-    expect(getAdminFinanceReportSummaryMock).toHaveBeenCalledWith(expect.objectContaining({
-      page: 1,
-      periodEnd: expect.any(String),
-      periodStart: expect.any(String),
-      size: 1,
-    }));
+    expect(getAdminFinanceReportSummaryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 1,
+        periodEnd: expect.any(String),
+        periodStart: expect.any(String),
+        size: 1,
+      }),
+    );
   });
 
   it('shows seller incentive bonus in the margin row and seller payout details', async () => {
@@ -228,11 +236,13 @@ describe('admin margin report page', () => {
     const order = createOrder({
       sellerIncentiveBonus: 625,
       sellerPayout: 13_125,
-      sellers: [{
-        ...defaultSeller,
-        estimatedPayout: 13_125,
-        sellerIncentiveBonus: 625,
-      }],
+      sellers: [
+        {
+          ...defaultSeller,
+          estimatedPayout: 13_125,
+          sellerIncentiveBonus: 625,
+        },
+      ],
     });
     const report = createReport({
       aggregates: {
@@ -248,21 +258,29 @@ describe('admin margin report page', () => {
     expect(await screen.findByText('Seller incentive bonus')).toBeInTheDocument();
     expect(screen.getByText('−Rs 625')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Expand order order-12345678' }));
-    expect(await screen.findByRole('region', { name: 'Seller One seller details' })).toHaveTextContent('Incentive bonus: Rs 625');
-    expect(screen.getByText('Buyer Person').closest('p')).toHaveTextContent('Seller incentive bonus: Rs 625');
+    expect(
+      await screen.findByRole('region', { name: 'Seller One seller details' }),
+    ).toHaveTextContent('Incentive bonus: Rs 625');
+    expect(screen.getByText('Buyer Person').closest('p')).toHaveTextContent(
+      'Seller incentive bonus: Rs 625',
+    );
   });
 
   it('is reachable at /admin/margins and requests the default filters', async () => {
     renderPage({ route: true });
 
-    expect(await screen.findByRole('heading', { name: 'Margin & Order Financials' })).toBeInTheDocument();
-    expect(getAdminMarginReportMock).toHaveBeenCalledWith(expect.objectContaining({
-      from: expect.any(String),
-      marginFilter: 'all',
-      page: 1,
-      size: 20,
-      to: expect.any(String),
-    }));
+    expect(
+      await screen.findByRole('heading', { name: 'Margin & Order Financials' }),
+    ).toBeInTheDocument();
+    expect(getAdminMarginReportMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: expect.any(String),
+        marginFilter: 'all',
+        page: 1,
+        size: 20,
+        to: expect.any(String),
+      }),
+    );
   });
 
   it('resets pagination and refreshes aggregates when search, margin, and date filters change', async () => {
@@ -291,23 +309,35 @@ describe('admin margin report page', () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Next page' }));
-    await waitFor(() => expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    await waitFor(() =>
+      expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2 }),
+      ),
+    );
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Search orders' }), {
       target: { value: 'Buyer Person' },
     });
-    await waitFor(() => expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(expect.objectContaining({
-      page: 1,
-      search: 'Buyer Person',
-    })));
+    await waitFor(() =>
+      expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          page: 1,
+          search: 'Buyer Person',
+        }),
+      ),
+    );
 
     fireEvent.click(screen.getByRole('combobox', { name: 'Margin filter' }));
     fireEvent.click(await screen.findByRole('option', { name: 'Positive only (includes zero)' }));
-    await waitFor(() => expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(expect.objectContaining({
-      marginFilter: 'positive',
-      page: 1,
-      search: 'Buyer Person',
-    })));
+    await waitFor(() =>
+      expect(getAdminMarginReportMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          marginFilter: 'positive',
+          page: 1,
+          search: 'Buyer Person',
+        }),
+      ),
+    );
     expect(await screen.findByRole('heading', { name: 'Summary' })).toHaveTextContent(
       'Summary · 4 orders (4 positive, 0 negative)',
     );
@@ -316,11 +346,13 @@ describe('admin margin report page', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'All time' }));
     await waitFor(() => {
       const lastParameters = getAdminMarginReportMock.mock.lastCall?.[0];
-      expect(lastParameters).toEqual(expect.objectContaining({
-        marginFilter: 'positive',
-        page: 1,
-        search: 'Buyer Person',
-      }));
+      expect(lastParameters).toEqual(
+        expect.objectContaining({
+          marginFilter: 'positive',
+          page: 1,
+          search: 'Buyer Person',
+        }),
+      );
       expect(lastParameters).not.toHaveProperty('from');
       expect(lastParameters).not.toHaveProperty('to');
     });
@@ -348,7 +380,9 @@ describe('admin margin report page', () => {
     canAccessFinanceMock.mockReturnValue(false);
     renderPage();
 
-    expect(screen.getByText('Finance dashboard access is required to view Margin & Financials.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Finance dashboard access is required to view Margin & Financials.'),
+    ).toBeInTheDocument();
     expect(getAdminMarginReportMock).not.toHaveBeenCalled();
   });
 
@@ -363,7 +397,7 @@ describe('admin margin report page', () => {
   it('shows the loading state while the report request is pending', async () => {
     let resolveReport!: (value: AdminMarginReportResponse) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    const pendingReport = new Promise<AdminMarginReportResponse>((resolve) => {
+    const pendingReport = new Promise<AdminMarginReportResponse>(resolve => {
       resolveReport = resolve;
     });
     getAdminMarginReportMock.mockReturnValue(pendingReport);
@@ -382,18 +416,20 @@ describe('admin margin report page', () => {
       negativeMarginOrderCount: 0,
       nonNegativeMarginOrderCount: 0,
     };
-    getAdminMarginReportMock.mockResolvedValue(createReport({
-      aggregates: emptyAggregates,
-      data: [],
-      pagination: {
-        currentPage: 1,
-        lastPage: 0,
-        nextPage: null,
-        perPage: 20,
-        prevPage: null,
-        total: 0,
-      },
-    }));
+    getAdminMarginReportMock.mockResolvedValue(
+      createReport({
+        aggregates: emptyAggregates,
+        data: [],
+        pagination: {
+          currentPage: 1,
+          lastPage: 0,
+          nextPage: null,
+          perPage: 20,
+          prevPage: null,
+          total: 0,
+        },
+      }),
+    );
     renderPage();
 
     expect(await screen.findByText('No orders match the current filters.')).toBeInTheDocument();

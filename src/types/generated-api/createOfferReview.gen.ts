@@ -159,4 +159,5 @@ export interface CreateOfferReviewResponses {
   };
 }
 
-export type CreateOfferReviewResponse = CreateOfferReviewResponses[keyof CreateOfferReviewResponses];
+export type CreateOfferReviewResponse =
+  CreateOfferReviewResponses[keyof CreateOfferReviewResponses];

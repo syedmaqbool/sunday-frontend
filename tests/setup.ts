@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 Element.prototype.scrollIntoView ??= () => {};
 
@@ -17,13 +17,15 @@ Object.defineProperties(globalThis, {
     writable: true,
   },
   ResizeObserver: {
-    value: Reflect.get(globalThis, 'ResizeObserver') ?? class ResizeObserverMock {
-      observe() {}
+    value:
+      Reflect.get(globalThis, 'ResizeObserver') ??
+      class ResizeObserverMock {
+        observe() {}
 
-      unobserve() {}
+        unobserve() {}
 
-      disconnect() {}
-    },
+        disconnect() {}
+      },
     writable: true,
   },
 });

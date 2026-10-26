@@ -10,7 +10,9 @@ export default function Contact() {
       <main className="container max-w-3xl flex-1 py-12">
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold text-foreground">Contact Us</h1>
-          <p className="mt-1 text-muted-foreground">We would love to hear from you. Reach out using the details below.</p>
+          <p className="mt-1 text-muted-foreground">
+            We would love to hear from you. Reach out using the details below.
+          </p>
         </div>
 
         <div className="grid gap-6">

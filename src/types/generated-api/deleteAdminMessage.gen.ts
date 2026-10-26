@@ -80,4 +80,5 @@ export interface DeleteAdminMessageResponses {
   };
 }
 
-export type DeleteAdminMessageResponse = DeleteAdminMessageResponses[keyof DeleteAdminMessageResponses];
+export type DeleteAdminMessageResponse =
+  DeleteAdminMessageResponses[keyof DeleteAdminMessageResponses];

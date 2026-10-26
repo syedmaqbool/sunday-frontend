@@ -105,7 +105,8 @@ export interface GetConversationMessagesErrors {
   };
 }
 
-export type GetConversationMessagesError = GetConversationMessagesErrors[keyof GetConversationMessagesErrors];
+export type GetConversationMessagesError =
+  GetConversationMessagesErrors[keyof GetConversationMessagesErrors];
 
 export interface GetConversationMessagesResponses {
   /**
@@ -171,4 +172,5 @@ export interface GetConversationMessagesResponses {
   };
 }
 
-export type GetConversationMessagesResponse = GetConversationMessagesResponses[keyof GetConversationMessagesResponses];
+export type GetConversationMessagesResponse =
+  GetConversationMessagesResponses[keyof GetConversationMessagesResponses];

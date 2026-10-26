@@ -33,26 +33,30 @@ const publicApi = base.extend({
 async function fetchAllMarketplaceListings(
   searchParams: Record<string, number | string | undefined>,
 ) {
-  const firstPage = await publicApi.get('/api/v1/listings', {
-    searchParams: {
-      page: 1,
-      size: 100,
-      ...searchParams,
-    },
-  }).json<PaginatedResponse<MarketplaceListing>>();
+  const firstPage = await publicApi
+    .get('/api/v1/listings', {
+      searchParams: {
+        page: 1,
+        size: 100,
+        ...searchParams,
+      },
+    })
+    .json<PaginatedResponse<MarketplaceListing>>();
 
   let data = firstPage.data ?? [];
   const lastPage = firstPage.pagination?.lastPage ?? 1;
 
   for (let page = 2; page <= lastPage; page++) {
-    const response = await publicApi.get('/api/v1/listings', {
-      searchParams: {
-        page,
-        size: 100,
-        ...searchParams,
-      },
-    }).json<PaginatedResponse<MarketplaceListing>>();
-    data = [...data, ...response.data ?? []];
+    const response = await publicApi
+      .get('/api/v1/listings', {
+        searchParams: {
+          page,
+          size: 100,
+          ...searchParams,
+        },
+      })
+      .json<PaginatedResponse<MarketplaceListing>>();
+    data = [...data, ...(response.data ?? [])];
   }
 
   return data;
@@ -62,24 +66,28 @@ export const marketplaceQueryKey = {
   all: () => ['marketplace'] as const,
   editListing: (listingId?: string) =>
     [...marketplaceQueryKey.all(), 'edit-listing', 'detail', listingId ?? null] as const,
-  featuredListings: () =>
-    [...marketplaceQueryKey.all(), 'featured-listings', 'list'] as const,
+  featuredListings: () => [...marketplaceQueryKey.all(), 'featured-listings', 'list'] as const,
   forYouListings: (userId?: string) =>
     [...marketplaceQueryKey.all(), 'for-you-listings', 'list', userId ?? null] as const,
   listing: (listingId?: string, isAuthenticated?: boolean) =>
-    [...marketplaceQueryKey.all(), 'listing', 'detail', listingId ?? null, isAuthenticated ? 'auth' : 'public'] as const,
+    [
+      ...marketplaceQueryKey.all(),
+      'listing',
+      'detail',
+      listingId ?? null,
+      isAuthenticated ? 'auth' : 'public',
+    ] as const,
   listings: (clothingTypeId?: GetPublicListingsData['query']['clothingTypeId']) =>
     clothingTypeId
-      ? [...marketplaceQueryKey.all(), 'listings', 'list', { clothingTypeId }] as const
-      : [...marketplaceQueryKey.all(), 'listings', 'list'] as const,
+      ? ([...marketplaceQueryKey.all(), 'listings', 'list', { clothingTypeId }] as const)
+      : ([...marketplaceQueryKey.all(), 'listings', 'list'] as const),
   reservedOfferAmount: (offerId?: string | null) =>
     [...marketplaceQueryKey.all(), 'reserved-offer-amount', 'detail', offerId ?? null] as const,
   sellerListings: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-listings', 'list', sellerId ?? null] as const,
   sellerProfile: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-profile', 'detail', sellerId ?? null] as const,
-  trendingListings: () =>
-    [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
+  trendingListings: () => [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
 };
 
 export async function fetchMarketplaceListings(
@@ -92,19 +100,18 @@ export async function fetchMarketplaceListings(
   });
 }
 
-export async function fetchMarketplaceListing(listingId: string): Promise<MarketplaceListing | null> {
+export async function fetchMarketplaceListing(
+  listingId: string,
+): Promise<MarketplaceListing | null> {
   try {
     const hasAccessToken = !!tokenStorage.getAccess();
     const response = hasAccessToken
       ? await authInstance
           .get(`/api/v1/listings/${listingId}/me`)
           .json<Response<MarketplaceListing>>()
-      : await publicApi
-          .get(`/api/v1/listings/${listingId}`)
-          .json<Response<MarketplaceListing>>();
+      : await publicApi.get(`/api/v1/listings/${listingId}`).json<Response<MarketplaceListing>>();
     return response.data ?? null;
-  }
-  catch {
+  } catch {
     return null;
   }
 }
@@ -129,23 +136,18 @@ export function getMarketplaceListingOptions(listingId?: string) {
   });
 }
 
-export function getReservedOfferAmountOptions(
-  offerId?: string | null,
-  enabled = false,
-) {
+export function getReservedOfferAmountOptions(offerId?: string | null, enabled = false) {
   return queryOptions({
     enabled,
     queryFn: async () => {
-      if (!offerId)
-        return null;
+      if (!offerId) return null;
 
       try {
         const response = await authInstance
           .get(`/api/v1/me/offers/${offerId}`)
           .json<Response<ApiResponseData<GetMyOfferAmountByIdResponses>>>();
         return Number(response.data.amount);
-      }
-      catch {
+      } catch {
         return null;
       }
     },
@@ -156,12 +158,14 @@ export function getReservedOfferAmountOptions(
 export function getFeaturedListingsOptions() {
   return queryOptions({
     queryFn: async () =>
-      publicApi.get('/api/v1/listings/featured', {
-        searchParams: {
-          page: 1,
-          size: 12,
-        },
-      }).json<GetFeaturedListingsResponses[200]>(),
+      publicApi
+        .get('/api/v1/listings/featured', {
+          searchParams: {
+            page: 1,
+            size: 12,
+          },
+        })
+        .json<GetFeaturedListingsResponses[200]>(),
     queryKey: marketplaceQueryKey.featuredListings(),
   });
 }
@@ -170,12 +174,14 @@ export function getForYouListingsOptions(userId?: string, enabled = false) {
   return queryOptions({
     enabled: !!userId && enabled,
     queryFn: async () =>
-      authInstance.get('/api/v1/listings/for-you', {
-        searchParams: {
-          page: 1,
-          size: 12,
-        },
-      }).json<GetForYouListingsResponses[200]>(),
+      authInstance
+        .get('/api/v1/listings/for-you', {
+          searchParams: {
+            page: 1,
+            size: 12,
+          },
+        })
+        .json<GetForYouListingsResponses[200]>(),
     queryKey: marketplaceQueryKey.forYouListings(userId),
   });
 }
@@ -183,12 +189,14 @@ export function getForYouListingsOptions(userId?: string, enabled = false) {
 export function getTrendingListingsOptions() {
   return queryOptions({
     queryFn: async () =>
-      publicApi.get('/api/v1/listings/trending', {
-        searchParams: {
-          page: 1,
-          size: 6,
-        },
-      }).json<GetTrendingListingsResponses[200]>(),
+      publicApi
+        .get('/api/v1/listings/trending', {
+          searchParams: {
+            page: 1,
+            size: 6,
+          },
+        })
+        .json<GetTrendingListingsResponses[200]>(),
     queryKey: marketplaceQueryKey.trendingListings(),
   });
 }
@@ -216,8 +224,7 @@ export function getSellerProfileOptions(sellerId?: string) {
           .get(`/api/v1/users/${sellerId!}`)
           .json<Response<MarketplaceSellerProfile>>();
         return response.data ?? null;
-      }
-      catch {
+      } catch {
         return null;
       }
     },
@@ -243,19 +250,15 @@ export function getSellerListingsOptions(
 }
 
 export function getListingMediaUrls(listing?: MarketplaceListingMediaSource | null) {
-  if (!listing)
-    return [];
+  if (!listing) return [];
 
   const mediaUrls = (listing.media ?? [])
     .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map(item => item.url)
     .filter((url): url is string => !!url);
 
-  if (mediaUrls.length > 0)
-    return mediaUrls;
-  if (listing.imageUrls?.length)
-    return listing.imageUrls.filter((url): url is string => !!url);
-  if (listing.coverImageUrl)
-    return [listing.coverImageUrl];
+  if (mediaUrls.length > 0) return mediaUrls;
+  if (listing.imageUrls?.length) return listing.imageUrls.filter((url): url is string => !!url);
+  if (listing.coverImageUrl) return [listing.coverImageUrl];
   return [];
 }

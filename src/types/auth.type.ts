@@ -22,5 +22,7 @@ export type AuthProfile = AuthSessionData['profile'];
 export type AuthPreferences = AuthSessionData['preferences'];
 export type RegisterData = ApiRequestBody<RegisterUserData>;
 export type ResetPasswordData = ApiRequestBody<ResetUserPasswordData>;
-export type AuthSessionResponse = ApiSuccessResponse<LoginUserResponses | RefreshUserTokenResponses>;
+export type AuthSessionResponse = ApiSuccessResponse<
+  LoginUserResponses | RefreshUserTokenResponses
+>;
 export type AuthMeResponse = ApiSuccessResponse<GetCurrentUserResponses>;

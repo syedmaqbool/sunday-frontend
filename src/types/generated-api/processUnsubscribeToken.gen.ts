@@ -40,7 +40,8 @@ export interface ProcessUnsubscribeTokenErrors {
   };
 }
 
-export type ProcessUnsubscribeTokenError = ProcessUnsubscribeTokenErrors[keyof ProcessUnsubscribeTokenErrors];
+export type ProcessUnsubscribeTokenError =
+  ProcessUnsubscribeTokenErrors[keyof ProcessUnsubscribeTokenErrors];
 
 export interface ProcessUnsubscribeTokenResponses {
   /**
@@ -52,4 +53,5 @@ export interface ProcessUnsubscribeTokenResponses {
   };
 }
 
-export type ProcessUnsubscribeTokenResponse = ProcessUnsubscribeTokenResponses[keyof ProcessUnsubscribeTokenResponses];
+export type ProcessUnsubscribeTokenResponse =
+  ProcessUnsubscribeTokenResponses[keyof ProcessUnsubscribeTokenResponses];

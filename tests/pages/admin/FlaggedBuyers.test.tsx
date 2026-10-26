@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import FlaggedBuyers from '@/pages/admin/FlaggedBuyers';
 import { adminFlaggedBuyersQueryKey } from '@/queries/adminFlaggedBuyers.query';
 import { notificationsQueryKey } from '@/queries/notification.query';
@@ -46,19 +46,24 @@ function ruleResponse(threshold = 3, windowDays = 90) {
 function buyersResponse(page = 1, lastPage = 1) {
   return {
     aggregates: { countedComplaintRowCount: 8, qualifyingBuyerCount: 3 },
-    data: page === 1
-      ? [{
-          buyerId: 'buyer-1',
-          displayName: 'Alex Buyer',
-          qualifyingComplaintCount: 4,
-          latestQualifyingComplaintCreatedAt: '2026-09-24T12:00:00.000Z',
-        }]
-      : [{
-          buyerId: 'buyer-2',
-          displayName: 'Blair Buyer',
-          qualifyingComplaintCount: 3,
-          latestQualifyingComplaintCreatedAt: '2026-09-20T12:00:00.000Z',
-        }],
+    data:
+      page === 1
+        ? [
+            {
+              buyerId: 'buyer-1',
+              displayName: 'Alex Buyer',
+              qualifyingComplaintCount: 4,
+              latestQualifyingComplaintCreatedAt: '2026-09-24T12:00:00.000Z',
+            },
+          ]
+        : [
+            {
+              buyerId: 'buyer-2',
+              displayName: 'Blair Buyer',
+              qualifyingComplaintCount: 3,
+              latestQualifyingComplaintCreatedAt: '2026-09-20T12:00:00.000Z',
+            },
+          ],
     message: 'Success',
     pagination: {
       currentPage: page,
@@ -74,19 +79,24 @@ function buyersResponse(page = 1, lastPage = 1) {
 
 function historyResponse(page = 1, lastPage = 1) {
   return {
-    data: page === 1
-      ? [{
-          id: 'complaint-1',
-          reason: 'Item arrived damaged',
-          status: 'REFUNDED' as const,
-          createdAt: '2026-09-20T12:00:00.000Z',
-        }]
-      : [{
-          id: 'complaint-2',
-          reason: 'Item was not as described',
-          status: 'RETURN_RECEIVED' as const,
-          createdAt: '2026-09-12T12:00:00.000Z',
-        }],
+    data:
+      page === 1
+        ? [
+            {
+              id: 'complaint-1',
+              reason: 'Item arrived damaged',
+              status: 'REFUNDED' as const,
+              createdAt: '2026-09-20T12:00:00.000Z',
+            },
+          ]
+        : [
+            {
+              id: 'complaint-2',
+              reason: 'Item was not as described',
+              status: 'RETURN_RECEIVED' as const,
+              createdAt: '2026-09-12T12:00:00.000Z',
+            },
+          ],
     message: 'Success',
     pagination: {
       currentPage: page,
@@ -100,9 +110,11 @@ function historyResponse(page = 1, lastPage = 1) {
   };
 }
 
-function renderPage(queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-})) {
+function renderPage(
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  }),
+) {
   return {
     queryClient,
     ...render(
@@ -121,7 +133,9 @@ describe('admin flagged buyer rules', () => {
     getBuyersMock.mockReset().mockResolvedValue(buyersResponse());
     getHistoryMock.mockReset().mockResolvedValue(historyResponse());
     updateRulesMock.mockReset().mockResolvedValue(ruleResponse(4, 120));
-    warnBuyerMock.mockReset().mockResolvedValue({ message: 'Buyer warning sent successfully.', statusCode: 200 });
+    warnBuyerMock
+      .mockReset()
+      .mockResolvedValue({ message: 'Buyer warning sent successfully.', statusCode: 200 });
     toastSuccessMock.mockReset();
     showErrorToastMock.mockReset();
     accessMock.mockReset().mockReturnValue(true);
@@ -142,7 +156,10 @@ describe('admin flagged buyer rules', () => {
     expect(screen.getByText('3', { selector: 'p' })).toBeInTheDocument();
     expect(screen.getByText('4', { selector: 'td' })).toBeInTheDocument();
     expect(screen.getByText('24 Sep 2026')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/seller/buyer-1');
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute(
+      'href',
+      '/seller/buyer-1',
+    );
     expect(getBuyersMock).toHaveBeenCalledWith({ page: 1, size: 20 });
   });
 
@@ -159,7 +176,9 @@ describe('admin flagged buyer rules', () => {
     expect(getHistoryMock).toHaveBeenCalledWith('buyer-1', { page: 1, size: 20 });
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument(),
+    );
   });
 
   it('sends the default warning with an empty JSON object and resets after success', async () => {
@@ -170,26 +189,38 @@ describe('admin flagged buyer rules', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Warn' }));
 
     expect(await screen.findByRole('heading', { name: 'Warn buyer' })).toBeInTheDocument();
-    expect(screen.getByText(/Send a warning to Alex Buyer about their refund activity/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Send a warning to Alex Buyer about their refund activity/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
     fireEvent.click(screen.getByRole('button', { name: 'Send warning' }));
 
     await waitFor(() => expect(warnBuyerMock).toHaveBeenCalledWith('buyer-1', {}));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument(),
+    );
     expect(toastSuccessMock).toHaveBeenCalledWith('Buyer warning sent');
     expect(invalidateQueries).not.toHaveBeenCalledWith({ queryKey: notificationsQueryKey.all() });
     fireEvent.click(screen.getByRole('button', { name: 'Warn' }));
-    expect(await screen.findByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue('');
+    expect(await screen.findByRole('textbox', { name: 'Custom message (optional)' })).toHaveValue(
+      '',
+    );
   });
 
   it('trims and sends a custom warning message', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Warn' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Custom message (optional)' }), { target: { value: '  Please contact support.  ' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Custom message (optional)' }), {
+      target: { value: '  Please contact support.  ' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Send warning' }));
 
-    await waitFor(() => expect(warnBuyerMock).toHaveBeenCalledWith('buyer-1', { message: 'Please contact support.' }));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(warnBuyerMock).toHaveBeenCalledWith('buyer-1', { message: 'Please contact support.' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Warn buyer' })).not.toBeInTheDocument(),
+    );
   });
 
   it('disables warning submission while pending', async () => {
@@ -218,15 +249,17 @@ describe('admin flagged buyer rules', () => {
       ...buyersResponse(),
       data: [...buyersResponse(1).data, ...buyersResponse(2).data],
     });
-    getHistoryMock.mockImplementation((buyerId: string) => buyerId === 'buyer-1'
-      ? Promise.resolve(historyResponse())
-      : new Promise(() => {}));
+    getHistoryMock.mockImplementation((buyerId: string) =>
+      buyerId === 'buyer-1' ? Promise.resolve(historyResponse()) : new Promise(() => {}),
+    );
     renderPage();
     expect(await screen.findByText('Blair Buyer')).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'History' })[0]);
     expect(await screen.findByText('Item arrived damaged')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Complaint history' })).not.toBeInTheDocument(),
+    );
 
     fireEvent.click(screen.getAllByRole('button', { name: 'History' })[1]);
 
@@ -236,7 +269,9 @@ describe('admin flagged buyer rules', () => {
   });
 
   it('pages through complaint history using the API pagination', async () => {
-    getHistoryMock.mockImplementation((_buyerId: string, { page }: { page: number }) => Promise.resolve(historyResponse(page, 2)));
+    getHistoryMock.mockImplementation((_buyerId: string, { page }: { page: number }) =>
+      Promise.resolve(historyResponse(page, 2)),
+    );
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'History' }));
     expect(await screen.findByText('Item arrived damaged')).toBeInTheDocument();
@@ -256,7 +291,11 @@ describe('admin flagged buyer rules', () => {
     expect(screen.getByLabelText('Loading complaint history')).toBeInTheDocument();
     loadingPage.unmount();
 
-    getHistoryMock.mockReset().mockResolvedValue({ ...historyResponse(), data: [], pagination: { ...historyResponse().pagination, lastPage: 0, total: 0 } });
+    getHistoryMock.mockReset().mockResolvedValue({
+      ...historyResponse(),
+      data: [],
+      pagination: { ...historyResponse().pagination, lastPage: 0, total: 0 },
+    });
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'History' }));
     expect(await screen.findByText('No qualifying complaint history.')).toBeInTheDocument();
@@ -268,7 +307,9 @@ describe('admin flagged buyer rules', () => {
   });
 
   it('uses the response pagination to load every buyer page', async () => {
-    getBuyersMock.mockImplementation(({ page }: { page: number }) => Promise.resolve(buyersResponse(page, 2)));
+    getBuyersMock.mockImplementation(({ page }: { page: number }) =>
+      Promise.resolve(buyersResponse(page, 2)),
+    );
     renderPage();
 
     expect(await screen.findByText('Alex Buyer')).toBeInTheDocument();
@@ -281,7 +322,9 @@ describe('admin flagged buyer rules', () => {
   });
 
   it('returns to the first buyer page after saving a changed rule', async () => {
-    getBuyersMock.mockImplementation(({ page }: { page: number }) => Promise.resolve(buyersResponse(page, 2)));
+    getBuyersMock.mockImplementation(({ page }: { page: number }) =>
+      Promise.resolve(buyersResponse(page, 2)),
+    );
     renderPage();
     expect(await screen.findByText('Alex Buyer')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
@@ -294,19 +337,21 @@ describe('admin flagged buyer rules', () => {
   });
 
   it('returns to the last available page if the result set shrinks while browsing', async () => {
-    getBuyersMock.mockImplementation(({ page }: { page: number }) => Promise.resolve(
-      page === 1
-        ? buyersResponse(1, 2)
-        : {
-            ...buyersResponse(2, 1),
-            data: [],
-            pagination: {
-              ...buyersResponse(2, 1).pagination,
-              lastPage: 1,
-              total: 1,
+    getBuyersMock.mockImplementation(({ page }: { page: number }) =>
+      Promise.resolve(
+        page === 1
+          ? buyersResponse(1, 2)
+          : {
+              ...buyersResponse(2, 1),
+              data: [],
+              pagination: {
+                ...buyersResponse(2, 1).pagination,
+                lastPage: 1,
+                total: 1,
+              },
             },
-          },
-    ));
+      ),
+    );
     renderPage();
     expect(await screen.findByText('Alex Buyer')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
@@ -339,32 +384,56 @@ describe('admin flagged buyer rules', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
     renderPage(queryClient);
-    fireEvent.change(await screen.findByLabelText('Complaint threshold'), { target: { value: '4' } });
+    fireEvent.change(await screen.findByLabelText('Complaint threshold'), {
+      target: { value: '4' },
+    });
     fireEvent.change(screen.getByLabelText('Lookback window (days)'), { target: { value: '120' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
 
-    await waitFor(() => expect(updateRulesMock).toHaveBeenCalledWith({ threshold: 4, windowDays: 120 }));
+    await waitFor(() =>
+      expect(updateRulesMock).toHaveBeenCalledWith({ threshold: 4, windowDays: 120 }),
+    );
     await waitFor(() => expect(toastSuccessMock).toHaveBeenCalledWith('Flagged buyer rule saved'));
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminFlaggedBuyersQueryKey.all() });
   });
 
-  it.each(['0', '-1', '1.5', 'abc'])('rejects invalid threshold %s before submission', async (value) => {
-    renderPage();
-    fireEvent.change(await screen.findByLabelText('Complaint threshold'), { target: { value } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
+  it.each(['0', '-1', '1.5', 'abc'])(
+    'rejects invalid threshold %s before submission',
+    async value => {
+      renderPage();
+      fireEvent.change(await screen.findByLabelText('Complaint threshold'), { target: { value } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
 
-    await waitFor(() => expect(screen.getByText('Threshold must be a positive whole number.')).toBeInTheDocument(), { timeout: 10_000 });
-    expect(updateRulesMock).not.toHaveBeenCalled();
-  });
+      await waitFor(
+        () =>
+          expect(
+            screen.getByText('Threshold must be a positive whole number.'),
+          ).toBeInTheDocument(),
+        { timeout: 10_000 },
+      );
+      expect(updateRulesMock).not.toHaveBeenCalled();
+    },
+  );
 
-  it.each(['0', '-1', '1.5', 'abc'])('rejects invalid lookback window %s before submission', async (value) => {
-    renderPage();
-    fireEvent.change(await screen.findByLabelText('Lookback window (days)'), { target: { value } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
+  it.each(['0', '-1', '1.5', 'abc'])(
+    'rejects invalid lookback window %s before submission',
+    async value => {
+      renderPage();
+      fireEvent.change(await screen.findByLabelText('Lookback window (days)'), {
+        target: { value },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
 
-    await waitFor(() => expect(screen.getByText('Lookback window must be a positive whole number.')).toBeInTheDocument(), { timeout: 10_000 });
-    expect(updateRulesMock).not.toHaveBeenCalled();
-  });
+      await waitFor(
+        () =>
+          expect(
+            screen.getByText('Lookback window must be a positive whole number.'),
+          ).toBeInTheDocument(),
+        { timeout: 10_000 },
+      );
+      expect(updateRulesMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('does not allow users without update permission to submit changes', async () => {
     accessMock.mockImplementation(permission => !Array.isArray(permission));

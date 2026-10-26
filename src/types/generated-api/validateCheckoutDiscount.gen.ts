@@ -97,7 +97,8 @@ export interface ValidateCheckoutDiscountErrors {
   };
 }
 
-export type ValidateCheckoutDiscountError = ValidateCheckoutDiscountErrors[keyof ValidateCheckoutDiscountErrors];
+export type ValidateCheckoutDiscountError =
+  ValidateCheckoutDiscountErrors[keyof ValidateCheckoutDiscountErrors];
 
 export interface ValidateCheckoutDiscountResponses {
   /**
@@ -144,4 +145,5 @@ export interface ValidateCheckoutDiscountResponses {
   };
 }
 
-export type ValidateCheckoutDiscountResponse = ValidateCheckoutDiscountResponses[keyof ValidateCheckoutDiscountResponses];
+export type ValidateCheckoutDiscountResponse =
+  ValidateCheckoutDiscountResponses[keyof ValidateCheckoutDiscountResponses];

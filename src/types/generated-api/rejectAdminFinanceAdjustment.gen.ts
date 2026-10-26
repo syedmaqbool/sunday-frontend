@@ -154,7 +154,8 @@ export interface RejectAdminFinanceAdjustmentErrors {
   };
 }
 
-export type RejectAdminFinanceAdjustmentError = RejectAdminFinanceAdjustmentErrors[keyof RejectAdminFinanceAdjustmentErrors];
+export type RejectAdminFinanceAdjustmentError =
+  RejectAdminFinanceAdjustmentErrors[keyof RejectAdminFinanceAdjustmentErrors];
 
 export interface RejectAdminFinanceAdjustmentResponses {
   /**
@@ -199,4 +200,5 @@ export interface RejectAdminFinanceAdjustmentResponses {
   };
 }
 
-export type RejectAdminFinanceAdjustmentResponse = RejectAdminFinanceAdjustmentResponses[keyof RejectAdminFinanceAdjustmentResponses];
+export type RejectAdminFinanceAdjustmentResponse =
+  RejectAdminFinanceAdjustmentResponses[keyof RejectAdminFinanceAdjustmentResponses];

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const offerlessConversation = {
@@ -54,48 +54,56 @@ vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }));
 vi.mock('@/hooks/useConverstion', () => ({
-  getConversationMessagesOptions: (conversationId?: string) => queryOptions({
-    queryFn: async () => {
-      if (conversationId === deletedListingConversation.id) {
-        return {
-          data: [{
-            id: 'message-deleted-listing',
-            conversationId,
-            senderId: 'seller-1',
-            content: 'The item sold, but here are the details you asked for.',
-            flagReasons: [],
-            isFlagged: false,
-            readAt: null,
-            createdAt: '2026-10-07T12:01:00.000Z',
-            updatedAt: '2026-10-07T12:01:00.000Z',
-          }],
-        };
-      }
+  getConversationMessagesOptions: (conversationId?: string) =>
+    queryOptions({
+      queryFn: async () => {
+        if (conversationId === deletedListingConversation.id) {
+          return {
+            data: [
+              {
+                id: 'message-deleted-listing',
+                conversationId,
+                senderId: 'seller-1',
+                content: 'The item sold, but here are the details you asked for.',
+                flagReasons: [],
+                isFlagged: false,
+                readAt: null,
+                createdAt: '2026-10-07T12:01:00.000Z',
+                updatedAt: '2026-10-07T12:01:00.000Z',
+              },
+            ],
+          };
+        }
 
-      if (conversationId === directConversation.id) {
-        return {
-          data: [{
-            id: 'message-direct',
-            conversationId,
-            senderId: 'seller-1',
-            content: 'I have a question about your shop.',
-            flagReasons: [],
-            isFlagged: false,
-            readAt: null,
-            createdAt: '2026-10-07T12:01:00.000Z',
-            updatedAt: '2026-10-07T12:01:00.000Z',
-          }],
-        };
-      }
+        if (conversationId === directConversation.id) {
+          return {
+            data: [
+              {
+                id: 'message-direct',
+                conversationId,
+                senderId: 'seller-1',
+                content: 'I have a question about your shop.',
+                flagReasons: [],
+                isFlagged: false,
+                readAt: null,
+                createdAt: '2026-10-07T12:01:00.000Z',
+                updatedAt: '2026-10-07T12:01:00.000Z',
+              },
+            ],
+          };
+        }
 
-      return { data: [] };
-    },
-    queryKey: ['test-messages', conversationId],
-  }),
-  getConversationsOptions: () => queryOptions({
-    queryFn: async () => ({ data: [offerlessConversation, deletedListingConversation, directConversation] }),
-    queryKey: ['test-conversations'],
-  }),
+        return { data: [] };
+      },
+      queryKey: ['test-messages', conversationId],
+    }),
+  getConversationsOptions: () =>
+    queryOptions({
+      queryFn: async () => ({
+        data: [offerlessConversation, deletedListingConversation, directConversation],
+      }),
+      queryKey: ['test-conversations'],
+    }),
   useMarkConversationReadMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
@@ -108,16 +116,21 @@ function LocationObserver() {
 describe('offerless conversations in Messages', () => {
   it('shows offerless and deleted-listing conversations and opens the saved thread', async () => {
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+          initialEntries={['/messages']}
+        >
           <Routes>
             <Route
-              element={(
+              element={
                 <>
                   <Messages />
                   <LocationObserver />
                 </>
-              )}
+              }
               path="/messages"
             />
           </Routes>
@@ -131,19 +144,30 @@ describe('offerless conversations in Messages', () => {
     expect(screen.getByText('Thanks for the details.')).toBeInTheDocument();
     expect(screen.getByText('Saved listing title')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Seller Saved listing title Thanks for the details/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /Seller Saved listing title Thanks for the details/ }),
+    );
 
-    expect(await screen.findByText('The item sold, but here are the details you asked for.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('The item sold, but here are the details you asked for.'),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Saved listing title')).toHaveLength(2);
     await waitFor(() => {
-      expect(screen.getByTestId('location').textContent).toBe('/messages?conversation=conversation-deleted-listing');
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/messages?conversation=conversation-deleted-listing',
+      );
     });
   });
 
   it('shows General enquiry in the direct conversation row and chat header', async () => {
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+          initialEntries={['/messages']}
+        >
           <Routes>
             <Route element={<Messages />} path="/messages" />
           </Routes>
@@ -152,9 +176,17 @@ describe('offerless conversations in Messages', () => {
     );
 
     expect(await screen.findByText('I have a question about your shop.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Seller 1 General enquiry I have a question about your shop/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Seller 1 General enquiry I have a question about your shop/,
+      }),
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Seller 1 General enquiry I have a question about your shop/ }));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Seller 1 General enquiry I have a question about your shop/,
+      }),
+    );
 
     expect(screen.getAllByText('General enquiry')).toHaveLength(2);
     expect(screen.getByText('I have a question about your shop.')).toBeInTheDocument();

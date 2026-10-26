@@ -43,33 +43,83 @@ export const adminNavSections: AdminNavSection[] = [
   {
     items: [
       { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', permission: 'ANALYTICS_READ' },
-      { path: '/admin/analytics', icon: BarChart3, label: 'Analytics', permission: 'ANALYTICS_READ' },
-      { path: '/admin/site-settings', icon: ImageIcon, label: 'Site Settings', permission: 'SETTINGS_READ' },
+      {
+        path: '/admin/analytics',
+        icon: BarChart3,
+        label: 'Analytics',
+        permission: 'ANALYTICS_READ',
+      },
+      {
+        path: '/admin/site-settings',
+        icon: ImageIcon,
+        label: 'Site Settings',
+        permission: 'SETTINGS_READ',
+      },
     ],
     label: 'Overview',
   },
   {
     items: [
-      { path: '/admin/listings', icon: ShieldCheck, label: 'Listings', permission: 'LISTINGS_READ' },
+      {
+        path: '/admin/listings',
+        icon: ShieldCheck,
+        label: 'Listings',
+        permission: 'LISTINGS_READ',
+      },
       { path: '/admin/orders', icon: Package, label: 'Orders', permission: 'ORDERS_READ' },
-      { path: '/admin/categories', icon: FolderTree, label: 'Categories', permission: 'CATALOG_READ' },
+      {
+        path: '/admin/categories',
+        icon: FolderTree,
+        label: 'Categories',
+        permission: 'CATALOG_READ',
+      },
       { path: '/admin/brands', icon: Tag, label: 'Brands', permission: 'BRANDS_READ' },
       { path: '/admin/discounts', icon: Tag, label: 'Discounts', permission: 'SETTINGS_READ' },
-      { path: '/admin/seller-coupons', icon: Tag, label: 'Seller Coupons', permission: 'SELLER_COUPONS_READ' },
+      {
+        path: '/admin/seller-coupons',
+        icon: Tag,
+        label: 'Seller Coupons',
+        permission: 'SELLER_COUPONS_READ',
+      },
       { path: '/admin/tax', icon: Percent, label: 'Tax Settings', permission: 'SETTINGS_READ' },
       // { path: '/admin/boosts', icon: Rocket, label: 'Boosts', permission: 'BOOSTS_READ' },
       { path: '/admin/payouts', icon: Wallet, label: 'Payouts', permission: 'PAYOUTS_READ' },
-      { path: '/admin/margins', icon: BarChart3, label: 'Margin & Financials', permission: 'FINANCE_DASHBOARD_READ' },
-      { path: '/admin/quickbooks', icon: Link2, label: 'QuickBooks', permission: 'FINANCE_QUICKBOOKS_CONNECTION_READ' },
+      {
+        path: '/admin/margins',
+        icon: BarChart3,
+        label: 'Margin & Financials',
+        permission: 'FINANCE_DASHBOARD_READ',
+      },
+      {
+        path: '/admin/quickbooks',
+        icon: Link2,
+        label: 'QuickBooks',
+        permission: 'FINANCE_QUICKBOOKS_CONNECTION_READ',
+      },
       { path: '/admin/commission', adminOnly: true, icon: PercentIcon, label: 'Commission' },
     ],
     label: 'Marketplace',
   },
   {
     items: [
-      { path: '/admin/complaints', icon: AlertTriangle, label: 'Complaints', permission: 'COMPLAINTS_READ' },
-      { path: '/admin/flagged-buyers', icon: AlertTriangle, label: 'Flagged Buyers', permission: 'COMPLAINTS_READ' },
-      { path: '/admin/messages', icon: MessageSquareWarning, label: 'Messages', permission: 'MESSAGES_READ' },
+      {
+        path: '/admin/complaints',
+        icon: AlertTriangle,
+        label: 'Complaints',
+        permission: 'COMPLAINTS_READ',
+      },
+      {
+        path: '/admin/flagged-buyers',
+        icon: AlertTriangle,
+        label: 'Flagged Buyers',
+        permission: 'COMPLAINTS_READ',
+      },
+      {
+        path: '/admin/messages',
+        icon: MessageSquareWarning,
+        label: 'Messages',
+        permission: 'MESSAGES_READ',
+      },
       { path: '/admin/flag-keywords', adminOnly: true, icon: Filter, label: 'Keywords' },
       { path: '/admin/reports', icon: Flag, label: 'Reports', permission: 'REPORTS_READ' },
     ],
@@ -77,17 +127,37 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     items: [
-      { path: '/admin/support', icon: Headphones, label: 'Support', permission: 'SUPPORT_TICKETS_READ' },
+      {
+        path: '/admin/support',
+        icon: Headphones,
+        label: 'Support',
+        permission: 'SUPPORT_TICKETS_READ',
+      },
       { path: '/admin/help', adminOnly: true, icon: LifeBuoy, label: 'Help Center' },
       { path: '/admin/users', icon: Users, label: 'Platform Users', permission: 'USERS_READ' },
-      { path: '/admin/email-templates', icon: Mail, label: 'Email Templates', permission: 'SETTINGS_READ' },
+      {
+        path: '/admin/email-templates',
+        icon: Mail,
+        label: 'Email Templates',
+        permission: 'SETTINGS_READ',
+      },
     ],
     label: 'Customer',
   },
   {
     items: [
-      { path: '/admin/access-control/staff-users', adminOnly: true, icon: UserCog, label: 'Staff Users' },
-      { path: '/admin/access-control/roles', adminOnly: true, icon: KeyRound, label: 'Roles & Permissions' },
+      {
+        path: '/admin/access-control/staff-users',
+        adminOnly: true,
+        icon: UserCog,
+        label: 'Staff Users',
+      },
+      {
+        path: '/admin/access-control/roles',
+        adminOnly: true,
+        icon: KeyRound,
+        label: 'Roles & Permissions',
+      },
     ],
     label: 'Access Control',
   },
@@ -96,19 +166,12 @@ export const adminNavSections: AdminNavSection[] = [
 export const adminNavItems = adminNavSections.flatMap(section => section.items);
 
 export function isNavItemActive(path: string, pathname: string) {
-  return path === '/admin'
-    ? pathname === '/admin'
-    : pathname.startsWith(path);
+  return path === '/admin' ? pathname === '/admin' : pathname.startsWith(path);
 }
 
-export function canAccessNavItem(
-  item: AdminNavItem,
-  user: AuthUser | null | undefined,
-) {
-  if (!user)
-    return false;
-  if (item.adminOnly)
-    return user.roleName === 'ADMIN';
+export function canAccessNavItem(item: AdminNavItem, user: AuthUser | null | undefined) {
+  if (!user) return false;
+  if (item.adminOnly) return user.roleName === 'ADMIN';
   return canUser(user, item.permission);
 }
 

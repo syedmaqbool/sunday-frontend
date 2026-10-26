@@ -2,18 +2,22 @@ import type { AdminUser } from '@/types/adminUser.type';
 import type { CreateSellerCouponPayload, SellerCoupon } from '@/types/sellerCoupon.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { BarChart3, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  Plus,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -66,26 +70,55 @@ const emptyForm = {
   starts_at: '',
 };
 
-const sellerIncentiveFormSchema = z.object({
-  expires_at: z.string(),
-  listing_id: z.string(),
-  max_eligible_units: z.string().refine(value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0), 'Eligible unit cap must be a positive whole number.'),
-  min_order_amount: z.string().refine(value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), 'Minimum order must be zero or greater.'),
-  percentage: z.string().refine((value) => {
-    const percentage = Number(value);
-    return value.trim() !== '' && Number.isSafeInteger(percentage) && percentage >= 1 && percentage <= 100;
-  }, 'Percentage must be a whole number from 1 to 100.'),
-  scope: z.enum(['item_based', 'seller_wide']),
-  seller_id: z.string().min(1, 'Choose a seller.'),
-  starts_at: z.string(),
-}).superRefine((values, context) => {
-  if (values.scope === 'item_based' && !values.listing_id) {
-    context.addIssue({ path: ['listing_id'], code: z.ZodIssueCode.custom, message: 'Choose a listing for an item-based incentive.' });
-  }
-  if (values.starts_at && values.expires_at && new Date(values.expires_at) <= new Date(values.starts_at)) {
-    context.addIssue({ path: ['expires_at'], code: z.ZodIssueCode.custom, message: 'Expiry must be after the start date.' });
-  }
-});
+const sellerIncentiveFormSchema = z
+  .object({
+    expires_at: z.string(),
+    listing_id: z.string(),
+    max_eligible_units: z
+      .string()
+      .refine(
+        value => value === '' || (Number.isSafeInteger(Number(value)) && Number(value) > 0),
+        'Eligible unit cap must be a positive whole number.',
+      ),
+    min_order_amount: z
+      .string()
+      .refine(
+        value => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0),
+        'Minimum order must be zero or greater.',
+      ),
+    percentage: z.string().refine(value => {
+      const percentage = Number(value);
+      return (
+        value.trim() !== '' &&
+        Number.isSafeInteger(percentage) &&
+        percentage >= 1 &&
+        percentage <= 100
+      );
+    }, 'Percentage must be a whole number from 1 to 100.'),
+    scope: z.enum(['item_based', 'seller_wide']),
+    seller_id: z.string().min(1, 'Choose a seller.'),
+    starts_at: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (values.scope === 'item_based' && !values.listing_id) {
+      context.addIssue({
+        path: ['listing_id'],
+        code: z.ZodIssueCode.custom,
+        message: 'Choose a listing for an item-based incentive.',
+      });
+    }
+    if (
+      values.starts_at &&
+      values.expires_at &&
+      new Date(values.expires_at) <= new Date(values.starts_at)
+    ) {
+      context.addIssue({
+        path: ['expires_at'],
+        code: z.ZodIssueCode.custom,
+        message: 'Expiry must be after the start date.',
+      });
+    }
+  });
 
 type SellerIncentiveFormValues = z.infer<typeof sellerIncentiveFormSchema>;
 
@@ -134,10 +167,11 @@ function SellerCoupons() {
   }, [currentPage, totalPages]);
   const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
   const sellers: SellerOption[] = useMemo(
-    () => (sellersRaw?.data ?? []).map((user: AdminUser) => ({
-      id: user.id,
-      full_name: `${user.firstName} ${user.lastName}`.trim() || null,
-    })),
+    () =>
+      (sellersRaw?.data ?? []).map((user: AdminUser) => ({
+        id: user.id,
+        full_name: `${user.firstName} ${user.lastName}`.trim() || null,
+      })),
     [sellersRaw],
   );
   const sellerMap = useMemo(
@@ -145,10 +179,12 @@ function SellerCoupons() {
     [sellers],
   );
 
-  const { data: listingsRaw } = useQuery(getAdminSellerListingsOptions(
-    formValues.seller_id,
-    !!formValues.seller_id && formValues.scope === 'item_based',
-  ));
+  const { data: listingsRaw } = useQuery(
+    getAdminSellerListingsOptions(
+      formValues.seller_id,
+      !!formValues.seller_id && formValues.scope === 'item_based',
+    ),
+  );
   const listings: ListingOption[] = useMemo(
     () => (listingsRaw?.data ?? []).map(listing => ({ id: listing.id, title: listing.title })),
     [listingsRaw],
@@ -173,7 +209,8 @@ function SellerCoupons() {
     form.reset({
       expires_at: incentive.expiresAt ? incentive.expiresAt.slice(0, 16) : '',
       listing_id: incentive.listingId ?? '',
-      max_eligible_units: incentive.maxEligibleUnits === null ? '' : String(incentive.maxEligibleUnits),
+      max_eligible_units:
+        incentive.maxEligibleUnits === null ? '' : String(incentive.maxEligibleUnits),
       min_order_amount: incentive.minOrderAmount ? String(incentive.minOrderAmount) : '',
       percentage: String(incentive.percentage),
       scope: incentive.scope === 'ITEM_BASED' ? 'item_based' : 'seller_wide',
@@ -190,18 +227,15 @@ function SellerCoupons() {
       if (editingId) {
         await updateIncentive.mutateAsync({ id: editingId, payload });
         toast({ title: 'Seller incentive updated' });
-      }
-      else {
+      } else {
         await createIncentive.mutateAsync(payload);
         toast({ title: 'Seller incentive created' });
       }
       setDialogOpen(false);
       resetForm();
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
       toast(getErrorToastOptions(error, 'Save failed'));
-    }
-    finally {
+    } finally {
       setSaving(false);
     }
   };
@@ -230,240 +264,227 @@ function SellerCoupons() {
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Seller Incentives</h1>
           <p className="text-sm text-muted-foreground">
-            {totalIncentives}
-            {' '}
-            automatic seller incentives
+            {totalIncentives} automatic seller incentives
           </p>
         </div>
         <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {' '}
-          New Seller Incentive
+          <Plus className="h-4 w-4" /> New Seller Incentive
         </Button>
       </div>
 
-      {totalIncentives === 0
-        ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-              <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No seller incentives yet</p>
-            </div>
-          )
-        : (
-            <div className="rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Seller</TableHead>
-                    <TableHead>Seller bonus</TableHead>
-                    <TableHead>Scope</TableHead>
-                    <TableHead>Validity</TableHead>
-                    <TableHead>Eligible units</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead className="w-32" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {incentives.map(incentive => (
-                    <TableRow key={incentive.id}>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {sellerMap.get(incentive.sellerId) ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {incentive.percentage}
-                          %
-                        </Badge>
-                        {incentive.minOrderAmount > 0 && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            min Rs
-                            {' '}
-                            {incentive.minOrderAmount.toLocaleString()}
-                          </span>
-                        )}
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          Rs
-                          {' '}
-                          {incentive.sellerIncentiveBonusAmount.toLocaleString('en-PK', { maximumFractionDigits: 2 })}
-                          {' '}
-                          generated
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {incentive.scope === 'SELLER_WIDE' ? 'All seller items' : 'Specific item'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {incentive.startsAt ? new Date(incentive.startsAt).toLocaleDateString() : '—'}
-                        {' → '}
-                        {incentive.expiresAt ? new Date(incentive.expiresAt).toLocaleDateString() : 'Never'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {`${incentive.usedEligibleUnits} used + ${incentive.reservedEligibleUnits} reserved / `}
-                        {incentive.maxEligibleUnits === null ? 'unlimited units' : `${incentive.maxEligibleUnits} units`}
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          onCheckedChange={() => toggleActive(incentive)}
-                          checked={incentive.active}
-                        />
-                      </TableCell>
-                      <TableCell className="flex items-center justify-end gap-1">
-                        <Button
-                          onClick={() => setUsageFor(incentive)}
-                          aria-label="Seller incentive usage"
-                          size="icon"
-                          title="Seller incentive usage"
-                          variant="ghost"
-                          className="h-7 w-7"
-                        >
-                          <BarChart3 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          onClick={() => openEdit(incentive)}
-                          aria-label="Edit seller incentive"
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteSellerIncentive(incentive.id)}
-                          aria-label="Delete seller incentive"
-                          size="icon"
-                          variant="ghost"
-                          className="
-                            h-7 w-7 text-muted-foreground
-                            hover:text-destructive
-                          "
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="
-                flex flex-col gap-4 border-t border-border px-4 py-3
-                sm:flex-row sm:items-center sm:justify-between
-              "
-              >
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <span>
-                    Showing
-                    {' '}
-                    {startRecord}
-                    –
-                    {endRecord}
-                    {' '}
-                    of
-                    {' '}
-                    {totalIncentives}
-                  </span>
-                  <Select
-                    onValueChange={(value) => {
-                      setItemsPerPage(Number(value));
-                      setCurrentPage(1);
-                    }}
-                    value={String(itemsPerPage)}
-                  >
-                    <SelectTrigger className="h-8 w-[110px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 / page</SelectItem>
-                      <SelectItem value="20">20 / page</SelectItem>
-                      <SelectItem value="50">50 / page</SelectItem>
-                      <SelectItem value="100">100 / page</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-                    aria-label="Previous page"
-                    disabled={currentPage <= 1}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" />
-                    Previous
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, index) => index + 1)
-                    .filter(page =>
-                      page === 1
-                      || page === totalPages
-                      || Math.abs(page - currentPage) <= 1,
-                    )
-                    .reduce<{ key: string; page: 'ellipsis' | number }[]>((pages, page, index, visiblePages) => {
-                      const previousPage = visiblePages[index - 1];
-                      if (previousPage !== undefined && page - previousPage > 1) {
-                        pages.push({ key: `ellipsis-${previousPage}-${page}`, page: 'ellipsis' });
-                      }
-                      pages.push({ key: `page-${page}`, page });
-                      return pages;
-                    }, [])
-                    .map(({ key, page }) =>
-                      page === 'ellipsis'
-                        ? (
-                            <span
-                              key={key}
-                              aria-hidden="true"
-                              className="px-1 text-muted-foreground"
-                            >
-                              …
-                            </span>
-                          )
-                        : (
-                            <Button
-                              key={key}
-                              onClick={() => setCurrentPage(page)}
-                              aria-current={currentPage === page ? 'page' : undefined}
-                              aria-label={`Go to page ${page}`}
-                              size="icon"
-                              variant={currentPage === page ? 'default' : 'outline'}
-                              className="h-8 w-8"
-                            >
-                              {page}
-                            </Button>
-                          ),
+      {totalIncentives === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
+          <Tag className="mb-3 h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No seller incentives yet</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Seller</TableHead>
+                <TableHead>Seller bonus</TableHead>
+                <TableHead>Scope</TableHead>
+                <TableHead>Validity</TableHead>
+                <TableHead>Eligible units</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead className="w-32" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {incentives.map(incentive => (
+                <TableRow key={incentive.id}>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {sellerMap.get(incentive.sellerId) ?? '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{incentive.percentage}%</Badge>
+                    {incentive.minOrderAmount > 0 && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        min Rs {incentive.minOrderAmount.toLocaleString()}
+                      </span>
                     )}
-                  <Button
-                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
-                    aria-label="Next page"
-                    disabled={currentPage >= totalPages}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Next
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Rs{' '}
+                      {incentive.sellerIncentiveBonusAmount.toLocaleString('en-PK', {
+                        maximumFractionDigits: 2,
+                      })}{' '}
+                      generated
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {incentive.scope === 'SELLER_WIDE' ? 'All seller items' : 'Specific item'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {incentive.startsAt ? new Date(incentive.startsAt).toLocaleDateString() : '—'}
+                    {' → '}
+                    {incentive.expiresAt
+                      ? new Date(incentive.expiresAt).toLocaleDateString()
+                      : 'Never'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {`${incentive.usedEligibleUnits} used + ${incentive.reservedEligibleUnits} reserved / `}
+                    {incentive.maxEligibleUnits === null
+                      ? 'unlimited units'
+                      : `${incentive.maxEligibleUnits} units`}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      onCheckedChange={() => toggleActive(incentive)}
+                      checked={incentive.active}
+                    />
+                  </TableCell>
+                  <TableCell className="flex items-center justify-end gap-1">
+                    <Button
+                      onClick={() => setUsageFor(incentive)}
+                      aria-label="Seller incentive usage"
+                      size="icon"
+                      title="Seller incentive usage"
+                      variant="ghost"
+                      className="h-7 w-7"
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => openEdit(incentive)}
+                      aria-label="Edit seller incentive"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => deleteSellerIncentive(incentive.id)}
+                      aria-label="Delete seller incentive"
+                      size="icon"
+                      variant="ghost"
+                      className="
+                        h-7 w-7 text-muted-foreground
+                        hover:text-destructive
+                      "
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div
+            className="
+              flex flex-col gap-4 border-t border-border px-4 py-3
+              sm:flex-row sm:items-center sm:justify-between
+            "
+          >
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                Showing {startRecord}–{endRecord} of {totalIncentives}
+              </span>
+              <Select
+                onValueChange={value => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+                value={String(itemsPerPage)}
+              >
+                <SelectTrigger className="h-8 w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 / page</SelectItem>
+                  <SelectItem value="20">20 / page</SelectItem>
+                  <SelectItem value="50">50 / page</SelectItem>
+                  <SelectItem value="100">100 / page</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                aria-label="Previous page"
+                disabled={currentPage <= 1}
+                size="sm"
+                variant="outline"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1)
+                .filter(
+                  page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1,
+                )
+                .reduce<{ key: string; page: 'ellipsis' | number }[]>(
+                  (pages, page, index, visiblePages) => {
+                    const previousPage = visiblePages[index - 1];
+                    if (previousPage !== undefined && page - previousPage > 1) {
+                      pages.push({ key: `ellipsis-${previousPage}-${page}`, page: 'ellipsis' });
+                    }
+                    pages.push({ key: `page-${page}`, page });
+                    return pages;
+                  },
+                  [],
+                )
+                .map(({ key, page }) =>
+                  page === 'ellipsis' ? (
+                    <span key={key} aria-hidden="true" className="px-1 text-muted-foreground">
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={key}
+                      onClick={() => setCurrentPage(page)}
+                      aria-current={currentPage === page ? 'page' : undefined}
+                      aria-label={`Go to page ${page}`}
+                      size="icon"
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      className="h-8 w-8"
+                    >
+                      {page}
+                    </Button>
+                  ),
+                )}
+              <Button
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                aria-label="Next page"
+                disabled={currentPage >= totalPages}
+                size="sm"
+                variant="outline"
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setDialogOpen(open);
-          if (!open)
-            resetForm();
+          if (!open) resetForm();
         }}
         open={dialogOpen}
       >
-        <DialogContent className="
-          max-h-[90vh] overflow-y-auto
-          sm:max-w-xl
-        "
+        <DialogContent
+          className="
+            max-h-[90vh] overflow-y-auto
+            sm:max-w-xl
+          "
         >
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Seller Incentive' : 'Create Seller Incentive'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? 'Edit Seller Incentive' : 'Create Seller Incentive'}
+            </DialogTitle>
           </DialogHeader>
           <form
-            onSubmit={form.handleSubmit(handleSave, (errors) => {
+            onSubmit={form.handleSubmit(handleSave, errors => {
               const firstError = Object.values(errors)[0];
-              toast({ description: firstError?.message, title: 'Check seller incentive fields', variant: 'destructive' });
+              toast({
+                description: firstError?.message,
+                title: 'Check seller incentive fields',
+                variant: 'destructive',
+              });
             })}
             className="grid gap-4 py-2"
           >
@@ -475,16 +496,20 @@ function SellerCoupons() {
                   control={form.control}
                   render={({ field }) => (
                     <Select
-                      onValueChange={(value) => {
+                      onValueChange={value => {
                         field.onChange(value);
                         form.setValue('listing_id', '');
                       }}
                       value={field.value}
                     >
-                      <SelectTrigger><SelectValue placeholder="Choose seller" /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose seller" />
+                      </SelectTrigger>
                       <SelectContent>
                         {sellers.map(seller => (
-                          <SelectItem key={seller.id} value={seller.id}>{seller.full_name || seller.id.slice(0, 8)}</SelectItem>
+                          <SelectItem key={seller.id} value={seller.id}>
+                            {seller.full_name || seller.id.slice(0, 8)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -497,7 +522,15 @@ function SellerCoupons() {
                   name="percentage"
                   control={form.control}
                   render={({ field }) => (
-                    <Input {...field} id="seller-incentive-percentage" max="100" min="1" placeholder="10" step="1" type="number" />
+                    <Input
+                      {...field}
+                      id="seller-incentive-percentage"
+                      max="100"
+                      min="1"
+                      placeholder="10"
+                      step="1"
+                      type="number"
+                    />
                   )}
                 />
               </div>
@@ -506,22 +539,54 @@ function SellerCoupons() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="seller-incentive-minimum-order">Minimum order (Rs)</Label>
-                <Controller name="min_order_amount" control={form.control} render={({ field }) => <Input {...field} id="seller-incentive-minimum-order" placeholder="0" type="number" />} />
+                <Controller
+                  name="min_order_amount"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="seller-incentive-minimum-order"
+                      placeholder="0"
+                      type="number"
+                    />
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="seller-incentive-unit-cap">Eligible unit cap</Label>
-                <Controller name="max_eligible_units" control={form.control} render={({ field }) => <Input {...field} id="seller-incentive-unit-cap" min="1" placeholder="Unlimited" step="1" type="number" />} />
+                <Controller
+                  name="max_eligible_units"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="seller-incentive-unit-cap"
+                      min="1"
+                      placeholder="Unlimited"
+                      step="1"
+                      type="number"
+                    />
+                  )}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Starts at</Label>
-                <Controller name="starts_at" control={form.control} render={({ field }) => <Input {...field} type="datetime-local" />} />
+                <Controller
+                  name="starts_at"
+                  control={form.control}
+                  render={({ field }) => <Input {...field} type="datetime-local" />}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Expires at</Label>
-                <Controller name="expires_at" control={form.control} render={({ field }) => <Input {...field} type="datetime-local" />} />
+                <Controller
+                  name="expires_at"
+                  control={form.control}
+                  render={({ field }) => <Input {...field} type="datetime-local" />}
+                />
               </div>
             </div>
 
@@ -532,13 +597,15 @@ function SellerCoupons() {
                 control={form.control}
                 render={({ field }) => (
                   <Select
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       field.onChange(value);
                       form.setValue('listing_id', '');
                     }}
                     value={field.value}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="seller_wide">All items from this seller</SelectItem>
                       <SelectItem value="item_based">One specific listing</SelectItem>
@@ -551,31 +618,45 @@ function SellerCoupons() {
             {formValues.scope === 'item_based' && (
               <div className="space-y-2">
                 <Label>Applicable listing</Label>
-                {formValues.seller_id
-                  ? (listings.length === 0
-                      ? <p className="text-xs text-muted-foreground">No approved listings for this seller.</p>
-                      : (
-                          <Controller
-                            name="listing_id"
-                            control={form.control}
-                            render={({ field }) => (
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger><SelectValue placeholder="Choose a listing" /></SelectTrigger>
-                                <SelectContent>
-                                  {listings.map(listing => <SelectItem key={listing.id} value={listing.id}>{listing.title}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        ))
-                  : <p className="text-xs text-muted-foreground">Pick a seller first.</p>}
+                {formValues.seller_id ? (
+                  listings.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No approved listings for this seller.
+                    </p>
+                  ) : (
+                    <Controller
+                      name="listing_id"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a listing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {listings.map(listing => (
+                              <SelectItem key={listing.id} value={listing.id}>
+                                {listing.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  )
+                ) : (
+                  <p className="text-xs text-muted-foreground">Pick a seller first.</p>
+                )}
               </div>
             )}
 
             <Button disabled={saving} type="submit">
-              {saving
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : editingId ? 'Save Changes' : 'Create Seller Incentive'}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : editingId ? (
+                'Save Changes'
+              ) : (
+                'Create Seller Incentive'
+              )}
             </Button>
           </form>
         </DialogContent>
@@ -583,32 +664,23 @@ function SellerCoupons() {
 
       <Dialog onOpenChange={open => !open && setUsageFor(null)} open={!!usageFor}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>Seller incentive usage</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Seller incentive usage</DialogTitle>
+          </DialogHeader>
           {usageFor && (
             <div className="grid gap-3 py-4 text-sm">
-              <p className="font-medium">
-                {usageFor.percentage}
-                % seller bonus per eligible item
-              </p>
-              <p>
-                {usageFor.usedEligibleUnits}
-                {' '}
-                used units
-              </p>
-              <p>
-                {usageFor.reservedEligibleUnits}
-                {' '}
-                reserved units
-              </p>
+              <p className="font-medium">{usageFor.percentage}% seller bonus per eligible item</p>
+              <p>{usageFor.usedEligibleUnits} used units</p>
+              <p>{usageFor.reservedEligibleUnits} reserved units</p>
               <p>Total seller bonus generated</p>
               <p>
-                Rs
-                {' '}
-                {usageFor.sellerIncentiveBonusAmount.toLocaleString('en-PK', { maximumFractionDigits: 2 })}
+                Rs{' '}
+                {usageFor.sellerIncentiveBonusAmount.toLocaleString('en-PK', {
+                  maximumFractionDigits: 2,
+                })}
               </p>
               <p>
-                Unit cap:
-                {' '}
+                Unit cap:{' '}
                 {usageFor.maxEligibleUnits === null ? 'Unlimited' : usageFor.maxEligibleUnits}
               </p>
             </div>

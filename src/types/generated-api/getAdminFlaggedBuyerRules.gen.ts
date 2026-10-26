@@ -66,7 +66,8 @@ export interface GetAdminFlaggedBuyerRulesErrors {
   };
 }
 
-export type GetAdminFlaggedBuyerRulesError = GetAdminFlaggedBuyerRulesErrors[keyof GetAdminFlaggedBuyerRulesErrors];
+export type GetAdminFlaggedBuyerRulesError =
+  GetAdminFlaggedBuyerRulesErrors[keyof GetAdminFlaggedBuyerRulesErrors];
 
 export interface GetAdminFlaggedBuyerRulesResponses {
   /**
@@ -82,4 +83,5 @@ export interface GetAdminFlaggedBuyerRulesResponses {
   };
 }
 
-export type GetAdminFlaggedBuyerRulesResponse = GetAdminFlaggedBuyerRulesResponses[keyof GetAdminFlaggedBuyerRulesResponses];
+export type GetAdminFlaggedBuyerRulesResponse =
+  GetAdminFlaggedBuyerRulesResponses[keyof GetAdminFlaggedBuyerRulesResponses];

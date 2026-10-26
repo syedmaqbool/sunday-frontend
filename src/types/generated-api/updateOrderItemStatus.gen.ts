@@ -5,14 +5,16 @@ export interface UpdateOrderItemStatusData {
     orderId: string;
     orderItemId: string;
   };
-  body: {
-    expectedDelivery: string;
-    shippingMethod: string;
-    status: 'SHIPPED';
-    trackingNumber: string;
-  } | {
-    status: 'DELIVERED';
-  };
+  body:
+    | {
+        expectedDelivery: string;
+        shippingMethod: string;
+        status: 'SHIPPED';
+        trackingNumber: string;
+      }
+    | {
+        status: 'DELIVERED';
+      };
   query?: never;
   url: '/api/v1/orders/{orderId}/items/{orderItemId}/status';
 }
@@ -132,7 +134,8 @@ export interface UpdateOrderItemStatusErrors {
   };
 }
 
-export type UpdateOrderItemStatusError = UpdateOrderItemStatusErrors[keyof UpdateOrderItemStatusErrors];
+export type UpdateOrderItemStatusError =
+  UpdateOrderItemStatusErrors[keyof UpdateOrderItemStatusErrors];
 
 export interface UpdateOrderItemStatusResponses {
   /**
@@ -144,4 +147,5 @@ export interface UpdateOrderItemStatusResponses {
   };
 }
 
-export type UpdateOrderItemStatusResponse = UpdateOrderItemStatusResponses[keyof UpdateOrderItemStatusResponses];
+export type UpdateOrderItemStatusResponse =
+  UpdateOrderItemStatusResponses[keyof UpdateOrderItemStatusResponses];

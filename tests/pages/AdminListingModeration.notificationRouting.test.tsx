@@ -2,10 +2,19 @@ import type { AdminListing } from '@/types/adminListing.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
-const { feedbackMutation, listing, listings, moderationMutation, removeMutation, requestedQueries, restoreMutation, userPermissions } = vi.hoisted(() => ({
+const {
+  feedbackMutation,
+  listing,
+  listings,
+  moderationMutation,
+  removeMutation,
+  requestedQueries,
+  restoreMutation,
+  userPermissions,
+} = vi.hoisted(() => ({
   feedbackMutation: vi.fn(),
   listing: {
     id: 'listing-1',
@@ -27,13 +36,28 @@ const { feedbackMutation, listing, listings, moderationMutation, removeMutation,
   listings: [] as AdminListing[],
   moderationMutation: vi.fn(),
   removeMutation: vi.fn(),
-  requestedQueries: [] as Array<{ isDeleted?: boolean; page: number; size: number; status?: string }>,
+  requestedQueries: [] as Array<{
+    isDeleted?: boolean;
+    page: number;
+    size: number;
+    status?: string;
+  }>,
   restoreMutation: vi.fn(),
   userPermissions: ['LISTINGS_READ', 'LISTINGS_DELETE'] as string[],
 }));
 
 vi.mock('@/queries/adminListing.query', () => ({
-  getAdminListingsOptions: ({ isDeleted, page, size, status }: { isDeleted?: boolean; page: number; size: number; status?: string }) => {
+  getAdminListingsOptions: ({
+    isDeleted,
+    page,
+    size,
+    status,
+  }: {
+    isDeleted?: boolean;
+    page: number;
+    size: number;
+    status?: string;
+  }) => {
     requestedQueries.push({ isDeleted, page, size, status });
     return {
       queryFn: async () => {
@@ -56,7 +80,10 @@ vi.mock('@/queries/adminListing.query', () => ({
       queryKey: ['admin-listings', 'list', status, isDeleted, page, size],
     };
   },
-  useCreateAdminListingFeedbackMutation: () => ({ isPending: false, mutateAsync: feedbackMutation }),
+  useCreateAdminListingFeedbackMutation: () => ({
+    isPending: false,
+    mutateAsync: feedbackMutation,
+  }),
   useModerateListingMutation: () => ({ isPending: false, mutateAsync: moderationMutation }),
   useRemoveAdminListingMutation: () => ({ isPending: false, mutateAsync: removeMutation }),
   useReorderAdminListingMediaMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
@@ -79,8 +106,12 @@ function HistoryControls() {
   return (
     <>
       <LocationObserver />
-      <button onClick={() => navigate(-1)} type="button">Back</button>
-      <button onClick={() => navigate(1)} type="button">Forward</button>
+      <button onClick={() => navigate(-1)} type="button">
+        Back
+      </button>
+      <button onClick={() => navigate(1)} type="button">
+        Forward
+      </button>
       <ListingModeration />
     </>
   );
@@ -121,8 +152,12 @@ describe('admin listing notification navigation', () => {
     fireEvent.click(await screen.findByRole('combobox'));
     fireEvent.click(await screen.findByRole('option', { name: 'Deleted' }));
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/listings?status=DELETED'));
-    expect(requestedQueries).toContainEqual(expect.objectContaining({ isDeleted: true, status: undefined }));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/admin/listings?status=DELETED'),
+    );
+    expect(requestedQueries).toContainEqual(
+      expect.objectContaining({ isDeleted: true, status: undefined }),
+    );
   });
 
   it('shows removal only when both listing permissions are present', async () => {
@@ -130,7 +165,9 @@ describe('admin listing notification navigation', () => {
     renderModeration(['/admin/listings?listing=listing-1&status=PENDING']);
 
     const dialog = await screen.findByRole('dialog', { name: 'Notification listing' });
-    expect(within(dialog).queryByRole('button', { name: 'Delete listing' })).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Delete listing' }),
+    ).not.toBeInTheDocument();
   });
 
   it('requires a nonblank reason and a separate confirmation naming the listing before removal', async () => {
@@ -139,7 +176,9 @@ describe('admin listing notification navigation', () => {
     fireEvent.click(within(listingDialog).getByRole('button', { name: 'Delete listing' }));
 
     fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a reason before removing this listing.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Enter a reason before removing this listing.',
+    );
     expect(removeMutation).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Removal reason' }), {
@@ -147,13 +186,17 @@ describe('admin listing notification navigation', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
-    expect(await screen.findByRole('dialog', { name: 'Confirm removal of Notification listing' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: 'Confirm removal of Notification listing' }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm removal' }));
 
-    await waitFor(() => expect(removeMutation).toHaveBeenCalledWith({
-      listingId: 'listing-1',
-      reason: 'Duplicate listing',
-    }));
+    await waitFor(() =>
+      expect(removeMutation).toHaveBeenCalledWith({
+        listingId: 'listing-1',
+        reason: 'Duplicate listing',
+      }),
+    );
   });
 
   it('sends no removal request when either removal step is canceled', async () => {
@@ -172,12 +215,14 @@ describe('admin listing notification navigation', () => {
     expect(removeMutation).not.toHaveBeenCalled();
   });
 
-  it.each(['RESERVED', 'SOLD'] as const)('does not offer removal for %s listings', async (status) => {
+  it.each(['RESERVED', 'SOLD'] as const)('does not offer removal for %s listings', async status => {
     listings.splice(0, listings.length, { ...listing, status });
     renderModeration([`/admin/listings?listing=listing-1&status=${status}`]);
 
     const dialog = await screen.findByRole('dialog', { name: 'Notification listing' });
-    expect(within(dialog).queryByRole('button', { name: 'Delete listing' })).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Delete listing' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the removal reason and restores a deleted listing', async () => {
@@ -203,10 +248,14 @@ describe('admin listing notification navigation', () => {
     ]);
 
     expect(await screen.findByRole('dialog', { name: 'Notification listing' })).toBeInTheDocument();
-    fireEvent.click([...document.querySelectorAll('button')].find(button => button.textContent === 'Back')!);
+    fireEvent.click(
+      [...document.querySelectorAll('button')].find(button => button.textContent === 'Back')!,
+    );
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    fireEvent.click([...document.querySelectorAll('button')].find(button => button.textContent === 'Forward')!);
+    fireEvent.click(
+      [...document.querySelectorAll('button')].find(button => button.textContent === 'Forward')!,
+    );
 
     expect(await screen.findByRole('dialog', { name: 'Notification listing' })).toBeInTheDocument();
   });
@@ -256,11 +305,15 @@ describe('admin listing notification navigation', () => {
 
     fireEvent.click(requestRevisionsButton);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Enter feedback before requesting revisions.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Enter feedback before requesting revisions.',
+    );
     fireEvent.change(feedbackField, { target: { value: ' \t\n ' } });
     fireEvent.click(requestRevisionsButton);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Enter feedback before requesting revisions.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Enter feedback before requesting revisions.',
+    );
     expect(moderationMutation).not.toHaveBeenCalled();
     expect(feedbackMutation).not.toHaveBeenCalled();
   });

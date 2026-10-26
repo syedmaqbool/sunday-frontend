@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const activeConversation = {
@@ -36,22 +36,29 @@ vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }));
 vi.mock('@/hooks/useConverstion', () => ({
-  getConversationMessagesOptions: () => queryOptions({
-    queryFn: async () => ({ data: [] }),
-    queryKey: ['test-messages'],
-  }),
-  getConversationsOptions: () => queryOptions({
-    queryFn: async () => ({ data: [activeConversation] }),
-    queryKey: ['test-conversations'],
-  }),
+  getConversationMessagesOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ data: [] }),
+      queryKey: ['test-messages'],
+    }),
+  getConversationsOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ data: [activeConversation] }),
+      queryKey: ['test-conversations'],
+    }),
   useMarkConversationReadMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useSendMessageMutation: () => ({ isPending: false, mutate: sendMessageMutation }),
 }));
 
 function renderMessages() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages?conversation=conversation-1']}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={['/messages?conversation=conversation-1']}
+      >
         <Routes>
           <Route element={<Messages />} path="/messages" />
         </Routes>
@@ -90,14 +97,12 @@ describe('messages chat media selection', () => {
     vi.restoreAllMocks();
     if (createObjectUrlDescriptor) {
       Object.defineProperty(URL, 'createObjectURL', createObjectUrlDescriptor);
-    }
-    else {
+    } else {
       Reflect.deleteProperty(URL, 'createObjectURL');
     }
     if (revokeObjectUrlDescriptor) {
       Object.defineProperty(URL, 'revokeObjectURL', revokeObjectUrlDescriptor);
-    }
-    else {
+    } else {
       Reflect.deleteProperty(URL, 'revokeObjectURL');
     }
   });
@@ -109,20 +114,28 @@ describe('messages chat media selection', () => {
     fireEvent.change(caption, { target: { value: 'Please see these photos' } });
 
     const filePicker = screen.getByLabelText('Select photos and videos');
-    expect(filePicker).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime');
+    expect(filePicker).toHaveAttribute(
+      'accept',
+      'image/jpeg,image/png,image/webp,video/mp4,video/quicktime',
+    );
     fireEvent.change(filePicker, {
       target: {
         files: [imageFile('photo.jpg', 1024), videoFile('clip.mov', 10 * 1024, 'video/quicktime')],
       },
     });
 
-    expect(await screen.findByRole('img', { name: 'Preview photo.jpg' })).toHaveAttribute('src', 'blob:photo.jpg');
+    expect(await screen.findByRole('img', { name: 'Preview photo.jpg' })).toHaveAttribute(
+      'src',
+      'blob:photo.jpg',
+    );
     expect(screen.getByLabelText('Preview clip.mov')).toHaveAttribute('src', 'blob:clip.mov');
     expect(caption).toHaveValue('Please see these photos');
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo.jpg' }));
 
-    await waitFor(() => expect(screen.queryByRole('img', { name: 'Preview photo.jpg' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('img', { name: 'Preview photo.jpg' })).not.toBeInTheDocument(),
+    );
     expect(screen.getByLabelText('Preview clip.mov')).toBeInTheDocument();
     expect(caption).toHaveValue('Please see these photos');
     expect(sendMessageMutation).not.toHaveBeenCalled();

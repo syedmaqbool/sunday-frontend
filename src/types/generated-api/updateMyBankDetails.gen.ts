@@ -92,4 +92,5 @@ export interface UpdateMyBankDetailsResponses {
   };
 }
 
-export type UpdateMyBankDetailsResponse = UpdateMyBankDetailsResponses[keyof UpdateMyBankDetailsResponses];
+export type UpdateMyBankDetailsResponse =
+  UpdateMyBankDetailsResponses[keyof UpdateMyBankDetailsResponses];

@@ -4,8 +4,7 @@ import { listAdminReports, resolveReport } from '@/services/report.service';
 
 export const adminReportsQueryKey = {
   all: () => ['admin-reports'] as const,
-  list: (status?: 'all' | ReportStatus) =>
-    [...adminReportsQueryKey.all(), 'list', status] as const,
+  list: (status?: 'all' | ReportStatus) => [...adminReportsQueryKey.all(), 'list', status] as const,
 };
 
 export function getAdminReportsOptions(status?: 'all' | ReportStatus) {

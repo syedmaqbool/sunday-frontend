@@ -18,10 +18,7 @@ import { authInstance } from '@/services/ky.instance';
 export function listPayoutRuns(parameters: PayoutRunListParams = {}) {
   return authInstance
     .get('/api/v1/admin/payout-runs', {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<PayoutRun>>();
 }
@@ -32,29 +29,18 @@ export function createPayoutRun(payload: CreatePayoutRunPayload) {
     .json<Response<PayoutRun>>();
 }
 
-export function listEligibleSellerPayoutItems(
-  parameters: EligibleSellerPayoutItemsParams,
-) {
+export function listEligibleSellerPayoutItems(parameters: EligibleSellerPayoutItemsParams) {
   return authInstance
     .get('/api/v1/admin/payout-runs/eligible-items', {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<EligibleSellerPayoutItemsResponse>();
 }
 
-export function listPayoutRunItems(
-  runId: string,
-  parameters: PayoutRunItemListParams = {},
-) {
+export function listPayoutRunItems(runId: string, parameters: PayoutRunItemListParams = {}) {
   return authInstance
     .get(`/api/v1/admin/payout-runs/${runId}/items`, {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<PayoutRunItem>>();
 }
@@ -73,10 +59,7 @@ export function updatePayoutRunItemStatus(
 export function listRefundPayouts(parameters: AdminRefundReportParams = {}) {
   return authInstance
     .get('/api/v1/admin/payout-runs/refunds', {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<PayoutRunItem>>();
 }
@@ -84,10 +67,7 @@ export function listRefundPayouts(parameters: AdminRefundReportParams = {}) {
 export function listSellerPayouts(parameters: AdminSellerPayoutListParams = {}) {
   return authInstance
     .get('/api/v1/admin/payouts', {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<SellerPayout>>();
 }

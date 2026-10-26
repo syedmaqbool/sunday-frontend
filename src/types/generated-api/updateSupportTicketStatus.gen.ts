@@ -126,7 +126,8 @@ export interface UpdateSupportTicketStatusErrors {
   };
 }
 
-export type UpdateSupportTicketStatusError = UpdateSupportTicketStatusErrors[keyof UpdateSupportTicketStatusErrors];
+export type UpdateSupportTicketStatusError =
+  UpdateSupportTicketStatusErrors[keyof UpdateSupportTicketStatusErrors];
 
 export interface UpdateSupportTicketStatusResponses {
   /**
@@ -138,4 +139,5 @@ export interface UpdateSupportTicketStatusResponses {
   };
 }
 
-export type UpdateSupportTicketStatusResponse = UpdateSupportTicketStatusResponses[keyof UpdateSupportTicketStatusResponses];
+export type UpdateSupportTicketStatusResponse =
+  UpdateSupportTicketStatusResponses[keyof UpdateSupportTicketStatusResponses];

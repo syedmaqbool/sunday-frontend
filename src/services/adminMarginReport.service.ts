@@ -1,4 +1,7 @@
-import type { AdminMarginReportParams, AdminMarginReportResponse } from '@/types/adminMarginReport.type';
+import type {
+  AdminMarginReportParams,
+  AdminMarginReportResponse,
+} from '@/types/adminMarginReport.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function getAdminMarginReport(parameters: AdminMarginReportParams) {

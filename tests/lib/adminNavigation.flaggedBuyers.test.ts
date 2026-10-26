@@ -1,5 +1,5 @@
 import type { AuthUser } from '@/types/auth.type';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { canAccessNavItem, findAdminNavItem, getVisibleAdminSections } from '@/lib/adminNavigation';
 
 describe('flagged buyers navigation access', () => {
@@ -18,7 +18,11 @@ describe('flagged buyers navigation access', () => {
     expect(item?.permission).toBe('COMPLAINTS_READ');
     expect(canAccessNavItem(item!, complaintsReader)).toBe(true);
     expect(canAccessNavItem(item!, otherStaff)).toBe(false);
-    expect(getVisibleAdminSections(complaintsReader).flatMap(section => section.items)).toContainEqual(item);
-    expect(getVisibleAdminSections(otherStaff).flatMap(section => section.items)).not.toContainEqual(item);
+    expect(
+      getVisibleAdminSections(complaintsReader).flatMap(section => section.items),
+    ).toContainEqual(item);
+    expect(
+      getVisibleAdminSections(otherStaff).flatMap(section => section.items),
+    ).not.toContainEqual(item);
   });
 });

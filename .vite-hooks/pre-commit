@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+
+vp staged
+vp run typecheck
+vp run bump:patch
+git add package.json package-lock.json

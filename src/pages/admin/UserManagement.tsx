@@ -34,11 +34,11 @@ export default function UserManagement() {
     <>
       <AdminUsersTable
         onPageChange={setPage}
-        onSearchChange={(value) => {
+        onSearchChange={value => {
           setPage(1);
           setSearch(value);
         }}
-        onStatusChange={(value) => {
+        onStatusChange={value => {
           setPage(1);
           setStatus(value);
         }}
@@ -52,9 +52,7 @@ export default function UserManagement() {
             key: 'joined',
             label: 'Joined',
             render: user => (
-              <span className="text-sm text-muted-foreground">
-                {joinedDate(user.createdAt)}
-              </span>
+              <span className="text-sm text-muted-foreground">{joinedDate(user.createdAt)}</span>
             ),
           },
           {

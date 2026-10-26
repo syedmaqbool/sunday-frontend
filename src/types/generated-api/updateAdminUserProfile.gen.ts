@@ -128,7 +128,8 @@ export interface UpdateAdminUserProfileErrors {
   };
 }
 
-export type UpdateAdminUserProfileError = UpdateAdminUserProfileErrors[keyof UpdateAdminUserProfileErrors];
+export type UpdateAdminUserProfileError =
+  UpdateAdminUserProfileErrors[keyof UpdateAdminUserProfileErrors];
 
 export interface UpdateAdminUserProfileResponses {
   /**
@@ -162,4 +163,5 @@ export interface UpdateAdminUserProfileResponses {
   };
 }
 
-export type UpdateAdminUserProfileResponse = UpdateAdminUserProfileResponses[keyof UpdateAdminUserProfileResponses];
+export type UpdateAdminUserProfileResponse =
+  UpdateAdminUserProfileResponses[keyof UpdateAdminUserProfileResponses];

@@ -124,4 +124,5 @@ export interface GetAdminTaxSettingsResponses {
   };
 }
 
-export type GetAdminTaxSettingsResponse = GetAdminTaxSettingsResponses[keyof GetAdminTaxSettingsResponses];
+export type GetAdminTaxSettingsResponse =
+  GetAdminTaxSettingsResponses[keyof GetAdminTaxSettingsResponses];

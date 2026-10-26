@@ -112,4 +112,5 @@ export interface GetSellerAnalyticsResponses {
   };
 }
 
-export type GetSellerAnalyticsResponse = GetSellerAnalyticsResponses[keyof GetSellerAnalyticsResponses];
+export type GetSellerAnalyticsResponse =
+  GetSellerAnalyticsResponses[keyof GetSellerAnalyticsResponses];

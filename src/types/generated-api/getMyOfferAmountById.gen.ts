@@ -96,7 +96,8 @@ export interface GetMyOfferAmountByIdErrors {
   };
 }
 
-export type GetMyOfferAmountByIdError = GetMyOfferAmountByIdErrors[keyof GetMyOfferAmountByIdErrors];
+export type GetMyOfferAmountByIdError =
+  GetMyOfferAmountByIdErrors[keyof GetMyOfferAmountByIdErrors];
 
 export interface GetMyOfferAmountByIdResponses {
   /**
@@ -112,4 +113,5 @@ export interface GetMyOfferAmountByIdResponses {
   };
 }
 
-export type GetMyOfferAmountByIdResponse = GetMyOfferAmountByIdResponses[keyof GetMyOfferAmountByIdResponses];
+export type GetMyOfferAmountByIdResponse =
+  GetMyOfferAmountByIdResponses[keyof GetMyOfferAmountByIdResponses];

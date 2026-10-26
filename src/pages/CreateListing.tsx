@@ -3,15 +3,7 @@ import type { CreateListingPayload } from '@/types/listing.type';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Camera,
-  Info,
-  Loader2,
-  Star,
-  Upload,
-  Video as VideoIcon,
-  X,
-} from 'lucide-react';
+import { Camera, Info, Loader2, Star, Upload, Video as VideoIcon, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -30,12 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
@@ -45,13 +32,8 @@ import { getErrorToastOptions } from '@/lib/errorToast';
 import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { uploadFile } from '@/lib/uploadFile';
 import { getClothingTypesOptions } from '@/queries/clothing-types.query';
-import {
-  getEditListingOptions,
-} from '@/queries/marketplace.query';
-import {
-  createListing,
-  updateMyListing,
-} from '@/services/listing.service';
+import { getEditListingOptions } from '@/queries/marketplace.query';
+import { createListing, updateMyListing } from '@/services/listing.service';
 import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
@@ -59,14 +41,16 @@ const MAX_IMAGE_SIZE_BYTES = 50 * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
 const LISTING_STYLE_VALUES = ['eastern', 'western', 'casual', 'formal', 'semi_formal'] as const;
-const LISTING_STYLE_LABELS: Record<typeof LISTING_STYLE_VALUES[number], string> = {
+const LISTING_STYLE_LABELS: Record<(typeof LISTING_STYLE_VALUES)[number], string> = {
   casual: 'Casual',
   eastern: 'Eastern',
   formal: 'Formal',
   semi_formal: 'Semi Formal',
   western: 'Western',
 };
-const listingMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
+const listingMediaFileSchema = z.custom<File>(
+  value => typeof File !== 'undefined' && value instanceof File,
+);
 const existingMediaSchema = z.object({ fileId: z.string(), url: z.string() });
 
 function isListingSize(value: string): boolean {
@@ -85,30 +69,32 @@ const listingSchema = z.object({
   imageFiles: z.array(listingMediaFileSchema),
   parentCategory: z.string().min(1, 'Category is required.'),
   price: z.string().refine(value => Number(value) > 0, 'Price must be greater than 0.'),
-  size: z.string().refine(
-    isListingSize,
-    'Select a valid size.',
-  ),
+  size: z.string().refine(isListingSize, 'Select a valid size.'),
   styles: z.array(z.enum(LISTING_STYLE_VALUES)),
   subCategory: z.string().min(1, 'Subcategory is required.'),
   title: z.string().trim().min(1, 'Title is required.'),
   videoFile: listingMediaFileSchema.nullable(),
-  weight: z.string().optional().refine(
-    value => !value || WEIGHT_OPTIONS.some(option => option.value === value),
-    'Select a valid weight.',
-  ),
+  weight: z
+    .string()
+    .optional()
+    .refine(
+      value => !value || WEIGHT_OPTIONS.some(option => option.value === value),
+      'Select a valid weight.',
+    ),
 });
-const createListingSchema = listingSchema.extend({
-  styles: listingSchema.shape.styles.min(1, 'Choose at least one style.'),
-}).superRefine((values, context) => {
-  if (values.subCategory === 'clothes' && !values.clothingTypeId) {
-    context.addIssue({
-      path: ['clothingTypeId'],
-      code: z.ZodIssueCode.custom,
-      message: 'Choose a clothing type.',
-    });
-  }
-});
+const createListingSchema = listingSchema
+  .extend({
+    styles: listingSchema.shape.styles.min(1, 'Choose at least one style.'),
+  })
+  .superRefine((values, context) => {
+    if (values.subCategory === 'clothes' && !values.clothingTypeId) {
+      context.addIssue({
+        path: ['clothingTypeId'],
+        code: z.ZodIssueCode.custom,
+        message: 'Choose a clothing type.',
+      });
+    }
+  });
 const editListingSchema = listingSchema.superRefine((values, context) => {
   if (values.subCategory === 'clothes' && !values.clothingTypeId) {
     context.addIssue({
@@ -200,26 +186,28 @@ function CreateListing() {
 
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
-  const { data: existingListing, isLoading: loadingListing } = useQuery(getEditListingOptions(id, user?.id));
+  const { data: existingListing, isLoading: loadingListing } = useQuery(
+    getEditListingOptions(id, user?.id),
+  );
 
   useEffect(() => {
-    if (!authLoading && !user)
-      navigate('/auth', { replace: true });
+    if (!authLoading && !user) navigate('/auth', { replace: true });
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (!existingListing)
-      return;
+    if (!existingListing) return;
 
-    if (existingListing.sellerId !== user?.id || !isSellerEditableListingStatus(existingListing.status)) {
+    if (
+      existingListing.sellerId !== user?.id ||
+      !isSellerEditableListingStatus(existingListing.status)
+    ) {
       navigate('/my-listings', { replace: true });
       return;
     }
 
     const parts = (existingListing.categoryValue || '').split('-');
     const closestWeight = (() => {
-      if (!existingListing.weight)
-        return '';
+      if (!existingListing.weight) return '';
       const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: Number(o.value) }));
       let closest = options[0];
       let minDistribution = Math.abs(options[0].num - existingListing.weight);
@@ -253,8 +241,9 @@ function CreateListing() {
       weight: closestWeight,
     });
 
-    const sortedMedia = [...(existingListing.media ?? [])]
-      .toSorted((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    const sortedMedia = [...(existingListing.media ?? [])].toSorted(
+      (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+    );
 
     const images = sortedMedia
       .filter(m => m.type === 'IMAGE')
@@ -263,9 +252,10 @@ function CreateListing() {
 
     const vid = sortedMedia.find(m => m.type === 'VIDEO');
     setValue('existingImages', images);
-    setValue('existingVideo', vid?.file?.id && vid?.file.url
-      ? { fileId: vid.file.id, url: vid.file.url }
-      : null);
+    setValue(
+      'existingVideo',
+      vid?.file?.id && vid?.file.url ? { fileId: vid.file.id, url: vid.file.url } : null,
+    );
   }, [existingListing, user, navigate, reset, setValue]);
 
   useEffect(() => {
@@ -273,13 +263,16 @@ function CreateListing() {
       navigate('/my-listings', { replace: true });
   }, [existingListing, isEditing, loadingListing, navigate]);
 
-  const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>, currentFiles: File[], onChange: (files: File[]) => void) => {
+  const handleAddImages = (
+    event_: React.ChangeEvent<HTMLInputElement>,
+    currentFiles: File[],
+    onChange: (files: File[]) => void,
+  ) => {
     const selectedFiles = [...(event_.target.files || [])];
     // Reset the input even when validation fails so the same file can be selected again.
     event_.target.value = '';
 
-    if (!selectedFiles.length)
-      return;
+    if (!selectedFiles.length) return;
 
     const oversizedFiles = selectedFiles.filter(file => file.size > MAX_IMAGE_SIZE_BYTES);
     const files = selectedFiles.filter(file => file.size <= MAX_IMAGE_SIZE_BYTES);
@@ -292,8 +285,7 @@ function CreateListing() {
       });
     }
 
-    if (!files.length)
-      return;
+    if (!files.length) return;
 
     const total = currentFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
@@ -304,10 +296,12 @@ function CreateListing() {
     onChange([...currentFiles, ...files]);
   };
 
-  const handleAddVideo = (event_: React.ChangeEvent<HTMLInputElement>, onChange: (file: File) => void) => {
+  const handleAddVideo = (
+    event_: React.ChangeEvent<HTMLInputElement>,
+    onChange: (file: File) => void,
+  ) => {
     const file = event_.target.files?.[0];
-    if (!file)
-      return;
+    if (!file) return;
     if (file.size > MAX_VIDEO_SIZE_BYTES) {
       toast({
         description: 'Please choose a video that is 50 MB or smaller.',
@@ -324,11 +318,19 @@ function CreateListing() {
   };
 
   const removeNewImage = (index: number) => {
-    setValue('imageFiles', imageFiles.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true });
+    setValue(
+      'imageFiles',
+      imageFiles.filter((_, index_) => index_ !== index),
+      { shouldDirty: true, shouldValidate: true },
+    );
   };
 
   const removeExistingImage = (index: number) => {
-    setValue('existingImages', existingImages.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true });
+    setValue(
+      'existingImages',
+      existingImages.filter((_, index_) => index_ !== index),
+      { shouldDirty: true, shouldValidate: true },
+    );
   };
 
   const removeVideo = () => {
@@ -337,15 +339,13 @@ function CreateListing() {
   };
 
   const setCoverPhoto = (previewIndex: number) => {
-    if (previewIndex === 0)
-      return;
+    if (previewIndex === 0) return;
     if (previewIndex < existingImages.length) {
       const next = [...existingImages];
       const [cover] = next.splice(previewIndex, 1);
       next.unshift(cover);
       setValue('existingImages', next, { shouldDirty: true, shouldValidate: true });
-    }
-    else {
+    } else {
       const newIndex = previewIndex - existingImages.length;
       const next = [...imageFiles];
       const [cover] = next.splice(newIndex, 1);
@@ -366,7 +366,7 @@ function CreateListing() {
 
     try {
       const weight: CreateListingPayload['weight'] = values.weight
-        ? Number(values.weight) as CreateListingPayload['weight']
+        ? (Number(values.weight) as CreateListingPayload['weight'])
         : null;
       const newImageItems = await Promise.all(
         values.imageFiles.map(async (file, index) => {
@@ -414,25 +414,28 @@ function CreateListing() {
           weight,
         });
 
-        const returnedForReview
-          = (existingListing?.status === 'REJECTED' || existingListing?.status === 'NEEDS_REVISION')
-            && updatedListing.status === 'PENDING';
+        const returnedForReview =
+          (existingListing?.status === 'REJECTED' ||
+            existingListing?.status === 'NEEDS_REVISION') &&
+          updatedListing.status === 'PENDING';
 
-        toast(returnedForReview
-          ? { description: 'Your listing was submitted for moderation.', title: 'Listing submitted for review!' }
-          : { description: 'Your changes have been saved.', title: 'Listing updated!' });
+        toast(
+          returnedForReview
+            ? {
+                description: 'Your listing was submitted for moderation.',
+                title: 'Listing submitted for review!',
+              }
+            : { description: 'Your changes have been saved.', title: 'Listing updated!' },
+        );
         navigate(`/listing/${id}`);
-      }
-      else {
+      } else {
         const allImageItems = newImageItems.map((item, index) => ({
           fileId: item.fileId,
           sortOrder: index,
         }));
         const media = [
           ...allImageItems,
-          ...(newVideoFileId
-            ? [{ fileId: newVideoFileId, sortOrder: allImageItems.length }]
-            : []),
+          ...(newVideoFileId ? [{ fileId: newVideoFileId, sortOrder: allImageItems.length }] : []),
         ];
 
         const { data: newListing } = await createListing({
@@ -459,18 +462,15 @@ function CreateListing() {
         toast({ description: 'Your item is pending review.', title: 'Listing created!' });
         navigate('/listings');
       }
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
-    }
-    finally {
+    } finally {
       setSubmitting(false);
     }
   }
 
-  const onSubmit: SubmitHandler<ListingFormValues> = async (values) => {
-    if (!user)
-      return;
+  const onSubmit: SubmitHandler<ListingFormValues> = async values => {
+    if (!user) return;
 
     if (values.imageFiles.length + values.existingImages.length === 0) {
       toast({ title: 'At least 1 photo is required', variant: 'destructive' });
@@ -488,16 +488,13 @@ function CreateListing() {
     if (!isEditing) {
       try {
         const { data: profile } = await getMyProfile();
-        const hasBankDetails
-          = !!profile.bankAccountHolder
-            && !!profile.bankName
-            && !!profile.bankAccountNumber;
+        const hasBankDetails =
+          !!profile.bankAccountHolder && !!profile.bankName && !!profile.bankAccountNumber;
         if (!hasBankDetails) {
           setBankModalOpen(true);
           return;
         }
-      }
-      catch (error: any) {
+      } catch (error: any) {
         toast(getErrorToastOptions(error));
         return;
       }
@@ -516,17 +513,20 @@ function CreateListing() {
   ];
 
   const videoPreviewUrl = useMemo(
-    () => formValues.videoFile ? URL.createObjectURL(formValues.videoFile) : (formValues.existingVideo?.url ?? null),
+    () =>
+      formValues.videoFile
+        ? URL.createObjectURL(formValues.videoFile)
+        : (formValues.existingVideo?.url ?? null),
     [formValues.existingVideo, formValues.videoFile],
   );
 
   if (
-    authLoading
-    || loadingListing
-    || (isEditing
-      && (!existingListing
-        || existingListing.sellerId !== user?.id
-        || !isSellerEditableListingStatus(existingListing.status)))
+    authLoading ||
+    loadingListing ||
+    (isEditing &&
+      (!existingListing ||
+        existingListing.sellerId !== user?.id ||
+        !isSellerEditableListingStatus(existingListing.status)))
   ) {
     return null;
   }
@@ -539,31 +539,22 @@ function CreateListing() {
           {isEditing ? 'Edit Listing' : 'Sell an Item'}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          {isEditing
-            ? 'Update your listing details'
-            : 'List your pre-loved fashion for sale'}
+          {isEditing ? 'Update your listing details' : 'List your pre-loved fashion for sale'}
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
           {/* Photo upload */}
           <div>
             <Label>
-              Photos (up to
-              {' '}
-              {MAX_PHOTOS}
-              )
-              {' '}
+              Photos (up to {MAX_PHOTOS}){' '}
               <span className="font-normal text-muted-foreground">
-                —
-                {' '}
-                {totalPhotos}
-                /
-                {MAX_PHOTOS}
+                — {totalPhotos}/{MAX_PHOTOS}
               </span>
               <FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." />
             </Label>
             <p className="mt-1 text-sm text-muted-foreground" role="note">
-              Disclaimer: Each photo must be 50 MB or smaller. Images larger than 50 MB cannot be uploaded. Please resize or compress oversized images before uploading.
+              Disclaimer: Each photo must be 50 MB or smaller. Images larger than 50 MB cannot be
+              uploaded. Please resize or compress oversized images before uploading.
             </p>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, index) => (
@@ -571,23 +562,18 @@ function CreateListing() {
                   key={preview.url}
                   className={`
                     relative h-24 w-24 overflow-hidden rounded-lg border
-                    ${
-                index === 0 ? 'border-gold ring-2 ring-gold' : 'border-border'
-                }
+                    ${index === 0 ? 'border-gold ring-2 ring-gold' : 'border-border'}
                   `}
                 >
-                  <img
-                    src={preview.url}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={preview.url} alt="" className="h-full w-full object-cover" />
                   <button
                     onClick={() =>
                       preview.type === 'existing'
                         ? removeExistingImage(
                             existingImages.findIndex(img => img.url === preview.url),
                           )
-                        : removeNewImage(preview.index!)}
+                        : removeNewImage(preview.index!)
+                    }
                     type="button"
                     className="
                       absolute right-1 top-1 rounded-full bg-background/80 p-0.5 text-destructive
@@ -596,35 +582,32 @@ function CreateListing() {
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
-                  {index === 0
-                    ? (
-                        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
-                          <Star className="h-2.5 w-2.5 fill-white text-white" />
-                          <span className="text-[9px] font-semibold text-white">
-                            Cover
-                          </span>
-                        </div>
-                      )
-                    : (
-                        <button
-                          onClick={() => setCoverPhoto(index)}
-                          title="Set as cover photo"
-                          type="button"
-                          className="
-                            absolute bottom-1 left-1 rounded-full bg-background/80 p-1 text-muted-foreground transition-colors
-                            hover:bg-background hover:text-gold
-                          "
-                        >
-                          <Star className="h-3 w-3" />
-                        </button>
-                      )}
+                  {index === 0 ? (
+                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 bg-gold/90 py-0.5 text-center">
+                      <Star className="h-2.5 w-2.5 fill-white text-white" />
+                      <span className="text-[9px] font-semibold text-white">Cover</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setCoverPhoto(index)}
+                      title="Set as cover photo"
+                      type="button"
+                      className="
+                        absolute bottom-1 left-1 rounded-full bg-background/80 p-1 text-muted-foreground transition-colors
+                        hover:bg-background hover:text-gold
+                      "
+                    >
+                      <Star className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               ))}
               {allPreviews.length < MAX_PHOTOS && (
-                <label className="
-                  flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
-                  hover:border-primary hover:text-primary
-                "
+                <label
+                  className="
+                    flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
+                    hover:border-primary hover:text-primary
+                  "
                 >
                   <Controller
                     name="imageFiles"
@@ -640,13 +623,11 @@ function CreateListing() {
                       />
                     )}
                   />
-                  {allPreviews.length > 0
-                    ? (
-                        <Upload className="h-4 w-4" />
-                      )
-                    : (
-                        <Camera className="h-5 w-5" />
-                      )}
+                  {allPreviews.length > 0 ? (
+                    <Upload className="h-4 w-4" />
+                  ) : (
+                    <Camera className="h-5 w-5" />
+                  )}
                   <span className="mt-1 text-[10px]">Add photo</span>
                 </label>
               )}
@@ -656,113 +637,106 @@ function CreateListing() {
           {/* Video upload (mandatory) */}
           <div>
             <Label>
-              Video
-              {' '}
-              <span className="text-destructive">*</span>
-              {' '}
+              Video <span className="text-destructive">*</span>{' '}
               <span className="font-normal text-muted-foreground">
                 — 1 short video required (max 50MB)
               </span>
               <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Maximum file size: 50 MB." />
             </Label>
             <p className="mt-1 text-sm text-muted-foreground" role="note">
-              Disclaimer: Video files must be 50 MB or smaller. Files over this limit cannot be uploaded. Use a short, compressed video if needed.
+              Disclaimer: Video files must be 50 MB or smaller. Files over this limit cannot be
+              uploaded. Use a short, compressed video if needed.
             </p>
             <div className="mt-2 flex flex-wrap gap-3">
-              {videoPreviewUrl
-                ? (
-                    <div className="relative h-32 w-44 overflow-hidden rounded-lg border border-border bg-muted">
-                      <video
-                        src={videoPreviewUrl}
-                        onClick={(event) => {
-                          const video = event.currentTarget;
+              {videoPreviewUrl ? (
+                <div className="relative h-32 w-44 overflow-hidden rounded-lg border border-border bg-muted">
+                  <video
+                    src={videoPreviewUrl}
+                    onClick={event => {
+                      const video = event.currentTarget;
 
-                          if (video.paused) {
-                            void video.play();
-                          }
-                          else {
-                            video.pause();
-                          }
-                        }}
-                        onVolumeChange={(event) => {
-                          const video = event.currentTarget;
-                          if (!video.muted || video.volume !== 0) {
-                            video.muted = true;
-                            video.volume = 0;
-                          }
-                        }}
-                        controls={false}
-                        muted
-                        playsInline
-                        className="h-full w-full object-cover"
+                      if (video.paused) {
+                        void video.play();
+                      } else {
+                        video.pause();
+                      }
+                    }}
+                    onVolumeChange={event => {
+                      const video = event.currentTarget;
+                      if (!video.muted || video.volume !== 0) {
+                        video.muted = true;
+                        video.volume = 0;
+                      }
+                    }}
+                    controls={false}
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+
+                  <button
+                    onClick={event => {
+                      const video = event.currentTarget.parentElement?.querySelector('video');
+
+                      if (!video) return;
+
+                      if (video.paused) {
+                        void video.play();
+                      } else {
+                        video.pause();
+                      }
+                    }}
+                    type="button"
+                    className="absolute bottom-1 left-1 rounded bg-background/80 px-2 py-1 text-xs"
+                  >
+                    Play / Pause
+                  </button>
+
+                  <button
+                    onClick={removeVideo}
+                    aria-label="Remove video"
+                    type="button"
+                    className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+
+                  <span className="absolute bottom-1 right-1 rounded bg-background/80 px-1.5 py-1 text-[10px]">
+                    Muted
+                  </span>
+                </div>
+              ) : (
+                <label
+                  className="
+                    flex h-32 w-44 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
+                    hover:border-primary hover:text-primary
+                  "
+                >
+                  <Controller
+                    name="videoFile"
+                    control={control}
+                    render={({ field }) => (
+                      <input
+                        onChange={event => handleAddVideo(event, field.onChange)}
+                        ref={field.ref}
+                        accept="video/*"
+                        type="file"
+                        className="hidden"
                       />
-
-                      <button
-                        onClick={(event) => {
-                          const video = event.currentTarget
-                            .parentElement
-                            ?.querySelector('video');
-
-                          if (!video)
-                            return;
-
-                          if (video.paused) {
-                            void video.play();
-                          }
-                          else {
-                            video.pause();
-                          }
-                        }}
-                        type="button"
-                        className="absolute bottom-1 left-1 rounded bg-background/80 px-2 py-1 text-xs"
-                      >
-                        Play / Pause
-                      </button>
-
-                      <button
-                        onClick={removeVideo}
-                        aria-label="Remove video"
-                        type="button"
-                        className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-destructive"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-
-                      <span className="absolute bottom-1 right-1 rounded bg-background/80 px-1.5 py-1 text-[10px]">
-                        Muted
-                      </span>
-                    </div>
-                  )
-                : (
-                    <label className="
-                      flex h-32 w-44 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted text-muted-foreground transition
-                      hover:border-primary hover:text-primary
-                    "
-                    >
-                      <Controller
-                        name="videoFile"
-                        control={control}
-                        render={({ field }) => (
-                          <input
-                            onChange={event => handleAddVideo(event, field.onChange)}
-                            ref={field.ref}
-                            accept="video/*"
-                            type="file"
-                            className="hidden"
-                          />
-                        )}
-                      />
-                      <VideoIcon className="h-5 w-5" />
-                      <span className="mt-1 text-[10px]">Add video</span>
-                    </label>
-                  )}
+                    )}
+                  />
+                  <VideoIcon className="h-5 w-5" />
+                  <span className="mt-1 text-[10px]">Add video</span>
+                </label>
+              )}
             </div>
           </div>
 
-          <div className="
-            grid gap-4
-            sm:grid-cols-2
-          "
+          <div
+            className="
+              grid gap-4
+              sm:grid-cols-2
+            "
           >
             <div className="space-y-2">
               <Label htmlFor="title">
@@ -773,11 +747,7 @@ function CreateListing() {
                 name="title"
                 control={control}
                 render={({ field }) => (
-                  <Input
-                    id="title"
-                    placeholder="e.g. Vintage Levi's 501 Jeans"
-                    {...field}
-                  />
+                  <Input id="title" placeholder="e.g. Vintage Levi's 501 Jeans" {...field} />
                 )}
               />
               {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
@@ -790,13 +760,7 @@ function CreateListing() {
               <Controller
                 name="brand"
                 control={control}
-                render={({ field }) => (
-                  <Input
-                    id="brand"
-                    placeholder="e.g. Levi's"
-                    {...field}
-                  />
-                )}
+                render={({ field }) => <Input id="brand" placeholder="e.g. Levi's" {...field} />}
               />
               {errors.brand && <p className="text-sm text-destructive">{errors.brand.message}</p>}
             </div>
@@ -812,11 +776,13 @@ function CreateListing() {
                   {LISTING_STYLE_VALUES.map(style => (
                     <Button
                       key={style}
-                      onClick={() => field.onChange(
-                        field.value.includes(style)
-                          ? field.value.filter(value => value !== style)
-                          : [...field.value, style],
-                      )}
+                      onClick={() =>
+                        field.onChange(
+                          field.value.includes(style)
+                            ? field.value.filter(value => value !== style)
+                            : [...field.value, style],
+                        )
+                      }
                       aria-pressed={field.value.includes(style)}
                       type="button"
                       variant={field.value.includes(style) ? 'secondary' : 'outline'}
@@ -847,13 +813,16 @@ function CreateListing() {
                 />
               )}
             />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            {errors.description && (
+              <p className="text-sm text-destructive">{errors.description.message}</p>
+            )}
           </div>
 
-          <div className="
-            grid gap-4
-            sm:grid-cols-2
-          "
+          <div
+            className="
+              grid gap-4
+              sm:grid-cols-2
+            "
           >
             <div className="space-y-2">
               <Label>
@@ -865,10 +834,13 @@ function CreateListing() {
                 control={control}
                 render={({ field }) => (
                   <Select
-                    onValueChange={(v) => {
+                    onValueChange={v => {
                       const cat = parentCategories.find(c => c.value === v);
                       field.onChange(v);
-                      setValue('categoryId', cat?.id ?? '', { shouldDirty: true, shouldValidate: true });
+                      setValue('categoryId', cat?.id ?? '', {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
                       setValue('subcategoryId', '', { shouldDirty: true, shouldValidate: true });
                       setValue('subCategory', '', { shouldDirty: true, shouldValidate: true });
                       setValue('clothingTypeId', null, { shouldDirty: true, shouldValidate: true });
@@ -889,7 +861,9 @@ function CreateListing() {
                   </Select>
                 )}
               />
-              {errors.parentCategory && <p className="text-sm text-destructive">{errors.parentCategory.message}</p>}
+              {errors.parentCategory && (
+                <p className="text-sm text-destructive">{errors.parentCategory.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>
@@ -901,12 +875,18 @@ function CreateListing() {
                 control={control}
                 render={({ field }) => (
                   <Select
-                    onValueChange={(v) => {
+                    onValueChange={v => {
                       const sub = subCategories.find(c => c.value === v);
                       field.onChange(v);
-                      setValue('subcategoryId', sub?.id ?? '', { shouldDirty: true, shouldValidate: true });
+                      setValue('subcategoryId', sub?.id ?? '', {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
                       if (v !== 'clothes')
-                        setValue('clothingTypeId', null, { shouldDirty: true, shouldValidate: true });
+                        setValue('clothingTypeId', null, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       setValue('size', '', { shouldDirty: true, shouldValidate: true });
                     }}
                     value={field.value}
@@ -915,9 +895,7 @@ function CreateListing() {
                     <SelectTrigger>
                       <SelectValue
                         placeholder={
-                          formValues.parentCategory
-                            ? 'Select type'
-                            : 'Choose category first'
+                          formValues.parentCategory ? 'Select type' : 'Choose category first'
                         }
                       />
                     </SelectTrigger>
@@ -931,7 +909,9 @@ function CreateListing() {
                   </Select>
                 )}
               />
-              {errors.subCategory && <p className="text-sm text-destructive">{errors.subCategory.message}</p>}
+              {errors.subCategory && (
+                <p className="text-sm text-destructive">{errors.subCategory.message}</p>
+              )}
             </div>
           </div>
 
@@ -943,10 +923,11 @@ function CreateListing() {
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <SelectTrigger className="
-                      w-full
-                      sm:w-[260px]
-                    "
+                    <SelectTrigger
+                      className="
+                        w-full
+                        sm:w-[260px]
+                      "
                     >
                       <SelectValue placeholder="Top, bottom, dress..." />
                     </SelectTrigger>
@@ -960,15 +941,18 @@ function CreateListing() {
                   </Select>
                 )}
               />
-              {errors.clothingTypeId && <p className="text-sm text-destructive">{errors.clothingTypeId.message}</p>}
+              {errors.clothingTypeId && (
+                <p className="text-sm text-destructive">{errors.clothingTypeId.message}</p>
+              )}
             </div>
           )}
 
-          <div className="
-            grid gap-4
-            sm:grid-cols-2
-            lg:grid-cols-3
-          "
+          <div
+            className="
+              grid gap-4
+              sm:grid-cols-2
+              lg:grid-cols-3
+            "
           >
             <div className="space-y-2">
               <Label htmlFor="price">
@@ -979,14 +963,7 @@ function CreateListing() {
                 name="price"
                 control={control}
                 render={({ field }) => (
-                  <Input
-                    id="price"
-                    min="1"
-                    placeholder="0"
-                    step="0.01"
-                    type="number"
-                    {...field}
-                  />
+                  <Input id="price" min="1" placeholder="0" step="0.01" type="number" {...field} />
                 )}
               />
               {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
@@ -1038,7 +1015,9 @@ function CreateListing() {
                   </Select>
                 )}
               />
-              {errors.condition && <p className="text-sm text-destructive">{errors.condition.message}</p>}
+              {errors.condition && (
+                <p className="text-sm text-destructive">{errors.condition.message}</p>
+              )}
             </div>
           </div>
 
@@ -1049,7 +1028,7 @@ function CreateListing() {
                 tip={
                   formValues.subCategory === 'shoes'
                     ? 'Select the European shoe size (EU).'
-                    : 'Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. \'M but fits like S\').'
+                    : "Use the size on the garment label. If sizing runs differently from standard, mention it in the description (e.g. 'M but fits like S')."
                 }
               />
             </Label>
@@ -1062,27 +1041,24 @@ function CreateListing() {
                   value={field.value}
                   disabled={!formValues.subCategory}
                 >
-                  <SelectTrigger className="
-                    w-full
-                    sm:w-[200px]
-                  "
+                  <SelectTrigger
+                    className="
+                      w-full
+                      sm:w-[200px]
+                    "
                   >
                     <SelectValue
                       placeholder={
-                        formValues.subCategory
-                          ? 'Select size'
-                          : 'Choose subcategory first'
+                        formValues.subCategory ? 'Select size' : 'Choose subcategory first'
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {(formValues.subCategory === 'shoes' ? SHOE_SIZES : SIZES).map(
-                      s => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ),
-                    )}
+                    {(formValues.subCategory === 'shoes' ? SHOE_SIZES : SIZES).map(s => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
@@ -1090,12 +1066,7 @@ function CreateListing() {
             {sizeFieldError && <p className="text-sm text-destructive">{sizeFieldError.message}</p>}
           </div>
 
-          <Button
-            disabled={submitting}
-            size="lg"
-            type="submit"
-            className="w-full"
-          >
+          <Button disabled={submitting} size="lg" type="submit" className="w-full">
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditing ? 'Save Changes' : 'Submit Listing'}
           </Button>

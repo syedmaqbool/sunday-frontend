@@ -131,7 +131,8 @@ export interface CreateListingBoostCampaignErrors {
   };
 }
 
-export type CreateListingBoostCampaignError = CreateListingBoostCampaignErrors[keyof CreateListingBoostCampaignErrors];
+export type CreateListingBoostCampaignError =
+  CreateListingBoostCampaignErrors[keyof CreateListingBoostCampaignErrors];
 
 export interface CreateListingBoostCampaignResponses {
   /**
@@ -172,7 +173,13 @@ export interface CreateListingBoostCampaignResponses {
         status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
         createdAt: string;
       };
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
       createdAt: string;
     };
     message: string;
@@ -180,4 +187,5 @@ export interface CreateListingBoostCampaignResponses {
   };
 }
 
-export type CreateListingBoostCampaignResponse = CreateListingBoostCampaignResponses[keyof CreateListingBoostCampaignResponses];
+export type CreateListingBoostCampaignResponse =
+  CreateListingBoostCampaignResponses[keyof CreateListingBoostCampaignResponses];

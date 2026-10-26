@@ -17,25 +17,11 @@ import {
   Zap,
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import { AnalyticsPeriodFilter } from '@/components/AnalyticsPeriodFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -62,9 +48,7 @@ const DIMS: { key: DimKey; label: string }[] = [
   { key: 'buyerAgeBucket', label: 'Age' },
   { key: 'listingSize', label: 'Size' },
 ];
-const DIM_LABELS = Object.fromEntries(
-  DIMS.map(d => [d.key, d.label]),
-) as Record<DimKey, string>;
+const DIM_LABELS = Object.fromEntries(DIMS.map(d => [d.key, d.label])) as Record<DimKey, string>;
 
 // ── Backend bucket key → human label ─────────────────────────────────────────
 const PRICE_RANGE_LABELS: Record<string, string> = {
@@ -83,12 +67,9 @@ const AGE_BUCKET_LABELS: Record<string, string> = {
   UNKNOWN: 'Unknown',
 };
 function humanizeKey(dim: DimKey, key: string) {
-  if (dim === 'priceRange')
-    return PRICE_RANGE_LABELS[key] ?? key;
-  if (dim === 'buyerAgeBucket')
-    return AGE_BUCKET_LABELS[key] ?? key;
-  if (key === 'UNKNOWN')
-    return 'Unknown';
+  if (dim === 'priceRange') return PRICE_RANGE_LABELS[key] ?? key;
+  if (dim === 'buyerAgeBucket') return AGE_BUCKET_LABELS[key] ?? key;
+  if (key === 'UNKNOWN') return 'Unknown';
   return key;
 }
 
@@ -111,28 +92,19 @@ function getExportFilename(response: Response) {
   );
   const filename = filenameMatch?.[1] ?? filenameMatch?.[2] ?? filenameMatch?.[3];
 
-  if (!filename)
-    return DEFAULT_MARKETING_LEADS_FILENAME;
+  if (!filename) return DEFAULT_MARKETING_LEADS_FILENAME;
 
   const trimmedFilename = filename.trim();
-  if (!trimmedFilename)
-    return DEFAULT_MARKETING_LEADS_FILENAME;
+  if (!trimmedFilename) return DEFAULT_MARKETING_LEADS_FILENAME;
 
   try {
     return decodeURIComponent(trimmedFilename) || DEFAULT_MARKETING_LEADS_FILENAME;
-  }
-  catch {
+  } catch {
     return DEFAULT_MARKETING_LEADS_FILENAME;
   }
 }
 
-function DimChips({
-  onChange,
-  value,
-}: {
-  onChange: (d: DimKey) => void;
-  value: DimKey;
-}) {
+function DimChips({ onChange, value }: { onChange: (d: DimKey) => void; value: DimKey }) {
   return (
     <div className="flex flex-wrap gap-1 rounded-full border border-border bg-muted/40 p-1">
       {DIMS.map(d => (
@@ -168,19 +140,12 @@ function KPI({
   value: string;
 }) {
   return (
-    <Card
-      className={cn(
-        'transition-shadow',
-        highlight && 'ring-1 ring-destructive/40',
-      )}
-    >
+    <Card className={cn('transition-shadow', highlight && 'ring-1 ring-destructive/40')}>
       <CardContent className="flex flex-col gap-2 p-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
           <Icon className="h-4 w-4 text-primary" />
         </div>
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
         <p className="font-heading text-2xl font-bold text-foreground">{value}</p>
       </CardContent>
     </Card>
@@ -222,19 +187,14 @@ function Analytics() {
   const leadsTotal = leadsResult?.pagination?.total ?? 0;
   const totalPages = Math.ceil(leadsTotal / leadsPageSize);
 
-  const startRecord
-    = leadsTotal === 0 ? 0 : (leadsPage - 1) * leadsPageSize + 1;
+  const startRecord = leadsTotal === 0 ? 0 : (leadsPage - 1) * leadsPageSize + 1;
 
-  const endRecord = Math.min(
-    leadsPage * leadsPageSize,
-    leadsTotal,
-  );
+  const endRecord = Math.min(leadsPage * leadsPageSize, leadsTotal);
   const data = analyticsResult?.data;
   const exportMarketingLeads = useExportAdminMarketingLeadsMutation();
 
   const handleExportMarketingLeads = async () => {
-    if (exportInProgress.current || exportMarketingLeads.isPending)
-      return;
+    if (exportInProgress.current || exportMarketingLeads.isPending) return;
 
     exportInProgress.current = true;
 
@@ -254,16 +214,13 @@ function Analytics() {
       document.body.append(link);
       try {
         link.click();
-      }
-      finally {
+      } finally {
         link.remove();
         URL.revokeObjectURL(url);
       }
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Failed to export marketing leads.');
-    }
-    finally {
+    } finally {
       exportInProgress.current = false;
     }
   };
@@ -271,9 +228,7 @@ function Analytics() {
   // ── Order volume (already sorted desc by orderCount from backend) ──────────
   const orderVolumeData = useMemo(() => {
     const rows = data?.breakdowns[orderDim] ?? [];
-    return rows
-      .slice(0, 8)
-      .map(r => ({ key: humanizeKey(orderDim, r.key), value: r.orderCount }));
+    return rows.slice(0, 8).map(r => ({ key: humanizeKey(orderDim, r.key), value: r.orderCount }));
   }, [data, orderDim]);
 
   // ── Sales volume — re-sort by salesVolume (backend sorts by orderCount) ────
@@ -291,9 +246,7 @@ function Analytics() {
 
   // ── Refunds ──────────────────────────────────────────────────────────────
   const refundsData = useMemo(() => {
-    const rows = (data?.breakdowns[refundDim] ?? []).filter(
-      r => r.refundedComplaintCount > 0,
-    );
+    const rows = (data?.breakdowns[refundDim] ?? []).filter(r => r.refundedComplaintCount > 0);
     return rows
       .toSorted((a, b) => b.refundedComplaintCount - a.refundedComplaintCount)
       .slice(0, 5)
@@ -328,9 +281,7 @@ function Analytics() {
   // ── Price variance — per-dimension breakdown (no single global number) ─────
   const priceVarianceTiles = useMemo(() => {
     const rows = (data?.priceVariance[offersDim] ?? []).toSorted(
-      (a, b) =>
-        Math.abs(b.averageVariancePercentage)
-        - Math.abs(a.averageVariancePercentage),
+      (a, b) => Math.abs(b.averageVariancePercentage) - Math.abs(a.averageVariancePercentage),
     );
     return rows.slice(0, 4).map(r => ({
       key: humanizeKey(offersDim, r.key),
@@ -351,26 +302,24 @@ function Analytics() {
 
   return (
     <div className="space-y-6">
-      <div className="
-        flex flex-col gap-3
-        sm:flex-row sm:items-center sm:justify-between
-      "
+      <div
+        className="
+          flex flex-col gap-3
+          sm:flex-row sm:items-center sm:justify-between
+        "
       >
         <div>
-          <h2 className="font-heading text-2xl font-bold text-foreground">
-            Analytics Overview
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Performance metrics for the marketplace
-          </p>
+          <h2 className="font-heading text-2xl font-bold text-foreground">Analytics Overview</h2>
+          <p className="text-sm text-muted-foreground">Performance metrics for the marketplace</p>
         </div>
-        <div className="
-          flex flex-col gap-2
-          sm:flex-row sm:items-center
-        "
+        <div
+          className="
+            flex flex-col gap-2
+            sm:flex-row sm:items-center
+          "
         >
           <AnalyticsPeriodFilter
-            onChange={(value) => {
+            onChange={value => {
               setDateFilter(value);
               setLeadsPage(1);
             }}
@@ -381,19 +330,21 @@ function Analytics() {
             disabled={exportMarketingLeads.isPending}
             size="sm"
           >
-            {exportMarketingLeads.isPending
-              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              : <Download className="mr-2 h-4 w-4" />}
-            {' '}
+            {exportMarketingLeads.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}{' '}
             {exportMarketingLeads.isPending ? 'Downloading...' : 'Export Report'}
           </Button>
         </div>
       </div>
 
-      <div className="
-        grid grid-cols-2 gap-3
-        md:grid-cols-5
-      "
+      <div
+        className="
+          grid grid-cols-2 gap-3
+          md:grid-cols-5
+        "
       >
         <KPI
           value={`Rs ${(kpis?.totalRevenue ?? 0).toLocaleString()}`}
@@ -423,75 +374,57 @@ function Analytics() {
         />
       </div>
 
-      <div className="
-        grid gap-4
-        lg:grid-cols-2
-      "
+      <div
+        className="
+          grid gap-4
+          lg:grid-cols-2
+        "
       >
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Order Volume</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Distribution by
-                {' '}
-                {DIM_LABELS[orderDim]}
+                Distribution by {DIM_LABELS[orderDim]}
               </p>
             </div>
             <DimChips onChange={setOrderDim} value={orderDim} />
           </CardHeader>
           <CardContent>
-            {orderVolumeData.length === 0
-              ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    No data
-                  </p>
-                )
-              : (
-                  <ChartContainer
-                    config={
+            {orderVolumeData.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+            ) : (
+              <ChartContainer
+                config={
                   {
                     value: { color: 'hsl(var(--primary))', label: 'Orders' },
                   } satisfies ChartConfig
-                    }
-                    className="h-[260px] w-full"
-                  >
-                    <BarChart
-                      data={orderVolumeData}
-                      margin={{ bottom: 0, left: 0, right: 10, top: 10 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        className="stroke-border/40"
+                }
+                className="h-[260px] w-full"
+              >
+                <BarChart
+                  data={orderVolumeData}
+                  margin={{ bottom: 0, left: 0, right: 10, top: 10 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    className="stroke-border/40"
+                  />
+                  <XAxis axisLine={false} dataKey="key" tickLine={false} className="text-[10px]" />
+                  <YAxis axisLine={false} tickLine={false} className="text-[10px]" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {orderVolumeData.map((data, index) => (
+                      <Cell
+                        key={data.key}
+                        fill={index === 0 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.25)'}
                       />
-                      <XAxis
-                        axisLine={false}
-                        dataKey="key"
-                        tickLine={false}
-                        className="text-[10px]"
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        className="text-[10px]"
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                        {orderVolumeData.map((data, index) => (
-                          <Cell
-                            key={data.key}
-                            fill={
-                              index === 0
-                                ? 'hsl(var(--primary))'
-                                : 'hsl(var(--primary) / 0.25)'
-                            }
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
-                )}
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -500,132 +433,103 @@ function Analytics() {
             <div>
               <CardTitle className="text-base">Sales Volume</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Revenue share by
-                {' '}
-                {DIM_LABELS[salesDim]}
+                Revenue share by {DIM_LABELS[salesDim]}
               </p>
             </div>
             <DimChips onChange={setSalesDim} value={salesDim} />
           </CardHeader>
           <CardContent>
-            {salesVolumeData.length === 0
-              ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    No data
-                  </p>
-                )
-              : (
-                  <div className="space-y-4 py-2">
-                    {salesVolumeData.map(r => (
-                      <div key={r.key} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-foreground">
-                            {r.key}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {r.pct}
-                            %
-                          </span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div
-                            style={{ width: `${r.pct}%` }}
-                            className="h-full rounded-full bg-primary transition-all"
-                          />
-                        </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          Rs
-                          {' '}
-                          {Math.round(r.value).toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
+            {salesVolumeData.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+            ) : (
+              <div className="space-y-4 py-2">
+                {salesVolumeData.map(r => (
+                  <div key={r.key} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-foreground">{r.key}</span>
+                      <span className="text-muted-foreground">{r.pct}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        style={{ width: `${r.pct}%` }}
+                        className="h-full rounded-full bg-primary transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Rs {Math.round(r.value).toLocaleString()}
+                    </p>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="
-        grid gap-4
-        lg:grid-cols-2
-      "
+      <div
+        className="
+          grid gap-4
+          lg:grid-cols-2
+        "
       >
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
               <CardTitle className="text-base">Refunds Analytics</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Top
-                {' '}
-                {DIM_LABELS[refundDim]}
-                {' '}
-                buckets
-              </p>
+              <p className="text-xs text-muted-foreground">Top {DIM_LABELS[refundDim]} buckets</p>
             </div>
             <DimChips onChange={setRefundDim} value={refundDim} />
           </CardHeader>
           <CardContent>
-            {refundsData.length === 0
-              ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    No refund data
-                  </p>
-                )
-              : (
-                  <div className="
-                    grid grid-cols-1 items-center gap-4
-                    sm:grid-cols-2
-                  "
-                  >
-                    <ChartContainer
-                      config={{ value: { label: 'Refunds' } } satisfies ChartConfig}
-                      className="h-[220px] w-full"
+            {refundsData.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No refund data</p>
+            ) : (
+              <div
+                className="
+                  grid grid-cols-1 items-center gap-4
+                  sm:grid-cols-2
+                "
+              >
+                <ChartContainer
+                  config={{ value: { label: 'Refunds' } } satisfies ChartConfig}
+                  className="h-[220px] w-full"
+                >
+                  <PieChart>
+                    <Pie
+                      cx="50%"
+                      cy="50%"
+                      data={refundsData}
+                      dataKey="value"
+                      innerRadius={55}
+                      nameKey="key"
+                      outerRadius={85}
+                      paddingAngle={2}
                     >
-                      <PieChart>
-                        <Pie
-                          cx="50%"
-                          cy="50%"
-                          data={refundsData}
-                          dataKey="value"
-                          innerRadius={55}
-                          nameKey="key"
-                          outerRadius={85}
-                          paddingAngle={2}
-                        >
-                          {refundsData.map((data, index) => (
-                            <Cell
-                              key={data.key}
-                              fill={CHART_COLORS[index % CHART_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </PieChart>
-                    </ChartContainer>
-                    <div className="space-y-2">
-                      {refundsData.map((r, index) => (
-                        <div
-                          key={r.key}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              style={{
-                                background: CHART_COLORS[index % CHART_COLORS.length],
-                              }}
-                              className="h-2.5 w-2.5 rounded-full"
-                            />
-                            <span className="text-foreground">{r.key}</span>
-                          </div>
-                          <span className="font-semibold text-foreground">
-                            {r.value}
-                          </span>
-                        </div>
+                      {refundsData.map((data, index) => (
+                        <Cell key={data.key} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                       ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
+                </ChartContainer>
+                <div className="space-y-2">
+                  {refundsData.map((r, index) => (
+                    <div key={r.key} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span
+                          style={{
+                            background: CHART_COLORS[index % CHART_COLORS.length],
+                          }}
+                          className="h-2.5 w-2.5 rounded-full"
+                        />
+                        <span className="text-foreground">{r.key}</span>
+                      </div>
+                      <span className="font-semibold text-foreground">{r.value}</span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -634,203 +538,171 @@ function Analytics() {
             <div>
               <CardTitle className="text-base">Conversion Funnel</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Engaged → Accepted → Purchased by
-                {' '}
-                {DIM_LABELS[convDim]}
+                Engaged → Accepted → Purchased by {DIM_LABELS[convDim]}
               </p>
             </div>
             <DimChips onChange={setConvDim} value={convDim} />
           </CardHeader>
           <CardContent>
-            {topFunnel
-              ? (
-                  <div className="space-y-3">
-                    {[
-                      {
-                        icon: Users,
-                        label: `Engaged · ${topFunnel.key}`,
-                        tint: 'bg-rose-100 text-rose-600',
-                        value: topFunnel.engaged,
-                      },
-                      {
-                        icon: ShoppingBag,
-                        label: 'Offer Accepted',
-                        tint: 'bg-amber-100 text-amber-600',
-                        value: topFunnel.accepted,
-                      },
-                      {
-                        icon: CheckCircle2,
-                        label: 'Purchased',
-                        tint: 'bg-emerald-100 text-emerald-600',
-                        value: topFunnel.ordered,
-                      },
-                    ].map((s) => {
-                      const max = Math.max(topFunnel.engaged, 1);
-                      return (
-                        <div key={s.label} className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              'flex h-9 w-9 items-center justify-center rounded-full',
-                              s.tint,
-                            )}
-                          >
-                            <s.icon className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-foreground">
-                                {s.label}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {s.value.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                              <div
-                                style={{ width: `${(s.value / max) * 100}%` }}
-                                className="h-full rounded-full bg-primary"
-                              />
-                            </div>
-                          </div>
+            {topFunnel ? (
+              <div className="space-y-3">
+                {[
+                  {
+                    icon: Users,
+                    label: `Engaged · ${topFunnel.key}`,
+                    tint: 'bg-rose-100 text-rose-600',
+                    value: topFunnel.engaged,
+                  },
+                  {
+                    icon: ShoppingBag,
+                    label: 'Offer Accepted',
+                    tint: 'bg-amber-100 text-amber-600',
+                    value: topFunnel.accepted,
+                  },
+                  {
+                    icon: CheckCircle2,
+                    label: 'Purchased',
+                    tint: 'bg-emerald-100 text-emerald-600',
+                    value: topFunnel.ordered,
+                  },
+                ].map(s => {
+                  const max = Math.max(topFunnel.engaged, 1);
+                  return (
+                    <div key={s.label} className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'flex h-9 w-9 items-center justify-center rounded-full',
+                          s.tint,
+                        )}
+                      >
+                        <s.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-foreground">{s.label}</span>
+                          <span className="text-muted-foreground">{s.value.toLocaleString()}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )
-              : (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    No data
-                  </p>
-                )}
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div
+                            style={{ width: `${(s.value / max) * 100}%` }}
+                            className="h-full rounded-full bg-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-12 text-center text-sm text-muted-foreground">No data</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="
-        grid gap-4
-        lg:grid-cols-3
-      "
+      <div
+        className="
+          grid gap-4
+          lg:grid-cols-3
+        "
       >
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <div>
-              <CardTitle className="text-base">
-                Avg Number of Offers Before Order
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Sorted by
-                {' '}
-                {DIM_LABELS[offersDim]}
-              </p>
+              <CardTitle className="text-base">Avg Number of Offers Before Order</CardTitle>
+              <p className="text-xs text-muted-foreground">Sorted by {DIM_LABELS[offersDim]}</p>
             </div>
             <DimChips onChange={setOffersDim} value={offersDim} />
           </CardHeader>
           <CardContent>
-            {avgOffersTiles.length === 0
-              ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    No data
-                  </p>
-                )
-              : (
-                  <div className="
-                    grid grid-cols-2 gap-3
-                    sm:grid-cols-4
-                  "
+            {avgOffersTiles.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+            ) : (
+              <div
+                className="
+                  grid grid-cols-2 gap-3
+                  sm:grid-cols-4
+                "
+              >
+                {avgOffersTiles.map(t => (
+                  <div
+                    key={t.key}
+                    className="rounded-lg border border-border bg-muted/30 p-4 text-center"
                   >
-                    {avgOffersTiles.map(t => (
-                      <div
-                        key={t.key}
-                        className="rounded-lg border border-border bg-muted/30 p-4 text-center"
-                      >
-                        <p className="font-heading text-3xl font-bold text-primary">
-                          {t.avg}
-                        </p>
-                        <p className="mt-1 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
-                          {t.key}
-                        </p>
-                      </div>
-                    ))}
+                    <p className="font-heading text-3xl font-bold text-primary">{t.avg}</p>
+                    <p className="mt-1 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {t.key}
+                    </p>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="
-          bg-amber-50/60
-          dark:bg-amber-950/20
-        "
+        <Card
+          className="
+            bg-amber-50/60
+            dark:bg-amber-950/20
+          "
         >
           <CardHeader className="space-y-0 pb-2">
-            <p className="
-              flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700
-              dark:text-amber-400
-            "
+            <p
+              className="
+                flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700
+                dark:text-amber-400
+              "
             >
-              <Zap className="h-3 w-3" />
-              {' '}
-              Price Variation
+              <Zap className="h-3 w-3" /> Price Variation
             </p>
-            <CardTitle className="text-base">
-              Bid Delta by
-              {' '}
-              {DIM_LABELS[offersDim]}
-            </CardTitle>
+            <CardTitle className="text-base">Bid Delta by {DIM_LABELS[offersDim]}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {priceVarianceTiles.length === 0
-              ? (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    No accepted offers yet
-                  </p>
-                )
-              : (
-                  priceVarianceTiles.map(t => (
-                    <div
-                      key={t.key}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="truncate text-foreground">{t.key}</span>
-                      <span
-                        className={cn(
-                          'font-semibold',
-                          t.avgPct < 0 ? 'text-destructive' : 'text-emerald-600',
-                        )}
-                      >
-                        {t.avgPct >= 0 ? '+' : ''}
-                        {t.avgPct}
-                        %
-                      </span>
-                    </div>
-                  ))
-                )}
+            {priceVarianceTiles.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No accepted offers yet
+              </p>
+            ) : (
+              priceVarianceTiles.map(t => (
+                <div key={t.key} className="flex items-center justify-between text-sm">
+                  <span className="truncate text-foreground">{t.key}</span>
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      t.avgPct < 0 ? 'text-destructive' : 'text-emerald-600',
+                    )}
+                  >
+                    {t.avgPct >= 0 ? '+' : ''}
+                    {t.avgPct}%
+                  </span>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader className="
-          flex flex-col gap-3
-          sm:flex-row sm:items-center sm:justify-between
-        "
+        <CardHeader
+          className="
+            flex flex-col gap-3
+            sm:flex-row sm:items-center sm:justify-between
+          "
         >
           <div>
             <CardTitle className="text-base">Marketing Leads</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {leadsTotal}
-              {' '}
-              total leads
-            </p>
+            <p className="text-xs text-muted-foreground">{leadsTotal} total leads</p>
           </div>
-          <div className="
-            flex flex-col items-stretch gap-2
-            sm:flex-row sm:items-center
-          "
+          <div
+            className="
+              flex flex-col items-stretch gap-2
+              sm:flex-row sm:items-center
+            "
           >
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                onChange={(event) => {
+                onChange={event => {
                   setLeadSearch(event.target.value);
                   setLeadsPage(1);
                 }}
@@ -848,115 +720,93 @@ function Analytics() {
               size="sm"
               variant="outline"
             >
-              {exportMarketingLeads.isPending
-                ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                : <Download className="mr-2 h-3.5 w-3.5" />}
-              {' '}
+              {exportMarketingLeads.isPending ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-3.5 w-3.5" />
+              )}{' '}
               {exportMarketingLeads.isPending ? 'Downloading...' : 'Download'}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {leadsLoading
-            ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              )
-            : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>WhatsApp / Phone</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead className="text-right">Orders</TableHead>
-                      <TableHead className="text-right">Offers</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={6}
-                              className="py-8 text-center text-sm text-muted-foreground"
-                            >
-                              No leads
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : (
-                          leads.map((l) => {
-                            const status
-                              = LEAD_STATUS_META[l.leadStatus] ?? LEAD_STATUS_META.NEW;
-                            return (
-                              <TableRow key={l.userId}>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold uppercase text-primary">
-                                      {l.name.slice(0, 2)}
-                                    </div>
-                                    <span className="font-medium text-foreground">
-                                      {l.name}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="font-mono text-xs">
-                                  {l.phone || '—'}
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                  {l.location || '—'}
-                                </TableCell>
-                                <TableCell className="text-right text-sm">
-                                  {l.orderCount}
-                                </TableCell>
-                                <TableCell className="text-right text-sm">
-                                  {l.offerCount}
-                                </TableCell>
-                                <TableCell>
-                                  <span
-                                    className={cn(
-                                      'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                                      status.tone,
-                                    )}
-                                  >
-                                    {status.label}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        )}
-                  </TableBody>
-                </Table>
-              )}
+          {leadsLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>WhatsApp / Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-right">Orders</TableHead>
+                  <TableHead className="text-right">Offers</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leads.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No leads
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  leads.map(l => {
+                    const status = LEAD_STATUS_META[l.leadStatus] ?? LEAD_STATUS_META.NEW;
+                    return (
+                      <TableRow key={l.userId}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold uppercase text-primary">
+                              {l.name.slice(0, 2)}
+                            </div>
+                            <span className="font-medium text-foreground">{l.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{l.phone || '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {l.location || '—'}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">{l.orderCount}</TableCell>
+                        <TableCell className="text-right text-sm">{l.offerCount}</TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                              status.tone,
+                            )}
+                          >
+                            {status.label}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {leadsTotal > 0 && (
-            <div className="
-              flex flex-col gap-3 border-t border-border px-4 py-3
-              sm:flex-row sm:items-center sm:justify-between
-            "
+            <div
+              className="
+                flex flex-col gap-3 border-t border-border px-4 py-3
+                sm:flex-row sm:items-center sm:justify-between
+              "
             >
               <p className="text-xs text-muted-foreground">
-                Showing
-                {' '}
-                {startRecord}
-                –
-                {endRecord}
-                {' '}
-                of
-                {' '}
-                {leadsTotal}
-                {' '}
-                leads
+                Showing {startRecord}–{endRecord} of {leadsTotal} leads
               </p>
 
               <div className="flex items-center justify-end gap-2">
                 <Button
-                  onClick={() =>
-                    setLeadsPage(page => Math.max(1, page - 1))}
+                  onClick={() => setLeadsPage(page => Math.max(1, page - 1))}
                   disabled={leadsPage <= 1 || leadsLoading}
                   size="sm"
                   variant="outline"
@@ -965,18 +815,11 @@ function Analytics() {
                 </Button>
 
                 <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  Page
-                  {' '}
-                  {leadsPage}
-                  {' '}
-                  of
-                  {' '}
-                  {totalPages}
+                  Page {leadsPage} of {totalPages}
                 </span>
 
                 <Button
-                  onClick={() =>
-                    setLeadsPage(page => Math.min(totalPages, page + 1))}
+                  onClick={() => setLeadsPage(page => Math.min(totalPages, page + 1))}
                   disabled={leadsPage >= totalPages || leadsLoading}
                   size="sm"
                   variant="outline"
@@ -986,7 +829,6 @@ function Analytics() {
               </div>
             </div>
           )}
-
         </CardContent>
       </Card>
     </div>

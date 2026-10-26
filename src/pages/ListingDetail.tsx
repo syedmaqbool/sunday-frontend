@@ -54,16 +54,13 @@ import {
 function useCountdown(target?: string | null) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!target)
-      return;
+    if (!target) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [target]);
-  if (!target)
-    return { countdown: null, isExpired: false };
+  if (!target) return { countdown: null, isExpired: false };
   const ms = new Date(target).getTime() - now;
-  if (ms <= 0)
-    return { countdown: '00:00:00', isExpired: true };
+  if (ms <= 0) return { countdown: '00:00:00', isExpired: true };
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
@@ -96,80 +93,73 @@ function ImageGallery({
   return (
     <div className="min-w-0 space-y-3">
       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-        {isCurrentIsVideo
-          ? (
-              <div className="relative h-full w-full bg-black">
-                <video
-                  key={current}
-                  src={current}
-                  onClick={(event) => {
-                    const video = event.currentTarget;
+        {isCurrentIsVideo ? (
+          <div className="relative h-full w-full bg-black">
+            <video
+              key={current}
+              src={current}
+              onClick={event => {
+                const video = event.currentTarget;
 
-                    if (video.paused) {
-                      void video.play();
-                    }
-                    else {
-                      video.pause();
-                    }
-                  }}
-                  onVolumeChange={(event) => {
-                    const video = event.currentTarget;
+                if (video.paused) {
+                  void video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+              onVolumeChange={event => {
+                const video = event.currentTarget;
 
-                    if (!video.muted || video.volume !== 0) {
-                      video.muted = true;
-                      video.volume = 0;
-                    }
-                  }}
-                  controls={false}
-                  muted
-                  playsInline
-                  className={`
-                    h-full w-full bg-black object-contain
-                    ${unavailableClass}
-                  `}
-                />
+                if (!video.muted || video.volume !== 0) {
+                  video.muted = true;
+                  video.volume = 0;
+                }
+              }}
+              controls={false}
+              muted
+              playsInline
+              className={`
+                h-full w-full bg-black object-contain
+                ${unavailableClass}
+              `}
+            />
 
-                <button
-                  onClick={(event) => {
-                    const video
-                      = event.currentTarget.parentElement?.querySelector('video');
+            <button
+              onClick={event => {
+                const video = event.currentTarget.parentElement?.querySelector('video');
 
-                    if (!video)
-                      return;
+                if (!video) return;
 
-                    if (video.paused) {
-                      void video.play();
-                    }
-                    else {
-                      video.pause();
-                    }
-                  }}
-                  type="button"
-                  className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
-                >
-                  Play / Pause
-                </button>
+                if (video.paused) {
+                  void video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+              type="button"
+              className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
+            >
+              Play / Pause
+            </button>
 
-                <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
-                  Muted
-                </span>
-              </div>
-            )
-          : (
-              <img
-                src={current}
-                alt={`${title} - photo ${selected + 1}`}
-                className={`
-                  h-full w-full object-cover transition-opacity duration-300
-                  ${unavailableClass}
-                `}
-              />
-            )}
+            <span className="absolute bottom-3 right-3 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground backdrop-blur-sm">
+              Muted
+            </span>
+          </div>
+        ) : (
+          <img
+            src={current}
+            alt={`${title} - photo ${selected + 1}`}
+            className={`
+              h-full w-full object-cover transition-opacity duration-300
+              ${unavailableClass}
+            `}
+          />
+        )}
         {images.length > 1 && (
           <>
             <button
-              onClick={() =>
-                setSelected(p => (p - 1 + images.length) % images.length)}
+              onClick={() => setSelected(p => (p - 1 + images.length) % images.length)}
               aria-label="Previous photo"
               className="
                 absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground shadow-md backdrop-blur-sm transition
@@ -214,38 +204,38 @@ function ImageGallery({
                 onClick={() => setSelected(index)}
                 className={`
                   relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition
-                  ${index === selected
-                ? 'border-primary'
-                : `
-                  border-transparent opacity-60
-                  hover:opacity-100
-                `}
+                  ${
+                    index === selected
+                      ? 'border-primary'
+                      : `
+                        border-transparent opacity-60
+                        hover:opacity-100
+                      `
+                  }
                 `}
               >
-                {isVid
-                  ? (
-                      <>
-                        <video
-                          src={image}
-                          muted
-                          preload="metadata"
-                          className="h-full w-full bg-black object-cover"
-                        />
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">
-                          ▶
-                        </span>
-                      </>
-                    )
-                  : (
-                      <img
-                        src={image}
-                        alt={`${title} thumbnail ${index + 1}`}
-                        className={`
-                          h-full w-full object-cover
-                          ${isUnavailable ? 'opacity-60 grayscale' : ''}
-                        `}
-                      />
-                    )}
+                {isVid ? (
+                  <>
+                    <video
+                      src={image}
+                      muted
+                      preload="metadata"
+                      className="h-full w-full bg-black object-cover"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-semibold text-white">
+                      ▶
+                    </span>
+                  </>
+                ) : (
+                  <img
+                    src={image}
+                    alt={`${title} thumbnail ${index + 1}`}
+                    className={`
+                      h-full w-full object-cover
+                      ${isUnavailable ? 'opacity-60 grayscale' : ''}
+                    `}
+                  />
+                )}
               </button>
             );
           })}
@@ -286,23 +276,23 @@ function ListingDetail() {
   const isReserved = listing?.status === 'RESERVED';
   const isReservedForMe = !!listing?.reservedForCurrentUser;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
-  const { countdown, isExpired: isReservationExpired } = useCountdown(isReserved ? listing?.reservedUntil : null);
-  const isAcceptedOfferReviewPending = isReserved
-    && !!listing?.reservedOfferId
-    && listing.reservedUntil === null;
-  const isAcceptedOfferPaymentWindowClosed = isReservedForMe
-    && !!listing?.reservedOfferId
-    && isReservationExpired;
+  const { countdown, isExpired: isReservationExpired } = useCountdown(
+    isReserved ? listing?.reservedUntil : null,
+  );
+  const isAcceptedOfferReviewPending =
+    isReserved && !!listing?.reservedOfferId && listing.reservedUntil === null;
+  const isAcceptedOfferPaymentWindowClosed =
+    isReservedForMe && !!listing?.reservedOfferId && isReservationExpired;
 
-  const { data: reservedOfferAmount } = useQuery(getReservedOfferAmountOptions(
-    listing?.reservedOfferId,
-    !!(isReservedForMe && listing?.reservedOfferId),
-  ));
+  const { data: reservedOfferAmount } = useQuery(
+    getReservedOfferAmountOptions(
+      listing?.reservedOfferId,
+      !!(isReservedForMe && listing?.reservedOfferId),
+    ),
+  );
 
-  const effectivePrice
-    = isReservedForMe && reservedOfferAmount
-      ? reservedOfferAmount
-      : (listing?.price ?? 0);
+  const effectivePrice =
+    isReservedForMe && reservedOfferAmount ? reservedOfferAmount : (listing?.price ?? 0);
 
   const cancelReservation = useCancelMyListingReservationMutation();
   const deleteMutation = useDeleteMyListingMutation();
@@ -334,15 +324,14 @@ function ListingDetail() {
             hover:text-foreground
           "
         >
-          <ArrowLeft className="h-4 w-4" />
-          {' '}
-          Back to listings
+          <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
-        <div className="
-          grid gap-8
-          md:grid-cols-2
-        "
+        <div
+          className="
+            grid gap-8
+            md:grid-cols-2
+          "
         >
           <ImageGallery
             images={listing ? getListingMediaUrls(listing) : []}
@@ -354,46 +343,35 @@ function ListingDetail() {
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {listing.brand}
             </p>
-            <h1 className="
-              mt-2 font-heading text-3xl font-bold text-foreground
-              md:text-4xl
-            "
+            <h1
+              className="
+                mt-2 font-heading text-3xl font-bold text-foreground
+                md:text-4xl
+              "
             >
               {listing.title}
             </h1>
-            {isReservedForMe
-              && reservedOfferAmount
-              && reservedOfferAmount !== listing.price
-              ? (
-                  <div className="mt-4 flex items-baseline gap-3">
-                    <p className="text-3xl font-bold text-foreground">
-                      Rs
-                      {' '}
-                      {reservedOfferAmount.toLocaleString()}
-                    </p>
-                    <p className="text-lg text-muted-foreground line-through">
-                      Rs
-                      {' '}
-                      {listing.price.toLocaleString()}
-                    </p>
-                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      Your accepted offer
-                    </span>
-                  </div>
-                )
-              : (
-                  <p className="mt-4 text-3xl font-bold text-foreground">
-                    Rs
-                    {' '}
-                    {listing.price.toLocaleString()}
-                  </p>
-                )}
+            {isReservedForMe && reservedOfferAmount && reservedOfferAmount !== listing.price ? (
+              <div className="mt-4 flex items-baseline gap-3">
+                <p className="text-3xl font-bold text-foreground">
+                  Rs {reservedOfferAmount.toLocaleString()}
+                </p>
+                <p className="text-lg text-muted-foreground line-through">
+                  Rs {listing.price.toLocaleString()}
+                </p>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Your accepted offer
+                </span>
+              </div>
+            ) : (
+              <p className="mt-4 text-3xl font-bold text-foreground">
+                Rs {listing.price.toLocaleString()}
+              </p>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                Size
-                {' '}
-                {listing.size}
+                Size {listing.size}
               </span>
               <span className="rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
                 {formatEnumLabel(listing.condition)}
@@ -408,32 +386,21 @@ function ListingDetail() {
               )}
               {listing.weight && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                  <Weight className="h-3 w-3" />
-                  {' '}
-                  {getWeightLabel(listing.weight)}
+                  <Weight className="h-3 w-3" /> {getWeightLabel(listing.weight)}
                 </span>
               )}
             </div>
 
-            <p className="mt-6 leading-relaxed text-muted-foreground">
-              {listing.description}
-            </p>
+            <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
             {isOwner && <MyListingFeedbackSection listingId={listing.id} />}
 
             {listing.status === 'SOLD' && !isOwner && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
-                <p className="font-heading text-lg font-semibold text-foreground">
-                  Sold
-                </p>
+                <p className="font-heading text-lg font-semibold text-foreground">Sold</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This item has already been purchased and is no longer
-                  available.
+                  This item has already been purchased and is no longer available.
                 </p>
-                <Button
-                  onClick={() => navigate('/listings')}
-                  variant="outline"
-                  className="mt-4"
-                >
+                <Button onClick={() => navigate('/listings')} variant="outline" className="mt-4">
                   Browse other listings
                 </Button>
                 <SoldListingNotice />
@@ -441,192 +408,144 @@ function ListingDetail() {
             )}
 
             {isReserved && (
-              <div
-                className="mt-6 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground"
-              >
-                {isReservedForMe
-                  ? (
-                      isAcceptedOfferReviewPending
-                        ? (
-                            <p>
-                              Your payment proof is awaiting admin review. This listing will remain reserved during the review.
-                            </p>
-                          )
-                        : isAcceptedOfferPaymentWindowClosed
-                          ? (
-                              <p>
-                                The payment deadline has passed. This accepted offer is no longer available for checkout.
-                              </p>
-                            )
-                          : (
-                              <p>
-                                <span className="font-semibold text-primary">
-                                  Reserved for you.
-                                </span>
-                                {' '}
-                                Complete your purchase within
-                                {' '}
-                                <span className="font-mono font-semibold text-foreground">
-                                  {countdown}
-                                </span>
-                                .
-                              </p>
-                            )
-                    )
-                  : isOwner
-                    ? (
-                        isAcceptedOfferReviewPending
-                          ? (
-                              <p>
-                                The buyer's payment proof is awaiting admin review. This listing will remain reserved until the review is complete.
-                              </p>
-                            )
-                          : (
-                              <p>
-                                Reserved for an approved buyer · expires in
-                                {' '}
-                                <span className="font-mono font-semibold text-foreground">
-                                  {countdown}
-                                </span>
-                                .
-                              </p>
-                            )
-                      )
-                    : (
-                        <p>
-                          Currently reserved for another buyer · available again in
-                          {' '}
-                          <span className="font-mono font-semibold text-foreground">
-                            {countdown}
-                          </span>
-                          .
-                        </p>
-                      )}
+              <div className="mt-6 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+                {isReservedForMe ? (
+                  isAcceptedOfferReviewPending ? (
+                    <p>
+                      Your payment proof is awaiting admin review. This listing will remain reserved
+                      during the review.
+                    </p>
+                  ) : isAcceptedOfferPaymentWindowClosed ? (
+                    <p>
+                      The payment deadline has passed. This accepted offer is no longer available
+                      for checkout.
+                    </p>
+                  ) : (
+                    <p>
+                      <span className="font-semibold text-primary">Reserved for you.</span> Complete
+                      your purchase within{' '}
+                      <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                    </p>
+                  )
+                ) : isOwner ? (
+                  isAcceptedOfferReviewPending ? (
+                    <p>
+                      The buyer's payment proof is awaiting admin review. This listing will remain
+                      reserved until the review is complete.
+                    </p>
+                  ) : (
+                    <p>
+                      Reserved for an approved buyer · expires in{' '}
+                      <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                    </p>
+                  )
+                ) : (
+                  <p>
+                    Currently reserved for another buyer · available again in{' '}
+                    <span className="font-mono font-semibold text-foreground">{countdown}</span>.
+                  </p>
+                )}
               </div>
             )}
 
-            {isOwner
-              ? (
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    {isSellerEditableListingStatus(listing.status) && (
-                      <Button
-                        onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                        size="lg"
-                        variant="outline"
-                        className="flex-1 gap-2"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        {' '}
-                        Edit Listing
-                      </Button>
-                    )}
-                    {isReserved && !isAcceptedOfferReviewPending && (
-                      <Button
+            {isOwner ? (
+              <div className="mt-8 flex flex-wrap gap-3">
+                {isSellerEditableListingStatus(listing.status) && (
+                  <Button
+                    onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                    size="lg"
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    <Pencil className="h-4 w-4" /> Edit Listing
+                  </Button>
+                )}
+                {isReserved && !isAcceptedOfferReviewPending && (
+                  <Button
+                    onClick={() =>
+                      cancelReservation.mutate(listing.id, {
+                        onError: (error: any) =>
+                          showErrorToast(error, 'Failed to cancel reservation'),
+                        onSuccess: () => toast.success('Reservation cancelled'),
+                      })
+                    }
+                    disabled={cancelReservation.isPending}
+                    size="lg"
+                    variant="outline"
+                  >
+                    Cancel reservation
+                  </Button>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="lg" variant="outline" className="gap-2 text-destructive">
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove "{listing.title}" and cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
                         onClick={() =>
-                          cancelReservation.mutate(listing.id, {
-                            onError: (error: any) => showErrorToast(error, 'Failed to cancel reservation'),
-                            onSuccess: () => toast.success('Reservation cancelled'),
-                          })}
-                        disabled={cancelReservation.isPending}
-                        size="lg"
-                        variant="outline"
+                          deleteMutation.mutate(id!, {
+                            onError: (error: unknown) =>
+                              showErrorToast(error, 'Failed to delete listing'),
+                            onSuccess: () => {
+                              toast.success('Listing deleted');
+                              navigate('/my-listings');
+                            },
+                          })
+                        }
+                        className="
+                          bg-destructive text-destructive-foreground
+                          hover:bg-destructive/90
+                        "
                       >
-                        Cancel reservation
-                      </Button>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          className="gap-2 text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          {' '}
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently remove "
-                            {listing.title}
-                            " and
-                            cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() =>
-                              deleteMutation.mutate(id!, {
-                                onError: (error: unknown) => showErrorToast(error, 'Failed to delete listing'),
-                                onSuccess: () => {
-                                  toast.success('Listing deleted');
-                                  navigate('/my-listings');
-                                },
-                              })}
-                            className="
-                              bg-destructive text-destructive-foreground
-                              hover:bg-destructive/90
-                            "
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )
-              : (listing.status === 'SOLD'
-                  ? null
-                  : (
-                      <div className="mt-8 flex flex-wrap gap-3">
-                        <Button
-                          onClick={() =>
-                            addItem(
-                              listing,
-                              isReservedForMe ? effectivePrice : undefined,
-                            )}
-                          disabled={inCart || isReservedForOther || isAcceptedOfferPaymentWindowClosed}
-                          size="lg"
-                          className="min-w-0 flex-1 gap-2"
-                        >
-                          {inCart
-                            ? (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  {' '}
-                                  In Cart
-                                </>
-                              )
-                            : (isReservedForOther
-                                ? (
-                                    <>Currently Reserved</>
-                                  )
-                                : (isAcceptedOfferPaymentWindowClosed
-                                    ? (
-                                        <>Payment Window Closed</>
-                                      )
-                                    : (
-                                        <>
-                                          <ShoppingBag className="h-4 w-4" />
-                                          {' '}
-                                          {isReservedForMe ? 'Complete Purchase' : 'Add to Cart'}
-                                        </>
-                                      )))}
-                        </Button>
-                        {!isReserved && (
-                          <MakeOfferButton
-                            listingId={listing.id}
-                            sellerId={listing.sellerId}
-                            listingPrice={listing.price}
-                            listingTitle={listing.title}
-                          />
-                        )}
-                      </div>
-                    ))}
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ) : listing.status === 'SOLD' ? null : (
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  onClick={() => addItem(listing, isReservedForMe ? effectivePrice : undefined)}
+                  disabled={inCart || isReservedForOther || isAcceptedOfferPaymentWindowClosed}
+                  size="lg"
+                  className="min-w-0 flex-1 gap-2"
+                >
+                  {inCart ? (
+                    <>
+                      <Check className="h-4 w-4" /> In Cart
+                    </>
+                  ) : isReservedForOther ? (
+                    <>Currently Reserved</>
+                  ) : isAcceptedOfferPaymentWindowClosed ? (
+                    <>Payment Window Closed</>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4 w-4" />{' '}
+                      {isReservedForMe ? 'Complete Purchase' : 'Add to Cart'}
+                    </>
+                  )}
+                </Button>
+                {!isReserved && (
+                  <MakeOfferButton
+                    listingId={listing.id}
+                    sellerId={listing.sellerId}
+                    listingPrice={listing.price}
+                    listingTitle={listing.title}
+                  />
+                )}
+              </div>
+            )}
 
             {!isOwner && (listing.status === 'APPROVED' || listing.status === 'RESERVED') && (
               <div className="mt-3 flex flex-wrap gap-3">
@@ -636,11 +555,7 @@ function ListingDetail() {
 
             {!isOwner && (
               <div className="mt-3 flex justify-end gap-2">
-                <ReportDialog
-                  targetId={listing.id}
-                  label="Report listing"
-                  targetType="listing"
-                />
+                <ReportDialog targetId={listing.id} label="Report listing" targetType="listing" />
                 {listing.sellerId && (
                   <ReportDialog
                     targetId={listing.sellerId}
@@ -665,8 +580,7 @@ function ListingDetail() {
 
             <div className="mt-6 border-t border-border pt-4">
               <p className="mt-4 text-sm text-muted-foreground">
-                Sold by
-                {' '}
+                Sold by{' '}
                 <Link
                   to={`/seller/${listing.sellerId}`}
                   className="

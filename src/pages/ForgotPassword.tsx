@@ -16,24 +16,26 @@ import { useToast } from '@/hooks/use-toast';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import { forgotPassword, resetPassword } from '@/services/auth.service';
 
-const forgotPasswordSchema = z.object({
-  confirmPassword: z.string(),
-  email: z.string().trim().email('Please enter a valid email address.'),
-  otp: z
-    .string()
-    .trim()
-    .length(6, 'OTP must be exactly 6 characters.')
-    .regex(/^[A-Z0-9]{6}$/, 'OTP can only contain numbers and uppercase letters.'),
-  password: z.string().min(8, 'Password must be at least 8 characters.'),
-}).superRefine((data, context) => {
-  if (data.password !== data.confirmPassword) {
-    context.addIssue({
-      path: ['confirmPassword'],
-      code: z.ZodIssueCode.custom,
-      message: 'Passwords do not match.',
-    });
-  }
-});
+const forgotPasswordSchema = z
+  .object({
+    confirmPassword: z.string(),
+    email: z.string().trim().email('Please enter a valid email address.'),
+    otp: z
+      .string()
+      .trim()
+      .length(6, 'OTP must be exactly 6 characters.')
+      .regex(/^[A-Z0-9]{6}$/, 'OTP can only contain numbers and uppercase letters.'),
+    password: z.string().min(8, 'Password must be at least 8 characters.'),
+  })
+  .superRefine((data, context) => {
+    if (data.password !== data.confirmPassword) {
+      context.addIssue({
+        path: ['confirmPassword'],
+        code: z.ZodIssueCode.custom,
+        message: 'Passwords do not match.',
+      });
+    }
+  });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
@@ -92,16 +94,14 @@ function ForgotPassword() {
         description: response.message ?? 'If the account exists, reset instructions were sent.',
         title: 'Reset code sent',
       });
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
       toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
-    }
-    finally {
+    } finally {
       setSendingCode(false);
     }
   };
 
-  const onSubmit: SubmitHandler<ForgotPasswordFormValues> = async (values) => {
+  const onSubmit: SubmitHandler<ForgotPasswordFormValues> = async values => {
     if (!codeSent) {
       toast({
         description: 'Send a reset code before submitting a new password.',
@@ -126,8 +126,7 @@ function ForgotPassword() {
         title: 'Password updated',
       });
       navigate('/auth');
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
       if (error instanceof HTTPError && error.response.status === 401) {
         const message = 'Invalid or expired OTP.';
         setOtpError(message);
@@ -136,8 +135,7 @@ function ForgotPassword() {
       }
 
       toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
-    }
-    finally {
+    } finally {
       setResettingPassword(false);
     }
   };
@@ -225,9 +223,14 @@ function ForgotPassword() {
                     render={({ field }) => (
                       <InputOTP
                         id="otp"
-                        onChange={(value) => {
+                        onChange={value => {
                           setOtpError(null);
-                          field.onChange(value.replaceAll(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 6));
+                          field.onChange(
+                            value
+                              .replaceAll(/[^0-9a-z]/gi, '')
+                              .toUpperCase()
+                              .slice(0, 6),
+                          );
                         }}
                         value={field.value}
                         maxLength={6}
@@ -247,7 +250,9 @@ function ForgotPassword() {
                     If you don’t see the code, check your spam or junk folder.
                   </p>
                   {errors.otp && <p className="text-sm text-destructive">{errors.otp.message}</p>}
-                  {!errors.otp && otpError && <p className="text-sm text-destructive">{otpError}</p>}
+                  {!errors.otp && otpError && (
+                    <p className="text-sm text-destructive">{otpError}</p>
+                  )}
                 </div>
               )}
 
@@ -266,7 +271,9 @@ function ForgotPassword() {
                     />
                   )}
                 />
-                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -284,7 +291,9 @@ function ForgotPassword() {
                     />
                   )}
                 />
-                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+                {errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+                )}
               </div>
 
               <Button
@@ -298,8 +307,7 @@ function ForgotPassword() {
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Remembered your password?
-              {' '}
+              Remembered your password?{' '}
               <Link
                 to="/auth"
                 className="

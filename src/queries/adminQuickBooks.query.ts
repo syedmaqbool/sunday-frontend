@@ -1,4 +1,13 @@
-import type { AdminQuickBooksAccountMappingVersionPayload, AdminQuickBooksEnvironment, AdminQuickBooksReconciliationParameters, AdminQuickBooksReconnectPayload, AdminQuickBooksSellerOptionsParameters, AdminQuickBooksSellerVendorMappingParameters, AdminQuickBooksSellerVendorMappingPayload, AdminQuickBooksSyncEventsParameters } from '@/types/adminQuickBooks.type';
+import type {
+  AdminQuickBooksAccountMappingVersionPayload,
+  AdminQuickBooksEnvironment,
+  AdminQuickBooksReconciliationParameters,
+  AdminQuickBooksReconnectPayload,
+  AdminQuickBooksSellerOptionsParameters,
+  AdminQuickBooksSellerVendorMappingParameters,
+  AdminQuickBooksSellerVendorMappingPayload,
+  AdminQuickBooksSyncEventsParameters,
+} from '@/types/adminQuickBooks.type';
 import type { GetAdminQuickBooksAccountMappingVersionsData } from '@/types/generated-api';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -23,7 +32,8 @@ export const adminQuickBooksQueryKey = {
     [...adminQuickBooksQueryKey.all(), 'connection', environment] as const,
   reconciliation: (parameters: AdminQuickBooksReconciliationParameters) =>
     [...adminQuickBooksQueryKey.all(), 'reconciliation', 'list', parameters] as const,
-  rolloutReadiness: () => [...adminQuickBooksQueryKey.all(), 'rollout-readiness', 'detail'] as const,
+  rolloutReadiness: () =>
+    [...adminQuickBooksQueryKey.all(), 'rollout-readiness', 'detail'] as const,
   sellers: (parameters: AdminQuickBooksSellerOptionsParameters) =>
     [...adminQuickBooksQueryKey.all(), 'sellers', 'list', parameters] as const,
   sellerVendorMappings: (parameters: AdminQuickBooksSellerVendorMappingParameters) =>
@@ -32,9 +42,7 @@ export const adminQuickBooksQueryKey = {
     [...adminQuickBooksQueryKey.all(), 'sync-events', 'list', parameters] as const,
 };
 
-export function getAdminQuickBooksConnectionQueryOptions(
-  environment: AdminQuickBooksEnvironment,
-) {
+export function getAdminQuickBooksConnectionQueryOptions(environment: AdminQuickBooksEnvironment) {
   return queryOptions({
     queryFn: () => getAdminQuickBooksConnection(environment),
     queryKey: adminQuickBooksQueryKey.connection(environment),

@@ -1,1 +1,7 @@
-export type { ErrorResponse, FieldError, PaginatedResponse, Pagination, Response } from './api.type';
+export type {
+  ErrorResponse,
+  FieldError,
+  PaginatedResponse,
+  Pagination,
+  Response,
+} from './api.type';

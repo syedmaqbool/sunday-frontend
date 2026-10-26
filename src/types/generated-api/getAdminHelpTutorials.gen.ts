@@ -75,7 +75,8 @@ export interface GetAdminHelpTutorialsErrors {
   };
 }
 
-export type GetAdminHelpTutorialsError = GetAdminHelpTutorialsErrors[keyof GetAdminHelpTutorialsErrors];
+export type GetAdminHelpTutorialsError =
+  GetAdminHelpTutorialsErrors[keyof GetAdminHelpTutorialsErrors];
 
 export interface GetAdminHelpTutorialsResponses {
   /**
@@ -128,4 +129,5 @@ export interface GetAdminHelpTutorialsResponses {
   };
 }
 
-export type GetAdminHelpTutorialsResponse = GetAdminHelpTutorialsResponses[keyof GetAdminHelpTutorialsResponses];
+export type GetAdminHelpTutorialsResponse =
+  GetAdminHelpTutorialsResponses[keyof GetAdminHelpTutorialsResponses];

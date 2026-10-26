@@ -1,8 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  getSupportMessagesOptions,
-  getSupportTicketsOptions,
-} from '@/queries/support.query';
+import { getSupportMessagesOptions, getSupportTicketsOptions } from '@/queries/support.query';
 
 export {
   getSupportMessagesOptions,

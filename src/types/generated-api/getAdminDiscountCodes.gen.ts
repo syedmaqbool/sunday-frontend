@@ -75,7 +75,8 @@ export interface GetAdminDiscountCodesErrors {
   };
 }
 
-export type GetAdminDiscountCodesError = GetAdminDiscountCodesErrors[keyof GetAdminDiscountCodesErrors];
+export type GetAdminDiscountCodesError =
+  GetAdminDiscountCodesErrors[keyof GetAdminDiscountCodesErrors];
 
 export interface GetAdminDiscountCodesResponses {
   /**
@@ -129,4 +130,5 @@ export interface GetAdminDiscountCodesResponses {
   };
 }
 
-export type GetAdminDiscountCodesResponse = GetAdminDiscountCodesResponses[keyof GetAdminDiscountCodesResponses];
+export type GetAdminDiscountCodesResponse =
+  GetAdminDiscountCodesResponses[keyof GetAdminDiscountCodesResponses];

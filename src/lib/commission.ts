@@ -15,40 +15,35 @@ export function resolveTier(
   category: string | null | undefined,
   price: number,
 ): CommissionTier | null {
-  if (!tiers || tiers.length === 0)
-    return null;
+  if (!tiers || tiers.length === 0) return null;
   const cat = (category ?? '').toLowerCase();
   const tokens = new Set<string>();
   if (cat) {
     tokens.add(cat);
     for (const part of cat.split(/[-_/\s]+/)) {
-      if (part)
-        tokens.add(part);
+      if (part) tokens.add(part);
     }
   }
 
   const inRange = (t: CommissionTier) =>
-    t.active
-    && price >= Number(t.minPrice ?? 0)
-    && (t.maxPrice == null || price <= Number(t.maxPrice));
+    t.active &&
+    price >= Number(t.minPrice ?? 0) &&
+    (t.maxPrice == null || price <= Number(t.maxPrice));
 
   const matchesCategory = (t: CommissionTier) =>
-    t.categories.length === 0
-    || t.categories.some(c => tokens.has(c.toLowerCase()));
+    t.categories.length === 0 || t.categories.some(c => tokens.has(c.toLowerCase()));
 
   const inRangeTiers = tiers.filter(t => inRange(t));
-  if (inRangeTiers.length === 0)
-    return null;
+  if (inRangeTiers.length === 0) return null;
 
   // Prefer category-specific match, then wildcard, then price-only fallback.
   const specific = inRangeTiers.filter(t => t.categories.length > 0 && matchesCategory(t));
   const wildcard = inRangeTiers.filter(t => t.categories.length === 0);
-  const pool = specific.length > 0 ? specific : (wildcard.length > 0 ? wildcard : inRangeTiers);
+  const pool = specific.length > 0 ? specific : wildcard.length > 0 ? wildcard : inRangeTiers;
 
   return pool.toSorted((a, b) => {
     const minDiff = Number(b.minPrice) - Number(a.minPrice);
-    if (minDiff !== 0)
-      return minDiff;
+    if (minDiff !== 0) return minDiff;
     return b.sortOrder - a.sortOrder;
   })[0];
 }

@@ -563,7 +563,11 @@ import {
   useMarkConversationReadMutation,
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
-import { CHAT_MEDIA_ACCEPT, CHAT_MEDIA_MAX_ATTACHMENTS, getChatMediaValidationError } from '@/lib/chatMedia';
+import {
+  CHAT_MEDIA_ACCEPT,
+  CHAT_MEDIA_MAX_ATTACHMENTS,
+  getChatMediaValidationError,
+} from '@/lib/chatMedia';
 import { getConversationContextLabel } from '@/lib/conversationContext';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { conversationsQueryKey } from '@/queries/conversation.query';
@@ -616,8 +620,8 @@ function Messages() {
   }, [user, authLoading, navigate]);
 
   // FETCH CONVERSATIONS
-  const { data: conversationsResponse, isLoading: convosLoading }
-    = useQuery(getConversationsOptions());
+  const { data: conversationsResponse, isLoading: convosLoading } =
+    useQuery(getConversationsOptions());
 
   const conversations = useMemo(
     () => conversationsResponse?.data ?? [],
@@ -630,9 +634,9 @@ function Messages() {
 
   useEffect(() => {
     if (
-      convosLoading
-      || !activeConvo
-      || conversations.some(conversation => conversation.id === activeConvo)
+      convosLoading ||
+      !activeConvo ||
+      conversations.some(conversation => conversation.id === activeConvo)
     ) {
       return;
     }
@@ -642,23 +646,14 @@ function Messages() {
     nextParameters.delete('message');
     setActiveConvo(null);
     setSearchParameters(nextParameters, { replace: true });
-  }, [
-    activeConvo,
-    conversations,
-    convosLoading,
-    searchParameters,
-    setSearchParameters,
-  ]);
+  }, [activeConvo, conversations, convosLoading, searchParameters, setSearchParameters]);
 
   // FETCH MESSAGES
   const { data: messagesResponse, isLoading: msgsLoading } = useQuery(
     getConversationMessagesOptions(activeConvo || undefined),
   );
 
-  const messages = useMemo(
-    () => messagesResponse?.data ?? [],
-    [messagesResponse?.data],
-  );
+  const messages = useMemo(() => messagesResponse?.data ?? [], [messagesResponse?.data]);
 
   const markConversationRead = useMarkConversationReadMutation();
 
@@ -684,10 +679,7 @@ function Messages() {
       message => message.senderId !== user.id && !message.readAt,
     );
 
-    if (
-      !hasUnreadIncomingMessage
-      || markReadInFlight.current.has(activeConvo)
-    ) {
+    if (!hasUnreadIncomingMessage || markReadInFlight.current.has(activeConvo)) {
       return;
     }
 
@@ -695,14 +687,7 @@ function Messages() {
     markConversationRead.mutate(activeConvo, {
       onSettled: () => markReadInFlight.current.delete(activeConvo),
     });
-  }, [
-    activeConvo,
-    documentVisible,
-    markConversationRead,
-    messages,
-    msgsLoading,
-    user,
-  ]);
+  }, [activeConvo, documentVisible, markConversationRead, messages, msgsLoading, user]);
 
   // FOCUS A DEEP-LINKED MESSAGE
   useEffect(() => {
@@ -710,9 +695,7 @@ function Messages() {
       return;
     }
 
-    const focusedMessage = messages.find(
-      message => message.id === focusedMessageId,
-    );
+    const focusedMessage = messages.find(message => message.id === focusedMessageId);
 
     if (focusedMessage) {
       const element = document.querySelector<HTMLDivElement>(
@@ -726,14 +709,7 @@ function Messages() {
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.delete('message');
     setSearchParameters(nextParameters, { replace: true });
-  }, [
-    activeConvo,
-    focusedMessageId,
-    messages,
-    msgsLoading,
-    searchParameters,
-    setSearchParameters,
-  ]);
+  }, [activeConvo, focusedMessageId, messages, msgsLoading, searchParameters, setSearchParameters]);
 
   const selectConversation = (conversationId: string | null) => {
     setActiveConvo(conversationId);
@@ -741,8 +717,7 @@ function Messages() {
 
     if (conversationId) {
       nextParameters.set('conversation', conversationId);
-    }
-    else {
+    } else {
       nextParameters.delete('conversation');
     }
 
@@ -753,8 +728,12 @@ function Messages() {
   // SEND MESSAGE
   const sendMessage = useSendMessageMutation();
 
-  const handleSendMessage: SubmitHandler<MessageFormValues> = (values) => {
-    if (!activeConvo || sendMessage.isPending || (!values.content && selectedChatMedia.length === 0))
+  const handleSendMessage: SubmitHandler<MessageFormValues> = values => {
+    if (
+      !activeConvo ||
+      sendMessage.isPending ||
+      (!values.content && selectedChatMedia.length === 0)
+    )
       return;
 
     sendMessage.mutate(
@@ -785,15 +764,16 @@ function Messages() {
       const validationError = getChatMediaValidationError(file);
       if (validationError) {
         selectionErrors.push(validationError);
-      }
-      else {
+      } else {
         validFiles.push(file);
       }
     }
 
     const availableAttachmentCount = CHAT_MEDIA_MAX_ATTACHMENTS - selectedChatMedia.length;
     if (validFiles.length > availableAttachmentCount) {
-      selectionErrors.push(`Up to ${CHAT_MEDIA_MAX_ATTACHMENTS} attachments can be selected per message.`);
+      selectionErrors.push(
+        `Up to ${CHAT_MEDIA_MAX_ATTACHMENTS} attachments can be selected per message.`,
+      );
     }
 
     setSelectedChatMedia([
@@ -812,12 +792,10 @@ function Messages() {
 
   // WEBSOCKET
   useEffect(() => {
-    if (!user)
-      return;
+    if (!user) return;
 
     const token = tokenStorage.getAccess();
-    if (!token)
-      return;
+    if (!token) return;
 
     const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
     const wsUrl = `${base.replace('http://', 'ws://').replace('https://', 'wss://')}/api/v1/me/realtime/stream?token=${encodeURIComponent(token)}`;
@@ -859,8 +837,7 @@ function Messages() {
     }
   }, [focusedMessageId, messages]);
 
-  if (authLoading)
-    return null;
+  if (authLoading) return null;
 
   const activeConversation = conversations.find(
     (conversation: Conversation) => conversation.id === activeConvo,
@@ -880,10 +857,11 @@ function Messages() {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
 
-      <main className="
-        container flex min-h-0 flex-1 flex-col py-4
-        md:py-6
-      "
+      <main
+        className="
+          container flex min-h-0 flex-1 flex-col py-4
+          md:py-6
+        "
       >
         <h1 className="mb-4 shrink-0 text-2xl font-bold">Messages</h1>
 
@@ -898,63 +876,63 @@ function Messages() {
             className={`
               min-h-0 overflow-hidden
               md:col-span-1
-              ${activeConvo
-      ? `
-        hidden
-        md:block
-      `
-      : 'block'}
+              ${
+                activeConvo
+                  ? `
+                    hidden
+                    md:block
+                  `
+                  : 'block'
+              }
             `}
           >
             <CardContent className="h-full min-h-0 p-0">
               <ScrollArea className="h-full">
-                {convosLoading
-                  ? (
-                      <div className="flex items-center justify-center p-8">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      </div>
-                    )
-                  : conversations.length === 0
-                    ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center">
-                          <MessageSquare className="mb-2 h-10 w-10 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">No conversations</p>
-                        </div>
-                      )
-                    : (
-                        conversations.map((conversation: Conversation) => {
-                          const otherName = conversation.buyerId === user?.id
-                            ? conversation.sellerFullName
-                            : conversation.buyerFullName;
+                {convosLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <MessageSquare className="mb-2 h-10 w-10 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No conversations</p>
+                  </div>
+                ) : (
+                  conversations.map((conversation: Conversation) => {
+                    const otherName =
+                      conversation.buyerId === user?.id
+                        ? conversation.sellerFullName
+                        : conversation.buyerFullName;
 
-                          return (
-                            <button
-                              key={conversation.id}
-                              onClick={() => selectConversation(conversation.id)}
-                              className={`
-                                w-full border-b p-3 text-left transition-colors
-                                hover:bg-accent/50
-                                ${activeConvo === conversation.id ? 'bg-accent' : ''}
-                              `}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="truncate text-sm font-medium">{otherName}</p>
-                                {conversation.unreadCount > 0 && (
-                                  <Badge className="shrink-0 text-xs">
-                                    {conversation.unreadCount}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="mt-1 truncate text-xs text-muted-foreground">
-                                {getConversationContextLabel(conversation.type, conversation.listingTitle)}
-                              </p>
-                              <p className="mt-1 truncate text-xs text-muted-foreground">
-                                {conversation.lastMessageContent ?? 'No messages'}
-                              </p>
-                            </button>
-                          );
-                        })
-                      )}
+                    return (
+                      <button
+                        key={conversation.id}
+                        onClick={() => selectConversation(conversation.id)}
+                        className={`
+                          w-full border-b p-3 text-left transition-colors
+                          hover:bg-accent/50
+                          ${activeConvo === conversation.id ? 'bg-accent' : ''}
+                        `}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-medium">{otherName}</p>
+                          {conversation.unreadCount > 0 && (
+                            <Badge className="shrink-0 text-xs">{conversation.unreadCount}</Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {getConversationContextLabel(
+                            conversation.type,
+                            conversation.listingTitle,
+                          )}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {conversation.lastMessageContent ?? 'No messages'}
+                        </p>
+                      </button>
+                    );
+                  })
+                )}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -964,199 +942,210 @@ function Messages() {
             className={`
               flex h-[calc(100dvh-190px)] min-h-0 flex-col overflow-hidden
               md:col-span-2 md:h-auto
-              ${activeConvo
-      ? ''
-      : `
-        hidden
-        md:flex
-      `}
+              ${
+                activeConvo
+                  ? ''
+                  : `
+                    hidden
+                    md:flex
+                  `
+              }
             `}
           >
-            {hasActiveConversation
-              ? (
-                  <>
-                    {/* HEADER stays at the top */}
-                    <div className="flex shrink-0 items-center gap-3 border-b p-3">
-                      <Button
-                        onClick={() => selectConversation(null)}
-                        size="icon"
-                        variant="ghost"
-                        className="md:hidden"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                      </Button>
+            {hasActiveConversation ? (
+              <>
+                {/* HEADER stays at the top */}
+                <div className="flex shrink-0 items-center gap-3 border-b p-3">
+                  <Button
+                    onClick={() => selectConversation(null)}
+                    size="icon"
+                    variant="ghost"
+                    className="md:hidden"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
 
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {activeConversation.type === 'DIRECT'
-                            ? (
-                                <Link
-                                  to={`/seller/${activeConversation.buyerId === user?.id
-                                    ? activeConversation.sellerId
-                                    : activeConversation.buyerId}`}
-                                  className="
-                                    rounded-sm
-                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                                  "
-                                >
-                                  {activeConversation.buyerId === user?.id
-                                    ? activeConversation.sellerFullName
-                                    : activeConversation.buyerFullName}
-                                </Link>
-                              )
-                            : activeConversation.buyerId === user?.id
-                              ? activeConversation.sellerFullName
-                              : activeConversation.buyerFullName}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {getConversationContextLabel(activeConversation.type, activeConversation.listingTitle)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* MESSAGE LIST: only this section scrolls */}
-                    <ScrollArea className="min-h-0 flex-1">
-                      <div className="space-y-3 p-4">
-                        {msgsLoading
-                          ? (
-                              <div className="flex justify-center p-8">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                              </div>
-                            )
-                          : messages.length === 0
-                            ? (
-                                <p className="py-8 text-center text-sm text-muted-foreground">
-                                  Start conversation
-                                </p>
-                              )
-                            : (
-                                messages.map((message: Message) => {
-                                  const isMine = message.senderId === user?.id;
-
-                                  return (
-                                    <div
-                                      key={message.id}
-                                      id={`conversation-message-${message.id}`}
-                                      tabIndex={-1}
-                                      className={`
-                                        flex min-w-0
-                                        ${focusedMessageId === message.id ? 'rounded-lg ring-2 ring-primary ring-offset-2' : ''}
-                                        ${isMine ? 'justify-end' : 'justify-start'}
-                                      `}
-                                    >
-                                      <div className="min-w-0 max-w-[75%]">
-                                        <div className={`
-                                          break-words rounded-2xl px-4 py-2
-                                          ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                                        `}
-                                        >
-                                          <ConversationMessageAttachments
-                                            onReload={reloadConversationMessages}
-                                            attachments={message.attachments}
-                                          />
-                                          {message.content && (
-                                            <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                                          )}
-                                          <p className={`
-                                            mt-1 text-[10px]
-                                            ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}
-                                          `}
-                                          >
-                                            {format(new Date(message.createdAt), 'MMM d, h:mm a')}
-                                          </p>
-                                        </div>
-                                        {message.isFlagged && (
-                                          <p className="mt-1 text-xs text-yellow-500">flagged message</p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              )}
-                        <div ref={messagesEndReference} />
-                      </div>
-                    </ScrollArea>
-
-                    {/* INPUT stays pinned to the bottom */}
-                    <div className="shrink-0 border-t bg-background p-3">
-                      {selectedChatMedia.length > 0 && (
-                        <div className="mb-2 flex flex-wrap gap-2">
-                          {selectedChatMedia.map(({ id, file }) => (
-                            <ChatAttachmentPreview
-                              key={id}
-                              onRemove={() => removeChatMedia(id)}
-                              file={file}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {chatMediaSelectionError && (
-                        <p role="alert" className="mb-2 text-xs text-destructive">
-                          {chatMediaSelectionError}
-                        </p>
-                      )}
-                      {chatMediaSendError && (
-                        <p role="alert" className="mb-2 text-xs text-destructive">
-                          {chatMediaSendError}
-                        </p>
-                      )}
-                      <form
-                        onSubmit={messageForm.handleSubmit(handleSendMessage)}
-                        className="flex min-w-0 gap-2"
-                      >
-                        <input
-                          onChange={(event) => {
-                            addChatMedia([...(event.target.files ?? [])]);
-                            event.target.value = '';
-                          }}
-                          ref={chatMediaPickerReference}
-                          accept={CHAT_MEDIA_ACCEPT}
-                          aria-label="Select photos and videos"
-                          multiple
-                          type="file"
-                          className="hidden"
-                        />
-                        <Button
-                          onClick={() => chatMediaPickerReference.current?.click()}
-                          aria-label="Attach photo or video"
-                          disabled={selectedChatMedia.length >= CHAT_MEDIA_MAX_ATTACHMENTS || sendMessage.isPending}
-                          size="icon"
-                          type="button"
-                          variant="outline"
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {activeConversation.type === 'DIRECT' ? (
+                        <Link
+                          to={`/seller/${
+                            activeConversation.buyerId === user?.id
+                              ? activeConversation.sellerId
+                              : activeConversation.buyerId
+                          }`}
+                          className="
+                            rounded-sm
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+                          "
                         >
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
-                        <Controller
-                          name="content"
-                          control={messageForm.control}
-                          render={({ field }) => (
-                            <Input
-                              placeholder="Type message..."
-                              className="min-w-0 flex-1"
-                              {...field}
-                            />
-                          )}
-                        />
-                        <Button
-                          aria-label={sendMessage.isPending ? 'Sending message' : 'Send message'}
-                          disabled={(!messageContent.trim() && selectedChatMedia.length === 0) || sendMessage.isPending}
-                          size="icon"
-                          type="submit"
-                        >
-                          {sendMessage.isPending
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <Send className="h-4 w-4" />}
-                        </Button>
-                      </form>
-                    </div>
-                  </>
-                )
-              : (
-                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-muted-foreground">
-                    <MessageSquare className="mb-2 h-12 w-12" />
-                    <p>Select a conversation</p>
+                          {activeConversation.buyerId === user?.id
+                            ? activeConversation.sellerFullName
+                            : activeConversation.buyerFullName}
+                        </Link>
+                      ) : activeConversation.buyerId === user?.id ? (
+                        activeConversation.sellerFullName
+                      ) : (
+                        activeConversation.buyerFullName
+                      )}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {getConversationContextLabel(
+                        activeConversation.type,
+                        activeConversation.listingTitle,
+                      )}
+                    </p>
                   </div>
-                )}
+                </div>
+
+                {/* MESSAGE LIST: only this section scrolls */}
+                <ScrollArea className="min-h-0 flex-1">
+                  <div className="space-y-3 p-4">
+                    {msgsLoading ? (
+                      <div className="flex justify-center p-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        Start conversation
+                      </p>
+                    ) : (
+                      messages.map((message: Message) => {
+                        const isMine = message.senderId === user?.id;
+
+                        return (
+                          <div
+                            key={message.id}
+                            id={`conversation-message-${message.id}`}
+                            tabIndex={-1}
+                            className={`
+                              flex min-w-0
+                              ${focusedMessageId === message.id ? 'rounded-lg ring-2 ring-primary ring-offset-2' : ''}
+                              ${isMine ? 'justify-end' : 'justify-start'}
+                            `}
+                          >
+                            <div className="min-w-0 max-w-[75%]">
+                              <div
+                                className={`
+                                  break-words rounded-2xl px-4 py-2
+                                  ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted'}
+                                `}
+                              >
+                                <ConversationMessageAttachments
+                                  onReload={reloadConversationMessages}
+                                  attachments={message.attachments}
+                                />
+                                {message.content && (
+                                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                                )}
+                                <p
+                                  className={`
+                                    mt-1 text-[10px]
+                                    ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}
+                                  `}
+                                >
+                                  {format(new Date(message.createdAt), 'MMM d, h:mm a')}
+                                </p>
+                              </div>
+                              {message.isFlagged && (
+                                <p className="mt-1 text-xs text-yellow-500">flagged message</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndReference} />
+                  </div>
+                </ScrollArea>
+
+                {/* INPUT stays pinned to the bottom */}
+                <div className="shrink-0 border-t bg-background p-3">
+                  {selectedChatMedia.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {selectedChatMedia.map(({ id, file }) => (
+                        <ChatAttachmentPreview
+                          key={id}
+                          onRemove={() => removeChatMedia(id)}
+                          file={file}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {chatMediaSelectionError && (
+                    <p role="alert" className="mb-2 text-xs text-destructive">
+                      {chatMediaSelectionError}
+                    </p>
+                  )}
+                  {chatMediaSendError && (
+                    <p role="alert" className="mb-2 text-xs text-destructive">
+                      {chatMediaSendError}
+                    </p>
+                  )}
+                  <form
+                    onSubmit={messageForm.handleSubmit(handleSendMessage)}
+                    className="flex min-w-0 gap-2"
+                  >
+                    <input
+                      onChange={event => {
+                        addChatMedia([...(event.target.files ?? [])]);
+                        event.target.value = '';
+                      }}
+                      ref={chatMediaPickerReference}
+                      accept={CHAT_MEDIA_ACCEPT}
+                      aria-label="Select photos and videos"
+                      multiple
+                      type="file"
+                      className="hidden"
+                    />
+                    <Button
+                      onClick={() => chatMediaPickerReference.current?.click()}
+                      aria-label="Attach photo or video"
+                      disabled={
+                        selectedChatMedia.length >= CHAT_MEDIA_MAX_ATTACHMENTS ||
+                        sendMessage.isPending
+                      }
+                      size="icon"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                    <Controller
+                      name="content"
+                      control={messageForm.control}
+                      render={({ field }) => (
+                        <Input
+                          placeholder="Type message..."
+                          className="min-w-0 flex-1"
+                          {...field}
+                        />
+                      )}
+                    />
+                    <Button
+                      aria-label={sendMessage.isPending ? 'Sending message' : 'Send message'}
+                      disabled={
+                        (!messageContent.trim() && selectedChatMedia.length === 0) ||
+                        sendMessage.isPending
+                      }
+                      size="icon"
+                      type="submit"
+                    >
+                      {sendMessage.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-muted-foreground">
+                <MessageSquare className="mb-2 h-12 w-12" />
+                <p>Select a conversation</p>
+              </div>
+            )}
           </Card>
         </div>
       </main>
@@ -1177,9 +1166,20 @@ function ChatAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =>
 
   return (
     <div className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted">
-      {previewUrl && (file.type.startsWith('video/')
-        ? <video src={previewUrl} aria-label={`Preview ${file.name}`} className="h-full w-full object-cover" />
-        : <img src={previewUrl} alt={`Preview ${file.name}`} className="h-full w-full object-cover" />)}
+      {previewUrl &&
+        (file.type.startsWith('video/') ? (
+          <video
+            src={previewUrl}
+            aria-label={`Preview ${file.name}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <img
+            src={previewUrl}
+            alt={`Preview ${file.name}`}
+            className="h-full w-full object-cover"
+          />
+        ))}
       <Button
         onClick={onRemove}
         aria-label={`Remove ${file.name}`}

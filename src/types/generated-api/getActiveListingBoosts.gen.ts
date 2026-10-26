@@ -68,7 +68,8 @@ export interface GetActiveListingBoostsErrors {
   };
 }
 
-export type GetActiveListingBoostsError = GetActiveListingBoostsErrors[keyof GetActiveListingBoostsErrors];
+export type GetActiveListingBoostsError =
+  GetActiveListingBoostsErrors[keyof GetActiveListingBoostsErrors];
 
 export interface GetActiveListingBoostsResponses {
   /**
@@ -97,4 +98,5 @@ export interface GetActiveListingBoostsResponses {
   };
 }
 
-export type GetActiveListingBoostsResponse = GetActiveListingBoostsResponses[keyof GetActiveListingBoostsResponses];
+export type GetActiveListingBoostsResponse =
+  GetActiveListingBoostsResponses[keyof GetActiveListingBoostsResponses];

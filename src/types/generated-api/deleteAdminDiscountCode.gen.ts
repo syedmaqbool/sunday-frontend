@@ -68,7 +68,8 @@ export interface DeleteAdminDiscountCodeErrors {
   };
 }
 
-export type DeleteAdminDiscountCodeError = DeleteAdminDiscountCodeErrors[keyof DeleteAdminDiscountCodeErrors];
+export type DeleteAdminDiscountCodeError =
+  DeleteAdminDiscountCodeErrors[keyof DeleteAdminDiscountCodeErrors];
 
 export interface DeleteAdminDiscountCodeResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminDiscountCodeResponses {
   };
 }
 
-export type DeleteAdminDiscountCodeResponse = DeleteAdminDiscountCodeResponses[keyof DeleteAdminDiscountCodeResponses];
+export type DeleteAdminDiscountCodeResponse =
+  DeleteAdminDiscountCodeResponses[keyof DeleteAdminDiscountCodeResponses];

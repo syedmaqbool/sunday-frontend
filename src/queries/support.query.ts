@@ -44,13 +44,8 @@ export function useSendSupportMessageMutation() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      ticketId,
-      content,
-    }: {
-      ticketId: string;
-      content: string;
-    }) => sendSupportMessage(ticketId, { content }),
+    mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
+      sendSupportMessage(ticketId, { content }),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
         queryKey: supportQueryKey.messages(variables.ticketId),

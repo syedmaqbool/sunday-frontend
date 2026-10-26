@@ -2,27 +2,22 @@ import type { Notification } from '@/types/notification.type';
 
 export function getNotificationDestinationPath(notification: Notification): string | null {
   const destination = notification.destination;
-  if (!destination)
-    return null;
+  if (!destination) return null;
 
   const resourceId = destination.resourceId;
   const parameters = new URLSearchParams();
   const focusedChild = destination.focusedChild;
 
-  if (destination.resource === 'profile' && destination.section === 'overview')
-    return '/profile';
+  if (destination.resource === 'profile' && destination.section === 'overview') return '/profile';
 
   if (destination.resource === 'conversation' && destination.section === 'messages') {
-    if (resourceId)
-      parameters.set('conversation', resourceId);
-    if (focusedChild?.resource === 'message')
-      parameters.set('message', focusedChild.resourceId);
+    if (resourceId) parameters.set('conversation', resourceId);
+    if (focusedChild?.resource === 'message') parameters.set('message', focusedChild.resourceId);
     return `/messages${parameters.toString() ? `?${parameters.toString()}` : ''}`;
   }
 
   if (destination.resource === 'supportTicket') {
-    if (resourceId)
-      parameters.set('ticket', resourceId);
+    if (resourceId) parameters.set('ticket', resourceId);
     if (focusedChild?.resource === 'supportTicketMessage')
       parameters.set('message', focusedChild.resourceId);
     const path = notification.audience === 'ADMIN' ? '/admin/support' : '/support';
@@ -30,9 +25,10 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'listing' && destination.section === 'editor') {
-    if (!resourceId)
-      return '/my-listings';
-    return notification.metadata?.status === 'REJECTED' ? '/my-listings?tab=pending' : '/my-listings?tab=approved';
+    if (!resourceId) return '/my-listings';
+    return notification.metadata?.status === 'REJECTED'
+      ? '/my-listings?tab=pending'
+      : '/my-listings?tab=approved';
   }
 
   if (destination.resource === 'listing' && destination.section === 'detail') {
@@ -40,41 +36,38 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'listing' && destination.section === 'list') {
-    if (notification.audience === 'ADMIN')
-      return '/admin/listings';
+    if (notification.audience === 'ADMIN') return '/admin/listings';
     return destination.recipient === 'SELLER' ? '/my-listings' : '/listings';
   }
 
   if (destination.resource === 'complaint') {
-    if (notification.audience === 'ADMIN')
-      return null;
+    if (notification.audience === 'ADMIN') return null;
 
     parameters.set('tab', 'returns');
-    parameters.set('returnsTab', destination.recipient === 'SELLER' || destination.section === 'returned-to-me'
-      ? 'returned-to-me'
-      : 'my-returns');
-    if (resourceId)
-      parameters.set('complaint', resourceId);
+    parameters.set(
+      'returnsTab',
+      destination.recipient === 'SELLER' || destination.section === 'returned-to-me'
+        ? 'returned-to-me'
+        : 'my-returns',
+    );
+    if (resourceId) parameters.set('complaint', resourceId);
     return `/profile?${parameters.toString()}`;
   }
 
   if (destination.resource === 'report') {
     if (notification.audience === 'ADMIN') {
-      if (resourceId)
-        parameters.set('report', resourceId);
+      if (resourceId) parameters.set('report', resourceId);
       return `/admin/reports${parameters.toString() ? `?${parameters.toString()}` : ''}`;
     }
     return '/listings';
   }
 
   if (destination.resource === 'seller') {
-    if (!resourceId)
-      return '/listings';
+    if (!resourceId) return '/listings';
 
     if (destination.section === 'reviews') {
       parameters.set('tab', 'reviews');
-      if (focusedChild?.resource === 'review')
-        parameters.set('review', focusedChild.resourceId);
+      if (focusedChild?.resource === 'review') parameters.set('review', focusedChild.resourceId);
       return `/seller/${encodeURIComponent(resourceId)}?${parameters.toString()}`;
     }
 
@@ -82,8 +75,7 @@ export function getNotificationDestinationPath(notification: Notification): stri
   }
 
   if (destination.resource === 'listing' && destination.section === 'moderation') {
-    if (resourceId)
-      parameters.set('listing', resourceId);
+    if (resourceId) parameters.set('listing', resourceId);
     parameters.set('status', 'PENDING');
     return `/admin/listings?${parameters.toString()}`;
   }
@@ -93,47 +85,40 @@ export function getNotificationDestinationPath(notification: Notification): stri
     const sent = destination.section === 'sent' || destination.recipient === 'BUYER';
 
     if (received) {
-      if (resourceId)
-        parameters.set('offer', resourceId);
+      if (resourceId) parameters.set('offer', resourceId);
       parameters.set('tab', 'offers');
       return `/my-listings?${parameters.toString()}`;
     }
 
     if (sent) {
-      if (resourceId)
-        parameters.set('offer', resourceId);
+      if (resourceId) parameters.set('offer', resourceId);
       return `/my-offers${parameters.toString() ? `?${parameters.toString()}` : ''}`;
     }
-  }
-
-  else if (destination.resource === 'order') {
+  } else if (destination.resource === 'order') {
     const recipient = destination.recipient;
-    if (recipient === 'BUYER' || (!recipient && notification.audience === 'USER' && destination.section === 'detail')) {
+    if (
+      recipient === 'BUYER' ||
+      (!recipient && notification.audience === 'USER' && destination.section === 'detail')
+    ) {
       return resourceId ? `/order-confirmation/${encodeURIComponent(resourceId)}` : '/profile';
     }
     if (recipient === 'ADMIN' && destination.section === 'manual-payment-review') {
-      const paymentSubmissionId = focusedChild?.resource === 'manualPaymentSubmission'
-        ? focusedChild.resourceId
-        : null;
-      if (!resourceId || !paymentSubmissionId)
-        return '/admin/orders';
+      const paymentSubmissionId =
+        focusedChild?.resource === 'manualPaymentSubmission' ? focusedChild.resourceId : null;
+      if (!resourceId || !paymentSubmissionId) return '/admin/orders';
       parameters.set('order', resourceId);
       parameters.set('paymentSubmission', paymentSubmissionId);
       return `/admin/orders?${parameters.toString()}`;
     }
     if (recipient === 'SELLER' || destination.section === 'sold') {
-      if (resourceId)
-        parameters.set('order', resourceId);
-      if (focusedChild?.resource === 'orderItem')
-        parameters.set('item', focusedChild.resourceId);
+      if (resourceId) parameters.set('order', resourceId);
+      if (focusedChild?.resource === 'orderItem') parameters.set('item', focusedChild.resourceId);
       parameters.set('tab', 'sold');
       return `/profile?${parameters.toString()}`;
     }
     if (recipient === 'ADMIN' || destination.section === 'management') {
-      if (resourceId)
-        parameters.set('order', resourceId);
-      if (focusedChild?.resource === 'orderItem')
-        parameters.set('item', focusedChild.resourceId);
+      if (resourceId) parameters.set('order', resourceId);
+      if (focusedChild?.resource === 'orderItem') parameters.set('item', focusedChild.resourceId);
       return `/admin/orders${parameters.toString() ? `?${parameters.toString()}` : ''}`;
     }
     return notification.audience === 'ADMIN' ? '/admin/orders' : '/profile';

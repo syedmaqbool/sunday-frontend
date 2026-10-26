@@ -47,7 +47,8 @@ export interface GetComplaintsAgainstMeErrors {
   };
 }
 
-export type GetComplaintsAgainstMeError = GetComplaintsAgainstMeErrors[keyof GetComplaintsAgainstMeErrors];
+export type GetComplaintsAgainstMeError =
+  GetComplaintsAgainstMeErrors[keyof GetComplaintsAgainstMeErrors];
 
 export interface GetComplaintsAgainstMeResponses {
   /**
@@ -81,7 +82,15 @@ export interface GetComplaintsAgainstMeResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -118,4 +127,5 @@ export interface GetComplaintsAgainstMeResponses {
   };
 }
 
-export type GetComplaintsAgainstMeResponse = GetComplaintsAgainstMeResponses[keyof GetComplaintsAgainstMeResponses];
+export type GetComplaintsAgainstMeResponse =
+  GetComplaintsAgainstMeResponses[keyof GetComplaintsAgainstMeResponses];

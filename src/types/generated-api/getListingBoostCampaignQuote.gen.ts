@@ -128,7 +128,8 @@ export interface GetListingBoostCampaignQuoteErrors {
   };
 }
 
-export type GetListingBoostCampaignQuoteError = GetListingBoostCampaignQuoteErrors[keyof GetListingBoostCampaignQuoteErrors];
+export type GetListingBoostCampaignQuoteError =
+  GetListingBoostCampaignQuoteErrors[keyof GetListingBoostCampaignQuoteErrors];
 
 export interface GetListingBoostCampaignQuoteResponses {
   /**
@@ -144,4 +145,5 @@ export interface GetListingBoostCampaignQuoteResponses {
   };
 }
 
-export type GetListingBoostCampaignQuoteResponse = GetListingBoostCampaignQuoteResponses[keyof GetListingBoostCampaignQuoteResponses];
+export type GetListingBoostCampaignQuoteResponse =
+  GetListingBoostCampaignQuoteResponses[keyof GetListingBoostCampaignQuoteResponses];

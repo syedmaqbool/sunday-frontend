@@ -124,7 +124,8 @@ export interface ReconnectAdminQuickBooksConnectionErrors {
   };
 }
 
-export type ReconnectAdminQuickBooksConnectionError = ReconnectAdminQuickBooksConnectionErrors[keyof ReconnectAdminQuickBooksConnectionErrors];
+export type ReconnectAdminQuickBooksConnectionError =
+  ReconnectAdminQuickBooksConnectionErrors[keyof ReconnectAdminQuickBooksConnectionErrors];
 
 export interface ReconnectAdminQuickBooksConnectionResponses {
   /**
@@ -140,4 +141,5 @@ export interface ReconnectAdminQuickBooksConnectionResponses {
   };
 }
 
-export type ReconnectAdminQuickBooksConnectionResponse = ReconnectAdminQuickBooksConnectionResponses[keyof ReconnectAdminQuickBooksConnectionResponses];
+export type ReconnectAdminQuickBooksConnectionResponse =
+  ReconnectAdminQuickBooksConnectionResponses[keyof ReconnectAdminQuickBooksConnectionResponses];

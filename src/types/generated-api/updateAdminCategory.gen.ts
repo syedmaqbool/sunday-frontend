@@ -150,4 +150,5 @@ export interface UpdateAdminCategoryResponses {
   };
 }
 
-export type UpdateAdminCategoryResponse = UpdateAdminCategoryResponses[keyof UpdateAdminCategoryResponses];
+export type UpdateAdminCategoryResponse =
+  UpdateAdminCategoryResponses[keyof UpdateAdminCategoryResponses];

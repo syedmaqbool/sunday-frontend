@@ -16,11 +16,8 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         ref={reference}
         to={to}
         className={({ isActive, isPending }) =>
-          cn(
-            className,
-            isActive && activeClassName,
-            isPending && pendingClassName,
-          )}
+          cn(className, isActive && activeClassName, isPending && pendingClassName)
+        }
         {...props}
       />
     );

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import MyOffers from '@/pages/MyOffers';
 import { marketplaceQueryKey } from '@/queries/marketplace.query';
 import { myListingsQueryKey } from '@/queries/myListings.query';
@@ -18,7 +18,7 @@ const { serviceMocks } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/services/offers.service', async (importOriginal) => {
+vi.mock('@/services/offers.service', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/offers.service')>();
   return {
     ...actual,
@@ -28,7 +28,7 @@ vi.mock('@/services/offers.service', async (importOriginal) => {
   };
 });
 
-vi.mock('@/services/myorders.service', async (importOriginal) => {
+vi.mock('@/services/myorders.service', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/myorders.service')>();
   return { ...actual, listOrders: serviceMocks.listOrders };
 });
@@ -78,12 +78,12 @@ function renderPage() {
       <MemoryRouter initialEntries={['/my-offers']}>
         <Routes>
           <Route
-            element={(
+            element={
               <>
                 <MyOffers />
                 <QueryRefreshObservers />
               </>
-            )}
+            }
             path="/my-offers"
           />
         </Routes>
@@ -113,7 +113,9 @@ beforeEach(() => {
     createdAt: '2026-10-05T18:30:00.000Z',
     updatedAt: '2026-10-05T18:30:00.000Z',
   };
-  serviceMocks.listMyOffers.mockReset().mockImplementation(async () => makePaginatedResponse([serviceMocks.offer]));
+  serviceMocks.listMyOffers
+    .mockReset()
+    .mockImplementation(async () => makePaginatedResponse([serviceMocks.offer]));
   serviceMocks.listMyReviews.mockReset().mockImplementation(async () => makePaginatedResponse([]));
   serviceMocks.listOrders.mockReset().mockImplementation(async () => makePaginatedResponse([]));
   serviceMocks.withdrawOffer.mockReset();
@@ -139,7 +141,9 @@ describe('accepted offer payment window', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel offer' }));
 
-    expect(await screen.findByRole('heading', { name: 'Cancel accepted offer?' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Cancel accepted offer?' }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }));
 
     await waitFor(() => expect(serviceMocks.withdrawOffer).toHaveBeenCalledWith('offer-1'));
@@ -170,19 +174,27 @@ describe('accepted offer payment window', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel offer' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm cancellation' }));
 
-    expect(await screen.findByRole('heading', { name: 'Cancel accepted offer?' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Cancel accepted offer?' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Accepted')).toBeInTheDocument();
   });
 
   it('hides buyer cancellation after checkout created an active order', async () => {
-    serviceMocks.listOrders.mockResolvedValue(makePaginatedResponse([{
-      id: 'order-1',
-      items: [{
-        offerId: 'offer-1',
-        status: 'AWAITING_PAYMENT',
-      }],
-      status: 'AWAITING_PAYMENT',
-    }]));
+    serviceMocks.listOrders.mockResolvedValue(
+      makePaginatedResponse([
+        {
+          id: 'order-1',
+          items: [
+            {
+              offerId: 'offer-1',
+              status: 'AWAITING_PAYMENT',
+            },
+          ],
+          status: 'AWAITING_PAYMENT',
+        },
+      ]),
+    );
 
     renderPage();
 

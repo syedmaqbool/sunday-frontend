@@ -124,7 +124,8 @@ export interface MarkComplaintReturnReceivedErrors {
   };
 }
 
-export type MarkComplaintReturnReceivedError = MarkComplaintReturnReceivedErrors[keyof MarkComplaintReturnReceivedErrors];
+export type MarkComplaintReturnReceivedError =
+  MarkComplaintReturnReceivedErrors[keyof MarkComplaintReturnReceivedErrors];
 
 export interface MarkComplaintReturnReceivedResponses {
   /**
@@ -155,7 +156,15 @@ export interface MarkComplaintReturnReceivedResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -166,4 +175,5 @@ export interface MarkComplaintReturnReceivedResponses {
   };
 }
 
-export type MarkComplaintReturnReceivedResponse = MarkComplaintReturnReceivedResponses[keyof MarkComplaintReturnReceivedResponses];
+export type MarkComplaintReturnReceivedResponse =
+  MarkComplaintReturnReceivedResponses[keyof MarkComplaintReturnReceivedResponses];

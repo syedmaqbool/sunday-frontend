@@ -129,7 +129,8 @@ export interface CreateListingPackageBoostsErrors {
   };
 }
 
-export type CreateListingPackageBoostsError = CreateListingPackageBoostsErrors[keyof CreateListingPackageBoostsErrors];
+export type CreateListingPackageBoostsError =
+  CreateListingPackageBoostsErrors[keyof CreateListingPackageBoostsErrors];
 
 export interface CreateListingPackageBoostsResponses {
   /**
@@ -170,7 +171,13 @@ export interface CreateListingPackageBoostsResponses {
         status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
         createdAt: string;
       };
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
       createdAt: string;
     };
     message: string;
@@ -178,4 +185,5 @@ export interface CreateListingPackageBoostsResponses {
   };
 }
 
-export type CreateListingPackageBoostsResponse = CreateListingPackageBoostsResponses[keyof CreateListingPackageBoostsResponses];
+export type CreateListingPackageBoostsResponse =
+  CreateListingPackageBoostsResponses[keyof CreateListingPackageBoostsResponses];

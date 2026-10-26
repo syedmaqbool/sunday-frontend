@@ -17,13 +17,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Command,
   CommandEmpty,
@@ -77,11 +71,15 @@ const ACCOUNT_MAPPING_LABELS: Record<AdminQuickBooksAccountMappingCategory, stri
 
 const accountMappingFormSchema = z.object({
   effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter an effective date.'),
-  mappings: z.array(z.object({
-    accountId: z.string().trim().min(1, 'Enter the QuickBooks account ID.'),
-    category: z.enum(QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES),
-    displayName: z.string().trim().min(1, 'Enter the QuickBooks account name.'),
-  })).length(QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES.length),
+  mappings: z
+    .array(
+      z.object({
+        accountId: z.string().trim().min(1, 'Enter the QuickBooks account ID.'),
+        category: z.enum(QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES),
+        displayName: z.string().trim().min(1, 'Enter the QuickBooks account name.'),
+      }),
+    )
+    .length(QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES.length),
   reason: z.string().trim().min(1, 'Enter a reason for this mapping version.'),
 });
 
@@ -102,13 +100,16 @@ function getToday() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-function createAccountMappingDefaults(version?: AdminQuickBooksAccountMappingVersion): AccountMappingFormValues {
+function createAccountMappingDefaults(
+  version?: AdminQuickBooksAccountMappingVersion,
+): AccountMappingFormValues {
   return {
     effectiveDate: getToday(),
     mappings: QUICKBOOKS_ACCOUNT_MAPPING_CATEGORIES.map(category => ({
       accountId: version?.mappings.find(mapping => mapping.category === category)?.accountId ?? '',
       category,
-      displayName: version?.mappings.find(mapping => mapping.category === category)?.displayName ?? '',
+      displayName:
+        version?.mappings.find(mapping => mapping.category === category)?.displayName ?? '',
     })),
     reason: '',
   };
@@ -119,13 +120,16 @@ function formatDate(value: string) {
 }
 
 function FieldError({ children }: { children?: string }) {
-  if (!children)
-    return null;
+  if (!children) return null;
 
   return <p className="text-xs text-destructive">{children}</p>;
 }
 
-function AccountMappingVersions({ versions }: { versions: AdminQuickBooksAccountMappingVersion[] }) {
+function AccountMappingVersions({
+  versions,
+}: {
+  versions: AdminQuickBooksAccountMappingVersion[];
+}) {
   if (versions.length === 0) {
     return (
       <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
@@ -139,29 +143,22 @@ function AccountMappingVersions({ versions }: { versions: AdminQuickBooksAccount
       {versions.map(version => (
         <div key={version.id} className="rounded-lg border p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">
-              Version
-              {' '}
-              {version.version}
-            </Badge>
+            <Badge variant="secondary">Version {version.version}</Badge>
             <span className="text-sm text-muted-foreground">
-              Effective
-              {' '}
-              {formatDate(version.effectiveDate)}
+              Effective {formatDate(version.effectiveDate)}
             </span>
             <span className="text-sm text-muted-foreground">{version.reason}</span>
           </div>
-          <div className="
-            mt-3 grid gap-2
-            sm:grid-cols-2
-          "
+          <div
+            className="
+              mt-3 grid gap-2
+              sm:grid-cols-2
+            "
           >
             {version.mappings.map(mapping => (
               <div key={`${version.id}-${mapping.category}`} className="min-w-0 text-sm">
                 <span className="text-muted-foreground">
-                  {ACCOUNT_MAPPING_LABELS[mapping.category]}
-                  :
-                  {' '}
+                  {ACCOUNT_MAPPING_LABELS[mapping.category]}:{' '}
                 </span>
                 <span className="font-medium">{mapping.displayName}</span>
                 <span className="ml-2 font-mono text-xs text-muted-foreground">
@@ -191,22 +188,17 @@ function SellerVendorMappings({ mappings }: { mappings: AdminQuickBooksSellerVen
       {mappings.map(mapping => (
         <div key={mapping.id} className="rounded-lg border p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">
-              Version
-              {' '}
-              {mapping.version}
-            </Badge>
+            <Badge variant="secondary">Version {mapping.version}</Badge>
             <span className="text-sm text-muted-foreground">
-              Effective
-              {' '}
-              {formatDate(mapping.effectiveDate)}
+              Effective {formatDate(mapping.effectiveDate)}
             </span>
             <span className="text-sm text-muted-foreground">{mapping.reason}</span>
           </div>
-          <div className="
-            mt-3 grid gap-2 text-sm
-            sm:grid-cols-2
-          "
+          <div
+            className="
+              mt-3 grid gap-2 text-sm
+              sm:grid-cols-2
+            "
           >
             <p>
               <span className="font-medium">{mapping.sellerName}</span>
@@ -305,8 +297,7 @@ export default function QuickBooksMappings({
   const prefilledSellerId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!latestAccountMapping)
-      return;
+    if (!latestAccountMapping) return;
 
     resetAccountMappingForm(createAccountMappingDefaults(latestAccountMapping));
   }, [latestAccountMapping, resetAccountMappingForm]);
@@ -314,8 +305,13 @@ export default function QuickBooksMappings({
   const vendorEffectiveDate = sellerVendorForm.watch('effectiveDate');
   const payableMappingVersion = accountMappingQuery.data?.data
     .filter(version => version.effectiveDate <= vendorEffectiveDate)
-    .toSorted((first, second) => second.effectiveDate.localeCompare(first.effectiveDate) || second.version - first.version)[0];
-  const payableAccount = payableMappingVersion?.mappings.find(mapping => mapping.category === 'SELLER_PAYABLE');
+    .toSorted(
+      (first, second) =>
+        second.effectiveDate.localeCompare(first.effectiveDate) || second.version - first.version,
+    )[0];
+  const payableAccount = payableMappingVersion?.mappings.find(
+    mapping => mapping.category === 'SELLER_PAYABLE',
+  );
 
   useEffect(() => {
     setSellerVendorValue('quickbooksApAccountId', payableAccount?.accountId ?? '');
@@ -323,11 +319,16 @@ export default function QuickBooksMappings({
   }, [payableAccount?.accountId, payableAccount?.displayName, setSellerVendorValue]);
 
   useEffect(() => {
-    if (!selectedSellerId || !selectedSellerMappingsQuery.data || prefilledSellerId.current === selectedSellerId)
+    if (
+      !selectedSellerId ||
+      !selectedSellerMappingsQuery.data ||
+      prefilledSellerId.current === selectedSellerId
+    )
       return;
 
-    const latestSellerMapping = selectedSellerMappingsQuery.data.data
-      .toSorted((first, second) => second.version - first.version)[0];
+    const latestSellerMapping = selectedSellerMappingsQuery.data.data.toSorted(
+      (first, second) => second.version - first.version,
+    )[0];
     if (latestSellerMapping) {
       setSellerVendorValue('quickbooksVendorId', latestSellerMapping.quickbooksVendorId);
       setSellerVendorValue('displayName', latestSellerMapping.displayName);
@@ -374,24 +375,35 @@ export default function QuickBooksMappings({
 
   const handleAccountMappingSubmit = async (values: AccountMappingFormValues) => {
     try {
-      const response = await createAccountMapping.mutateAsync(values as AdminQuickBooksAccountMappingVersionPayload);
+      const response = await createAccountMapping.mutateAsync(
+        values as AdminQuickBooksAccountMappingVersionPayload,
+      );
       accountMappingForm.reset(createAccountMappingDefaults(response.data));
       setAccountMappingDialogOpen(false);
-      sellerVendorForm.setValue('quickbooksApAccountId', response.data.mappings.find(mapping => mapping.category === 'SELLER_PAYABLE')?.accountId ?? '');
-      sellerVendorForm.setValue('quickbooksApAccountName', response.data.mappings.find(mapping => mapping.category === 'SELLER_PAYABLE')?.displayName ?? '');
+      sellerVendorForm.setValue(
+        'quickbooksApAccountId',
+        response.data.mappings.find(mapping => mapping.category === 'SELLER_PAYABLE')?.accountId ??
+          '',
+      );
+      sellerVendorForm.setValue(
+        'quickbooksApAccountName',
+        response.data.mappings.find(mapping => mapping.category === 'SELLER_PAYABLE')
+          ?.displayName ?? '',
+      );
       sellerVendorForm.setValue('effectiveDate', values.effectiveDate);
       toast.success('QuickBooks account mappings saved', {
         description: `Version ${response.data.version} is effective ${formatDate(response.data.effectiveDate)}.`,
       });
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Could not save the QuickBooks account mappings.');
     }
   };
 
   const handleSellerVendorSubmit = async (values: SellerVendorMappingFormValues) => {
     try {
-      const response = await createSellerVendorMapping.mutateAsync(values as AdminQuickBooksSellerVendorMappingPayload);
+      const response = await createSellerVendorMapping.mutateAsync(
+        values as AdminQuickBooksSellerVendorMappingPayload,
+      );
       sellerVendorForm.reset({
         quickbooksApAccountId: values.quickbooksApAccountId,
         quickbooksVendorId: '',
@@ -406,8 +418,7 @@ export default function QuickBooksMappings({
       toast.success('QuickBooks seller vendor mapping saved', {
         description: `${response.data.displayName} is mapped for ${response.data.sellerName}.`,
       });
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Could not save the seller vendor mapping.');
     }
   };
@@ -415,10 +426,11 @@ export default function QuickBooksMappings({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        "
+        <CardHeader
+          className="
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          "
         >
           <div className="space-y-1.5">
             <CardTitle>Account mappings</CardTitle>
@@ -440,22 +452,26 @@ export default function QuickBooksMappings({
                 <DialogHeader>
                   <DialogTitle>Add account mapping version</DialogTitle>
                   <DialogDescription>
-                    Map each Sunday accounting category to the exact account in the connected QuickBooks company. Each save creates an immutable version.
+                    Map each Sunday accounting category to the exact account in the connected
+                    QuickBooks company. Each save creates an immutable version.
                   </DialogDescription>
                 </DialogHeader>
                 {postingEnvironment && (
                   <p className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
-                    The posting worker is configured for
-                    {' '}
-                    <span className="font-medium text-foreground">{postingEnvironment}</span>
-                    . Use account IDs from that company. Mapping versions are selected by effective date.
+                    The posting worker is configured for{' '}
+                    <span className="font-medium text-foreground">{postingEnvironment}</span>. Use
+                    account IDs from that company. Mapping versions are selected by effective date.
                   </p>
                 )}
-                <form onSubmit={accountMappingForm.handleSubmit(handleAccountMappingSubmit)} className="space-y-5">
-                  <div className="
-                    grid gap-4
-                    sm:grid-cols-2
-                  "
+                <form
+                  onSubmit={accountMappingForm.handleSubmit(handleAccountMappingSubmit)}
+                  className="space-y-5"
+                >
+                  <div
+                    className="
+                      grid gap-4
+                      sm:grid-cols-2
+                    "
                   >
                     <div className="space-y-2">
                       <Label htmlFor="quickbooks-mapping-effective-date">Effective date</Label>
@@ -465,9 +481,12 @@ export default function QuickBooksMappings({
                         {...accountMappingForm.register('effectiveDate')}
                       />
                       <p className="text-xs text-muted-foreground">
-                        For an existing delivered order, choose its accounting posting date or an earlier approved date.
+                        For an existing delivered order, choose its accounting posting date or an
+                        earlier approved date.
                       </p>
-                      <FieldError>{accountMappingForm.formState.errors.effectiveDate?.message}</FieldError>
+                      <FieldError>
+                        {accountMappingForm.formState.errors.effectiveDate?.message}
+                      </FieldError>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="quickbooks-mapping-reason">Reason</Label>
@@ -499,24 +518,38 @@ export default function QuickBooksMappings({
                           defaultValue={category}
                         />
                         <div className="space-y-2">
-                          <Label htmlFor={`quickbooks-account-id-${category}`}>QuickBooks account ID</Label>
+                          <Label htmlFor={`quickbooks-account-id-${category}`}>
+                            QuickBooks account ID
+                          </Label>
                           <Input
                             id={`quickbooks-account-id-${category}`}
                             autoComplete="off"
                             placeholder="Account ID from Chart of Accounts"
                             {...accountMappingForm.register(`mappings.${index}.accountId`)}
                           />
-                          <FieldError>{accountMappingForm.formState.errors.mappings?.[index]?.accountId?.message}</FieldError>
+                          <FieldError>
+                            {
+                              accountMappingForm.formState.errors.mappings?.[index]?.accountId
+                                ?.message
+                            }
+                          </FieldError>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor={`quickbooks-account-name-${category}`}>QuickBooks account name</Label>
+                          <Label htmlFor={`quickbooks-account-name-${category}`}>
+                            QuickBooks account name
+                          </Label>
                           <Input
                             id={`quickbooks-account-name-${category}`}
                             autoComplete="off"
                             placeholder="Exact account name"
                             {...accountMappingForm.register(`mappings.${index}.displayName`)}
                           />
-                          <FieldError>{accountMappingForm.formState.errors.mappings?.[index]?.displayName?.message}</FieldError>
+                          <FieldError>
+                            {
+                              accountMappingForm.formState.errors.mappings?.[index]?.displayName
+                                ?.message
+                            }
+                          </FieldError>
                         </div>
                       </div>
                     ))}
@@ -526,9 +559,11 @@ export default function QuickBooksMappings({
                     disabled={!isPostingEnvironmentConnected || createAccountMapping.isPending}
                     type="submit"
                   >
-                    {createAccountMapping.isPending
-                      ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                      : <Save aria-hidden="true" className="h-4 w-4" />}
+                    {createAccountMapping.isPending ? (
+                      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save aria-hidden="true" className="h-4 w-4" />
+                    )}
                     Save account mapping version
                   </Button>
                   {!isPostingEnvironmentConnected && (
@@ -544,21 +579,24 @@ export default function QuickBooksMappings({
           {canReadMappings && (
             <section className="space-y-3">
               <h3 className="font-medium">Saved mapping versions</h3>
-              {accountMappingQuery.isLoading
-                ? <p className="text-sm text-muted-foreground">Loading mapping versions…</p>
-                : accountMappingQuery.isError
-                  ? <p className="text-sm text-destructive">Could not load account mapping versions.</p>
-                  : <AccountMappingVersions versions={accountMappingQuery.data?.data ?? []} />}
+              {accountMappingQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading mapping versions…</p>
+              ) : accountMappingQuery.isError ? (
+                <p className="text-sm text-destructive">Could not load account mapping versions.</p>
+              ) : (
+                <AccountMappingVersions versions={accountMappingQuery.data?.data ?? []} />
+              )}
             </section>
           )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        "
+        <CardHeader
+          className="
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          "
         >
           <div className="space-y-1.5">
             <CardTitle>Seller vendor mappings</CardTitle>
@@ -580,19 +618,25 @@ export default function QuickBooksMappings({
                 <DialogHeader>
                   <DialogTitle>Add seller vendor mapping</DialogTitle>
                   <DialogDescription>
-                    Select a Sunday seller and map them to an existing QuickBooks vendor. Saving creates an immutable version.
+                    Select a Sunday seller and map them to an existing QuickBooks vendor. Saving
+                    creates an immutable version.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={sellerVendorForm.handleSubmit(handleSellerVendorSubmit)} className="space-y-4">
-                  <div className="
-                    grid gap-4
-                    sm:grid-cols-2
-                  "
-                  >
-                    <div className="
-                      space-y-2
-                      sm:col-span-2
+                <form
+                  onSubmit={sellerVendorForm.handleSubmit(handleSellerVendorSubmit)}
+                  className="space-y-4"
+                >
+                  <div
+                    className="
+                      grid gap-4
+                      sm:grid-cols-2
                     "
+                  >
+                    <div
+                      className="
+                        space-y-2
+                        sm:col-span-2
+                      "
                     >
                       <Label htmlFor="quickbooks-vendor-seller">Sunday seller</Label>
                       <Popover onOpenChange={setSellerPickerOpen} open={sellerPickerOpen}>
@@ -605,18 +649,26 @@ export default function QuickBooksMappings({
                             variant="outline"
                             className="h-auto min-h-10 w-full justify-between py-2 text-left"
                           >
-                            {selectedSeller
-                              ? (
-                                  <span className="flex min-w-0 flex-col items-start">
-                                    <span className="truncate font-medium">{selectedSeller.name}</span>
-                                    <span className="truncate text-xs text-muted-foreground">{selectedSeller.email}</span>
-                                  </span>
-                                )
-                              : <span className="text-muted-foreground">Select a seller</span>}
-                            <ChevronsUpDown aria-hidden="true" className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            {selectedSeller ? (
+                              <span className="flex min-w-0 flex-col items-start">
+                                <span className="truncate font-medium">{selectedSeller.name}</span>
+                                <span className="truncate text-xs text-muted-foreground">
+                                  {selectedSeller.email}
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Select a seller</span>
+                            )}
+                            <ChevronsUpDown
+                              aria-hidden="true"
+                              className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                            />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                        <PopoverContent
+                          align="start"
+                          className="w-[var(--radix-popover-trigger-width)] p-0"
+                        >
                           <Command shouldFilter={false}>
                             <CommandInput
                               onValueChange={setSellerSearch}
@@ -631,7 +683,7 @@ export default function QuickBooksMappings({
                                     ? 'Could not load active sellers.'
                                     : 'No active sellers found.'}
                               </CommandEmpty>
-                              {!sellerOptionsQuery.isLoading && (
+                              {!sellerOptionsQuery.isLoading &&
                                 sellerOptionsQuery.data?.data.map(seller => (
                                   <CommandItem
                                     key={seller.id}
@@ -640,7 +692,9 @@ export default function QuickBooksMappings({
                                   >
                                     <span className="flex min-w-0 flex-col">
                                       <span className="truncate">{seller.name}</span>
-                                      <span className="truncate text-xs text-muted-foreground">{seller.email}</span>
+                                      <span className="truncate text-xs text-muted-foreground">
+                                        {seller.email}
+                                      </span>
                                     </span>
                                     <Check
                                       aria-hidden="true"
@@ -650,8 +704,7 @@ export default function QuickBooksMappings({
                                       `}
                                     />
                                   </CommandItem>
-                                ))
-                              )}
+                                ))}
                             </CommandList>
                           </Command>
                         </PopoverContent>
@@ -666,7 +719,9 @@ export default function QuickBooksMappings({
                         type="date"
                         {...sellerVendorForm.register('effectiveDate')}
                       />
-                      <FieldError>{sellerVendorForm.formState.errors.effectiveDate?.message}</FieldError>
+                      <FieldError>
+                        {sellerVendorForm.formState.errors.effectiveDate?.message}
+                      </FieldError>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="quickbooks-vendor-id">Existing QuickBooks vendor ID</Label>
@@ -676,8 +731,12 @@ export default function QuickBooksMappings({
                         placeholder="Vendor ID from QuickBooks"
                         {...sellerVendorForm.register('quickbooksVendorId')}
                       />
-                      <p className="text-xs text-muted-foreground">Use an existing vendor in the connected QuickBooks company.</p>
-                      <FieldError>{sellerVendorForm.formState.errors.quickbooksVendorId?.message}</FieldError>
+                      <p className="text-xs text-muted-foreground">
+                        Use an existing vendor in the connected QuickBooks company.
+                      </p>
+                      <FieldError>
+                        {sellerVendorForm.formState.errors.quickbooksVendorId?.message}
+                      </FieldError>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="quickbooks-vendor-name">QuickBooks vendor name</Label>
@@ -687,16 +746,24 @@ export default function QuickBooksMappings({
                         placeholder="Exact vendor name"
                         {...sellerVendorForm.register('displayName')}
                       />
-                      <FieldError>{sellerVendorForm.formState.errors.displayName?.message}</FieldError>
+                      <FieldError>
+                        {sellerVendorForm.formState.errors.displayName?.message}
+                      </FieldError>
                     </div>
                     <div className="space-y-2">
                       <Label>Accounts payable account</Label>
                       <Input
-                        value={payableAccount ? `${payableAccount.displayName} (ID ${payableAccount.accountId})` : 'No effective seller payable mapping'}
+                        value={
+                          payableAccount
+                            ? `${payableAccount.displayName} (ID ${payableAccount.accountId})`
+                            : 'No effective seller payable mapping'
+                        }
                         aria-label="Accounts payable account ID"
                         readOnly
                       />
-                      <FieldError>{sellerVendorForm.formState.errors.quickbooksApAccountId?.message}</FieldError>
+                      <FieldError>
+                        {sellerVendorForm.formState.errors.quickbooksApAccountId?.message}
+                      </FieldError>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="quickbooks-vendor-reason">Reason</Label>
@@ -711,12 +778,18 @@ export default function QuickBooksMappings({
                   <input type="hidden" {...sellerVendorForm.register('quickbooksApAccountId')} />
                   <input type="hidden" {...sellerVendorForm.register('quickbooksApAccountName')} />
                   <Button
-                    disabled={!isPostingEnvironmentConnected || !payableAccount || createSellerVendorMapping.isPending}
+                    disabled={
+                      !isPostingEnvironmentConnected ||
+                      !payableAccount ||
+                      createSellerVendorMapping.isPending
+                    }
                     type="submit"
                   >
-                    {createSellerVendorMapping.isPending
-                      ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                      : <Save aria-hidden="true" className="h-4 w-4" />}
+                    {createSellerVendorMapping.isPending ? (
+                      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save aria-hidden="true" className="h-4 w-4" />
+                    )}
                     Save seller vendor mapping
                   </Button>
                 </form>
@@ -727,11 +800,13 @@ export default function QuickBooksMappings({
           {canReadMappings && (
             <section className="space-y-3">
               <h3 className="font-medium">Saved seller vendor mappings</h3>
-              {sellerVendorMappingQuery.isLoading
-                ? <p className="text-sm text-muted-foreground">Loading seller vendor mappings…</p>
-                : sellerVendorMappingQuery.isError
-                  ? <p className="text-sm text-destructive">Could not load seller vendor mappings.</p>
-                  : <SellerVendorMappings mappings={sellerVendorMappingQuery.data?.data ?? []} />}
+              {sellerVendorMappingQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading seller vendor mappings…</p>
+              ) : sellerVendorMappingQuery.isError ? (
+                <p className="text-sm text-destructive">Could not load seller vendor mappings.</p>
+              ) : (
+                <SellerVendorMappings mappings={sellerVendorMappingQuery.data?.data ?? []} />
+              )}
             </section>
           )}
         </CardContent>

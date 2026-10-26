@@ -68,7 +68,8 @@ export interface DeleteAdminCommissionTierErrors {
   };
 }
 
-export type DeleteAdminCommissionTierError = DeleteAdminCommissionTierErrors[keyof DeleteAdminCommissionTierErrors];
+export type DeleteAdminCommissionTierError =
+  DeleteAdminCommissionTierErrors[keyof DeleteAdminCommissionTierErrors];
 
 export interface DeleteAdminCommissionTierResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminCommissionTierResponses {
   };
 }
 
-export type DeleteAdminCommissionTierResponse = DeleteAdminCommissionTierResponses[keyof DeleteAdminCommissionTierResponses];
+export type DeleteAdminCommissionTierResponse =
+  DeleteAdminCommissionTierResponses[keyof DeleteAdminCommissionTierResponses];

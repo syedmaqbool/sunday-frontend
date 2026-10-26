@@ -2,14 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import FeedbackHistory from '@/components/FeedbackHistory';
 import { getAdminListingFeedbackOptions } from '@/hooks/useAdminListingFeedback';
 
-export function AdminListingFeedbackSection({
-  listingId,
-}: {
-  listingId: string;
-}) {
+export function AdminListingFeedbackSection({ listingId }: { listingId: string }) {
   const { data: feedbackList = [] } = useQuery(getAdminListingFeedbackOptions(listingId));
-  if (feedbackList.length === 0)
-    return null;
+  if (feedbackList.length === 0) return null;
   return (
     <div className="mt-4">
       <FeedbackHistory feedbackList={feedbackList} />

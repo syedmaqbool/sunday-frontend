@@ -4,7 +4,8 @@ import { getSellerAnalytics } from '@/services/selleranalytic.service';
 
 export const sellerAnalyticsQueryKey = {
   all: () => ['seller-analytics'] as const,
-  overview: (parameters: AnalyticsDateRange = {}) => [...sellerAnalyticsQueryKey.all(), 'overview', parameters] as const,
+  overview: (parameters: AnalyticsDateRange = {}) =>
+    [...sellerAnalyticsQueryKey.all(), 'overview', parameters] as const,
 };
 
 export function getSellerAnalyticsOptions(parameters: AnalyticsDateRange = {}) {

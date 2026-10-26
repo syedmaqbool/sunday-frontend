@@ -1,4 +1,7 @@
-import type { SendConversationMessagePayload, StartConversationPayload } from '@/types/conversation.type';
+import type {
+  SendConversationMessagePayload,
+  StartConversationPayload,
+} from '@/types/conversation.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   listConversationMessages,
@@ -63,8 +66,7 @@ export function useMarkConversationReadMutation() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (conversationId: string) =>
-      markConversationRead(conversationId),
+    mutationFn: (conversationId: string) => markConversationRead(conversationId),
     onSuccess: (_, conversationId) => {
       qc.invalidateQueries({
         queryKey: conversationsQueryKey.messages(conversationId),

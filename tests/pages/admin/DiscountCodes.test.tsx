@@ -2,15 +2,16 @@ import type { ReactNode } from 'react';
 import type { DiscountCode } from '@/types/discountCode.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import DiscountCodes from '@/pages/admin/DiscountCodes';
 
-const { codeState, createDiscountCodeMock, listDiscountCodesMock, updateDiscountCodeMock } = vi.hoisted(() => ({
-  codeState: { codes: [] as DiscountCode[] },
-  createDiscountCodeMock: vi.fn(),
-  listDiscountCodesMock: vi.fn(),
-  updateDiscountCodeMock: vi.fn(),
-}));
+const { codeState, createDiscountCodeMock, listDiscountCodesMock, updateDiscountCodeMock } =
+  vi.hoisted(() => ({
+    codeState: { codes: [] as DiscountCode[] },
+    createDiscountCodeMock: vi.fn(),
+    listDiscountCodesMock: vi.fn(),
+    updateDiscountCodeMock: vi.fn(),
+  }));
 
 vi.mock('@/services/discountCode.service', () => ({
   createDiscountCode: createDiscountCodeMock,
@@ -21,20 +22,32 @@ vi.mock('@/services/discountCode.service', () => ({
 
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 vi.mock('@/components/ui/select', () => ({
-  Select: ({ children, onValueChange, value }: { children: ReactNode; onValueChange: (value: string) => void; value: string }) => (
+  Select: ({
+    children,
+    onValueChange,
+    value,
+  }: {
+    children: ReactNode;
+    onValueChange: (value: string) => void;
+    value: string;
+  }) => (
     <select onChange={event => onValueChange(event.target.value)} value={value}>
       {children}
     </select>
   ),
   SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-  SelectItem: ({ children, value }: { children: ReactNode; value: string }) => <option value={value}>{children}</option>,
+  SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
+    <option value={value}>{children}</option>
+  ),
   SelectTrigger: () => null,
   SelectValue: () => null,
 }));
 
 function renderPage() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
       <DiscountCodes />
     </QueryClientProvider>,
   );
@@ -70,15 +83,19 @@ describe('discount codes', () => {
     codeState.codes = [];
     listDiscountCodesMock.mockReset().mockImplementation(async () => ({ data: codeState.codes }));
     createDiscountCodeMock.mockReset().mockResolvedValue({});
-    updateDiscountCodeMock.mockReset().mockImplementation(async (id: string, payload: Partial<DiscountCode>) => {
-      codeState.codes = codeState.codes.map(code => code.id === id ? { ...code, ...payload } : code);
-      return {};
-    });
+    updateDiscountCodeMock
+      .mockReset()
+      .mockImplementation(async (id: string, payload: Partial<DiscountCode>) => {
+        codeState.codes = codeState.codes.map(code =>
+          code.id === id ? { ...code, ...payload } : code,
+        );
+        return {};
+      });
   });
 
   afterEach(cleanup);
 
-  it.each(['0', '-1', '1.5'])('rejects a per-buyer cap of %s', async (cap) => {
+  it.each(['0', '-1', '1.5'])('rejects a per-buyer cap of %s', async cap => {
     await openCreateForm();
     fireEvent.change(screen.getByLabelText('Max uses per buyer'), { target: { value: cap } });
     fireEvent.click(screen.getByRole('button', { name: 'Create Code' }));
@@ -92,7 +109,9 @@ describe('discount codes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Code' }));
 
     await waitFor(() => expect(createDiscountCodeMock).toHaveBeenCalledTimes(1));
-    expect(createDiscountCodeMock).toHaveBeenCalledWith(expect.objectContaining({ maxUsesPerUser: 3 }));
+    expect(createDiscountCodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({ maxUsesPerUser: 3 }),
+    );
   });
 
   it('creates a discount code with a null per-buyer cap when the field is blank', async () => {
@@ -100,13 +119,21 @@ describe('discount codes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Code' }));
 
     await waitFor(() => expect(createDiscountCodeMock).toHaveBeenCalledTimes(1));
-    expect(createDiscountCodeMock).toHaveBeenCalledWith(expect.objectContaining({ maxUsesPerUser: null }));
+    expect(createDiscountCodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({ maxUsesPerUser: null }),
+    );
   });
 
   it('shows the per-buyer cap alongside existing global usage', async () => {
     codeState.codes = [
       buildCode(),
-      buildCode({ id: 'discount-2', code: 'NOLIMIT', currentUses: 1, maxUses: null, maxUsesPerUser: null }),
+      buildCode({
+        id: 'discount-2',
+        code: 'NOLIMIT',
+        currentUses: 1,
+        maxUses: null,
+        maxUsesPerUser: null,
+      }),
     ];
     renderPage();
 
@@ -131,9 +158,13 @@ describe('discount codes', () => {
     fireEvent.change(screen.getByLabelText('Max uses per buyer'), { target: { value: '5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save cap' }));
 
-    await waitFor(() => expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: 5 }));
+    await waitFor(() =>
+      expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: 5 }),
+    );
     expect(await screen.findByText('Per buyer: 5')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Edit per-buyer cap' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Edit per-buyer cap' })).not.toBeInTheDocument(),
+    );
     expect(screen.getByText('SAVE10').closest('tr')).toHaveTextContent('10%');
     expect(screen.getByText('SAVE10').closest('tr')).toHaveTextContent('7 / 20');
   });
@@ -147,7 +178,9 @@ describe('discount codes', () => {
     fireEvent.change(screen.getByLabelText('Max uses per buyer'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save cap' }));
 
-    await waitFor(() => expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: null }));
+    await waitFor(() =>
+      expect(updateDiscountCodeMock).toHaveBeenCalledWith('discount-1', { maxUsesPerUser: null }),
+    );
     expect(await screen.findByText('Per buyer: Unlimited')).toBeInTheDocument();
   });
 });

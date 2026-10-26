@@ -45,8 +45,7 @@ export function getAdminUserByIdQueryOptions(userId: string | null) {
   return queryOptions({
     enabled: Boolean(userId),
     queryFn: async () => {
-      if (!userId)
-        throw new Error('A user must be selected before loading details.');
+      if (!userId) throw new Error('A user must be selected before loading details.');
 
       return getAdminUserById(userId);
     },
@@ -61,8 +60,7 @@ export function getAdminUserAuditHistoryQueryOptions(
   return queryOptions({
     enabled: Boolean(userId),
     queryFn: async () => {
-      if (!userId)
-        throw new Error('A user must be selected before loading audit history.');
+      if (!userId) throw new Error('A user must be selected before loading audit history.');
 
       return getAdminUserAuditHistory(userId, parameters);
     },

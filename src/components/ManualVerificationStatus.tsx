@@ -3,8 +3,14 @@ import { AlertCircle, CheckCircle2, Clock3, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utilities';
 
-export type ManualVerificationState
-  = 'APPROVED' | 'CANCELLED' | 'EXPIRED' | 'LEGACY' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
+export type ManualVerificationState =
+  | 'APPROVED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'LEGACY'
+  | 'REJECTED'
+  | 'RESUBMISSION_REQUESTED'
+  | 'SUBMITTED';
 
 export interface ManualVerificationCopy {
   description: string;
@@ -13,38 +19,35 @@ export interface ManualVerificationCopy {
 }
 
 export function getManualVerificationState(
-  order: Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>,
+  order: Pick<
+    Order,
+    'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'
+  >,
 ): ManualVerificationState {
   if (order.status === 'CANCELLED')
     return order.cancellationReason === 'PAYMENT_EXPIRED' ? 'EXPIRED' : 'CANCELLED';
 
   const submissionStatus = order.manualPaymentSubmission?.status;
-  if (submissionStatus === 'APPROVED')
-    return 'APPROVED';
-  if (submissionStatus === 'REJECTED')
-    return 'REJECTED';
-  if (submissionStatus === 'RESUBMISSION_REQUESTED')
-    return 'RESUBMISSION_REQUESTED';
+  if (submissionStatus === 'APPROVED') return 'APPROVED';
+  if (submissionStatus === 'REJECTED') return 'REJECTED';
+  if (submissionStatus === 'RESUBMISSION_REQUESTED') return 'RESUBMISSION_REQUESTED';
 
   // Accepted-offer proof under review has no expiresAt; ordinary review windows still lapse.
   if (
-    order.status === 'AWAITING_PAYMENT'
-    && order.paymentStatus !== 'PAID'
-    && order.expiresAt
-    && new Date(order.expiresAt).getTime() <= Date.now()
+    order.status === 'AWAITING_PAYMENT' &&
+    order.paymentStatus !== 'PAID' &&
+    order.expiresAt &&
+    new Date(order.expiresAt).getTime() <= Date.now()
   ) {
     return 'EXPIRED';
   }
 
-  if (submissionStatus === 'SUBMITTED')
-    return 'SUBMITTED';
+  if (submissionStatus === 'SUBMITTED') return 'SUBMITTED';
 
   return 'LEGACY';
 }
 
-export function getManualVerificationCopy(
-  state: ManualVerificationState,
-): ManualVerificationCopy {
+export function getManualVerificationCopy(state: ManualVerificationState): ManualVerificationCopy {
   switch (state) {
     case 'APPROVED': {
       return {
@@ -69,7 +72,8 @@ export function getManualVerificationCopy(
     }
     case 'REJECTED': {
       return {
-        description: 'The store rejected this payment proof. Review the reason below and contact the store if you need help.',
+        description:
+          'The store rejected this payment proof. Review the reason below and contact the store if you need help.',
         heading: 'Payment proof rejected',
         label: 'Rejected',
       };
@@ -99,10 +103,8 @@ export function getManualVerificationCopy(
 }
 
 function stateIcon(state: ManualVerificationState) {
-  if (state === 'APPROVED')
-    return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  if (state === 'SUBMITTED')
-    return <Clock3 className="h-4 w-4 text-primary" />;
+  if (state === 'APPROVED') return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
+  if (state === 'SUBMITTED') return <Clock3 className="h-4 w-4 text-primary" />;
   if (state === 'REJECTED' || state === 'RESUBMISSION_REQUESTED')
     return <AlertCircle className="h-4 w-4 text-destructive" />;
   return <XCircle className="h-4 w-4 text-muted-foreground" />;
@@ -115,11 +117,13 @@ export function ManualVerificationStatus({
 }: {
   className?: string;
   compact?: boolean;
-  order: Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>;
+  order: Pick<
+    Order,
+    'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'
+  >;
 }) {
   const state = getManualVerificationState(order);
-  if (state === 'LEGACY' || (state === 'CANCELLED' && !order.manualPaymentSubmission))
-    return null;
+  if (state === 'LEGACY' || (state === 'CANCELLED' && !order.manualPaymentSubmission)) return null;
 
   const copy = getManualVerificationCopy(state);
   const reviewNote = order.manualPaymentSubmission?.reviewNote;
@@ -127,31 +131,37 @@ export function ManualVerificationStatus({
   const shouldShowDeadline = state !== 'APPROVED' && state !== 'CANCELLED';
 
   return (
-    <div className={cn(compact ? 'space-y-1' : 'rounded-md border border-border bg-muted/30 p-4', className)}>
+    <div
+      className={cn(
+        compact ? 'space-y-1' : 'rounded-md border border-border bg-muted/30 p-4',
+        className,
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2">
         {stateIcon(state)}
-        <Badge variant={state === 'APPROVED' ? 'default' : state === 'REJECTED' || state === 'RESUBMISSION_REQUESTED' ? 'destructive' : 'outline'}>
+        <Badge
+          variant={
+            state === 'APPROVED'
+              ? 'default'
+              : state === 'REJECTED' || state === 'RESUBMISSION_REQUESTED'
+                ? 'destructive'
+                : 'outline'
+          }
+        >
           {copy.label}
         </Badge>
       </div>
       <p className={cn('text-sm text-muted-foreground', compact ? 'text-xs' : 'mt-2')}>
         {copy.description}
       </p>
-      {reviewNote && (
-        <p className="text-sm text-foreground">
-          Review note:
-          {' '}
-          {reviewNote}
-        </p>
-      )}
+      {reviewNote && <p className="text-sm text-foreground">Review note: {reviewNote}</p>}
       {deadline && shouldShowDeadline && (
         <p className="text-xs text-muted-foreground">
           {state === 'RESUBMISSION_REQUESTED'
             ? 'Payment correction deadline:'
             : state === 'EXPIRED'
               ? 'Payment deadline:'
-              : 'Payment review deadline:'}
-          {' '}
+              : 'Payment review deadline:'}{' '}
           {deadline.toLocaleString('en-GB', {
             dateStyle: 'medium',
             timeStyle: 'short',

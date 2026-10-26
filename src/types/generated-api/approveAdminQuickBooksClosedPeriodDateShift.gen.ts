@@ -127,7 +127,8 @@ export interface ApproveAdminQuickBooksClosedPeriodDateShiftErrors {
   };
 }
 
-export type ApproveAdminQuickBooksClosedPeriodDateShiftError = ApproveAdminQuickBooksClosedPeriodDateShiftErrors[keyof ApproveAdminQuickBooksClosedPeriodDateShiftErrors];
+export type ApproveAdminQuickBooksClosedPeriodDateShiftError =
+  ApproveAdminQuickBooksClosedPeriodDateShiftErrors[keyof ApproveAdminQuickBooksClosedPeriodDateShiftErrors];
 
 export interface ApproveAdminQuickBooksClosedPeriodDateShiftResponses {
   /**
@@ -139,4 +140,5 @@ export interface ApproveAdminQuickBooksClosedPeriodDateShiftResponses {
   };
 }
 
-export type ApproveAdminQuickBooksClosedPeriodDateShiftResponse = ApproveAdminQuickBooksClosedPeriodDateShiftResponses[keyof ApproveAdminQuickBooksClosedPeriodDateShiftResponses];
+export type ApproveAdminQuickBooksClosedPeriodDateShiftResponse =
+  ApproveAdminQuickBooksClosedPeriodDateShiftResponses[keyof ApproveAdminQuickBooksClosedPeriodDateShiftResponses];

@@ -2,11 +2,14 @@
 
 export interface StartConversationData {
   path?: never;
-  body: ({
-    listingId: string;
-  } | {
-    recipientUserId: string;
-  }) & {
+  body: (
+    | {
+        listingId: string;
+      }
+    | {
+        recipientUserId: string;
+      }
+  ) & {
     listingId?: string;
     recipientUserId?: string;
     content: string;
@@ -179,9 +182,23 @@ export interface StartConversationResponses {
       buyerFullName: string;
       counterAmount: number | null;
       lastMessageContent: string | null;
-      listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD' | null;
+      listingStatus:
+        | 'APPROVED'
+        | 'NEEDS_REVISION'
+        | 'PENDING'
+        | 'REJECTED'
+        | 'RESERVED'
+        | 'SOLD'
+        | null;
       listingTitle: string | null;
-      offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN' | null;
+      offerStatus:
+        | 'ACCEPTED'
+        | 'COUNTERED'
+        | 'EXPIRED'
+        | 'PENDING'
+        | 'REJECTED'
+        | 'WITHDRAWN'
+        | null;
       reservedUntil: string | null;
       sellerFullName: string;
       type: 'DIRECT' | 'LISTING';
@@ -195,4 +212,5 @@ export interface StartConversationResponses {
   };
 }
 
-export type StartConversationResponse = StartConversationResponses[keyof StartConversationResponses];
+export type StartConversationResponse =
+  StartConversationResponses[keyof StartConversationResponses];

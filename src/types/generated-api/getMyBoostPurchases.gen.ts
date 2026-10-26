@@ -110,7 +110,13 @@ export interface GetMyBoostPurchasesResponses {
         status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
         reviewedAt: string | null;
       } | null;
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
       refundCompletedAt: string | null;
     }>;
     message: string;
@@ -144,4 +150,5 @@ export interface GetMyBoostPurchasesResponses {
   };
 }
 
-export type GetMyBoostPurchasesResponse = GetMyBoostPurchasesResponses[keyof GetMyBoostPurchasesResponses];
+export type GetMyBoostPurchasesResponse =
+  GetMyBoostPurchasesResponses[keyof GetMyBoostPurchasesResponses];

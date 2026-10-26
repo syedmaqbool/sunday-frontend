@@ -128,7 +128,8 @@ export interface CreateAdminSubcategoryErrors {
   };
 }
 
-export type CreateAdminSubcategoryError = CreateAdminSubcategoryErrors[keyof CreateAdminSubcategoryErrors];
+export type CreateAdminSubcategoryError =
+  CreateAdminSubcategoryErrors[keyof CreateAdminSubcategoryErrors];
 
 export interface CreateAdminSubcategoryResponses {
   /**
@@ -152,4 +153,5 @@ export interface CreateAdminSubcategoryResponses {
   };
 }
 
-export type CreateAdminSubcategoryResponse = CreateAdminSubcategoryResponses[keyof CreateAdminSubcategoryResponses];
+export type CreateAdminSubcategoryResponse =
+  CreateAdminSubcategoryResponses[keyof CreateAdminSubcategoryResponses];

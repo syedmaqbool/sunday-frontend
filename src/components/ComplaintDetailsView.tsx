@@ -1,12 +1,6 @@
 import type { Complaint } from '@/types/complaint.type';
 import { format } from 'date-fns';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ImageIcon,
-  MapPin,
-  PackageCheck,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ImageIcon, MapPin, PackageCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -56,32 +50,25 @@ export function ComplaintDetailsView({
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const isCompleted
-    = ['REFUNDED', 'REJECTED'].includes(complaint.status);
-  const isReturn
-    = [
-      'RETURN_IN_TRANSIT',
-      'RETURN_RECEIVED',
-      'RETURN_ADDRESS_PROVIDED',
-      'RETURN_APPROVED',
-    ].includes(complaint.status);
-  const Icon = isCompleted
-    ? CheckCircle2
-    : (isReturn
-        ? PackageCheck
-        : AlertTriangle);
+  const isCompleted = ['REFUNDED', 'REJECTED'].includes(complaint.status);
+  const isReturn = [
+    'RETURN_IN_TRANSIT',
+    'RETURN_RECEIVED',
+    'RETURN_ADDRESS_PROVIDED',
+    'RETURN_APPROVED',
+  ].includes(complaint.status);
+  const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
 
   const evidence = complaint.evidenceUrls ?? [];
   const proofs = complaint.returnProofUrls ?? [];
-  const hasReturnAddress = !!(
-    complaint.returnAddress || complaint.returnAddressRecipient
-  );
+  const hasReturnAddress = !!(complaint.returnAddress || complaint.returnAddressRecipient);
 
   return (
-    <div className={`
-      mt-2
-      ${className ?? ''}
-    `}
+    <div
+      className={`
+        mt-2
+        ${className ?? ''}
+      `}
     >
       <button
         onClick={() => setOpen(true)}
@@ -89,10 +76,11 @@ export function ComplaintDetailsView({
         type="button"
         className="inline-flex"
       >
-        <Badge className="
-          cursor-pointer gap-1 bg-amber-500/15 text-amber-700
-          hover:bg-amber-500/25
-        "
+        <Badge
+          className="
+            cursor-pointer gap-1 bg-amber-500/15 text-amber-700
+            hover:bg-amber-500/25
+          "
         >
           <Icon className="h-3 w-3" />
           {STATUS_LABEL[complaint.status] ?? complaint.status}
@@ -108,9 +96,7 @@ export function ComplaintDetailsView({
             </DialogTitle>
             {complaint.createdAt && (
               <DialogDescription>
-                Raised
-                {' '}
-                {format(new Date(complaint.createdAt), 'PPp')}
+                Raised {format(new Date(complaint.createdAt), 'PPp')}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -119,7 +105,7 @@ export function ComplaintDetailsView({
             {complaint.reason && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {viewerRole === 'seller' ? 'Buyer\'s message' : 'Your message'}
+                  {viewerRole === 'seller' ? "Buyer's message" : 'Your message'}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
                   {complaint.reason}
@@ -130,11 +116,7 @@ export function ComplaintDetailsView({
             {evidence.length > 0 && (
               <div>
                 <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <ImageIcon className="h-3 w-3" />
-                  {' '}
-                  Evidence photos (
-                  {evidence.length}
-                  )
+                  <ImageIcon className="h-3 w-3" /> Evidence photos ({evidence.length})
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {evidence.map((url, index) => (
@@ -158,21 +140,15 @@ export function ComplaintDetailsView({
             {hasReturnAddress && (
               <div>
                 <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {' '}
-                  Ship return to
+                  <MapPin className="h-3 w-3" /> Ship return to
                 </p>
                 <div className="mt-1 space-y-0.5 text-sm text-foreground">
                   {complaint.returnAddressRecipient && (
                     <p className="font-medium">{complaint.returnAddressRecipient}</p>
                   )}
-                  {complaint.returnAddress && (
-                    <p>{complaint.returnAddress}</p>
-                  )}
+                  {complaint.returnAddress && <p>{complaint.returnAddress}</p>}
                   {complaint.returnAddressPhone && (
-                    <p className="text-muted-foreground">
-                      {complaint.returnAddressPhone}
-                    </p>
+                    <p className="text-muted-foreground">{complaint.returnAddressPhone}</p>
                   )}
                   {complaint.returnInstructions && (
                     <p className="text-xs italic text-muted-foreground">
@@ -186,18 +162,12 @@ export function ComplaintDetailsView({
             {proofs.length > 0 && (
               <div>
                 <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <PackageCheck className="h-3 w-3" />
-                  {' '}
-                  Return proof (
-                  {proofs.length}
-                  )
+                  <PackageCheck className="h-3 w-3" /> Return proof ({proofs.length})
                 </p>
                 {(complaint.returnCarrier || complaint.returnTracking) && (
                   <p className="text-xs text-muted-foreground">
                     {complaint.returnCarrier ?? ''}
-                    {complaint.returnTracking
-                      ? ` · ${complaint.returnTracking}`
-                      : ''}
+                    {complaint.returnTracking ? ` · ${complaint.returnTracking}` : ''}
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -224,9 +194,7 @@ export function ComplaintDetailsView({
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Admin note
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {complaint.adminNotes}
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{complaint.adminNotes}</p>
               </div>
             )}
           </div>

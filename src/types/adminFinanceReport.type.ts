@@ -5,4 +5,5 @@ import type {
 } from '@/types/generated-api';
 
 export type AdminFinanceReportSummaryParams = ApiRequestQuery<GetAdminFinanceReportSummaryData>;
-export type AdminFinanceReportSummaryResponse = ApiSuccessResponse<GetAdminFinanceReportSummaryResponses>;
+export type AdminFinanceReportSummaryResponse =
+  ApiSuccessResponse<GetAdminFinanceReportSummaryResponses>;

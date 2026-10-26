@@ -75,7 +75,8 @@ export interface GetAdminFlaggedMessagesErrors {
   };
 }
 
-export type GetAdminFlaggedMessagesError = GetAdminFlaggedMessagesErrors[keyof GetAdminFlaggedMessagesErrors];
+export type GetAdminFlaggedMessagesError =
+  GetAdminFlaggedMessagesErrors[keyof GetAdminFlaggedMessagesErrors];
 
 export interface GetAdminFlaggedMessagesResponses {
   /**
@@ -149,4 +150,5 @@ export interface GetAdminFlaggedMessagesResponses {
   };
 }
 
-export type GetAdminFlaggedMessagesResponse = GetAdminFlaggedMessagesResponses[keyof GetAdminFlaggedMessagesResponses];
+export type GetAdminFlaggedMessagesResponse =
+  GetAdminFlaggedMessagesResponses[keyof GetAdminFlaggedMessagesResponses];

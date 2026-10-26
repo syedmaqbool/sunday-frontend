@@ -22,7 +22,14 @@ import {
 export const adminListingsQueryKey = {
   all: () => ['admin-listings'] as const,
   list: (query: GetAdminListingsData['query']) =>
-    [...adminListingsQueryKey.all(), 'list', query.status, query.isDeleted, query.page, query.size] as const,
+    [
+      ...adminListingsQueryKey.all(),
+      'list',
+      query.status,
+      query.isDeleted,
+      query.page,
+      query.size,
+    ] as const,
 };
 
 export function getAdminListingsOptions(query: GetAdminListingsData['query']) {
@@ -35,10 +42,8 @@ export function getAdminListingsOptions(query: GetAdminListingsData['query']) {
 export function useModerateListingMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      listingId,
-      ...payload
-    }: { listingId: string } & ModerateListingPayload) => moderateListing(listingId, payload),
+    mutationFn: ({ listingId, ...payload }: { listingId: string } & ModerateListingPayload) =>
+      moderateListing(listingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
       queryClient.invalidateQueries({
@@ -86,10 +91,8 @@ export function useUpdateAdminListingTitleMutation() {
 export function useReorderAdminListingMediaMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      listingId,
-      ...payload
-    }: { listingId: string } & ReorderListingMediaPayload) => reorderAdminListingMedia(listingId, payload),
+    mutationFn: ({ listingId, ...payload }: { listingId: string } & ReorderListingMediaPayload) =>
+      reorderAdminListingMedia(listingId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() }),
   });
 }
@@ -97,13 +100,8 @@ export function useReorderAdminListingMediaMutation() {
 export function useCreateAdminListingFeedbackMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      listingId,
-      feedback,
-    }: {
-      listingId: string;
-      feedback: string;
-    }) => createAdminListingFeedback(listingId, { feedback }),
+    mutationFn: ({ listingId, feedback }: { listingId: string; feedback: string }) =>
+      createAdminListingFeedback(listingId, { feedback }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
       queryClient.invalidateQueries({

@@ -1,5 +1,10 @@
 import type { ApiRequestBody, ApiResponseData } from './api.type';
-import type { GetMyProfileResponses, UpdateMyBankDetailsData, UpdateMyProfileData, UploadFileResponses } from '@/types/generated-api';
+import type {
+  GetMyProfileResponses,
+  UpdateMyBankDetailsData,
+  UpdateMyProfileData,
+  UploadFileResponses,
+} from '@/types/generated-api';
 
 export type Profile = ApiResponseData<GetMyProfileResponses>;
 export type ProfileImage = NonNullable<Profile['image']>;

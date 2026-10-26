@@ -16,5 +16,7 @@ export type MarketplaceSellerSummary = NonNullable<PublicListing['seller']>;
 export type MarketplaceListing = PublicListing & Partial<AuthenticatedPublicListing>;
 export type MarketplaceEditableListing = ApiResponseData<GetMyListingByIdResponses>;
 export type MarketplaceSellerProfile = ApiResponseData<GetMarketplaceSellerProfileResponses>;
-export type MarketplaceListingMediaSource = Partial<Pick<MarketplaceListing, 'coverImageUrl' | 'imageUrls' | 'media'>>;
+export type MarketplaceListingMediaSource = Partial<
+  Pick<MarketplaceListing, 'coverImageUrl' | 'imageUrls' | 'media'>
+>;
 export type PublicListingDetail = ApiResponseData<GetPublicListingByIdResponses>;

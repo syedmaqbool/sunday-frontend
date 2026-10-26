@@ -77,7 +77,8 @@ export interface GetMyListingFeedbackErrors {
   };
 }
 
-export type GetMyListingFeedbackError = GetMyListingFeedbackErrors[keyof GetMyListingFeedbackErrors];
+export type GetMyListingFeedbackError =
+  GetMyListingFeedbackErrors[keyof GetMyListingFeedbackErrors];
 
 export interface GetMyListingFeedbackResponses {
   /**
@@ -126,4 +127,5 @@ export interface GetMyListingFeedbackResponses {
   };
 }
 
-export type GetMyListingFeedbackResponse = GetMyListingFeedbackResponses[keyof GetMyListingFeedbackResponses];
+export type GetMyListingFeedbackResponse =
+  GetMyListingFeedbackResponses[keyof GetMyListingFeedbackResponses];

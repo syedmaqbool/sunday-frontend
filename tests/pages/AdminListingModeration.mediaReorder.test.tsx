@@ -2,7 +2,7 @@ import type { AdminListing } from '@/types/adminListing.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
 const { listAdminListings, reorderAdminListingMedia } = vi.hoisted(() => ({
@@ -21,7 +21,10 @@ vi.mock('@/services/listing.service', () => ({
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: { permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_UPDATE' }], roleName: 'STAFF' },
+    user: {
+      permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_UPDATE' }],
+      roleName: 'STAFF',
+    },
   }),
 }));
 
@@ -31,21 +34,39 @@ vi.mock('@/components/AdminListingFeedbackWidgets', () => ({
 
 const imageOne = {
   id: 'media-image-one',
-  file: { id: 'file-image-one', filename: 'image-one.jpg', mimetype: 'image/jpeg', size: 100, url: '/image-one.jpg' },
+  file: {
+    id: 'file-image-one',
+    filename: 'image-one.jpg',
+    mimetype: 'image/jpeg',
+    size: 100,
+    url: '/image-one.jpg',
+  },
   sortOrder: 0,
   type: 'IMAGE',
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 const video = {
   id: 'media-video',
-  file: { id: 'file-video', filename: 'video.mp4', mimetype: 'video/mp4', size: 100, url: '/video.mp4' },
+  file: {
+    id: 'file-video',
+    filename: 'video.mp4',
+    mimetype: 'video/mp4',
+    size: 100,
+    url: '/video.mp4',
+  },
   sortOrder: 1,
   type: 'VIDEO',
   createdAt: '2026-01-02T00:00:00.000Z',
 };
 const imageTwo = {
   id: 'media-image-two',
-  file: { id: 'file-image-two', filename: 'image-two.jpg', mimetype: 'image/jpeg', size: 100, url: '/image-two.jpg' },
+  file: {
+    id: 'file-image-two',
+    filename: 'image-two.jpg',
+    mimetype: 'image/jpeg',
+    size: 100,
+    url: '/image-two.jpg',
+  },
   sortOrder: 2,
   type: 'IMAGE',
   createdAt: '2026-01-03T00:00:00.000Z',
@@ -96,23 +117,25 @@ beforeEach(() => {
       total: 1,
     },
   }));
-  reorderAdminListingMedia.mockImplementation(async (listingId: string, payload: { mediaIds: string[] }) => {
-    const listingMedia = [imageOne, video, imageTwo];
-    const orderedMedia = payload.mediaIds.map((mediaId, sortOrder) => ({
-      ...listingMedia.find(mediaItem => mediaItem.id === mediaId)!,
-      sortOrder,
-    }));
-    listingState.current = {
-      ...listing,
-      coverImage: orderedMedia.find(mediaItem => mediaItem.type === 'IMAGE')?.file ?? null,
-      media: orderedMedia,
-    } as AdminListing;
-    return {
-      data: listingState.current,
-      message: `Media order updated for ${listingId}`,
-      statusCode: 200,
-    };
-  });
+  reorderAdminListingMedia.mockImplementation(
+    async (listingId: string, payload: { mediaIds: string[] }) => {
+      const listingMedia = [imageOne, video, imageTwo];
+      const orderedMedia = payload.mediaIds.map((mediaId, sortOrder) => ({
+        ...listingMedia.find(mediaItem => mediaItem.id === mediaId)!,
+        sortOrder,
+      }));
+      listingState.current = {
+        ...listing,
+        coverImage: orderedMedia.find(mediaItem => mediaItem.type === 'IMAGE')?.file ?? null,
+        media: orderedMedia,
+      } as AdminListing;
+      return {
+        data: listingState.current,
+        message: `Media order updated for ${listingId}`,
+        statusCode: 200,
+      };
+    },
+  );
 });
 
 describe('admin listing media reorder', () => {
@@ -139,12 +162,14 @@ describe('admin listing media reorder', () => {
     expect(within(mediaItems[0]).getByText('Cover')).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Move image-two.jpg left' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Move image-two.jpg left' }));
-    expect(within(dialog).getAllByRole('listitem').map(item => item.getAttribute('aria-label'))).toEqual([
-      'Image image-two.jpg',
-      'Image image-one.jpg',
-      'Video video.mp4',
-    ]);
-    expect(within(dialog).getByRole('listitem', { name: 'Image image-two.jpg' })).toHaveTextContent('Cover');
+    expect(
+      within(dialog)
+        .getAllByRole('listitem')
+        .map(item => item.getAttribute('aria-label')),
+    ).toEqual(['Image image-two.jpg', 'Image image-one.jpg', 'Video video.mp4']);
+    expect(within(dialog).getByRole('listitem', { name: 'Image image-two.jpg' })).toHaveTextContent(
+      'Cover',
+    );
   });
 
   it('sends the full draft order and refreshes the open listing after saving', async () => {
@@ -155,26 +180,35 @@ describe('admin listing media reorder', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Move image-two.jpg left' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save order' }));
 
-    await waitFor(() => expect(reorderAdminListingMedia).toHaveBeenCalledWith('listing-1', {
-      mediaIds: ['media-image-two', 'media-image-one', 'media-video'],
-    }));
-    await waitFor(() => expect(within(dialog).queryByRole('button', { name: 'Save order' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(reorderAdminListingMedia).toHaveBeenCalledWith('listing-1', {
+        mediaIds: ['media-image-two', 'media-image-one', 'media-video'],
+      }),
+    );
+    await waitFor(() =>
+      expect(within(dialog).queryByRole('button', { name: 'Save order' })).not.toBeInTheDocument(),
+    );
     await waitFor(() => expect(listAdminListings.mock.calls.length).toBeGreaterThan(1));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reorder media' }));
-    expect(within(dialog).getAllByRole('listitem').map(item => item.getAttribute('aria-label'))).toEqual([
-      'Image image-two.jpg',
-      'Image image-one.jpg',
-      'Video video.mp4',
-    ]);
+    expect(
+      within(dialog)
+        .getAllByRole('listitem')
+        .map(item => item.getAttribute('aria-label')),
+    ).toEqual(['Image image-two.jpg', 'Image image-one.jpg', 'Video video.mp4']);
   });
 
   it('disables save and cancel while the order request is pending', async () => {
-    let resolveRequest: ((response: { data: AdminListing; message: string; statusCode: number }) => void) | undefined;
+    let resolveRequest:
+      | ((response: { data: AdminListing; message: string; statusCode: number }) => void)
+      | undefined;
     // The configured TypeScript lib does not include Promise.withResolvers.
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    reorderAdminListingMedia.mockImplementation(() => new Promise((resolve) => {
-      resolveRequest = resolve;
-    }));
+    reorderAdminListingMedia.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveRequest = resolve;
+        }),
+    );
     renderModeration();
     const dialog = await screen.findByRole('dialog', { name: 'Media order listing' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reorder media' }));
@@ -189,7 +223,9 @@ describe('admin listing media reorder', () => {
     expect(reorderAdminListingMedia).toHaveBeenCalledTimes(1);
 
     resolveRequest({ data: listingState.current, message: 'Media order updated', statusCode: 200 });
-    await waitFor(() => expect(within(dialog).queryByRole('button', { name: 'Save order' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(dialog).queryByRole('button', { name: 'Save order' })).not.toBeInTheDocument(),
+    );
   });
 
   it('discards the draft on cancel without calling the reorder operation', async () => {
@@ -201,11 +237,11 @@ describe('admin listing media reorder', () => {
 
     expect(reorderAdminListingMedia).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reorder media' }));
-    expect(within(dialog).getAllByRole('listitem').map(item => item.getAttribute('aria-label'))).toEqual([
-      'Image image-one.jpg',
-      'Video video.mp4',
-      'Image image-two.jpg',
-    ]);
+    expect(
+      within(dialog)
+        .getAllByRole('listitem')
+        .map(item => item.getAttribute('aria-label')),
+    ).toEqual(['Image image-one.jpg', 'Video video.mp4', 'Image image-two.jpg']);
   });
 
   it('keeps a failed draft available for retry or cancel', async () => {
@@ -217,11 +253,11 @@ describe('admin listing media reorder', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save order' }));
 
     expect(await within(dialog).findByRole('button', { name: 'Save order' })).toBeInTheDocument();
-    expect(within(dialog).getAllByRole('listitem').map(item => item.getAttribute('aria-label'))).toEqual([
-      'Image image-one.jpg',
-      'Image image-two.jpg',
-      'Video video.mp4',
-    ]);
+    expect(
+      within(dialog)
+        .getAllByRole('listitem')
+        .map(item => item.getAttribute('aria-label')),
+    ).toEqual(['Image image-one.jpg', 'Image image-two.jpg', 'Video video.mp4']);
     expect(reorderAdminListingMedia).toHaveBeenCalledTimes(1);
   });
 });

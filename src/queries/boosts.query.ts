@@ -1,25 +1,14 @@
-import type {
-  BoostPlacement,
-} from '@/types/boost.type';
+import type { BoostPlacement } from '@/types/boost.type';
 import { queryOptions } from '@tanstack/react-query';
-import {
-  listActiveBoosts,
-  listBoostPackages,
-  listMyBoosts,
-} from '@/services/clientBoost.service';
+import { listActiveBoosts, listBoostPackages, listMyBoosts } from '@/services/clientBoost.service';
 
-export type {
-  BoostPackage,
-  BoostPlacement,
-  ListingBoost,
-} from '@/types/boost.type';
+export type { BoostPackage, BoostPlacement, ListingBoost } from '@/types/boost.type';
 
 export const boostsQueryKey = {
   active: (placement?: BoostPlacement) =>
     [...boostsQueryKey.all(), 'active', 'list', placement ?? 'all'] as const,
   all: () => ['boosts'] as const,
-  my: (userId?: string) =>
-    [...boostsQueryKey.all(), 'mine', 'list', userId ?? null] as const,
+  my: (userId?: string) => [...boostsQueryKey.all(), 'mine', 'list', userId ?? null] as const,
   packages: () => [...boostsQueryKey.all(), 'packages', 'list'] as const,
 };
 

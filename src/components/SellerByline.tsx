@@ -8,16 +8,10 @@ interface SellerBylineProps {
   sellerNameClassName?: string;
 }
 
-function SellerByline({
-  sellerId,
-  className,
-  sellerName,
-  sellerNameClassName,
-}: SellerBylineProps) {
+function SellerByline({ sellerId, className, sellerName, sellerNameClassName }: SellerBylineProps) {
   return (
     <p className={cn('pointer-events-none text-xs text-muted-foreground', className)}>
-      Sold by
-      {' '}
+      Sold by{' '}
       <Link
         to={`/seller/${sellerId}`}
         className={cn(

@@ -28,8 +28,7 @@ export const categoryManagementQueryKey = {
   all: () => ['admin-category-management'] as const,
   categories: () => [...categoryManagementQueryKey.all(), 'categories', 'list'] as const,
   clothingTypes: () => [...categoryManagementQueryKey.all(), 'clothing-types', 'list'] as const,
-  subcategories: () =>
-    [...categoryManagementQueryKey.all(), 'subcategories', 'list'] as const,
+  subcategories: () => [...categoryManagementQueryKey.all(), 'subcategories', 'list'] as const,
 };
 
 export function getAdminClothingTypesOptions() {
@@ -60,13 +59,8 @@ export function useCreateClothingTypeMutation() {
 export function useUpdateClothingTypeMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateClothingTypePayload;
-    }) => updateClothingType(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateClothingTypePayload }) =>
+      updateClothingType(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: categoryManagementQueryKey.clothingTypes() }),
   });
 }
@@ -104,13 +98,8 @@ export function useCreateCategoryMutation() {
 export function useUpdateCategoryMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateCategoryPayload;
-    }) => updateCategory(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateCategoryPayload }) =>
+      updateCategory(id, payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.categories(),
@@ -154,13 +143,8 @@ export function useCreateSubcategoryMutation() {
 export function useUpdateSubcategoryMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateSubcategoryPayload;
-    }) => updateSubcategory(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateSubcategoryPayload }) =>
+      updateSubcategory(id, payload),
     onSuccess: () =>
       qc.invalidateQueries({
         queryKey: categoryManagementQueryKey.subcategories(),

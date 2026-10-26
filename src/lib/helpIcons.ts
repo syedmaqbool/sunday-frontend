@@ -4,7 +4,6 @@ import {
   CreditCard,
   Heart,
   HelpCircle,
-
   MessageCircle,
   Package,
   ShieldCheck,

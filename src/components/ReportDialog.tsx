@@ -88,11 +88,17 @@ export function ReportDialog({
     mode: 'all',
     resolver: zodResolver(reportSchema),
   });
-  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+    watch,
+  } = form;
   const reason = watch('reason');
   const details = watch('details');
 
-  const onSubmit: SubmitHandler<ReportFormValues> = async (values) => {
+  const onSubmit: SubmitHandler<ReportFormValues> = async values => {
     if (!user) {
       toast.error('Please sign in to report');
       navigate('/auth');
@@ -100,8 +106,8 @@ export function ReportDialog({
     }
     setSubmitting(true);
     try {
-      const targetField
-        = targetType === 'listing'
+      const targetField =
+        targetType === 'listing'
           ? { listingId: targetId }
           : targetType === 'message'
             ? { messageId: targetId }
@@ -114,11 +120,9 @@ export function ReportDialog({
       toast.success('Report submitted. Our team will review it shortly.');
       reset();
       setOpen(false);
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Could not submit report');
-    }
-    finally {
+    } finally {
       setSubmitting(false);
     }
   };
@@ -135,21 +139,15 @@ export function ReportDialog({
               hover:text-destructive
             "
           >
-            <Flag className="h-4 w-4" />
-            {' '}
-            {label}
+            <Flag className="h-4 w-4" /> {label}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Report -
-            {targetType}
-          </DialogTitle>
+          <DialogTitle>Report -{targetType}</DialogTitle>
           <DialogDescription>
-            Help us keep the marketplace safe. Reports are reviewed by our
-            moderation team.
+            Help us keep the marketplace safe. Reports are reviewed by our moderation team.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -197,14 +195,15 @@ export function ReportDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button
-            onClick={() => setOpen(false)}
-            disabled={submitting}
-            variant="outline"
-          >
+          <Button onClick={() => setOpen(false)} disabled={submitting} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleSubmit(onSubmit, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))} disabled={submitting || !reason}>
+          <Button
+            onClick={handleSubmit(onSubmit, errors_ =>
+              toast.error(Object.values(errors_)[0]?.message || 'Check input'),
+            )}
+            disabled={submitting || !reason}
+          >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Submit report
           </Button>

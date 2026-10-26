@@ -80,4 +80,5 @@ export interface ForgotUserPasswordResponses {
   };
 }
 
-export type ForgotUserPasswordResponse = ForgotUserPasswordResponses[keyof ForgotUserPasswordResponses];
+export type ForgotUserPasswordResponse =
+  ForgotUserPasswordResponses[keyof ForgotUserPasswordResponses];

@@ -77,4 +77,5 @@ export interface GetPaymentProofFileResponses {
   200: Blob | File;
 }
 
-export type GetPaymentProofFileResponse = GetPaymentProofFileResponses[keyof GetPaymentProofFileResponses];
+export type GetPaymentProofFileResponse =
+  GetPaymentProofFileResponses[keyof GetPaymentProofFileResponses];

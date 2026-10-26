@@ -20,19 +20,21 @@ import type { ResubmitBoostPaymentProofResponses } from '@/types/generated-api';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function listActiveBoosts(parameters: ActiveBoostParameters = {}): Promise<Response<ActiveListingBoost[]>> {
+export function listActiveBoosts(
+  parameters: ActiveBoostParameters = {},
+): Promise<Response<ActiveListingBoost[]>> {
   return authInstance
     .get('/api/v1/boosts/active', { searchParams: parameters })
     .json<Response<ActiveListingBoost[]>>();
 }
 
 export function listBoostPackages(): Promise<Response<BoostPackage[]>> {
-  return authInstance
-    .get('/api/v1/boost-packages')
-    .json<Response<BoostPackage[]>>();
+  return authInstance.get('/api/v1/boost-packages').json<Response<BoostPackage[]>>();
 }
 
-export function listMyBoosts(parameters: MyBoostParameters = {}): Promise<PaginatedResponse<ListingBoost>> {
+export function listMyBoosts(
+  parameters: MyBoostParameters = {},
+): Promise<PaginatedResponse<ListingBoost>> {
   return authInstance
     .get('/api/v1/me/boosts', { searchParams: parameters })
     .json<PaginatedResponse<ListingBoost>>();
@@ -61,7 +63,9 @@ export function resubmitBoostPaymentProof(
   body: ResubmitBoostPaymentProofPayload,
 ): Promise<ApiSuccessResponse<ResubmitBoostPaymentProofResponses>> {
   return authInstance
-    .post(`/api/v1/me/listings/${listingId}/boosts/purchases/${purchaseId}/payment-submission`, { json: body })
+    .post(`/api/v1/me/listings/${listingId}/boosts/purchases/${purchaseId}/payment-submission`, {
+      json: body,
+    })
     .json<ApiSuccessResponse<ResubmitBoostPaymentProofResponses>>();
 }
 

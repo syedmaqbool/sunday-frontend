@@ -52,4 +52,5 @@ export interface UnsubscribeMyEmailResponses {
   };
 }
 
-export type UnsubscribeMyEmailResponse = UnsubscribeMyEmailResponses[keyof UnsubscribeMyEmailResponses];
+export type UnsubscribeMyEmailResponse =
+  UnsubscribeMyEmailResponses[keyof UnsubscribeMyEmailResponses];

@@ -124,7 +124,8 @@ export interface CancelMyAwaitingPaymentOrderErrors {
   };
 }
 
-export type CancelMyAwaitingPaymentOrderError = CancelMyAwaitingPaymentOrderErrors[keyof CancelMyAwaitingPaymentOrderErrors];
+export type CancelMyAwaitingPaymentOrderError =
+  CancelMyAwaitingPaymentOrderErrors[keyof CancelMyAwaitingPaymentOrderErrors];
 
 export interface CancelMyAwaitingPaymentOrderResponses {
   /**
@@ -139,4 +140,5 @@ export interface CancelMyAwaitingPaymentOrderResponses {
   };
 }
 
-export type CancelMyAwaitingPaymentOrderResponse = CancelMyAwaitingPaymentOrderResponses[keyof CancelMyAwaitingPaymentOrderResponses];
+export type CancelMyAwaitingPaymentOrderResponse =
+  CancelMyAwaitingPaymentOrderResponses[keyof CancelMyAwaitingPaymentOrderResponses];

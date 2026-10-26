@@ -79,7 +79,8 @@ export interface GetAdminQuickBooksSellersErrors {
   };
 }
 
-export type GetAdminQuickBooksSellersError = GetAdminQuickBooksSellersErrors[keyof GetAdminQuickBooksSellersErrors];
+export type GetAdminQuickBooksSellersError =
+  GetAdminQuickBooksSellersErrors[keyof GetAdminQuickBooksSellersErrors];
 
 export interface GetAdminQuickBooksSellersResponses {
   /**
@@ -125,4 +126,5 @@ export interface GetAdminQuickBooksSellersResponses {
   };
 }
 
-export type GetAdminQuickBooksSellersResponse = GetAdminQuickBooksSellersResponses[keyof GetAdminQuickBooksSellersResponses];
+export type GetAdminQuickBooksSellersResponse =
+  GetAdminQuickBooksSellersResponses[keyof GetAdminQuickBooksSellersResponses];

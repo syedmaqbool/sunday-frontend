@@ -137,7 +137,29 @@ export interface GetTrendingListingsResponses {
         } | null;
         location: string;
       };
-      size: '35' | '36' | '37' | '38' | '39' | '40' | '41' | '42' | '43' | '44' | '45' | '46' | '47' | '48' | 'L' | 'M' | 'One Size' | 'S' | 'XL' | 'XS' | 'XXL' | 'XXS';
+      size:
+        | '35'
+        | '36'
+        | '37'
+        | '38'
+        | '39'
+        | '40'
+        | '41'
+        | '42'
+        | '43'
+        | '44'
+        | '45'
+        | '46'
+        | '47'
+        | '48'
+        | 'L'
+        | 'M'
+        | 'One Size'
+        | 'S'
+        | 'XL'
+        | 'XS'
+        | 'XXL'
+        | 'XXS';
       status: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD';
       styles: Array<'casual' | 'eastern' | 'formal' | 'semi_formal' | 'western'>;
       subcategoryLabel: string;
@@ -178,4 +200,5 @@ export interface GetTrendingListingsResponses {
   };
 }
 
-export type GetTrendingListingsResponse = GetTrendingListingsResponses[keyof GetTrendingListingsResponses];
+export type GetTrendingListingsResponse =
+  GetTrendingListingsResponses[keyof GetTrendingListingsResponses];

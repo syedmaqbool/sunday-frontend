@@ -154,7 +154,8 @@ export interface RequestAdminManualPaymentResubmissionErrors {
   };
 }
 
-export type RequestAdminManualPaymentResubmissionError = RequestAdminManualPaymentResubmissionErrors[keyof RequestAdminManualPaymentResubmissionErrors];
+export type RequestAdminManualPaymentResubmissionError =
+  RequestAdminManualPaymentResubmissionErrors[keyof RequestAdminManualPaymentResubmissionErrors];
 
 export interface RequestAdminManualPaymentResubmissionResponses {
   /**
@@ -179,4 +180,5 @@ export interface RequestAdminManualPaymentResubmissionResponses {
   };
 }
 
-export type RequestAdminManualPaymentResubmissionResponse = RequestAdminManualPaymentResubmissionResponses[keyof RequestAdminManualPaymentResubmissionResponses];
+export type RequestAdminManualPaymentResubmissionResponse =
+  RequestAdminManualPaymentResubmissionResponses[keyof RequestAdminManualPaymentResubmissionResponses];

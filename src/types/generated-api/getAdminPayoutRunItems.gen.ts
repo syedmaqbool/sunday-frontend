@@ -107,7 +107,8 @@ export interface GetAdminPayoutRunItemsErrors {
   };
 }
 
-export type GetAdminPayoutRunItemsError = GetAdminPayoutRunItemsErrors[keyof GetAdminPayoutRunItemsErrors];
+export type GetAdminPayoutRunItemsError =
+  GetAdminPayoutRunItemsErrors[keyof GetAdminPayoutRunItemsErrors];
 
 export interface GetAdminPayoutRunItemsResponses {
   /**
@@ -174,4 +175,5 @@ export interface GetAdminPayoutRunItemsResponses {
   };
 }
 
-export type GetAdminPayoutRunItemsResponse = GetAdminPayoutRunItemsResponses[keyof GetAdminPayoutRunItemsResponses];
+export type GetAdminPayoutRunItemsResponse =
+  GetAdminPayoutRunItemsResponses[keyof GetAdminPayoutRunItemsResponses];

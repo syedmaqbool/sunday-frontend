@@ -138,4 +138,5 @@ export interface ResetUserPasswordResponses {
   };
 }
 
-export type ResetUserPasswordResponse = ResetUserPasswordResponses[keyof ResetUserPasswordResponses];
+export type ResetUserPasswordResponse =
+  ResetUserPasswordResponses[keyof ResetUserPasswordResponses];

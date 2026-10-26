@@ -6,10 +6,11 @@ export default function Footer() {
   return (
     <footer className="border-t border-border bg-[#99ACFF] text-[#1a1a1a]">
       <div className="container py-12">
-        <div className="
-          grid gap-8
-          md:grid-cols-4
-        "
+        <div
+          className="
+            grid gap-8
+            md:grid-cols-4
+          "
         >
           <div>
             <img src={sundayLogo} alt="Sunday" className="h-10 w-auto" />
@@ -18,9 +19,7 @@ export default function Footer() {
             </p>
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
-              Shop
-            </h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Shop</h4>
             <ul className="space-y-2 text-sm opacity-80">
               <li>
                 <Link to="/listings?category=women" className="hover:opacity-100">
@@ -45,9 +44,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
-              Sell
-            </h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Sell</h4>
             <ul className="space-y-2 text-sm opacity-80">
               <li>
                 <Link to="/create-listing" className="hover:opacity-100">
@@ -62,9 +59,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">
-              Help
-            </h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider opacity-60">Help</h4>
             <ul className="space-y-2 text-sm opacity-80">
               <li>
                 <Link to="/help" className="hover:opacity-100">

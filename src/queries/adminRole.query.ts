@@ -76,15 +76,13 @@ export function useUpdateAdminRolePermissionsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (
-      {
-        roleId,
-        payload,
-      }: {
-        roleId: string;
-        payload: UpdateAdminRolePermissionsPayload;
-      },
-    ) => updateAdminRolePermissions(roleId, payload),
+    mutationFn: ({
+      roleId,
+      payload,
+    }: {
+      roleId: string;
+      payload: UpdateAdminRolePermissionsPayload;
+    }) => updateAdminRolePermissions(roleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
     },

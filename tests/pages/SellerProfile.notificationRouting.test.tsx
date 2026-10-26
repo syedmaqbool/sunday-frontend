@@ -1,7 +1,12 @@
-import { infiniteQueryOptions, QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  QueryClient,
+  QueryClientProvider,
+  queryOptions,
+} from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import SellerProfile from '@/pages/SellerProfile';
 
 const { reviewsQueryMock, sellerListingsQueryMock, sellerProfileQueryMock } = vi.hoisted(() => ({
@@ -17,10 +22,11 @@ vi.mock('@/queries/marketplace.query', () => ({
   getSellerProfileOptions: sellerProfileQueryMock,
 }));
 vi.mock('@/hooks/useSellerRating', () => ({
-  getSellerRatingOptions: () => queryOptions({
-    queryFn: async () => ({ reviewedId: 'seller-1', avgRating: 5, totalReviews: 1 }),
-    queryKey: ['seller-rating'],
-  }),
+  getSellerRatingOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ reviewedId: 'seller-1', avgRating: 5, totalReviews: 1 }),
+      queryKey: ['seller-rating'],
+    }),
 }));
 vi.mock('@/queries/review.query', () => ({
   getUserReviewsOptions: reviewsQueryMock,
@@ -51,12 +57,14 @@ function LocationObserver() {
   return (
     <>
       <output data-testid="location">{`${location.pathname}${location.search}`}</output>
-      <button onClick={() => navigate(-1)} type="button">Back</button>
+      <button onClick={() => navigate(-1)} type="button">
+        Back
+      </button>
     </>
   );
 }
 
-function reviewPage(data: typeof review[], currentPage = 1, lastPage = 1) {
+function reviewPage(data: (typeof review)[], currentPage = 1, lastPage = 1) {
   return {
     data,
     pagination: {
@@ -72,45 +80,52 @@ function reviewPage(data: typeof review[], currentPage = 1, lastPage = 1) {
 
 function renderSellerProfile(
   initialEntry: string,
-  reviewPages: Array<Error | Promise<ReturnType<typeof reviewPage>> | ReturnType<typeof reviewPage>> = [reviewPage([review])],
+  reviewPages: Array<
+    Error | Promise<ReturnType<typeof reviewPage>> | ReturnType<typeof reviewPage>
+  > = [reviewPage([review])],
   onReviewPageRequested?: (pageNumber: number) => void,
 ) {
-  sellerProfileQueryMock.mockReturnValue(queryOptions({
-    queryFn: async () => ({
-      id: 'seller-1',
-      userId: 'seller-1',
-      avatarUrl: null,
-      bio: '',
-      fullName: 'Seller',
-      image: null,
-      location: '',
-      phone: '',
-      createdAt: '2026-01-01T00:00:00.000Z',
+  sellerProfileQueryMock.mockReturnValue(
+    queryOptions({
+      queryFn: async () => ({
+        id: 'seller-1',
+        userId: 'seller-1',
+        avatarUrl: null,
+        bio: '',
+        fullName: 'Seller',
+        image: null,
+        location: '',
+        phone: '',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+      queryKey: ['seller-profile'],
     }),
-    queryKey: ['seller-profile'],
-  }));
-  sellerListingsQueryMock.mockReturnValue(queryOptions({
-    queryFn: async () => [],
-    queryKey: ['seller-listings'],
-  }));
-  reviewsQueryMock.mockReturnValue(infiniteQueryOptions<
-    ReturnType<typeof reviewPage>,
-    Error,
-    import('@tanstack/react-query').InfiniteData<ReturnType<typeof reviewPage>>,
-    readonly ['seller-reviews'],
-    number
-  >({
-    getNextPageParam: page => page.pagination.nextPage ?? undefined,
-    initialPageParam: 1,
-    queryFn: async ({ pageParam }) => {
-      onReviewPageRequested?.(pageParam);
-      const page = reviewPages[pageParam - 1];
-      if (page instanceof Error)
-        throw page;
-      return await page;
-    },
-    queryKey: ['seller-reviews'],
-  }));
+  );
+  sellerListingsQueryMock.mockReturnValue(
+    queryOptions({
+      queryFn: async () => [],
+      queryKey: ['seller-listings'],
+    }),
+  );
+  reviewsQueryMock.mockReturnValue(
+    infiniteQueryOptions<
+      ReturnType<typeof reviewPage>,
+      Error,
+      import('@tanstack/react-query').InfiniteData<ReturnType<typeof reviewPage>>,
+      readonly ['seller-reviews'],
+      number
+    >({
+      getNextPageParam: page => page.pagination.nextPage ?? undefined,
+      initialPageParam: 1,
+      queryFn: async ({ pageParam }) => {
+        onReviewPageRequested?.(pageParam);
+        const page = reviewPages[pageParam - 1];
+        if (page instanceof Error) throw page;
+        return await page;
+      },
+      queryKey: ['seller-reviews'],
+    }),
+  );
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -132,50 +147,71 @@ describe('seller review notification routing', () => {
 
     const reviewsTab = await screen.findByRole('tab', { name: /Reviews/ });
     await waitFor(() => expect(reviewsTab).toHaveAttribute('aria-selected', 'true'));
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'seller-review-review-1'));
-    expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=review-1');
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute('id', 'seller-review-review-1'),
+    );
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/seller/seller-1?tab=reviews&review=review-1',
+    );
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: /Listings/ }), { button: 0 });
-    await waitFor(() => expect(screen.getByRole('tab', { name: /Listings/ })).toHaveAttribute('aria-selected', 'true'));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Listings/ })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
     expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=listings');
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=review-1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/seller/seller-1?tab=reviews&review=review-1',
+      ),
+    );
     expect(screen.getByRole('tab', { name: /Reviews/ })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('keeps Reviews selected and removes an unavailable review identifier', async () => {
     renderSellerProfile('/seller/seller-1?tab=reviews&review=missing-review', [reviewPage([])]);
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'));
-    expect(await screen.findByRole('tab', { name: /Reviews/ })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'),
+    );
+    expect(await screen.findByRole('tab', { name: /Reviews/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('clears an unavailable review only after all review pages have loaded', async () => {
     let resolveLastReviewPage!: (page: ReturnType<typeof reviewPage>) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers -- This project does not include ES2024 in its TypeScript library.
-    const lastReviewPage = new Promise<ReturnType<typeof reviewPage>>((resolve) => {
+    const lastReviewPage = new Promise<ReturnType<typeof reviewPage>>(resolve => {
       resolveLastReviewPage = resolve;
     });
     let resolvePageTwoRequested!: () => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers -- This project does not include ES2024 in its TypeScript library.
-    const pageTwoRequested = new Promise<void>((resolve) => {
+    const pageTwoRequested = new Promise<void>(resolve => {
       resolvePageTwoRequested = resolve;
     });
     renderSellerProfile(
       '/seller/seller-1?tab=reviews&review=missing-review',
       [reviewPage([], 1, 2), lastReviewPage],
-      (pageNumber) => {
-        if (pageNumber === 2)
-          resolvePageTwoRequested();
+      pageNumber => {
+        if (pageNumber === 2) resolvePageTwoRequested();
       },
     );
 
     expect(await screen.findByText('No reviews yet')).toBeInTheDocument();
     await pageTwoRequested;
-    expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=missing-review');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/seller/seller-1?tab=reviews&review=missing-review',
+    );
 
     resolveLastReviewPage(reviewPage([], 2, 2));
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews'),
+    );
   });
 
   it('loads later review pages until the selected review is found and focused', async () => {
@@ -183,39 +219,55 @@ describe('seller review notification routing', () => {
       ...review,
       id: `recent-review-${index}`,
     }));
-    renderSellerProfile(
-      '/seller/seller-1?tab=reviews&review=older-review',
-      [reviewPage(firstPage, 1, 2), reviewPage([{ ...review, id: 'older-review' }], 2, 2)],
-    );
+    renderSellerProfile('/seller/seller-1?tab=reviews&review=older-review', [
+      reviewPage(firstPage, 1, 2),
+      reviewPage([{ ...review, id: 'older-review' }], 2, 2),
+    ]);
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=older-review'));
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'seller-review-older-review'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/seller/seller-1?tab=reviews&review=older-review',
+      ),
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute('id', 'seller-review-older-review'),
+    );
     expect(document.activeElement).toHaveTextContent('Great seller');
   });
 
   it('preserves the selected review URL when a later page lookup fails', async () => {
-    renderSellerProfile(
-      '/seller/seller-1?tab=reviews&review=older-review',
-      [reviewPage([review], 1, 2), new Error('Review lookup failed')],
-    );
+    renderSellerProfile('/seller/seller-1?tab=reviews&review=older-review', [
+      reviewPage([review], 1, 2),
+      new Error('Review lookup failed'),
+    ]);
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/seller/seller-1?tab=reviews&review=older-review'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/seller/seller-1?tab=reviews&review=older-review',
+      ),
+    );
     expect(await screen.findByText('Great seller')).toBeInTheDocument();
   });
 
   it('falls back to listings when the seller is unavailable', async () => {
-    sellerProfileQueryMock.mockReturnValue(queryOptions({
-      queryFn: async () => null,
-      queryKey: ['seller-profile-unavailable'],
-    }));
-    sellerListingsQueryMock.mockReturnValue(queryOptions({
-      queryFn: async () => [],
-      queryKey: ['seller-listings-unavailable'],
-    }));
-    reviewsQueryMock.mockReturnValue(queryOptions({
-      queryFn: async () => ({ data: [] }),
-      queryKey: ['seller-reviews-unavailable'],
-    }));
+    sellerProfileQueryMock.mockReturnValue(
+      queryOptions({
+        queryFn: async () => null,
+        queryKey: ['seller-profile-unavailable'],
+      }),
+    );
+    sellerListingsQueryMock.mockReturnValue(
+      queryOptions({
+        queryFn: async () => [],
+        queryKey: ['seller-listings-unavailable'],
+      }),
+    );
+    reviewsQueryMock.mockReturnValue(
+      queryOptions({
+        queryFn: async () => ({ data: [] }),
+        queryKey: ['seller-reviews-unavailable'],
+      }),
+    );
 
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(

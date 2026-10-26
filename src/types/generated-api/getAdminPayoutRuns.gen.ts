@@ -186,4 +186,5 @@ export interface GetAdminPayoutRunsResponses {
   };
 }
 
-export type GetAdminPayoutRunsResponse = GetAdminPayoutRunsResponses[keyof GetAdminPayoutRunsResponses];
+export type GetAdminPayoutRunsResponse =
+  GetAdminPayoutRunsResponses[keyof GetAdminPayoutRunsResponses];

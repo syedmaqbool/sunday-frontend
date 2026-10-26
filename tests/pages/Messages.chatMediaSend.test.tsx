@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const requestState = vi.hoisted(() => ({
@@ -53,8 +53,13 @@ vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }
 
 function renderMessages() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages?conversation=conversation-1']}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={['/messages?conversation=conversation-1']}
+      >
         <Routes>
           <Route element={<Messages />} path="/messages" />
         </Routes>
@@ -90,57 +95,61 @@ describe('messages chat media sending', () => {
     requestState.messages = [];
     requestState.lastMessageRequest = undefined;
     requestState.get.mockReset().mockImplementation((path: string) => ({
-      json: async () => successResponse(
-        path === '/api/v1/me/conversations' ? [activeConversation] : requestState.messages,
-      ),
+      json: async () =>
+        successResponse(
+          path === '/api/v1/me/conversations' ? [activeConversation] : requestState.messages,
+        ),
     }));
-    requestState.post.mockReset().mockImplementation((path: string, options: { body?: BodyInit; json?: unknown } = {}) => {
-      if (path.endsWith('/read')) {
-        return { json: async () => successResponse(null) };
-      }
+    requestState.post
+      .mockReset()
+      .mockImplementation((path: string, options: { body?: BodyInit; json?: unknown } = {}) => {
+        if (path.endsWith('/read')) {
+          return { json: async () => successResponse(null) };
+        }
 
-      requestState.lastMessageRequest = options;
-      return {
-        json: async () => {
-          if (requestState.holdNextMessage) {
-            requestState.holdNextMessage = false;
-            await new Promise<void>((resolve) => {
-              requestState.releaseMessageRequest = resolve;
-            });
-          }
+        requestState.lastMessageRequest = options;
+        return {
+          json: async () => {
+            if (requestState.holdNextMessage) {
+              requestState.holdNextMessage = false;
+              await new Promise<void>(resolve => {
+                requestState.releaseMessageRequest = resolve;
+              });
+            }
 
-          if (requestState.failNextMessage) {
-            requestState.failNextMessage = false;
-            throw new Error('Message send failed');
-          }
+            if (requestState.failNextMessage) {
+              requestState.failNextMessage = false;
+              throw new Error('Message send failed');
+            }
 
-          const formData = options.body instanceof FormData ? options.body : null;
-          const files = formData?.getAll('attachments') as File[] | undefined;
-          const jsonBody = options.json as { content?: string } | undefined;
-          const message = {
-            id: `message-${requestState.messages.length + 1}`,
-            conversationId: activeConversation.id,
-            senderId: 'user-1',
-            attachments: files?.map((file, index) => ({
-              id: `attachment-${index + 1}`,
-              filename: file.name,
-              mimetype: file.type,
-              size: file.size,
-              type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
-              url: `https://private.example/attachment-${index + 1}`,
-            })) ?? [],
-            content: formData ? String(formData.get('content') ?? '') : jsonBody?.content ?? '',
-            flagReasons: [],
-            isFlagged: false,
-            readAt: null,
-            createdAt: '2026-10-27T12:00:00.000Z',
-            updatedAt: '2026-10-27T12:00:00.000Z',
-          };
-          requestState.messages.push(message);
-          return successResponse(message);
-        },
-      };
-    });
+            const formData = options.body instanceof FormData ? options.body : null;
+            const files = formData?.getAll('attachments') as File[] | undefined;
+            const jsonBody = options.json as { content?: string } | undefined;
+            const message = {
+              id: `message-${requestState.messages.length + 1}`,
+              conversationId: activeConversation.id,
+              senderId: 'user-1',
+              attachments:
+                files?.map((file, index) => ({
+                  id: `attachment-${index + 1}`,
+                  filename: file.name,
+                  mimetype: file.type,
+                  size: file.size,
+                  type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+                  url: `https://private.example/attachment-${index + 1}`,
+                })) ?? [],
+              content: formData ? String(formData.get('content') ?? '') : (jsonBody?.content ?? ''),
+              flagReasons: [],
+              isFlagged: false,
+              readAt: null,
+              createdAt: '2026-10-27T12:00:00.000Z',
+              updatedAt: '2026-10-27T12:00:00.000Z',
+            };
+            requestState.messages.push(message);
+            return successResponse(message);
+          },
+        };
+      });
   });
 
   afterEach(() => {
@@ -148,14 +157,12 @@ describe('messages chat media sending', () => {
     vi.restoreAllMocks();
     if (createObjectUrlDescriptor) {
       Object.defineProperty(URL, 'createObjectURL', createObjectUrlDescriptor);
-    }
-    else {
+    } else {
       Reflect.deleteProperty(URL, 'createObjectURL');
     }
     if (revokeObjectUrlDescriptor) {
       Object.defineProperty(URL, 'revokeObjectURL', revokeObjectUrlDescriptor);
-    }
-    else {
+    } else {
       Reflect.deleteProperty(URL, 'revokeObjectURL');
     }
   });
@@ -171,10 +178,12 @@ describe('messages chat media sending', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
 
-    await waitFor(() => expect(requestState.post).toHaveBeenCalledWith(
-      '/api/v1/me/conversations/conversation-1/messages',
-      expect.objectContaining({ body: expect.any(FormData) }),
-    ));
+    await waitFor(() =>
+      expect(requestState.post).toHaveBeenCalledWith(
+        '/api/v1/me/conversations/conversation-1/messages',
+        expect.objectContaining({ body: expect.any(FormData) }),
+      ),
+    );
     const formData = requestState.lastMessageRequest?.body as FormData;
     expect(formData.get('content')).toBe('Please see this photo');
     expect((formData.getAll('attachments') as File[]).map(file => file.name)).toEqual([
@@ -185,7 +194,10 @@ describe('messages chat media sending', () => {
       'src',
       'https://private.example/attachment-1',
     );
-    expect(screen.getByLabelText('condition.mp4')).toHaveAttribute('src', 'https://private.example/attachment-2');
+    expect(screen.getByLabelText('condition.mp4')).toHaveAttribute(
+      'src',
+      'https://private.example/attachment-2',
+    );
     expect(screen.getByLabelText('condition.mp4')).toHaveAttribute('controls');
     expect(caption).toHaveValue('');
     expect(screen.queryByLabelText('Preview condition.jpg')).not.toBeInTheDocument();
@@ -199,10 +211,12 @@ describe('messages chat media sending', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
 
-    await waitFor(() => expect(requestState.post).toHaveBeenCalledWith(
-      '/api/v1/me/conversations/conversation-1/messages',
-      expect.objectContaining({ body: expect.any(FormData) }),
-    ));
+    await waitFor(() =>
+      expect(requestState.post).toHaveBeenCalledWith(
+        '/api/v1/me/conversations/conversation-1/messages',
+        expect.objectContaining({ body: expect.any(FormData) }),
+      ),
+    );
     const formData = requestState.lastMessageRequest?.body as FormData;
     expect(formData.has('content')).toBe(false);
     expect((formData.getAll('attachments')[0] as File).name).toBe('item-detail.jpg');
@@ -218,10 +232,12 @@ describe('messages chat media sending', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
 
-    await waitFor(() => expect(requestState.post).toHaveBeenCalledWith(
-      '/api/v1/me/conversations/conversation-1/messages',
-      { json: { content: 'A text-only update' } },
-    ));
+    await waitFor(() =>
+      expect(requestState.post).toHaveBeenCalledWith(
+        '/api/v1/me/conversations/conversation-1/messages',
+        { json: { content: 'A text-only update' } },
+      ),
+    );
     expect(await screen.findByText('A text-only update')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'A text-only update' })).not.toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 import type { GetAdminBoostPaymentSubmissionsResponse } from '@/types/generated-api';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
 
 const state = vi.hoisted(() => ({
@@ -18,8 +18,7 @@ vi.mock('@/queries/adminBoost.query', () => ({
   getAdminBoostPaymentProofOptions: (fileId: string | undefined) => ({
     enabled: Boolean(fileId),
     queryFn: async () => {
-      if (state.proofError)
-        throw new Error('Proof access denied');
+      if (state.proofError) throw new Error('Proof access denied');
       return new Blob(['proof'], { type: 'image/png' });
     },
     queryKey: ['admin-boost', 'payment-proof', fileId],
@@ -29,9 +28,15 @@ vi.mock('@/queries/adminBoost.query', () => ({
     queryKey: ['admin-boost', 'payment-submissions', 'list'],
   }),
   useApproveAdminBoostPaymentMutation: () => ({ isPending: false, mutateAsync: state.approve }),
-  useCompleteAdminBoostRefundMutation: () => ({ isPending: false, mutateAsync: state.completeRefund }),
+  useCompleteAdminBoostRefundMutation: () => ({
+    isPending: false,
+    mutateAsync: state.completeRefund,
+  }),
   useRejectAdminBoostPaymentMutation: () => ({ isPending: false, mutateAsync: state.reject }),
-  useRequestAdminBoostPaymentResubmissionMutation: () => ({ isPending: false, mutateAsync: state.requestResubmission }),
+  useRequestAdminBoostPaymentResubmissionMutation: () => ({
+    isPending: false,
+    mutateAsync: state.requestResubmission,
+  }),
 }));
 
 function makeSubmission(overrides: Record<string, unknown> = {}) {
@@ -43,23 +48,25 @@ function makeSubmission(overrides: Record<string, unknown> = {}) {
       amount: 1200,
       status: 'REFUND_REQUIRED',
     },
-    boosts: [{
-      id: 'boost-id',
-      boostPurchaseId: 'purchase-id',
-      listingId: 'listing-id',
-      packageId: 'package-id',
-      sellerId: 'seller-id',
-      durationDays: 7,
-      isActive: false,
-      packageName: 'Trending week',
-      paymentStatus: 'PENDING',
-      placement: 'TRENDING',
-      pricePaid: 1200,
-      endsAt: '2026-10-25T00:00:00.000Z',
-      startsAt: '2026-10-18T00:00:00.000Z',
-      createdAt: '2026-10-18T00:00:00.000Z',
-      updatedAt: '2026-10-18T00:00:00.000Z',
-    }],
+    boosts: [
+      {
+        id: 'boost-id',
+        boostPurchaseId: 'purchase-id',
+        listingId: 'listing-id',
+        packageId: 'package-id',
+        sellerId: 'seller-id',
+        durationDays: 7,
+        isActive: false,
+        packageName: 'Trending week',
+        paymentStatus: 'PENDING',
+        placement: 'TRENDING',
+        pricePaid: 1200,
+        endsAt: '2026-10-25T00:00:00.000Z',
+        startsAt: '2026-10-18T00:00:00.000Z',
+        createdAt: '2026-10-18T00:00:00.000Z',
+        updatedAt: '2026-10-18T00:00:00.000Z',
+      },
+    ],
     listing: { id: 'listing-id', status: 'SOLD', title: 'Vintage jacket' },
     paymentSubmission: {
       id: 'submission-id',
@@ -93,9 +100,19 @@ describe('admin boost payment review queue', () => {
     state.canReview = true;
     state.proofError = false;
     state.entries = [makeSubmission()];
-    state.approve.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'APPROVED' }, purchase: { status: 'REFUND_REQUIRED' }, refundRequired: true } });
-    state.reject.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'REJECTED' } } });
-    state.requestResubmission.mockReset().mockResolvedValue({ data: { paymentSubmission: { status: 'RESUBMISSION_REQUESTED' } } });
+    state.approve.mockReset().mockResolvedValue({
+      data: {
+        paymentSubmission: { status: 'APPROVED' },
+        purchase: { status: 'REFUND_REQUIRED' },
+        refundRequired: true,
+      },
+    });
+    state.reject
+      .mockReset()
+      .mockResolvedValue({ data: { paymentSubmission: { status: 'REJECTED' } } });
+    state.requestResubmission
+      .mockReset()
+      .mockResolvedValue({ data: { paymentSubmission: { status: 'RESUBMISSION_REQUESTED' } } });
     state.completeRefund.mockReset().mockResolvedValue({ data: { status: 'REFUNDED' } });
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn(() => 'blob:boost-payment-proof'),
@@ -112,7 +129,12 @@ describe('admin boost payment review queue', () => {
     expect(screen.getByText('Purchase').parentElement).toHaveTextContent(/Rs\s*1,200/);
     expect(screen.getByText('Trending week')).toBeInTheDocument();
     expect(screen.getByText('123456789012')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByAltText('Submitted boost payment proof')).toHaveAttribute('src', 'blob:boost-payment-proof'));
+    await waitFor(() =>
+      expect(screen.getByAltText('Submitted boost payment proof')).toHaveAttribute(
+        'src',
+        'blob:boost-payment-proof',
+      ),
+    );
     expect(screen.getByText(/listing is no longer eligible/i)).toBeInTheDocument();
     expect(screen.getByText('REFUND REQUIRED')).toBeInTheDocument();
   });
@@ -134,7 +156,9 @@ describe('admin boost payment review queue', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Approve payment' }));
 
-    await waitFor(() => expect(state.approve).toHaveBeenCalledWith({ submissionId: 'submission-id' }));
+    await waitFor(() =>
+      expect(state.approve).toHaveBeenCalledWith({ submissionId: 'submission-id' }),
+    );
     expect(await screen.findByText('REFUND REQUIRED')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve payment' })).not.toBeInTheDocument();
   });
@@ -145,27 +169,39 @@ describe('admin boost payment review queue', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
     expect(await screen.findByText('A reason is required for this action.')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Reason for rejection or replacement proof' }), { target: { value: 'Transfer amount is incorrect.' } });
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Reason for rejection or replacement proof' }),
+      { target: { value: 'Transfer amount is incorrect.' } },
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
 
-    await waitFor(() => expect(state.reject).toHaveBeenCalledWith({
-      submissionId: 'submission-id',
-      payload: { reviewNote: 'Transfer amount is incorrect.' },
-    }));
+    await waitFor(() =>
+      expect(state.reject).toHaveBeenCalledWith({
+        submissionId: 'submission-id',
+        payload: { reviewNote: 'Transfer amount is incorrect.' },
+      }),
+    );
     expect(screen.queryByRole('button', { name: 'Reject payment' })).not.toBeInTheDocument();
   });
 
   it('requires a reason and requests replacement proof from the server', async () => {
     renderQueue();
     await screen.findByText('Vintage jacket');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Reason for rejection or replacement proof' }), { target: { value: 'Please include the transfer reference.' } });
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Reason for rejection or replacement proof' }),
+      { target: { value: 'Please include the transfer reference.' } },
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Request replacement proof' }));
 
-    await waitFor(() => expect(state.requestResubmission).toHaveBeenCalledWith({
-      submissionId: 'submission-id',
-      payload: { reviewNote: 'Please include the transfer reference.' },
-    }));
-    expect(screen.queryByRole('button', { name: 'Request replacement proof' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(state.requestResubmission).toHaveBeenCalledWith({
+        submissionId: 'submission-id',
+        payload: { reviewNote: 'Please include the transfer reference.' },
+      }),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Request replacement proof' }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not expose payment decisions without BOOSTS_UPDATE permission', async () => {

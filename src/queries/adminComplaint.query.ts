@@ -1,16 +1,24 @@
 import type { InfiniteData } from '@tanstack/react-query';
-import type { AdminComplaint, AdminComplaintsParameters, AdminComplaintStatus, ComplaintStatus } from '@/types/complaint.type';
+import type {
+  AdminComplaint,
+  AdminComplaintsParameters,
+  AdminComplaintStatus,
+  ComplaintStatus,
+} from '@/types/complaint.type';
 import type { PaginatedResponse } from '@/types/response.type';
-import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminAnalyticsQueryKey } from '@/queries/adminAnalytics.query';
 import {
-  listAdminComplaints,
-  updateComplaintStatus,
-} from '@/services/complain.service';
+  infiniteQueryOptions,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { adminAnalyticsQueryKey } from '@/queries/adminAnalytics.query';
+import { listAdminComplaints, updateComplaintStatus } from '@/services/complain.service';
 
 export const adminComplaintsQueryKey = {
   all: () => ['admin-complaints'] as const,
-  byOrders: (orderIds: string[]) => [...adminComplaintsQueryKey.all(), 'orders', 'list', orderIds] as const,
+  byOrders: (orderIds: string[]) =>
+    [...adminComplaintsQueryKey.all(), 'orders', 'list', orderIds] as const,
   list: (status?: 'all' | ComplaintStatus) =>
     [...adminComplaintsQueryKey.all(), 'list', status] as const,
 };
@@ -26,11 +34,12 @@ export function getAdminComplaintsForOrdersOptions(orderIds: string[], isEnabled
     enabled: isEnabled && orderIds.length > 0,
     getNextPageParam: lastPage => lastPage.pagination.nextPage ?? undefined,
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => listAdminComplaints({
-      orderIds,
-      page: pageParam,
-      size: 100,
-    } satisfies AdminComplaintsParameters),
+    queryFn: ({ pageParam }) =>
+      listAdminComplaints({
+        orderIds,
+        page: pageParam,
+        size: 100,
+      } satisfies AdminComplaintsParameters),
     queryKey: adminComplaintsQueryKey.byOrders(orderIds),
   });
 }

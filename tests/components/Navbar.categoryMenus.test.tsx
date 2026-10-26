@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Navbar from '@/components/Navbar';
 
 const {
@@ -49,9 +49,7 @@ const subcategoriesByCategory = {
     { id: 'clothes', icon: '👕', label: 'Clothes', sortOrder: 1, value: 'clothes' },
     { id: 'shoes', icon: '👟', label: 'Footwear', sortOrder: 2, value: 'shoes' },
   ],
-  'home-category': [
-    { id: 'decor', icon: '🪴', label: 'Decor', sortOrder: 1, value: 'decor' },
-  ],
+  'home-category': [{ id: 'decor', icon: '🪴', label: 'Decor', sortOrder: 1, value: 'decor' }],
 };
 
 const clothingTypes = [
@@ -79,17 +77,19 @@ describe('navbar category menus', () => {
       queryFn: async () => categories,
       queryKey: ['categories'],
     });
-    getSubcategoriesOptionsMock.mockImplementation((categoryId: keyof typeof subcategoriesByCategory) => {
-      let queryFunction = subcategoryQueryFns.get(categoryId);
-      if (!queryFunction) {
-        queryFunction = vi.fn(async () => [{ data: subcategoriesByCategory[categoryId] }]);
-        subcategoryQueryFns.set(categoryId, queryFunction);
-      }
-      return {
-        queryFn: queryFunction,
-        queryKey: ['subcategories', categoryId],
-      };
-    });
+    getSubcategoriesOptionsMock.mockImplementation(
+      (categoryId: keyof typeof subcategoriesByCategory) => {
+        let queryFunction = subcategoryQueryFns.get(categoryId);
+        if (!queryFunction) {
+          queryFunction = vi.fn(async () => [{ data: subcategoriesByCategory[categoryId] }]);
+          subcategoryQueryFns.set(categoryId, queryFunction);
+        }
+        return {
+          queryFn: queryFunction,
+          queryKey: ['subcategories', categoryId],
+        };
+      },
+    );
     getClothingTypesOptionsMock.mockReturnValue({
       queryFn: clothingTypesQueryFn,
       queryKey: ['clothing-types'],
@@ -103,15 +103,27 @@ describe('navbar category menus', () => {
     const apparelMenu = apparel.parentElement!;
 
     expect(apparel).toHaveAttribute('href', '/listings?parent=apparel');
-    expect(within(apparelMenu).getByRole('link', { name: 'View all Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
-    expect(within(apparelMenu).getByRole('link', { name: 'Clothes' })).toHaveAttribute('href', '/listings?category=apparel-clothes');
-    expect(within(apparelMenu).getByRole('link', { name: 'Footwear' })).toHaveAttribute('href', '/listings?category=apparel-shoes');
+    expect(within(apparelMenu).getByRole('link', { name: 'View all Apparel' })).toHaveAttribute(
+      'href',
+      '/listings?parent=apparel',
+    );
+    expect(within(apparelMenu).getByRole('link', { name: 'Clothes' })).toHaveAttribute(
+      'href',
+      '/listings?category=apparel-clothes',
+    );
+    expect(within(apparelMenu).getByRole('link', { name: 'Footwear' })).toHaveAttribute(
+      'href',
+      '/listings?category=apparel-shoes',
+    );
     expect(within(apparelMenu).queryByRole('link', { name: 'Decor' })).not.toBeInTheDocument();
 
     const homeGoods = await screen.findByRole('link', { name: 'Home Goods' });
     const homeGoodsMenu = homeGoods.parentElement!;
     expect(homeGoods).toHaveAttribute('href', '/listings?parent=home-goods');
-    expect(within(homeGoodsMenu).getByRole('link', { name: 'Decor' })).toHaveAttribute('href', '/listings?category=home-goods-decor');
+    expect(within(homeGoodsMenu).getByRole('link', { name: 'Decor' })).toHaveAttribute(
+      'href',
+      '/listings?category=home-goods-decor',
+    );
     expect(within(homeGoodsMenu).queryByRole('link', { name: 'Footwear' })).not.toBeInTheDocument();
   });
 
@@ -119,8 +131,14 @@ describe('navbar category menus', () => {
     renderNavbar();
     await screen.findByRole('link', { name: 'Apparel' });
 
-    expect(await screen.findByRole('link', { name: 'Tops' })).toHaveAttribute('href', '/listings?category=apparel-clothes&clothing_type=tops');
-    expect(screen.getByRole('link', { name: 'Bottoms' })).toHaveAttribute('href', '/listings?category=apparel-clothes&clothing_type=bottoms');
+    expect(await screen.findByRole('link', { name: 'Tops' })).toHaveAttribute(
+      'href',
+      '/listings?category=apparel-clothes&clothing_type=tops',
+    );
+    expect(screen.getByRole('link', { name: 'Bottoms' })).toHaveAttribute(
+      'href',
+      '/listings?category=apparel-clothes&clothing_type=bottoms',
+    );
   });
 
   it('opens category menus on keyboard focus and keeps mobile category links available', async () => {
@@ -133,8 +151,14 @@ describe('navbar category menus', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
     const mobileNavigation = screen.getAllByRole('navigation')[1];
-    expect(within(mobileNavigation).getByRole('link', { name: 'Browse All' })).toHaveAttribute('href', '/listings');
-    expect(within(mobileNavigation).getByRole('link', { name: 'Apparel' })).toHaveAttribute('href', '/listings?parent=apparel');
+    expect(within(mobileNavigation).getByRole('link', { name: 'Browse All' })).toHaveAttribute(
+      'href',
+      '/listings',
+    );
+    expect(within(mobileNavigation).getByRole('link', { name: 'Apparel' })).toHaveAttribute(
+      'href',
+      '/listings?parent=apparel',
+    );
   });
 
   it('loads subcategories once for each resolved category and uses the shared clothing-type query', async () => {

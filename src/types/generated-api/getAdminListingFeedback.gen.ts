@@ -105,7 +105,8 @@ export interface GetAdminListingFeedbackErrors {
   };
 }
 
-export type GetAdminListingFeedbackError = GetAdminListingFeedbackErrors[keyof GetAdminListingFeedbackErrors];
+export type GetAdminListingFeedbackError =
+  GetAdminListingFeedbackErrors[keyof GetAdminListingFeedbackErrors];
 
 export interface GetAdminListingFeedbackResponses {
   /**
@@ -154,4 +155,5 @@ export interface GetAdminListingFeedbackResponses {
   };
 }
 
-export type GetAdminListingFeedbackResponse = GetAdminListingFeedbackResponses[keyof GetAdminListingFeedbackResponses];
+export type GetAdminListingFeedbackResponse =
+  GetAdminListingFeedbackResponses[keyof GetAdminListingFeedbackResponses];

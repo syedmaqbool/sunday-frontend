@@ -25,7 +25,9 @@ export type AdminUserImage = AdminUser['image'];
 export type AdminUserStatus = AdminUser['status'];
 export type AdminUserAuditEvent = ApiResponseItem<GetAdminUserAuditHistoryResponses>;
 export type AdminUserAuditHistoryResponse = ApiSuccessResponse<GetAdminUserAuditHistoryResponses>;
-export type AdminUserAuditHistoryParameters = Partial<ApiRequestQuery<GetAdminUserAuditHistoryData>>;
+export type AdminUserAuditHistoryParameters = Partial<
+  ApiRequestQuery<GetAdminUserAuditHistoryData>
+>;
 export type UpdateAdminUserProfileResponse = ApiSuccessResponse<UpdateAdminUserProfileResponses>;
 export type UpdateAdminUserStatusInput = ApiRequestBody<UpdateAdminUserStatusData>;
 export type UpdateAdminUserStatusResponse = ApiSuccessResponse<UpdateAdminUserStatusResponses>;

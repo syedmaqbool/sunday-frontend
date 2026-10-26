@@ -5,41 +5,44 @@ export interface UpdateAdminSiteSettingData {
     key: string;
   };
   body: {
-    value: {
-      addressBody?: string;
-      addressLabel?: string;
-      emailAddress?: string;
-      emailLabel?: string;
-      mapUrl?: string;
-      officeHours?: string;
-      phoneLabel?: string;
-      phoneNumber?: string;
-    } | {
-      alt?: string;
-      badgeIconUrl?: string;
-      badgeText?: string;
-      headlineLine1?: string;
-      headlineLine1Color?: string;
-      headlineLine2?: string;
-      headlineLine2Color?: string;
-      mobileUrl?: string;
-      primaryCtaBg?: string;
-      primaryCtaLabel?: string;
-      primaryCtaTextColor?: string;
-      secondaryCtaBorderColor?: string;
-      secondaryCtaLabel?: string;
-      secondaryCtaTextColor?: string;
-      siteLogoUrl?: string;
-      subtitle?: string;
-      subtitleColor?: string;
-      url?: string;
-    } | {
-      ctaLabel?: string;
-      ctaUrl?: string;
-      eyebrow?: string;
-      subtitle?: string;
-      title?: string;
-    };
+    value:
+      | {
+          addressBody?: string;
+          addressLabel?: string;
+          emailAddress?: string;
+          emailLabel?: string;
+          mapUrl?: string;
+          officeHours?: string;
+          phoneLabel?: string;
+          phoneNumber?: string;
+        }
+      | {
+          alt?: string;
+          badgeIconUrl?: string;
+          badgeText?: string;
+          headlineLine1?: string;
+          headlineLine1Color?: string;
+          headlineLine2?: string;
+          headlineLine2Color?: string;
+          mobileUrl?: string;
+          primaryCtaBg?: string;
+          primaryCtaLabel?: string;
+          primaryCtaTextColor?: string;
+          secondaryCtaBorderColor?: string;
+          secondaryCtaLabel?: string;
+          secondaryCtaTextColor?: string;
+          siteLogoUrl?: string;
+          subtitle?: string;
+          subtitleColor?: string;
+          url?: string;
+        }
+      | {
+          ctaLabel?: string;
+          ctaUrl?: string;
+          eyebrow?: string;
+          subtitle?: string;
+          title?: string;
+        };
   };
   query?: never;
   url: '/api/v1/admin/settings/site-settings/{key}';
@@ -160,7 +163,8 @@ export interface UpdateAdminSiteSettingErrors {
   };
 }
 
-export type UpdateAdminSiteSettingError = UpdateAdminSiteSettingErrors[keyof UpdateAdminSiteSettingErrors];
+export type UpdateAdminSiteSettingError =
+  UpdateAdminSiteSettingErrors[keyof UpdateAdminSiteSettingErrors];
 
 export interface UpdateAdminSiteSettingResponses {
   /**
@@ -169,45 +173,49 @@ export interface UpdateAdminSiteSettingResponses {
   200: {
     data: {
       key: string;
-      value: {
-        addressBody: string;
-        addressLabel: string;
-        emailAddress: string;
-        emailLabel: string;
-        mapUrl: string;
-        officeHours: string;
-        phoneLabel: string;
-        phoneNumber: string;
-      } | {
-        alt: string;
-        badgeIconUrl: string;
-        badgeText: string;
-        headlineLine1: string;
-        headlineLine1Color: string;
-        headlineLine2: string;
-        headlineLine2Color: string;
-        mobileUrl: string;
-        primaryCtaBg: string;
-        primaryCtaLabel: string;
-        primaryCtaTextColor: string;
-        secondaryCtaBorderColor: string;
-        secondaryCtaLabel: string;
-        secondaryCtaTextColor: string;
-        siteLogoUrl: string;
-        subtitle: string;
-        subtitleColor: string;
-        url: string;
-      } | {
-        ctaLabel: string;
-        ctaUrl: string;
-        eyebrow: string;
-        subtitle: string;
-        title: string;
-      };
+      value:
+        | {
+            addressBody: string;
+            addressLabel: string;
+            emailAddress: string;
+            emailLabel: string;
+            mapUrl: string;
+            officeHours: string;
+            phoneLabel: string;
+            phoneNumber: string;
+          }
+        | {
+            alt: string;
+            badgeIconUrl: string;
+            badgeText: string;
+            headlineLine1: string;
+            headlineLine1Color: string;
+            headlineLine2: string;
+            headlineLine2Color: string;
+            mobileUrl: string;
+            primaryCtaBg: string;
+            primaryCtaLabel: string;
+            primaryCtaTextColor: string;
+            secondaryCtaBorderColor: string;
+            secondaryCtaLabel: string;
+            secondaryCtaTextColor: string;
+            siteLogoUrl: string;
+            subtitle: string;
+            subtitleColor: string;
+            url: string;
+          }
+        | {
+            ctaLabel: string;
+            ctaUrl: string;
+            eyebrow: string;
+            subtitle: string;
+            title: string;
+          };
     };
     message: string;
     statusCode: 200;
   };
 }
 
-export type UpdateAdminSiteSettingResponse = UpdateAdminSiteSettingResponses[keyof UpdateAdminSiteSettingResponses];
+export type UpdateAdminSiteSettingResponse =
+  UpdateAdminSiteSettingResponses[keyof UpdateAdminSiteSettingResponses];

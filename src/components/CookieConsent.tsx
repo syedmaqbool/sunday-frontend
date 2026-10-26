@@ -16,27 +16,21 @@ function CookieConsent() {
         const t = setTimeout(setVisible, 400, true);
         return () => clearTimeout(t);
       }
-    }
-    catch {
+    } catch {
       setVisible(true);
     }
   }, []);
 
   const setConsent = (value: 'accepted' | 'rejected') => {
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ date: new Date().toISOString(), value }),
-      );
-    }
-    catch {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: new Date().toISOString(), value }));
+    } catch {
       /* ignore */
     }
     setVisible(false);
   };
 
-  if (!visible)
-    return null;
+  if (!visible) return null;
 
   return (
     <div
@@ -49,24 +43,26 @@ function CookieConsent() {
       "
     >
       <div className="flex items-start gap-3">
-        <div className="
-          hidden shrink-0 rounded-full bg-muted p-2
-          sm:block
-        "
+        <div
+          className="
+            hidden shrink-0 rounded-full bg-muted p-2
+            sm:block
+          "
         >
           <Cookie className="h-5 w-5 text-foreground" />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-base font-semibold">We use cookies</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sunday uses cookies to keep you signed in, remember your preferences and understand
-            how the site is used. See our
-            {' '}
-            <Link to="/cookies" className="underline">Cookie Policy</Link>
-            {' '}
-            and
-            {' '}
-            <Link to="/privacy" className="underline">Privacy Policy</Link>
+            Sunday uses cookies to keep you signed in, remember your preferences and understand how
+            the site is used. See our{' '}
+            <Link to="/cookies" className="underline">
+              Cookie Policy
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="underline">
+              Privacy Policy
+            </Link>
             .
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

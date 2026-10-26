@@ -16,5 +16,6 @@ export type FlaggedConversationParameters = ApiRequestQuery<GetAdminFlaggedConve
 export type FlaggedConversationResponse = GetAdminFlaggedConversationResponses[200];
 export type FlaggedMessageHistory = ApiResponseItem<GetAdminFlaggedMessageHistoryResponses>;
 export type FlaggedMessageHistoryParameters = ApiRequestQuery<GetAdminFlaggedMessageHistoryData>;
-export type ResolvedFlaggedConversationParameters = ApiRequestQuery<GetAdminResolvedFlaggedConversationData>;
+export type ResolvedFlaggedConversationParameters =
+  ApiRequestQuery<GetAdminResolvedFlaggedConversationData>;
 export type ResolvedFlaggedConversationResponse = GetAdminResolvedFlaggedConversationResponses[200];

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import {
   exportAdminMarketingLeads,
   getAdminAnalytics,
@@ -22,21 +22,22 @@ describe('admin analytics service', () => {
     const response = new Response('email,name\n');
     getMock.mockReturnValue(response);
 
-    expect(exportAdminMarketingLeads({
-      endTime: '2026-04-07T23:59:59.999Z',
-      leadStatus: 'ENGAGED',
-      search: 'ali',
-      startTime: '2026-04-01T00:00:00.000Z',
-    })).toBe(response);
-    expect(getMock).toHaveBeenCalledWith(
-      '/api/v1/admin/analytics/marketing-leads/export',
-      { searchParams: {
+    expect(
+      exportAdminMarketingLeads({
         endTime: '2026-04-07T23:59:59.999Z',
         leadStatus: 'ENGAGED',
         search: 'ali',
         startTime: '2026-04-01T00:00:00.000Z',
-      } },
-    );
+      }),
+    ).toBe(response);
+    expect(getMock).toHaveBeenCalledWith('/api/v1/admin/analytics/marketing-leads/export', {
+      searchParams: {
+        endTime: '2026-04-07T23:59:59.999Z',
+        leadStatus: 'ENGAGED',
+        search: 'ali',
+        startTime: '2026-04-01T00:00:00.000Z',
+      },
+    });
   });
 
   it('passes the date range to analytics and lead list requests', () => {
@@ -61,9 +62,8 @@ describe('admin analytics service', () => {
   it('omits unset filters from the export request', () => {
     exportAdminMarketingLeads({ leadStatus: '', search: '' });
 
-    expect(getMock).toHaveBeenCalledWith(
-      '/api/v1/admin/analytics/marketing-leads/export',
-      { searchParams: {} },
-    );
+    expect(getMock).toHaveBeenCalledWith('/api/v1/admin/analytics/marketing-leads/export', {
+      searchParams: {},
+    });
   });
 });

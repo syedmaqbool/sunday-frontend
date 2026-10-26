@@ -111,7 +111,8 @@ export interface GetAdminFinanceReportOrdersErrors {
   };
 }
 
-export type GetAdminFinanceReportOrdersError = GetAdminFinanceReportOrdersErrors[keyof GetAdminFinanceReportOrdersErrors];
+export type GetAdminFinanceReportOrdersError =
+  GetAdminFinanceReportOrdersErrors[keyof GetAdminFinanceReportOrdersErrors];
 
 export interface GetAdminFinanceReportOrdersResponses {
   /**
@@ -277,4 +278,5 @@ export interface GetAdminFinanceReportOrdersResponses {
   };
 }
 
-export type GetAdminFinanceReportOrdersResponse = GetAdminFinanceReportOrdersResponses[keyof GetAdminFinanceReportOrdersResponses];
+export type GetAdminFinanceReportOrdersResponse =
+  GetAdminFinanceReportOrdersResponses[keyof GetAdminFinanceReportOrdersResponses];

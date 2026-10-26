@@ -9,12 +9,12 @@ import type { Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function listConversations(): Promise<Response<Conversation[]>> {
-  return authInstance
-    .get('/api/v1/me/conversations')
-    .json<Response<Conversation[]>>();
+  return authInstance.get('/api/v1/me/conversations').json<Response<Conversation[]>>();
 }
 
-export function startConversation(payload: StartConversationPayload): Promise<Response<StartConversation>> {
+export function startConversation(
+  payload: StartConversationPayload,
+): Promise<Response<StartConversation>> {
   return authInstance
     .post('/api/v1/me/conversations', { json: payload })
     .json<Response<StartConversation>>();
@@ -41,9 +41,7 @@ export function sendConversationMessage(
       formData.append('attachments', attachment);
     }
 
-    return authInstance
-      .post(endpoint, { body: formData })
-      .json<Response<Message>>();
+    return authInstance.post(endpoint, { body: formData }).json<Response<Message>>();
   }
 
   return authInstance

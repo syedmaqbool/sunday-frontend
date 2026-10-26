@@ -6,4 +6,6 @@ import type {
 } from '@/types/generated-api';
 
 export type CommissionTier = ApiResponseItem<GetCommissionTiersResponses>;
-export type CommissionTierPayload = ApiRequestBody<CreateAdminCommissionTierData> | ApiRequestBody<UpdateAdminCommissionTierData>;
+export type CommissionTierPayload =
+  | ApiRequestBody<CreateAdminCommissionTierData>
+  | ApiRequestBody<UpdateAdminCommissionTierData>;

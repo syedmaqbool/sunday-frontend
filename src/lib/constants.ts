@@ -30,7 +30,22 @@ export const CONDITIONS = [
 ] as const;
 
 export const SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'] as const;
-export const SHOE_SIZES = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48'] as const;
+export const SHOE_SIZES = [
+  '35',
+  '36',
+  '37',
+  '38',
+  '39',
+  '40',
+  '41',
+  '42',
+  '43',
+  '44',
+  '45',
+  '46',
+  '47',
+  '48',
+] as const;
 
 export const WEIGHT_OPTIONS = [
   { label: 'Less than 0.5 kg', value: '0.25' },
@@ -42,8 +57,7 @@ export const WEIGHT_OPTIONS = [
 ] as const;
 
 export function getWeightLabel(weight: number | null | undefined): string | null {
-  if (weight == null)
-    return null;
+  if (weight == null) return null;
   const options = WEIGHT_OPTIONS.map(o => ({ ...o, num: Number(o.value) }));
   let closest = options[0];
   let minDistribution = Math.abs(options[0].num - weight);

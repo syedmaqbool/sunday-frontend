@@ -16,6 +16,9 @@ export type PriceVarianceRow = AdminAnalytics['priceVariance'][DimKey][number];
 export type AdminMarketingLead = ApiResponseItem<GetAdminMarketingLeadsResponses>;
 export type AdminMarketingLeadStatusFilter = '' | AdminMarketingLead['leadStatus'];
 export type AdminMarketingLeadsParams = Partial<ApiRequestQuery<GetAdminMarketingLeadsData>>;
-export type AdminMarketingLeadsExportParams = Omit<Partial<ApiRequestQuery<ExportAdminMarketingLeadsData>>, 'leadStatus'> & {
+export type AdminMarketingLeadsExportParams = Omit<
+  Partial<ApiRequestQuery<ExportAdminMarketingLeadsData>>,
+  'leadStatus'
+> & {
   leadStatus?: AdminMarketingLeadStatusFilter;
 };

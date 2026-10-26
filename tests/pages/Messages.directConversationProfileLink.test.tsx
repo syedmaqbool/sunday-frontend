@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const { auth } = vi.hoisted(() => ({ auth: { userId: 'buyer-1' } }));
@@ -43,22 +43,29 @@ vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }));
 vi.mock('@/hooks/useConverstion', () => ({
-  getConversationMessagesOptions: (conversationId?: string) => queryOptions({
-    queryFn: async () => ({ data: [] }),
-    queryKey: ['test-messages', conversationId],
-  }),
-  getConversationsOptions: () => queryOptions({
-    queryFn: async () => ({ data: [buyerDirectConversation, listingConversation] }),
-    queryKey: ['test-conversations'],
-  }),
+  getConversationMessagesOptions: (conversationId?: string) =>
+    queryOptions({
+      queryFn: async () => ({ data: [] }),
+      queryKey: ['test-messages', conversationId],
+    }),
+  getConversationsOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ data: [buyerDirectConversation, listingConversation] }),
+      queryKey: ['test-conversations'],
+    }),
   useMarkConversationReadMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
 
 function renderMessages(conversationId: string) {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={[`/messages?conversation=${conversationId}`]}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={[`/messages?conversation=${conversationId}`]}
+      >
         <Routes>
           <Route element={<Messages />} path="/messages" />
         </Routes>
@@ -75,14 +82,20 @@ describe('direct conversation profile links in Messages', () => {
   it('links the seller name to their profile when the signed-in user is the buyer', async () => {
     renderMessages(buyerDirectConversation.id);
 
-    expect(await screen.findByRole('link', { name: 'Seller Person' })).toHaveAttribute('href', '/seller/seller-1');
+    expect(await screen.findByRole('link', { name: 'Seller Person' })).toHaveAttribute(
+      'href',
+      '/seller/seller-1',
+    );
   });
 
   it('links the buyer name to their profile when the signed-in user is the seller', async () => {
     auth.userId = 'seller-1';
     renderMessages(buyerDirectConversation.id);
 
-    expect(await screen.findByRole('link', { name: 'Buyer Person' })).toHaveAttribute('href', '/seller/buyer-1');
+    expect(await screen.findByRole('link', { name: 'Buyer Person' })).toHaveAttribute(
+      'href',
+      '/seller/buyer-1',
+    );
   });
 
   it('keeps the listing conversation header name as plain text', async () => {

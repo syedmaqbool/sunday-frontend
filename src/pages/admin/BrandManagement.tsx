@@ -61,10 +61,7 @@ function BrandManagement() {
   });
 
   const filtered = useMemo(
-    () =>
-      brands.filter((b: Brand) =>
-        b.name.toLowerCase().includes(search.toLowerCase()),
-      ),
+    () => brands.filter((b: Brand) => b.name.toLowerCase().includes(search.toLowerCase())),
     [brands, search],
   );
 
@@ -85,8 +82,7 @@ function BrandManagement() {
         toast({
           title: 'Brand updated',
         });
-      }
-      else {
+      } else {
         await createBrand.mutateAsync({
           active: values.active,
           name: values.name,
@@ -101,8 +97,7 @@ function BrandManagement() {
       setDialogOpen(false);
       form.reset(emptyForm);
       setEditingId(null);
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
 
@@ -116,8 +111,7 @@ function BrandManagement() {
       toast({
         title: 'Brand deleted',
       });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
   };
@@ -143,16 +137,14 @@ function BrandManagement() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-heading text-2xl font-bold text-foreground">
-        Brand Management
-      </h1>
+      <h1 className="font-heading text-2xl font-bold text-foreground">Brand Management</h1>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Brands</CardTitle>
 
           <Dialog
-            onOpenChange={(o) => {
+            onOpenChange={o => {
               setDialogOpen(o);
 
               if (!o) {
@@ -171,16 +163,20 @@ function BrandManagement() {
 
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>
-                  {editingId ? 'Edit Brand' : 'Add Brand'}
-                </DialogTitle>
+                <DialogTitle>{editingId ? 'Edit Brand' : 'Add Brand'}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Name</Label>
-                  <Controller name="name" control={form.control} render={({ field }) => <Input {...field} placeholder="e.g. Nike" />} />
-                  {form.formState.errors.name?.message && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+                  <Controller
+                    name="name"
+                    control={form.control}
+                    render={({ field }) => <Input {...field} placeholder="e.g. Nike" />}
+                  />
+                  {form.formState.errors.name?.message && (
+                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -192,7 +188,9 @@ function BrandManagement() {
                       <Input
                         name={field.name}
                         onBlur={field.onBlur}
-                        onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))}
+                        onChange={event =>
+                          field.onChange(Math.trunc(Number(event.target.value) || 0))
+                        }
                         ref={field.ref}
                         value={field.value}
                         type="number"
@@ -206,15 +204,13 @@ function BrandManagement() {
                   <Controller
                     name="active"
                     control={form.control}
-                    render={({ field }) => <Switch onCheckedChange={field.onChange} checked={field.value} />}
+                    render={({ field }) => (
+                      <Switch onCheckedChange={field.onChange} checked={field.value} />
+                    )}
                   />
                 </div>
 
-                <Button
-                  disabled={busy}
-                  type="submit"
-                  className="mt-4 w-full"
-                >
+                <Button disabled={busy} type="submit" className="mt-4 w-full">
                   {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
                   {editingId ? 'Save Changes' : 'Create Brand'}
@@ -236,56 +232,41 @@ function BrandManagement() {
             />
           </div>
 
-          {filtered.length === 0
-            ? (
-                <p className="text-sm text-muted-foreground">No brands found.</p>
-              )
-            : (
-                <div className="divide-y divide-border">
-                  {filtered.map(b => (
-                    <div
-                      key={b.id}
-                      className="flex items-center justify-between py-3"
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No brands found.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {filtered.map(b => (
+                <div key={b.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-medium text-foreground">{b.name}</p>
+
+                    <p className="text-xs text-muted-foreground">
+                      order {b.sortOrder} · {b.active ? 'active' : 'inactive'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-1">
+                    <Button onClick={() => openEdit(b)} size="icon" variant="ghost">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      onClick={() => handleDelete(b.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="
+                        text-destructive
+                        hover:text-destructive
+                      "
                     >
-                      <div>
-                        <p className="font-medium text-foreground">{b.name}</p>
-
-                        <p className="text-xs text-muted-foreground">
-                          order
-                          {' '}
-                          {b.sortOrder}
-                          {' '}
-                          ·
-                          {' '}
-                          {b.active ? 'active' : 'inactive'}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={() => openEdit(b)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          onClick={() => handleDelete(b.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="
-                            text-destructive
-                            hover:text-destructive
-                          "
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -132,4 +132,5 @@ export interface UpdateAdminUserRoleResponses {
   };
 }
 
-export type UpdateAdminUserRoleResponse = UpdateAdminUserRoleResponses[keyof UpdateAdminUserRoleResponses];
+export type UpdateAdminUserRoleResponse =
+  UpdateAdminUserRoleResponses[keyof UpdateAdminUserRoleResponses];

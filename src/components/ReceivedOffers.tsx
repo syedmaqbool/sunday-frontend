@@ -1,13 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowRightLeft,
-  ArrowUpDown,
-  CheckCircle,
-  Loader2,
-  Star,
-  XCircle,
-} from 'lucide-react';
+import { ArrowRightLeft, ArrowUpDown, CheckCircle, Loader2, Star, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
@@ -17,12 +10,7 @@ import { ReviewForm } from '@/components/ReviewForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +49,12 @@ interface ReceivedOffersProps {
 type SortOption = 'newest' | 'price_desc';
 
 const counterOfferSchema = z.object({
-  counterAmount: z.string().refine(value => Number.isFinite(Number(value)) && Number(value) > 0, 'Counter price must be greater than zero.'),
+  counterAmount: z
+    .string()
+    .refine(
+      value => Number.isFinite(Number(value)) && Number(value) > 0,
+      'Counter price must be greater than zero.',
+    ),
 });
 
 type CounterOfferFormValues = z.infer<typeof counterOfferSchema>;
@@ -82,7 +75,9 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
     form.reset({ counterAmount: '' });
   };
 
-  const { data: receivedResponse, isLoading } = useQuery(getReceivedOffersOptions(user?.id, listingId));
+  const { data: receivedResponse, isLoading } = useQuery(
+    getReceivedOffersOptions(user?.id, listingId),
+  );
   const received = (receivedResponse?.data ?? []).filter(
     offer => !listingId || offer.listingId === listingId,
   );
@@ -90,37 +85,49 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
     getReceivedOfferSelectionOptions(selectedOfferId ?? null, user?.id),
   );
   const selectedOffer = selectedOfferResponse?.data.find(offer => offer.id === selectedOfferId);
-  const offersToDisplay = selectedOffer && received.every(offer => offer.id !== selectedOffer.id)
-    ? [...received, selectedOffer]
-    : received;
+  const offersToDisplay =
+    selectedOffer && received.every(offer => offer.id !== selectedOffer.id)
+      ? [...received, selectedOffer]
+      : received;
   const activeCounterOffer = counterDialog
     ? offersToDisplay.find(offer => offer.id === counterDialog.id)
     : undefined;
-  const counterDialogUnavailable = counterDialog && (
-    !activeCounterOffer
-    || activeCounterOffer.isPaused
-    || activeCounterOffer.status !== 'PENDING'
-  );
+  const counterDialogUnavailable =
+    counterDialog &&
+    (!activeCounterOffer || activeCounterOffer.isPaused || activeCounterOffer.status !== 'PENDING');
 
   useEffect(() => {
     if (
-      !selectedOfferId
-      || isLoading
-      || loadingSelectedOffer
-      || receivedResponse?.data?.some(offer => offer.id === selectedOfferId && (!listingId || offer.listingId === listingId))
-      || selectedOffer
+      !selectedOfferId ||
+      isLoading ||
+      loadingSelectedOffer ||
+      receivedResponse?.data?.some(
+        offer => offer.id === selectedOfferId && (!listingId || offer.listingId === listingId),
+      ) ||
+      selectedOffer
     ) {
       return;
     }
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.delete('offer');
     setSearchParams(nextSearchParams, { replace: true });
-  }, [isLoading, listingId, loadingSelectedOffer, receivedResponse?.data, searchParams, selectedOffer, selectedOfferId, setSearchParams]);
+  }, [
+    isLoading,
+    listingId,
+    loadingSelectedOffer,
+    receivedResponse?.data,
+    searchParams,
+    selectedOffer,
+    selectedOfferId,
+    setSearchParams,
+  ]);
 
   const { data: myReviewsResponse } = useQuery(getMyReviewedOfferIdsOptions(user?.id));
-  const myReviews = new Set((myReviewsResponse?.data ?? [])
-    .map(review => review.offerId)
-    .filter((offerId): offerId is string => offerId !== null));
+  const myReviews = new Set(
+    (myReviewsResponse?.data ?? [])
+      .map(review => review.offerId)
+      .filter((offerId): offerId is string => offerId !== null),
+  );
 
   const respondToOffer = useRespondToOfferMutation(user?.id, listingId);
 
@@ -133,16 +140,11 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
   }
 
   if (offersToDisplay.length === 0) {
-    return (
-      <div className="py-12 text-center text-muted-foreground">
-        No offers received yet
-      </div>
-    );
+    return <div className="py-12 text-center text-muted-foreground">No offers received yet</div>;
   }
 
   const sortedOffers = offersToDisplay.toSorted((a, b) => {
-    if (sortBy === 'price_desc')
-      return b.amount - a.amount;
+    if (sortBy === 'price_desc') return b.amount - a.amount;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -162,9 +164,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSortBy('newest')}>
-              Newest First
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortBy('newest')}>Newest First</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortBy('price_desc')}>
               Highest to Lowest Price
             </DropdownMenuItem>
@@ -203,24 +203,15 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                     {offer.isPaused && <Badge variant="outline">Paused</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    From
-                    {' '}
-                    {offer.buyerFullName || 'Buyer'}
-                    {' '}
-                    · Listed R
-                    {' '}
+                    From {offer.buyerFullName || 'Buyer'} · Listed R{' '}
                     {offer.listingPrice?.toLocaleString()}
                   </p>
                   <p className="mt-1 text-lg font-bold text-foreground">
-                    Offer: R
-                    {' '}
-                    {offer.amount.toLocaleString()}
+                    Offer: R {offer.amount.toLocaleString()}
                   </p>
                   {offer.counterAmount && (
                     <p className="text-xs text-muted-foreground">
-                      Your counter: R
-                      {' '}
-                      {offer.counterAmount.toLocaleString()}
+                      Your counter: R {offer.counterAmount.toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -234,21 +225,21 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                             action: 'accept',
                           },
                           {
-                            onError: (error: unknown) => showErrorToast(error, 'Failed to accept offer'),
+                            onError: (error: unknown) =>
+                              showErrorToast(error, 'Failed to accept offer'),
                             onSuccess: () => {
                               toast.success('Offer accepted');
                               toast.info('The buyer has 24 hours to submit payment proof.');
                               closeCounterDialog();
                             },
                           },
-                        )}
+                        )
+                      }
                       disabled={offer.isPaused || respondToOffer.isPending}
                       size="sm"
                       className="gap-1"
                     >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      {' '}
-                      Accept
+                      <CheckCircle className="h-3.5 w-3.5" /> Accept
                     </Button>
                     <Button
                       onClick={() => {
@@ -260,9 +251,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                       variant="outline"
                       className="gap-1"
                     >
-                      <ArrowRightLeft className="h-3.5 w-3.5" />
-                      {' '}
-                      Counter
+                      <ArrowRightLeft className="h-3.5 w-3.5" /> Counter
                     </Button>
                     <Button
                       onClick={() =>
@@ -272,102 +261,98 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
                             action: 'reject',
                           },
                           {
-                            onError: (error: unknown) => showErrorToast(error, 'Failed to reject offer'),
+                            onError: (error: unknown) =>
+                              showErrorToast(error, 'Failed to reject offer'),
                             onSuccess: () => {
                               toast.success('Offer rejected');
                               closeCounterDialog();
                             },
                           },
-                        )}
+                        )
+                      }
                       disabled={respondToOffer.isPending}
                       size="sm"
                       variant="outline"
                       className="gap-1 text-destructive"
                     >
-                      <XCircle className="h-3.5 w-3.5" />
-                      {' '}
-                      Reject
+                      <XCircle className="h-3.5 w-3.5" /> Reject
                     </Button>
                   </div>
                 )}
-                {offer.status === 'ACCEPTED'
-                  && !myReviews.has(offer.id)
-                  && reviewingOffer !== offer.id && (
-                  <Button
-                    onClick={() => setReviewingOffer(offer.id)}
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0 gap-1.5"
-                  >
-                    <Star className="h-3.5 w-3.5" />
-                    {' '}
-                    Leave Review
-                  </Button>
-                )}
+                {offer.status === 'ACCEPTED' &&
+                  !myReviews.has(offer.id) &&
+                  reviewingOffer !== offer.id && (
+                    <Button
+                      onClick={() => setReviewingOffer(offer.id)}
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 gap-1.5"
+                    >
+                      <Star className="h-3.5 w-3.5" /> Leave Review
+                    </Button>
+                  )}
                 {offer.status === 'ACCEPTED' && myReviews.has(offer.id) && (
-                  <span className="text-xs italic text-muted-foreground">
-                    ✓ Reviewed
-                  </span>
+                  <span className="text-xs italic text-muted-foreground">✓ Reviewed</span>
                 )}
               </div>
-              {offer.status === 'ACCEPTED'
-                && !myReviews.has(offer.id)
-                && reviewingOffer === offer.id && (
-                <section
-                  aria-labelledby={`review-buyer-${offer.id}`}
-                  className="w-full border-t border-border pt-3"
-                >
-                  <h4
-                    id={`review-buyer-${offer.id}`}
-                    className="mb-2 text-xs font-medium text-foreground"
+              {offer.status === 'ACCEPTED' &&
+                !myReviews.has(offer.id) &&
+                reviewingOffer === offer.id && (
+                  <section
+                    aria-labelledby={`review-buyer-${offer.id}`}
+                    className="w-full border-t border-border pt-3"
                   >
-                    Rate this buyer
-                  </h4>
-                  <ReviewForm
-                    listingId={offer.listingId}
-                    offerId={offer.id}
-                    reviewedId={offer.buyerId}
-                    onCancel={() => setReviewingOffer(null)}
-                    onSuccess={() => setReviewingOffer(null)}
-                    role="SELLER"
-                  />
-                </section>
-              )}
+                    <h4
+                      id={`review-buyer-${offer.id}`}
+                      className="mb-2 text-xs font-medium text-foreground"
+                    >
+                      Rate this buyer
+                    </h4>
+                    <ReviewForm
+                      listingId={offer.listingId}
+                      offerId={offer.id}
+                      reviewedId={offer.buyerId}
+                      onCancel={() => setReviewingOffer(null)}
+                      onSuccess={() => setReviewingOffer(null)}
+                      role="SELLER"
+                    />
+                  </section>
+                )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Dialog
-        onOpenChange={open => !open && closeCounterDialog()}
-        open={!!counterDialog}
-      >
+      <Dialog onOpenChange={open => !open && closeCounterDialog()} open={!!counterDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-heading">Counter Offer</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {counterDialog?.listingTitle}
-              {' '}
-              · Offered R
-              {' '}
-              {counterDialog?.amount.toLocaleString()}
+              {counterDialog?.listingTitle} · Offered R {counterDialog?.amount.toLocaleString()}
             </p>
           </DialogHeader>
           <form
-            onSubmit={form.handleSubmit((values) => {
-              if (!counterDialog || counterDialogUnavailable)
-                return;
-              respondToOffer.mutate(
-                { id: counterDialog.id, action: 'counter', counterAmount: Number(values.counterAmount) },
-                {
-                  onError: (error: unknown) => showErrorToast(error, 'Failed to counter offer'),
-                  onSuccess: () => {
-                    toast.success('Offer countered');
-                    closeCounterDialog();
+            onSubmit={form.handleSubmit(
+              values => {
+                if (!counterDialog || counterDialogUnavailable) return;
+                respondToOffer.mutate(
+                  {
+                    id: counterDialog.id,
+                    action: 'counter',
+                    counterAmount: Number(values.counterAmount),
                   },
-                },
-              );
-            }, errors => toast.error(Object.values(errors)[0]?.message ?? 'Enter a valid counter price.'))}
+                  {
+                    onError: (error: unknown) => showErrorToast(error, 'Failed to counter offer'),
+                    onSuccess: () => {
+                      toast.success('Offer countered');
+                      closeCounterDialog();
+                    },
+                  },
+                );
+              },
+              errors =>
+                toast.error(Object.values(errors)[0]?.message ?? 'Enter a valid counter price.'),
+            )}
             className="space-y-4"
           >
             <div className="space-y-2">
@@ -391,9 +376,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
               type="submit"
               className="w-full"
             >
-              {respondToOffer.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {respondToOffer.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send Counter Offer
             </Button>
           </form>

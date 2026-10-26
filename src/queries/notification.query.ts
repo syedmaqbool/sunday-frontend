@@ -10,7 +10,8 @@ import {
 
 export const notificationsQueryKey = {
   all: () => ['notifications'] as const,
-  list: (status?: NotificationReadStatus) => [...notificationsQueryKey.all(), 'list', status ?? 'ALL'] as const,
+  list: (status?: NotificationReadStatus) =>
+    [...notificationsQueryKey.all(), 'list', status ?? 'ALL'] as const,
 };
 
 export function getNotificationsOptions(status?: NotificationReadStatus) {
@@ -30,7 +31,7 @@ export function useMarkNotificationReadMutation() {
   return useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
 
-    onSuccess: (response) => {
+    onSuccess: response => {
       queryClient.invalidateQueries({
         queryKey: notificationsQueryKey.all(),
       });

@@ -9,14 +9,14 @@ import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { authInstance } from '@/services/ky.instance';
 
-type State
-  = | { kind: 'already' }
-    | { kind: 'error'; message: string }
-    | { kind: 'invalid'; message: string }
-    | { kind: 'loading' }
-    | { kind: 'submitting' }
-    | { kind: 'success' }
-    | { kind: 'valid' };
+type State =
+  | { kind: 'already' }
+  | { kind: 'error'; message: string }
+  | { kind: 'invalid'; message: string }
+  | { kind: 'loading' }
+  | { kind: 'submitting' }
+  | { kind: 'success' }
+  | { kind: 'valid' };
 
 function Unsubscribe() {
   const [parameters] = useSearchParams();
@@ -35,32 +35,25 @@ function Unsubscribe() {
           .json<ApiSuccessResponse<ValidateUnsubscribeTokenResponses>>();
         if (data.valid) {
           setState({ kind: 'valid' });
-        }
-        else if (data.reason === 'already_unsubscribed') {
+        } else if (data.reason === 'already_unsubscribed') {
           setState({ kind: 'already' });
-        }
-        else {
+        } else {
           setState({ kind: 'invalid', message: 'Invalid token.' });
         }
-      }
-      catch (error: any) {
+      } catch (error: any) {
         setState({ kind: 'invalid', message: error?.message ?? 'Could not validate token.' });
       }
     })();
   }, [token]);
 
   const handleConfirm = async () => {
-    if (!token)
-      return;
+    if (!token) return;
     setState({ kind: 'submitting' });
     try {
       const payload: ProcessUnsubscribePayload = { token };
-      await authInstance
-        .post('api/v1/emails/unsubscribe', { json: payload })
-        .json();
+      await authInstance.post('api/v1/emails/unsubscribe', { json: payload }).json();
       setState({ kind: 'success' });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       setState({
         kind: 'error',
         message: error?.message ?? 'Failed to unsubscribe.',
@@ -76,20 +69,15 @@ function Unsubscribe() {
           {state.kind === 'loading' && (
             <>
               <Loader2 className="mx-auto h-10 w-10 animate-spin text-muted-foreground" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                Validating your link…
-              </p>
+              <p className="mt-4 text-sm text-muted-foreground">Validating your link…</p>
             </>
           )}
           {state.kind === 'valid' && (
             <>
               <MailX className="mx-auto h-10 w-10 text-primary" />
-              <h1 className="mt-4 font-heading text-2xl font-semibold">
-                Unsubscribe?
-              </h1>
+              <h1 className="mt-4 font-heading text-2xl font-semibold">Unsubscribe?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                You'll stop receiving emails from us. You can re-enable them by
-                contacting support.
+                You'll stop receiving emails from us. You can re-enable them by contacting support.
               </p>
               <Button onClick={handleConfirm} className="mt-6 w-full">
                 Confirm unsubscribe
@@ -105,9 +93,7 @@ function Unsubscribe() {
           {state.kind === 'success' && (
             <>
               <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
-              <h1 className="mt-4 font-heading text-2xl font-semibold">
-                You're unsubscribed
-              </h1>
+              <h1 className="mt-4 font-heading text-2xl font-semibold">You're unsubscribed</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 You will no longer receive emails from us.
               </p>
@@ -116,9 +102,7 @@ function Unsubscribe() {
           {state.kind === 'already' && (
             <>
               <CheckCircle2 className="mx-auto h-10 w-10 text-muted-foreground" />
-              <h1 className="mt-4 font-heading text-2xl font-semibold">
-                Already unsubscribed
-              </h1>
+              <h1 className="mt-4 font-heading text-2xl font-semibold">Already unsubscribed</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 This email address is already opted out.
               </p>
@@ -127,12 +111,8 @@ function Unsubscribe() {
           {(state.kind === 'invalid' || state.kind === 'error') && (
             <>
               <XCircle className="mx-auto h-10 w-10 text-destructive" />
-              <h1 className="mt-4 font-heading text-2xl font-semibold">
-                Something went wrong
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {state.message}
-              </p>
+              <h1 className="mt-4 font-heading text-2xl font-semibold">Something went wrong</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{state.message}</p>
             </>
           )}
         </div>

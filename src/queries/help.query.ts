@@ -9,8 +9,7 @@ export type HelpFaq = HelpFaqAPI;
 export const helpQueryKey = {
   all: () => ['help'] as const,
   categories: () => [...helpQueryKey.all(), 'categories'] as const,
-  faqs: (categoryKey?: string) =>
-    [...helpQueryKey.all(), 'faqs', categoryKey ?? null] as const,
+  faqs: (categoryKey?: string) => [...helpQueryKey.all(), 'faqs', categoryKey ?? null] as const,
   topFaqs: () => [...helpQueryKey.all(), 'top-faqs'] as const,
 };
 

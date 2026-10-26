@@ -1,16 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  Eye,
-  Loader2,
-  Lock,
-  Plus,
-  ShieldAlert,
-  Tag,
-  Trash2,
-} from 'lucide-react';
+import { AlertTriangle, Eye, Loader2, Lock, Plus, ShieldAlert, Tag, Trash2 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -20,10 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showErrorToast } from '@/lib/errorToast';
-import {
-  getFlagKeywordsOptions,
-  useUpdateFlagKeywordsMutation,
-} from '@/queries/flagKeyword.query';
+import { getFlagKeywordsOptions, useUpdateFlagKeywordsMutation } from '@/queries/flagKeyword.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -72,24 +60,27 @@ function FlagKeywords() {
   const { data: keywords = [], isLoading } = useQuery(getFlagKeywordsOptions());
   const updateKeywords = useUpdateFlagKeywordsMutation();
 
-  const handleAdd = form.handleSubmit(({ draft: submittedDraft }) => {
-    const lower = submittedDraft.toLowerCase();
+  const handleAdd = form.handleSubmit(
+    ({ draft: submittedDraft }) => {
+      const lower = submittedDraft.toLowerCase();
 
-    if (keywords.includes(lower)) {
-      toast.error('That keyword already exists');
-      return;
-    }
+      if (keywords.includes(lower)) {
+        toast.error('That keyword already exists');
+        return;
+      }
 
-    updateKeywords.mutate([lower, ...keywords], {
-      onError: (error: any) => showErrorToast(error, 'Failed to add keyword'),
-      onSuccess: () => {
-        toast.success('Keyword added');
-        form.reset({ draft: '' });
-      },
-    });
-  }, (errors) => {
-    toast.error(errors.draft?.message ?? 'Enter a valid keyword.');
-  });
+      updateKeywords.mutate([lower, ...keywords], {
+        onError: (error: any) => showErrorToast(error, 'Failed to add keyword'),
+        onSuccess: () => {
+          toast.success('Keyword added');
+          form.reset({ draft: '' });
+        },
+      });
+    },
+    errors => {
+      toast.error(errors.draft?.message ?? 'Enter a valid keyword.');
+    },
+  );
 
   const handleDelete = (keyword: string) => {
     updateKeywords.mutate(
@@ -104,12 +95,10 @@ function FlagKeywords() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-bold text-foreground">
-          Flag Keywords
-        </h1>
+        <h1 className="font-heading text-3xl font-bold text-foreground">Flag Keywords</h1>
         <p className="mt-1 text-muted-foreground">
-          Add custom words or phrases. Any message containing them will be
-          automatically flagged for review.
+          Add custom words or phrases. Any message containing them will be automatically flagged for
+          review.
         </p>
       </div>
 
@@ -123,12 +112,7 @@ function FlagKeywords() {
                 name="draft"
                 control={form.control}
                 render={({ field }) => (
-                  <Input
-                    {...field}
-                    id="keyword"
-                    maxLength={60}
-                    placeholder="e.g. cashapp"
-                  />
+                  <Input {...field} id="keyword" maxLength={60} placeholder="e.g. cashapp" />
                 )}
               />
             </div>
@@ -137,21 +121,18 @@ function FlagKeywords() {
               type="submit"
               className="gap-2"
             >
-              {updateKeywords.isPending
-                ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )
-                : (
-                    <Plus className="h-4 w-4" />
-                  )}
+              {updateKeywords.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
               Add
             </Button>
           </form>
           <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Matching is case-insensitive and applies to any message containing
-            the keyword as a substring. Flagged messages appear in Message
-            Moderation for admin review.
+            Matching is case-insensitive and applies to any message containing the keyword as a
+            substring. Flagged messages appear in Message Moderation for admin review.
           </p>
         </CardContent>
       </Card>
@@ -163,46 +144,35 @@ function FlagKeywords() {
             Built-in detection
           </h2>
           <Badge variant="outline" className="gap-1 text-[10px]">
-            <Lock className="h-3 w-3" />
-            {' '}
-            System
+            <Lock className="h-3 w-3" /> System
           </Badge>
         </div>
         {SYSTEM_RULES.map(r => (
           <Card key={r.keyword} className="border-dashed bg-muted/20">
-            <CardContent className="
-              flex flex-col gap-3 p-4
-              sm:flex-row sm:items-center
-            "
+            <CardContent
+              className="
+                flex flex-col gap-3 p-4
+                sm:flex-row sm:items-center
+              "
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="text-xs">
                     {r.keyword}
                   </Badge>
-                  {r.action === 'auto_delete'
-                    ? (
-                        <Badge variant="destructive" className="gap-1 text-[10px]">
-                          <ShieldAlert className="h-3 w-3" />
-                          {' '}
-                          Auto-delete
-                        </Badge>
-                      )
-                    : (
-                        <Badge variant="outline" className="gap-1 text-[10px]">
-                          <Eye className="h-3 w-3" />
-                          {' '}
-                          Review required
-                        </Badge>
-                      )}
+                  {r.action === 'auto_delete' ? (
+                    <Badge variant="destructive" className="gap-1 text-[10px]">
+                      <ShieldAlert className="h-3 w-3" /> Auto-delete
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1 text-[10px]">
+                      <Eye className="h-3 w-3" /> Review required
+                    </Badge>
+                  )}
                 </div>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {r.reason}
-                </p>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{r.reason}</p>
               </div>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                Always on
-              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">Always on</span>
             </CardContent>
           </Card>
         ))}
@@ -213,50 +183,44 @@ function FlagKeywords() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Custom keywords
         </h2>
-        {isLoading
-          ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )
-          : (keywords.length === 0
-              ? (
-                  <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
-                    <Tag className="h-10 w-10" />
-                    <p className="text-sm">No custom keywords yet</p>
-                  </div>
-                )
-              : (
-                  <div className="space-y-2">
-                    {keywords.map(k => (
-                      <Card key={k}>
-                        <CardContent className="flex items-center gap-3 p-4">
-                          <Badge variant="secondary" className="font-mono text-xs">
-                            {k}
-                          </Badge>
-                          <Badge variant="outline" className="gap-1 text-[10px]">
-                            <Eye className="h-3 w-3" />
-                            {' '}
-                            Review required
-                          </Badge>
-                          <div className="flex-1" />
-                          <Button
-                            onClick={() => handleDelete(k)}
-                            disabled={updateKeywords.isPending}
-                            size="icon"
-                            variant="ghost"
-                            className="
-                              text-destructive
-                              hover:text-destructive
-                            "
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ))}
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : keywords.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+            <Tag className="h-10 w-10" />
+            <p className="text-sm">No custom keywords yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {keywords.map(k => (
+              <Card key={k}>
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {k}
+                  </Badge>
+                  <Badge variant="outline" className="gap-1 text-[10px]">
+                    <Eye className="h-3 w-3" /> Review required
+                  </Badge>
+                  <div className="flex-1" />
+                  <Button
+                    onClick={() => handleDelete(k)}
+                    disabled={updateKeywords.isPending}
+                    size="icon"
+                    variant="ghost"
+                    className="
+                      text-destructive
+                      hover:text-destructive
+                    "
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,9 +6,7 @@ import {
   listMyListings,
 } from '@/services/listing.service';
 
-export type MyListing = Awaited<
-  ReturnType<typeof listMyListings>
->['data'][number];
+export type MyListing = Awaited<ReturnType<typeof listMyListings>>['data'][number];
 
 export const myListingsQueryKey = {
   all: () => ['my-listings'] as const,

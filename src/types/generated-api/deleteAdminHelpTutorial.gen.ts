@@ -68,7 +68,8 @@ export interface DeleteAdminHelpTutorialErrors {
   };
 }
 
-export type DeleteAdminHelpTutorialError = DeleteAdminHelpTutorialErrors[keyof DeleteAdminHelpTutorialErrors];
+export type DeleteAdminHelpTutorialError =
+  DeleteAdminHelpTutorialErrors[keyof DeleteAdminHelpTutorialErrors];
 
 export interface DeleteAdminHelpTutorialResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminHelpTutorialResponses {
   };
 }
 
-export type DeleteAdminHelpTutorialResponse = DeleteAdminHelpTutorialResponses[keyof DeleteAdminHelpTutorialResponses];
+export type DeleteAdminHelpTutorialResponse =
+  DeleteAdminHelpTutorialResponses[keyof DeleteAdminHelpTutorialResponses];

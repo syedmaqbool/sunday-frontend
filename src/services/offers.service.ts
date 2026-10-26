@@ -17,7 +17,10 @@ import { authInstance } from '@/services/ky.instance';
 
 export type { Offer, OfferStatus, Review, ReviewStat } from '@/types/offer.type';
 
-export function createOffer(listingId: string, payload: CreateOfferPayload): Promise<Response<Offer>> {
+export function createOffer(
+  listingId: string,
+  payload: CreateOfferPayload,
+): Promise<Response<Offer>> {
   return authInstance
     .post(`/api/v1/listings/${listingId}/offers`, { json: payload })
     .json<Response<Offer>>();
@@ -50,9 +53,7 @@ export function listReceivedOffers(
 }
 
 export function acceptOffer(offerId: string): Promise<Response<Offer>> {
-  return authInstance
-    .post(`/api/v1/me/offers/${offerId}/accept`)
-    .json<Response<Offer>>();
+  return authInstance.post(`/api/v1/me/offers/${offerId}/accept`).json<Response<Offer>>();
 }
 
 export function counterOffer(
@@ -65,21 +66,15 @@ export function counterOffer(
 }
 
 export function rejectOffer(offerId: string): Promise<Response<Offer>> {
-  return authInstance
-    .post(`/api/v1/me/offers/${offerId}/reject`)
-    .json<Response<Offer>>();
+  return authInstance.post(`/api/v1/me/offers/${offerId}/reject`).json<Response<Offer>>();
 }
 
 export function withdrawOffer(offerId: string): Promise<Response<Offer>> {
-  return authInstance
-    .post(`/api/v1/me/offers/${offerId}/withdraw`)
-    .json<Response<Offer>>();
+  return authInstance.post(`/api/v1/me/offers/${offerId}/withdraw`).json<Response<Offer>>();
 }
 
 export function acceptCounterOffer(offerId: string): Promise<Response<Offer>> {
-  return authInstance
-    .post(`/api/v1/me/offers/${offerId}/accept-counter`)
-    .json<Response<Offer>>();
+  return authInstance.post(`/api/v1/me/offers/${offerId}/accept-counter`).json<Response<Offer>>();
 }
 
 export function listMyReviews(
@@ -99,18 +94,16 @@ export function listReviews(
 }
 
 export function createReview(payload: CreateReviewPayload): Promise<Response<Review>> {
-  return authInstance
-    .post('/api/v1/reviews', { json: payload })
-    .json<Response<Review>>();
+  return authInstance.post('/api/v1/reviews', { json: payload }).json<Response<Review>>();
 }
 
 export function createOfferReview(payload: CreateOfferReviewPayload): Promise<Response<Review>> {
-  return authInstance
-    .post('/api/v1/reviews/offer', { json: payload })
-    .json<Response<Review>>();
+  return authInstance.post('/api/v1/reviews/offer', { json: payload }).json<Response<Review>>();
 }
 
-export function getReviewStats(reviewedIds: ReviewStatsParameters): Promise<Response<ReviewStat[]>> {
+export function getReviewStats(
+  reviewedIds: ReviewStatsParameters,
+): Promise<Response<ReviewStat[]>> {
   return authInstance
     .get('/api/v1/reviews/stats', {
       searchParams: { reviewedIds: reviewedIds.join(',') },

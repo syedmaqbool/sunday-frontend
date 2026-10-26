@@ -136,7 +136,8 @@ export interface ExportAdminMarketingLeadsErrors {
   };
 }
 
-export type ExportAdminMarketingLeadsError = ExportAdminMarketingLeadsErrors[keyof ExportAdminMarketingLeadsErrors];
+export type ExportAdminMarketingLeadsError =
+  ExportAdminMarketingLeadsErrors[keyof ExportAdminMarketingLeadsErrors];
 
 export interface ExportAdminMarketingLeadsResponses {
   /**
@@ -145,4 +146,5 @@ export interface ExportAdminMarketingLeadsResponses {
   200: string;
 }
 
-export type ExportAdminMarketingLeadsResponse = ExportAdminMarketingLeadsResponses[keyof ExportAdminMarketingLeadsResponses];
+export type ExportAdminMarketingLeadsResponse =
+  ExportAdminMarketingLeadsResponses[keyof ExportAdminMarketingLeadsResponses];

@@ -175,4 +175,5 @@ export interface AcceptCounterOfferResponses {
   };
 }
 
-export type AcceptCounterOfferResponse = AcceptCounterOfferResponses[keyof AcceptCounterOfferResponses];
+export type AcceptCounterOfferResponse =
+  AcceptCounterOfferResponses[keyof AcceptCounterOfferResponses];

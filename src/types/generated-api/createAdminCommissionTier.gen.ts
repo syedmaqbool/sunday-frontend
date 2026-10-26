@@ -74,7 +74,8 @@ export interface CreateAdminCommissionTierErrors {
   };
 }
 
-export type CreateAdminCommissionTierError = CreateAdminCommissionTierErrors[keyof CreateAdminCommissionTierErrors];
+export type CreateAdminCommissionTierError =
+  CreateAdminCommissionTierErrors[keyof CreateAdminCommissionTierErrors];
 
 export interface CreateAdminCommissionTierResponses {
   /**
@@ -98,4 +99,5 @@ export interface CreateAdminCommissionTierResponses {
   };
 }
 
-export type CreateAdminCommissionTierResponse = CreateAdminCommissionTierResponses[keyof CreateAdminCommissionTierResponses];
+export type CreateAdminCommissionTierResponse =
+  CreateAdminCommissionTierResponses[keyof CreateAdminCommissionTierResponses];

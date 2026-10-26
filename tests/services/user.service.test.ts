@@ -1,5 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAdminUserAuditHistory, updateAdminUserProfile, updateAdminUserStatus } from '@/services/user.service';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import {
+  getAdminUserAuditHistory,
+  updateAdminUserProfile,
+  updateAdminUserStatus,
+} from '@/services/user.service';
 
 const { getMock, patchMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
@@ -24,7 +28,9 @@ describe('admin user service', () => {
     const json = vi.fn().mockResolvedValue(response);
     getMock.mockReturnValue({ json });
 
-    await expect(getAdminUserAuditHistory('user-id', { page: 2, size: 10 })).resolves.toBe(response);
+    await expect(getAdminUserAuditHistory('user-id', { page: 2, size: 10 })).resolves.toBe(
+      response,
+    );
     expect(getMock).toHaveBeenCalledWith('/api/v1/admin/users/user-id/audit-history', {
       searchParams: { page: 2, size: 10 },
     });
@@ -35,18 +41,26 @@ describe('admin user service', () => {
     const json = vi.fn().mockResolvedValue(response);
     patchMock.mockReturnValue({ json });
 
-    await expect(updateAdminUserProfile('user-id', { firstName: 'Amina Noor' })).resolves.toBe(response);
+    await expect(updateAdminUserProfile('user-id', { firstName: 'Amina Noor' })).resolves.toBe(
+      response,
+    );
     expect(patchMock).toHaveBeenCalledWith('/api/v1/admin/users/user-id', {
       json: { firstName: 'Amina Noor' },
     });
   });
 
   it('sends the status and reason to the status endpoint and returns the raw response', async () => {
-    const response = { data: { status: 'INACTIVE' }, message: 'User status updated', statusCode: 200 };
+    const response = {
+      data: { status: 'INACTIVE' },
+      message: 'User status updated',
+      statusCode: 200,
+    };
     const json = vi.fn().mockResolvedValue(response);
     patchMock.mockReturnValue({ json });
 
-    await expect(updateAdminUserStatus('user-id', { reason: 'Policy violation', status: 'INACTIVE' })).resolves.toBe(response);
+    await expect(
+      updateAdminUserStatus('user-id', { reason: 'Policy violation', status: 'INACTIVE' }),
+    ).resolves.toBe(response);
     expect(patchMock).toHaveBeenCalledWith('/api/v1/admin/users/user-id/status', {
       json: { reason: 'Policy violation', status: 'INACTIVE' },
     });

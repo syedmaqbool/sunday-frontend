@@ -133,7 +133,8 @@ export interface GetAdminEligibleSellerPayoutItemsErrors {
   };
 }
 
-export type GetAdminEligibleSellerPayoutItemsError = GetAdminEligibleSellerPayoutItemsErrors[keyof GetAdminEligibleSellerPayoutItemsErrors];
+export type GetAdminEligibleSellerPayoutItemsError =
+  GetAdminEligibleSellerPayoutItemsErrors[keyof GetAdminEligibleSellerPayoutItemsErrors];
 
 export interface GetAdminEligibleSellerPayoutItemsResponses {
   /**
@@ -184,4 +185,5 @@ export interface GetAdminEligibleSellerPayoutItemsResponses {
   };
 }
 
-export type GetAdminEligibleSellerPayoutItemsResponse = GetAdminEligibleSellerPayoutItemsResponses[keyof GetAdminEligibleSellerPayoutItemsResponses];
+export type GetAdminEligibleSellerPayoutItemsResponse =
+  GetAdminEligibleSellerPayoutItemsResponses[keyof GetAdminEligibleSellerPayoutItemsResponses];

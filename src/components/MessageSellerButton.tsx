@@ -23,8 +23,8 @@ import { getApiErrorCode } from '@/services/ky-base-instance';
 const messageSchema = z.object({ content: z.string().trim().min(1).max(2000) });
 type MessageFormValues = z.infer<typeof messageSchema>;
 
-const DAILY_CONVERSATION_LIMIT_MESSAGE
-  = 'You\'ve reached today\'s limit for new conversations. Try again tomorrow.';
+const DAILY_CONVERSATION_LIMIT_MESSAGE =
+  "You've reached today's limit for new conversations. Try again tomorrow.";
 
 function showMessageSendError(error: Error) {
   if (getApiErrorCode(error) === 'APP_CONVERSATION_DAILY_LIMIT_REACHED') {
@@ -33,9 +33,9 @@ function showMessageSendError(error: Error) {
   showErrorToast(error, 'Failed to send message');
 }
 
-type MessageSellerButtonProps
-  = { listingId: string; recipientUserId?: never }
-    | { listingId?: never; recipientUserId: string };
+type MessageSellerButtonProps =
+  | { listingId: string; recipientUserId?: never }
+  | { listingId?: never; recipientUserId: string };
 
 export function MessageSellerButton({ listingId, recipientUserId }: MessageSellerButtonProps) {
   const { user } = useAuth();
@@ -51,14 +51,9 @@ export function MessageSellerButton({ listingId, recipientUserId }: MessageSelle
   const isListingMessage = !!listingId;
 
   const onSubmit: SubmitHandler<MessageFormValues> = ({ content }) => {
-    const target = listingId
-      ? { listingId }
-      : recipientUserId
-        ? { recipientUserId }
-        : null;
+    const target = listingId ? { listingId } : recipientUserId ? { recipientUserId } : null;
 
-    if (!target)
-      return;
+    if (!target) return;
 
     startConversation.mutate(
       { ...target, content: content.trim() },
@@ -110,7 +105,9 @@ export function MessageSellerButton({ listingId, recipientUserId }: MessageSelle
         <DialogHeader>
           <DialogTitle>Message seller</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {isListingMessage ? 'Send a message about this listing.' : 'Send a message to this seller.'}
+            {isListingMessage
+              ? 'Send a message about this listing.'
+              : 'Send a message to this seller.'}
           </p>
         </DialogHeader>
         <div className="space-y-2">

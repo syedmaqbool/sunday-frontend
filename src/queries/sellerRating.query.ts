@@ -9,7 +9,11 @@ export const sellerRatingQueryKey = {
   detail: (sellerId?: string) =>
     [...sellerRatingQueryKey.all(), 'detail', sellerId ?? null] as const,
   list: (sellerIds: string[]) =>
-    [...sellerRatingQueryKey.all(), 'list', sellerIds.toSorted((a, b) => a.localeCompare(b)).join(',')] as const,
+    [
+      ...sellerRatingQueryKey.all(),
+      'list',
+      sellerIds.toSorted((a, b) => a.localeCompare(b)).join(','),
+    ] as const,
 };
 
 export function getSellerRatingOptions(sellerId: string | undefined) {
@@ -29,8 +33,7 @@ export function getSellerRatingsOptions(sellerIds: string[]) {
   return queryOptions({
     enabled: uniqueIds.length > 0,
     queryFn: async (): Promise<Map<string, ReviewStat>> => {
-      if (uniqueIds.length === 0)
-        return new Map();
+      if (uniqueIds.length === 0) return new Map();
       const response = await getReviewStats(uniqueIds);
       return new Map((response.data ?? []).map(stat => [stat.reviewedId, stat]));
     },

@@ -248,4 +248,5 @@ export interface GetAdminAnalyticsResponses {
   };
 }
 
-export type GetAdminAnalyticsResponse = GetAdminAnalyticsResponses[keyof GetAdminAnalyticsResponses];
+export type GetAdminAnalyticsResponse =
+  GetAdminAnalyticsResponses[keyof GetAdminAnalyticsResponses];

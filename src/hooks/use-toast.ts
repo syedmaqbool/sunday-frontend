@@ -20,23 +20,23 @@ function genId() {
   return count.toString();
 }
 
-type Action
-  = | {
-    toast: Partial<ToasterToast>;
-    type: 'UPDATE_TOAST';
-  }
+type Action =
   | {
-    toast: ToasterToast;
-    type: 'ADD_TOAST';
-  }
+      toast: Partial<ToasterToast>;
+      type: 'UPDATE_TOAST';
+    }
   | {
-    toastId?: ToasterToast['id'];
-    type: 'DISMISS_TOAST';
-  }
+      toast: ToasterToast;
+      type: 'ADD_TOAST';
+    }
   | {
-    toastId?: ToasterToast['id'];
-    type: 'REMOVE_TOAST';
-  };
+      toastId?: ToasterToast['id'];
+      type: 'DISMISS_TOAST';
+    }
+  | {
+      toastId?: ToasterToast['id'];
+      type: 'REMOVE_TOAST';
+    };
 
 interface State {
   toasts: ToasterToast[];
@@ -72,9 +72,7 @@ export function reducer(state: State, action: Action): State {
     case 'UPDATE_TOAST': {
       return {
         ...state,
-        toasts: state.toasts.map(t =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t,
-        ),
+        toasts: state.toasts.map(t => (t.id === action.toast.id ? { ...t, ...action.toast } : t)),
       };
     }
 
@@ -85,8 +83,7 @@ export function reducer(state: State, action: Action): State {
       // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
-      }
-      else {
+      } else {
         for (const toast of state.toasts) {
           addToRemoveQueue(toast.id);
         }
@@ -147,9 +144,8 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
-      onOpenChange: (open) => {
-        if (!open)
-          dismiss();
+      onOpenChange: open => {
+        if (!open) dismiss();
       },
       open: true,
     },

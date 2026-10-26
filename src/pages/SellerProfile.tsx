@@ -12,23 +12,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
-import {
-  getSellerListingsOptions,
-  getSellerProfileOptions,
-} from '@/queries/marketplace.query';
+import { getSellerListingsOptions, getSellerProfileOptions } from '@/queries/marketplace.query';
 
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
   const [searchParameters, setSearchParameters] = useSearchParams();
   const { user } = useAuth();
   const focusedReviewId = searchParameters.get('review');
-  const selectedTab = searchParameters.get('tab') === 'reviews' || focusedReviewId
-    ? 'reviews'
-    : 'listings';
+  const selectedTab =
+    searchParameters.get('tab') === 'reviews' || focusedReviewId ? 'reviews' : 'listings';
 
   const { data: profile, isLoading: profileLoading } = useQuery(getSellerProfileOptions(id));
 
-  const { data: listings = [], isLoading: listingsLoading } = useQuery(getSellerListingsOptions(id, profile?.fullName, !!id && !!profile));
+  const { data: listings = [], isLoading: listingsLoading } = useQuery(
+    getSellerListingsOptions(id, profile?.fullName, !!id && !!profile),
+  );
 
   const { data: rating } = useQuery(getSellerRatingOptions(id));
 
@@ -53,8 +51,7 @@ function SellerProfile() {
   const selectTab = (tab: string) => {
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.set('tab', tab);
-    if (tab !== 'reviews')
-      nextParameters.delete('review');
+    if (tab !== 'reviews') nextParameters.delete('review');
     setSearchParameters(nextParameters);
   };
 
@@ -82,16 +79,15 @@ function SellerProfile() {
             hover:text-foreground
           "
         >
-          <ArrowLeft className="h-4 w-4" />
-          {' '}
-          Back to listings
+          <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
         {/* Seller header */}
-        <div className="
-          flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6
-          sm:flex-row sm:items-start
-        "
+        <div
+          className="
+            flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6
+            sm:flex-row sm:items-start
+          "
         >
           <Avatar className="h-20 w-20 border-2 border-primary">
             <AvatarImage src={profile.avatarUrl || undefined} />
@@ -99,23 +95,23 @@ function SellerProfile() {
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="
-            flex-1 text-center
-            sm:text-left
-          "
+          <div
+            className="
+              flex-1 text-center
+              sm:text-left
+            "
           >
             <h1 className="font-heading text-2xl font-bold text-card-foreground">
               {profile.fullName || 'Seller'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Member since
-              {' '}
-              {format(new Date(profile.createdAt), 'MMMM yyyy')}
+              Member since {format(new Date(profile.createdAt), 'MMMM yyyy')}
             </p>
-            <div className="
-              mt-2 flex items-center justify-center gap-3
-              sm:justify-start
-            "
+            <div
+              className="
+                mt-2 flex items-center justify-center gap-3
+                sm:justify-start
+              "
             >
               {rating && rating.totalReviews > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -126,10 +122,10 @@ function SellerProfile() {
                         className={`
                           h-4 w-4
                           ${
-                      s <= Math.round(rating.avgRating)
-                        ? 'fill-primary text-primary'
-                        : 'text-muted-foreground/30'
-                      }
+                            s <= Math.round(rating.avgRating)
+                              ? 'fill-primary text-primary'
+                              : 'text-muted-foreground/30'
+                          }
                         `}
                       />
                     ))}
@@ -138,38 +134,29 @@ function SellerProfile() {
                     {rating.avgRating.toFixed(1)}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    (
-                    {rating.totalReviews}
-                    {' '}
-                    review
-                    {rating.totalReviews === 1 ? '' : 's'}
-                    )
+                    ({rating.totalReviews} review
+                    {rating.totalReviews === 1 ? '' : 's'})
                   </span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Package className="h-4 w-4" />
-                {listings.length}
-                {' '}
-                listing
+                {listings.length} listing
                 {listings.length === 1 ? '' : 's'}
               </div>
             </div>
             {(profile.bio || profile.location || profile.phone) && (
               <div className="mt-3 space-y-1 text-sm">
-                {profile.bio && (
-                  <p className="text-card-foreground">{profile.bio}</p>
-                )}
-                <div className="
-                  flex flex-wrap items-center justify-center gap-3 text-muted-foreground
-                  sm:justify-start
-                "
+                {profile.bio && <p className="text-card-foreground">{profile.bio}</p>}
+                <div
+                  className="
+                    flex flex-wrap items-center justify-center gap-3 text-muted-foreground
+                    sm:justify-start
+                  "
                 >
                   {profile.location && (
                     <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {' '}
-                      {profile.location}
+                      <MapPin className="h-3.5 w-3.5" /> {profile.location}
                     </span>
                   )}
                   {/* {profile.phone && (
@@ -184,10 +171,11 @@ function SellerProfile() {
             )}
           </div>
           {profile.canReceiveMessages && user?.id !== profile.userId && (
-            <div className="
-              w-full
-              sm:w-auto
-            "
+            <div
+              className="
+                w-full
+                sm:w-auto
+              "
             >
               <MessageSellerButton recipientUserId={profile.userId} />
             </div>
@@ -197,37 +185,26 @@ function SellerProfile() {
         {/* Tabs */}
         <Tabs onValueChange={selectTab} value={selectedTab} className="mt-6">
           <TabsList>
-            <TabsTrigger value="listings">
-              Listings (
-              {listings.length}
-              )
-            </TabsTrigger>
-            <TabsTrigger value="reviews">
-              Reviews (
-              {rating?.totalReviews ?? 0}
-              )
-            </TabsTrigger>
+            <TabsTrigger value="listings">Listings ({listings.length})</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({rating?.totalReviews ?? 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="listings" className="mt-4">
-            {listings.length === 0
-              ? (
-                  <p className="py-12 text-center text-muted-foreground">
-                    No active listings
-                  </p>
-                )
-              : (
-                  <div className="
-                    grid grid-cols-2 gap-4
-                    sm:grid-cols-3
-                    lg:grid-cols-4
-                  "
-                  >
-                    {listings.map((l, index) => (
-                      <ListingCard key={l.id} index={index} listing={l} />
-                    ))}
-                  </div>
-                )}
+            {listings.length === 0 ? (
+              <p className="py-12 text-center text-muted-foreground">No active listings</p>
+            ) : (
+              <div
+                className="
+                  grid grid-cols-2 gap-4
+                  sm:grid-cols-3
+                  lg:grid-cols-4
+                "
+              >
+                {listings.map((l, index) => (
+                  <ListingCard key={l.id} index={index} listing={l} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-4">

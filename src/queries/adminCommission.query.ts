@@ -25,10 +25,8 @@ export function getCommissionTiersOptions() {
 export function useCreateCommissionTierMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CommissionTierPayload) =>
-      createCommissionTier(payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
+    mutationFn: (payload: CommissionTierPayload) => createCommissionTier(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 }
 
@@ -42,17 +40,14 @@ export function useUpdateCommissionTierMutation() {
       commissionTierId: string;
       payload: Partial<CommissionTierPayload>;
     }) => updateCommissionTier(commissionTierId, payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 }
 
 export function useDeleteCommissionTierMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (commissionTierId: string) =>
-      deleteCommissionTier(commissionTierId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
+    mutationFn: (commissionTierId: string) => deleteCommissionTier(commissionTierId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: commissionQueryKey.all() }),
   });
 }

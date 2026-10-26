@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { getMySalesOrderOptions, myOrdersQueryKey } from '@/queries/myOrders.query';
 
 const listSalesMock = vi.hoisted(() => vi.fn());
@@ -29,7 +29,9 @@ describe('my sales order query', () => {
     const options = getMySalesOrderOptions('selected-order', 'selected-item');
     const response = await options.queryFn!({} as never);
 
-    expect(options.queryKey).toEqual(myOrdersQueryKey.salesOrder('selected-order', 'selected-item'));
+    expect(options.queryKey).toEqual(
+      myOrdersQueryKey.salesOrder('selected-order', 'selected-item'),
+    );
     expect(listSalesMock).toHaveBeenNthCalledWith(1, 1);
     expect(listSalesMock).toHaveBeenNthCalledWith(2, 2);
     expect(response).toBe(matchingPage);

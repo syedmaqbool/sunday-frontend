@@ -97,7 +97,8 @@ export interface GetOrderItemComplaintErrors {
   };
 }
 
-export type GetOrderItemComplaintError = GetOrderItemComplaintErrors[keyof GetOrderItemComplaintErrors];
+export type GetOrderItemComplaintError =
+  GetOrderItemComplaintErrors[keyof GetOrderItemComplaintErrors];
 
 export interface GetOrderItemComplaintResponses {
   /**
@@ -128,7 +129,15 @@ export interface GetOrderItemComplaintResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -139,4 +148,5 @@ export interface GetOrderItemComplaintResponses {
   };
 }
 
-export type GetOrderItemComplaintResponse = GetOrderItemComplaintResponses[keyof GetOrderItemComplaintResponses];
+export type GetOrderItemComplaintResponse =
+  GetOrderItemComplaintResponses[keyof GetOrderItemComplaintResponses];

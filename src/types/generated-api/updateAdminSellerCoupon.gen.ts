@@ -106,7 +106,8 @@ export interface UpdateAdminSellerCouponErrors {
   };
 }
 
-export type UpdateAdminSellerCouponError = UpdateAdminSellerCouponErrors[keyof UpdateAdminSellerCouponErrors];
+export type UpdateAdminSellerCouponError =
+  UpdateAdminSellerCouponErrors[keyof UpdateAdminSellerCouponErrors];
 
 export interface UpdateAdminSellerCouponResponses {
   /**
@@ -134,4 +135,5 @@ export interface UpdateAdminSellerCouponResponses {
   };
 }
 
-export type UpdateAdminSellerCouponResponse = UpdateAdminSellerCouponResponses[keyof UpdateAdminSellerCouponResponses];
+export type UpdateAdminSellerCouponResponse =
+  UpdateAdminSellerCouponResponses[keyof UpdateAdminSellerCouponResponses];

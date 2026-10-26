@@ -70,7 +70,8 @@ export interface VerifyWhatsAppWebhookErrors {
   };
 }
 
-export type VerifyWhatsAppWebhookError = VerifyWhatsAppWebhookErrors[keyof VerifyWhatsAppWebhookErrors];
+export type VerifyWhatsAppWebhookError =
+  VerifyWhatsAppWebhookErrors[keyof VerifyWhatsAppWebhookErrors];
 
 export interface VerifyWhatsAppWebhookResponses {
   /**
@@ -79,4 +80,5 @@ export interface VerifyWhatsAppWebhookResponses {
   200: string;
 }
 
-export type VerifyWhatsAppWebhookResponse = VerifyWhatsAppWebhookResponses[keyof VerifyWhatsAppWebhookResponses];
+export type VerifyWhatsAppWebhookResponse =
+  VerifyWhatsAppWebhookResponses[keyof VerifyWhatsAppWebhookResponses];

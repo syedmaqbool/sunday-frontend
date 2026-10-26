@@ -40,7 +40,8 @@ export interface UpdateMarketingEmailConsentErrors {
   };
 }
 
-export type UpdateMarketingEmailConsentError = UpdateMarketingEmailConsentErrors[keyof UpdateMarketingEmailConsentErrors];
+export type UpdateMarketingEmailConsentError =
+  UpdateMarketingEmailConsentErrors[keyof UpdateMarketingEmailConsentErrors];
 
 export interface UpdateMarketingEmailConsentResponses {
   /**
@@ -52,4 +53,5 @@ export interface UpdateMarketingEmailConsentResponses {
   };
 }
 
-export type UpdateMarketingEmailConsentResponse = UpdateMarketingEmailConsentResponses[keyof UpdateMarketingEmailConsentResponses];
+export type UpdateMarketingEmailConsentResponse =
+  UpdateMarketingEmailConsentResponses[keyof UpdateMarketingEmailConsentResponses];

@@ -1,8 +1,4 @@
-import type {
-  EmailTemplateAPI,
-  HelpCategoryAPI,
-  HelpFaqAPI,
-} from '@/types/adminSettings.type';
+import type { EmailTemplateAPI, HelpCategoryAPI, HelpFaqAPI } from '@/types/adminSettings.type';
 import type { BoostPackageAPI } from '@/types/boost.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -31,8 +27,7 @@ export function getAdminSettingsOptions() {
 export function useUpdateBoostPackagesMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (boostPackages: BoostPackageAPI[]) =>
-      updateAdminBoostPackages(boostPackages),
+    mutationFn: (boostPackages: BoostPackageAPI[]) => updateAdminBoostPackages(boostPackages),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() });
     },
@@ -42,10 +37,8 @@ export function useUpdateBoostPackagesMutation() {
 export function useUpdateHelpCategoriesMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (helpCategories: HelpCategoryAPI[]) =>
-      updateHelpCategories(helpCategories),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
+    mutationFn: (helpCategories: HelpCategoryAPI[]) => updateHelpCategories(helpCategories),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 }
 
@@ -53,17 +46,14 @@ export function useUpdateHelpFaqsMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (helpFaqs: HelpFaqAPI[]) => updateHelpFaqs(helpFaqs),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 }
 
 export function useUpdateEmailTemplatesMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (emailTemplates: EmailTemplateAPI[]) =>
-      updateEmailTemplates(emailTemplates),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
+    mutationFn: (emailTemplates: EmailTemplateAPI[]) => updateEmailTemplates(emailTemplates),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() }),
   });
 }

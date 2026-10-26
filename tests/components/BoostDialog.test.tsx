@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import BoostDialog from '@/components/BoostDialog';
 
 const {
@@ -58,15 +58,17 @@ describe('seller boost purchase dialog', () => {
         listingId: 'listing-1',
         sellerId: 'seller-1',
         amount: 1250,
-        boosts: [{
-          id: 'boost-1',
-          listingId: 'listing-1',
-          paymentStatus: 'PENDING',
-          placement: 'FOR_YOU',
-          pricePaid: 1250,
-          endsAt: '2026-10-25T08:00:00.000Z',
-          startsAt: '2026-10-18T08:00:00.000Z',
-        }],
+        boosts: [
+          {
+            id: 'boost-1',
+            listingId: 'listing-1',
+            paymentStatus: 'PENDING',
+            placement: 'FOR_YOU',
+            pricePaid: 1250,
+            endsAt: '2026-10-25T08:00:00.000Z',
+            startsAt: '2026-10-18T08:00:00.000Z',
+          },
+        ],
         paymentInstructions: {
           accountIban: 'PK00 1234',
           accountNumber: '123456789',
@@ -86,16 +88,18 @@ describe('seller boost purchase dialog', () => {
       statusCode: 201,
     });
     listBoostPackagesMock.mockReset().mockResolvedValue({
-      data: [{
-        id: 'package-1',
-        active: true,
-        credits: 100,
-        description: 'One week of placement',
-        durationDays: 7,
-        name: 'One week',
-        placement: 'FOR_YOU',
-        price: 1000,
-      }],
+      data: [
+        {
+          id: 'package-1',
+          active: true,
+          credits: 100,
+          description: 'One week of placement',
+          durationDays: 7,
+          name: 'One week',
+          placement: 'FOR_YOU',
+          price: 1000,
+        },
+      ],
       message: 'Boost packages fetched.',
       statusCode: 200,
     });
@@ -143,15 +147,21 @@ describe('seller boost purchase dialog', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Submit payment proof' }));
 
-    await waitFor(() => expect(boostWithPackageMock).toHaveBeenCalledWith('listing-1', {
-      proofFileId: 'proof-file-id',
-      packageIds: ['package-1'],
-      senderAccountNumber: '123456789',
-      senderAccountTitle: 'Jane Doe',
-    }));
+    await waitFor(() =>
+      expect(boostWithPackageMock).toHaveBeenCalledWith('listing-1', {
+        proofFileId: 'proof-file-id',
+        packageIds: ['package-1'],
+        senderAccountNumber: '123456789',
+        senderAccountTitle: 'Jane Doe',
+      }),
+    );
     expect(toastSuccessMock).toHaveBeenCalledWith(expect.stringContaining('Rs 1,250.00'));
-    expect(toastSuccessMock).toHaveBeenCalledWith(expect.stringContaining('awaiting payment review'));
-    expect(toastSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('Your boost is active.'));
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      expect.stringContaining('awaiting payment review'),
+    );
+    expect(toastSuccessMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('Your boost is active.'),
+    );
   });
 
   it('shows a server campaign quote before the seller continues to payment', async () => {
@@ -161,11 +171,14 @@ describe('seller boost purchase dialog', () => {
     await waitFor(() => expect(getListingBoostCampaignQuoteMock).toHaveBeenCalled());
     expect(await screen.findByText('Rs 1,850.00')).toBeInTheDocument();
     expect(screen.getByText('Campaign duration: 5 days')).toBeInTheDocument();
-    expect(getListingBoostCampaignQuoteMock).toHaveBeenCalledWith('listing-1', expect.objectContaining({
-      placement: 'FOR_YOU',
-      endsAt: expect.any(String),
-      startsAt: expect.any(String),
-    }));
+    expect(getListingBoostCampaignQuoteMock).toHaveBeenCalledWith(
+      'listing-1',
+      expect.objectContaining({
+        placement: 'FOR_YOU',
+        endsAt: expect.any(String),
+        startsAt: expect.any(String),
+      }),
+    );
     expect(screen.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue to payment' }));

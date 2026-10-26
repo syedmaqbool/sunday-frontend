@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
 import MyOffers from '@/pages/MyOffers';
 
 const { authState, useQueryMock, withdrawOfferMock } = vi.hoisted(() => ({
@@ -10,7 +10,7 @@ const { authState, useQueryMock, withdrawOfferMock } = vi.hoisted(() => ({
   withdrawOfferMock: vi.fn(),
 }));
 
-vi.mock('@tanstack/react-query', async (importOriginal) => {
+vi.mock('@tanstack/react-query', async importOriginal => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return { ...actual, useQuery: useQueryMock };
 });
@@ -19,7 +19,7 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => authState,
 }));
 
-vi.mock('@/services/offers.service', async (importOriginal) => {
+vi.mock('@/services/offers.service', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/offers.service')>();
   return { ...actual, withdrawOffer: withdrawOfferMock };
 });
@@ -55,7 +55,9 @@ function LocationControls() {
   return (
     <>
       <output data-testid="location">{`${location.pathname}${location.search}`}</output>
-      <button onClick={() => navigate(-1)} type="button">Back</button>
+      <button onClick={() => navigate(-1)} type="button">
+        Back
+      </button>
     </>
   );
 }
@@ -67,12 +69,12 @@ function renderPage(initialEntries: string[]) {
       <MemoryRouter initialEntries={initialEntries}>
         <Routes>
           <Route
-            element={(
+            element={
               <>
                 <MyOffers />
                 <LocationControls />
               </>
-            )}
+            }
             path="/my-offers"
           />
         </Routes>
@@ -94,12 +96,13 @@ afterEach(() => {
 
 describe('myOffers notification selection', () => {
   it('selects the offer from the URL and restores list state through browser history', async () => {
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('mine')
-        ? { data: [selectedOffer] }
-        : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data: options.queryKey.includes('mine') ? { data: [selectedOffer] } : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     renderPage(['/my-offers', '/my-offers?offer=offer-1']);
 
@@ -111,27 +114,34 @@ describe('myOffers notification selection', () => {
   });
 
   it('falls back to the sent offers list when the selected offer no longer exists', async () => {
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('mine') ? { data: [] } : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data: options.queryKey.includes('mine') ? { data: [] } : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     renderPage(['/my-offers?offer=missing-offer']);
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/my-offers'));
     expect(screen.queryByTestId('selected-offer')).not.toBeInTheDocument();
-    expect(await screen.findByText('You haven\'t made any offers yet')).toBeInTheDocument();
+    expect(await screen.findByText("You haven't made any offers yet")).toBeInTheDocument();
   });
 
   it('preserves the selected offer URL while authentication is restored', async () => {
     authState.loading = true;
     authState.user = null;
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('selection') && authState.user
-        ? { data: [selectedOffer] }
-        : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data:
+            options.queryKey.includes('selection') && authState.user
+              ? { data: [selectedOffer] }
+              : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     const { rerenderPage } = renderPage(['/my-offers?offer=offer-1']);
     expect(screen.getByTestId('location')).toHaveTextContent('/my-offers?offer=offer-1');
@@ -148,12 +158,15 @@ describe('myOffers notification selection', () => {
 describe('paused offers in My Offers', () => {
   it('keeps a paused offer visible and lets the buyer withdraw it', async () => {
     withdrawOfferMock.mockResolvedValue({ data: selectedOffer, statusCode: 200 });
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('mine')
-        ? { data: [{ ...selectedOffer, isPaused: true }] }
-        : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data: options.queryKey.includes('mine')
+            ? { data: [{ ...selectedOffer, isPaused: true }] }
+            : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     renderPage(['/my-offers']);
 
@@ -166,12 +179,19 @@ describe('paused offers in My Offers', () => {
 
   it('lets the buyer decline a paused counter-offer', async () => {
     withdrawOfferMock.mockResolvedValue({ data: selectedOffer, statusCode: 200 });
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('mine')
-        ? { data: [{ ...selectedOffer, counterAmount: 120, isPaused: true, status: 'COUNTERED' }] }
-        : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data: options.queryKey.includes('mine')
+            ? {
+                data: [
+                  { ...selectedOffer, counterAmount: 120, isPaused: true, status: 'COUNTERED' },
+                ],
+              }
+            : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     renderPage(['/my-offers']);
 
@@ -181,12 +201,15 @@ describe('paused offers in My Offers', () => {
   });
 
   it('shows restored offers as unpaused when the backend reports isPaused false', async () => {
-    useQueryMock.mockImplementation((options: any) => ({
-      data: options.queryKey.includes('mine')
-        ? { data: [{ ...selectedOffer, isPaused: false }] }
-        : { data: [] },
-      isLoading: false,
-    }) as any);
+    useQueryMock.mockImplementation(
+      (options: any) =>
+        ({
+          data: options.queryKey.includes('mine')
+            ? { data: [{ ...selectedOffer, isPaused: false }] }
+            : { data: [] },
+          isLoading: false,
+        }) as any,
+    );
 
     renderPage(['/my-offers']);
 

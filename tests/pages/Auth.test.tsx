@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Auth from '@/pages/Auth';
 
 const { authState, sendOtpMock, signInMock, signUpMock, toastMock } = vi.hoisted(() => ({
@@ -14,7 +14,15 @@ const { authState, sendOtpMock, signInMock, signUpMock, toastMock } = vi.hoisted
 vi.mock('@/components/Footer', () => ({ default: () => <footer /> }));
 vi.mock('@/components/Navbar', () => ({ default: () => <nav /> }));
 vi.mock('@/components/ui/checkbox', () => ({
-  Checkbox: ({ id, checked: isChecked, onCheckedChange }: { id: string; checked: boolean; onCheckedChange: (isChecked: boolean) => void }) => (
+  Checkbox: ({
+    id,
+    checked: isChecked,
+    onCheckedChange,
+  }: {
+    id: string;
+    checked: boolean;
+    onCheckedChange: (isChecked: boolean) => void;
+  }) => (
     <input
       id={id}
       onChange={event => onCheckedChange(event.currentTarget.checked)}
@@ -30,9 +38,15 @@ vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: toastMock }) }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
 vi.mock('@/services/auth.service', () => ({ sendRegisterOtp: sendOtpMock }));
 vi.mock('@/components/ui/input-otp', () => ({
-  InputOTP: ({ id, onChange, value }: { id: string; onChange: (value: string) => void; value: string }) => (
-    <input id={id} onChange={event => onChange(event.currentTarget.value)} value={value} />
-  ),
+  InputOTP: ({
+    id,
+    onChange,
+    value,
+  }: {
+    id: string;
+    onChange: (value: string) => void;
+    value: string;
+  }) => <input id={id} onChange={event => onChange(event.currentTarget.value)} value={value} />,
   InputOTPGroup: ({ children }: any) => <div>{children}</div>,
   InputOTPSlot: () => null,
 }));
@@ -45,10 +59,13 @@ function Destination({ label }: { label: string }) {
 
 function renderAuth(returnTo?: string) {
   return render(
-    <MemoryRouter initialEntries={[{
-      pathname: '/auth',
-      state: returnTo ? { from: returnTo } : null,
-    }]}
+    <MemoryRouter
+      initialEntries={[
+        {
+          pathname: '/auth',
+          state: returnTo ? { from: returnTo } : null,
+        },
+      ]}
     >
       <Routes>
         <Route element={<Auth />} path="/auth" />
@@ -87,7 +104,9 @@ describe('signup WhatsApp behavior', () => {
     expect(screen.queryByText(/transactional WhatsApp messages/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Ada Lovelace' } });
-    fireEvent.change(screen.getByLabelText('Phone Number'), { target: { value: '+1 (415) 555-2671' } });
+    fireEvent.change(screen.getByLabelText('Phone Number'), {
+      target: { value: '+1 (415) 555-2671' },
+    });
     fireEvent.change(screen.getByLabelText('Date of Birth'), { target: { value: '1990-01-01' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ada@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123!' } });
@@ -100,10 +119,12 @@ describe('signup WhatsApp behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
 
     await waitFor(() => {
-      expect(signUpMock).toHaveBeenCalledWith(expect.objectContaining({
-        phone: '+14155552671',
-        whatsappTransactionalNotificationsEnabled: true,
-      }));
+      expect(signUpMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone: '+14155552671',
+          whatsappTransactionalNotificationsEnabled: true,
+        }),
+      );
     });
   });
 });
@@ -137,7 +158,9 @@ describe('sign-in navigation', () => {
 
     await submitLogin();
 
-    expect(await screen.findByTestId('destination')).toHaveTextContent('Index?category=women&source=home');
+    expect(await screen.findByTestId('destination')).toHaveTextContent(
+      'Index?category=women&source=home',
+    );
   });
 
   it('sends an already signed-in user to the index by default', async () => {

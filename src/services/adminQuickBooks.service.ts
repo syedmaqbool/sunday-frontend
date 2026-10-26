@@ -47,25 +47,33 @@ export function reconnectAdminQuickBooksConnection(payload: AdminQuickBooksRecon
     .json<ApiSuccessResponse<ReconnectAdminQuickBooksConnectionResponses>>();
 }
 
-export function getAdminQuickBooksAccountMappingVersions(parameters: GetAdminQuickBooksAccountMappingVersionsData['query']) {
+export function getAdminQuickBooksAccountMappingVersions(
+  parameters: GetAdminQuickBooksAccountMappingVersionsData['query'],
+) {
   return authInstance
     .get('/api/v1/admin/quickbooks-account-mappings', { searchParams: parameters })
     .json<ApiSuccessResponse<GetAdminQuickBooksAccountMappingVersionsResponses>>();
 }
 
-export function createAdminQuickBooksAccountMappingVersion(payload: AdminQuickBooksAccountMappingVersionPayload) {
+export function createAdminQuickBooksAccountMappingVersion(
+  payload: AdminQuickBooksAccountMappingVersionPayload,
+) {
   return authInstance
     .post('/api/v1/admin/quickbooks-account-mappings', { json: payload })
     .json<ApiSuccessResponse<CreateAdminQuickBooksAccountMappingVersionResponses>>();
 }
 
-export function getAdminQuickBooksSellerVendorMappings(parameters: AdminQuickBooksSellerVendorMappingParameters) {
+export function getAdminQuickBooksSellerVendorMappings(
+  parameters: AdminQuickBooksSellerVendorMappingParameters,
+) {
   return authInstance
     .get('/api/v1/admin/quickbooks-seller-vendor-mappings', { searchParams: parameters })
     .json<AdminQuickBooksPaginatedResponse<AdminQuickBooksSellerVendorMapping>>();
 }
 
-export function createAdminQuickBooksSellerVendorMapping(payload: AdminQuickBooksSellerVendorMappingPayload) {
+export function createAdminQuickBooksSellerVendorMapping(
+  payload: AdminQuickBooksSellerVendorMappingPayload,
+) {
   return authInstance
     .post('/api/v1/admin/quickbooks-seller-vendor-mappings', { json: payload })
     .json<Response<AdminQuickBooksSellerVendorMapping>>();
@@ -77,7 +85,9 @@ export function getAdminQuickBooksSellers(parameters: AdminQuickBooksSellerOptio
     .json<AdminQuickBooksPaginatedResponse<AdminQuickBooksSellerOption>>();
 }
 
-export function getAdminQuickBooksReconciliation(parameters: AdminQuickBooksReconciliationParameters) {
+export function getAdminQuickBooksReconciliation(
+  parameters: AdminQuickBooksReconciliationParameters,
+) {
   return authInstance
     .get('/api/v1/admin/quickbooks-reconciliation', { searchParams: parameters })
     .json<ApiSuccessResponse<GetAdminQuickBooksReconciliationResponses>>();

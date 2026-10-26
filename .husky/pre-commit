@@ -1,6 +1,0 @@
-set -e
-
-npm run lint:staged
-npm run typecheck
-npm run bump:patch
-git add package.json package-lock.json

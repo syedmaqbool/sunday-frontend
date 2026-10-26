@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { HTTPError } from 'ky';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import CategoryManagement from '@/pages/admin/CategoryManagement';
 
 const {
@@ -35,13 +35,15 @@ vi.mock('@/services/adminCategoryManagement.service', () => ({
   updateSubcategory: vi.fn(),
 }));
 
-function buildClothingType(overrides: Partial<{
-  id: string;
-  active: boolean;
-  label: string;
-  sortOrder: number;
-  value: string;
-}> = {}) {
+function buildClothingType(
+  overrides: Partial<{
+    id: string;
+    active: boolean;
+    label: string;
+    sortOrder: number;
+    value: string;
+  }> = {},
+) {
   return {
     id: 'type-1',
     active: true,
@@ -81,18 +83,36 @@ function renderPage() {
 
 describe('admin clothing type manager', () => {
   beforeEach(() => {
-    listClothingTypesMock.mockReset().mockImplementation(({ page: pageNumber }: { page: number }) => {
-      if (pageNumber === 1) {
-        return Promise.resolve(page([
-          buildClothingType({ id: 'type-3', active: false, label: 'Dresses', sortOrder: 2, value: 'dresses' }),
-          buildClothingType({ id: 'type-1', label: 'Tops', sortOrder: 0, value: 'tops' }),
-        ], 1, 2));
-      }
+    listClothingTypesMock
+      .mockReset()
+      .mockImplementation(({ page: pageNumber }: { page: number }) => {
+        if (pageNumber === 1) {
+          return Promise.resolve(
+            page(
+              [
+                buildClothingType({
+                  id: 'type-3',
+                  active: false,
+                  label: 'Dresses',
+                  sortOrder: 2,
+                  value: 'dresses',
+                }),
+                buildClothingType({ id: 'type-1', label: 'Tops', sortOrder: 0, value: 'tops' }),
+              ],
+              1,
+              2,
+            ),
+          );
+        }
 
-      return Promise.resolve(page([
-        buildClothingType({ id: 'type-2', label: 'Bottoms', sortOrder: 1, value: 'bottoms' }),
-      ], 2, 2));
-    });
+        return Promise.resolve(
+          page(
+            [buildClothingType({ id: 'type-2', label: 'Bottoms', sortOrder: 1, value: 'bottoms' })],
+            2,
+            2,
+          ),
+        );
+      });
     createClothingTypeMock.mockReset().mockResolvedValue({});
     updateClothingTypeMock.mockReset().mockResolvedValue({});
     deleteClothingTypeMock.mockReset().mockResolvedValue({});
@@ -103,8 +123,12 @@ describe('admin clothing type manager', () => {
   it('shows every admin clothing type in sort order across all catalog pages', async () => {
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Clothing types (shown when type is Clothes)' })).toBeInTheDocument();
-    const clothingTypeLabels = await screen.findAllByRole('textbox', { name: /Clothing type label/ });
+    expect(
+      await screen.findByRole('heading', { name: 'Clothing types (shown when type is Clothes)' }),
+    ).toBeInTheDocument();
+    const clothingTypeLabels = await screen.findAllByRole('textbox', {
+      name: /Clothing type label/,
+    });
 
     expect(clothingTypeLabels.map(input => (input as HTMLInputElement).value)).toEqual([
       'Tops',
@@ -125,7 +149,9 @@ describe('admin clothing type manager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => expect(createClothingTypeMock).toHaveBeenCalledWith({ label: 'Shoes' }));
-    await waitFor(() => expect(listClothingTypesMock.mock.calls.length).toBeGreaterThan(initialListCalls));
+    await waitFor(() =>
+      expect(listClothingTypesMock.mock.calls.length).toBeGreaterThan(initialListCalls),
+    );
   });
 
   it('updates a clothing type label and sort order without sending a value', async () => {
@@ -133,13 +159,17 @@ describe('admin clothing type manager', () => {
     await screen.findByRole('textbox', { name: 'Clothing type label Tops' });
     const labelInput = screen.getByRole('textbox', { name: 'Clothing type label Tops' });
     fireEvent.change(labelInput, { target: { value: 'Tees' } });
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'Sort order for Tops' }), { target: { value: '4' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Sort order for Tops' }), {
+      target: { value: '4' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Save Tops' }));
 
-    await waitFor(() => expect(updateClothingTypeMock).toHaveBeenCalledWith('type-1', {
-      label: 'Tees',
-      sortOrder: 4,
-    }));
+    await waitFor(() =>
+      expect(updateClothingTypeMock).toHaveBeenCalledWith('type-1', {
+        label: 'Tees',
+        sortOrder: 4,
+      }),
+    );
   });
 
   it('deletes a clothing type', async () => {
@@ -152,11 +182,16 @@ describe('admin clothing type manager', () => {
 
   it('keeps a referenced type visible and shows the API error when deletion fails', async () => {
     const apiError = new HTTPError(
-      Response.json({ message: 'A listing still references this clothing type.' }, {
-        status: 409,
-        statusText: 'Conflict',
+      Response.json(
+        { message: 'A listing still references this clothing type.' },
+        {
+          status: 409,
+          statusText: 'Conflict',
+        },
+      ),
+      new Request('https://sunday.example/api/v1/admin/clothing-types/type-1', {
+        method: 'DELETE',
       }),
-      new Request('https://sunday.example/api/v1/admin/clothing-types/type-1', { method: 'DELETE' }),
       {} as never,
     );
     deleteClothingTypeMock.mockRejectedValue(apiError);
@@ -164,10 +199,14 @@ describe('admin clothing type manager', () => {
     await screen.findByRole('textbox', { name: 'Clothing type label Tops' });
     fireEvent.click(screen.getByRole('button', { name: 'Delete Tops' }));
 
-    await waitFor(() => expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
-      description: 'A listing still references this clothing type.',
-      variant: 'destructive',
-    })));
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: 'A listing still references this clothing type.',
+          variant: 'destructive',
+        }),
+      ),
+    );
     expect(screen.getByRole('textbox', { name: 'Clothing type label Tops' })).toBeInTheDocument();
   });
 });

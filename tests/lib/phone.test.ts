@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { internationalPhoneSchema } from '@/lib/phone';
 
 describe('internationalPhoneSchema', () => {
@@ -10,11 +10,7 @@ describe('internationalPhoneSchema', () => {
     expect(internationalPhoneSchema.parse(input)).toBe(expected);
   });
 
-  it.each([
-    '0300 1234567',
-    '+0123456789',
-    '+1234567890123456',
-  ])('rejects %s', (input) => {
+  it.each(['0300 1234567', '+0123456789', '+1234567890123456'])('rejects %s', input => {
     expect(internationalPhoneSchema.safeParse(input).success).toBe(false);
   });
 });

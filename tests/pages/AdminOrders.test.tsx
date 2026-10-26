@@ -4,10 +4,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import AdminOrders from '@/pages/admin/Orders';
 
-const orders = vi.hoisted(() => ({ current: [] as AdminOrder[], detail: null as AdminOrderDetail | null, detailError: null as Error | null, listParameters: [] as Record<string, unknown>[] }));
+const orders = vi.hoisted(() => ({
+  current: [] as AdminOrder[],
+  detail: null as AdminOrderDetail | null,
+  detailError: null as Error | null,
+  listParameters: [] as Record<string, unknown>[],
+}));
 const reservedListings = vi.hoisted(() => ({
   current: [] as {
     buyerId: string;
@@ -28,14 +33,21 @@ const cancelAdminOrderMutation = vi.hoisted(() => ({ isPending: false, mutateAsy
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 vi.mock('@/components/admin/AdminManualPaymentReviewDialog', () => ({
-  AdminManualPaymentReviewDialog: ({ orderId, submissionId, onClose }: { orderId: string | null; submissionId?: string | null; onClose: () => void }) => orderId && submissionId
-    ? (
-        <div data-testid="payment-review">
-          {`${orderId}:${submissionId}`}
-          <button onClick={onClose}>Close review</button>
-        </div>
-      )
-    : null,
+  AdminManualPaymentReviewDialog: ({
+    orderId,
+    submissionId,
+    onClose,
+  }: {
+    orderId: string | null;
+    submissionId?: string | null;
+    onClose: () => void;
+  }) =>
+    orderId && submissionId ? (
+      <div data-testid="payment-review">
+        {`${orderId}:${submissionId}`}
+        <button onClick={onClose}>Close review</button>
+      </div>
+    ) : null,
   maskSenderAccountNumber: (value: string) => `MASKED-${value.slice(-4)}`,
 }));
 
@@ -52,8 +64,7 @@ vi.mock('@/queries/adminOrders.query', () => ({
   getAdminOrderOptions: (orderId: string, isEnabled: boolean) => ({
     enabled: isEnabled,
     queryFn: async () => {
-      if (orders.detailError)
-        throw orders.detailError;
+      if (orders.detailError) throw orders.detailError;
       return { data: orders.detail ?? orders.current.find(order => order.id === orderId) };
     },
     queryKey: ['admin-orders', 'orders', 'detail', orderId],
@@ -82,63 +93,67 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
     currency: 'PKR',
     discountAmount: 0,
     discountCode: null,
-    items: [{
-      id: `${status}-item-id`,
-      buyerId: 'buyer-id',
-      commissionTierId: null,
-      listingId: 'listing-id',
-      offerId: null,
-      orderId: `${status}-order-id`,
-      reservationId: null,
-      sellerId: 'seller-id',
-      sellerIncentiveId: 'incentive-1',
-      brand: 'Example',
-      buyerFullName: 'Jane Buyer',
-      category: 'Clothing',
-      commissionAmount: 0,
-      commissionRate: 0,
-      commissionTierName: null,
-      condition: 'NEW',
-      currency: 'PKR',
-      description: 'Example item',
-      discountAmount: 0,
-      expectedDelivery: null,
-      imageUrl: '',
-      platformFeeAmount: 0,
-      price: 100,
-      proofImageUrl: null,
-      quantity: 1,
-      reservedOfferPrice: null,
-      sellerFullName: 'Example Seller',
-      sellerIncentiveBonus: 250,
-      sellerIncentivePercentage: 10,
-      shippingMethod: null,
-      size: 'M',
-      status: 'CONFIRMED',
-      subcategory: 'Tops',
-      taxAmount: 0,
-      title,
-      total: 100,
-      trackingNumber: null,
-      receivedAt: null,
-      shippedAt: null,
-      createdAt: '2026-09-08T00:00:00.000Z',
-      updatedAt: '2026-09-08T00:00:00.000Z',
-    }],
+    items: [
+      {
+        id: `${status}-item-id`,
+        buyerId: 'buyer-id',
+        commissionTierId: null,
+        listingId: 'listing-id',
+        offerId: null,
+        orderId: `${status}-order-id`,
+        reservationId: null,
+        sellerId: 'seller-id',
+        sellerIncentiveId: 'incentive-1',
+        brand: 'Example',
+        buyerFullName: 'Jane Buyer',
+        category: 'Clothing',
+        commissionAmount: 0,
+        commissionRate: 0,
+        commissionTierName: null,
+        condition: 'NEW',
+        currency: 'PKR',
+        description: 'Example item',
+        discountAmount: 0,
+        expectedDelivery: null,
+        imageUrl: '',
+        platformFeeAmount: 0,
+        price: 100,
+        proofImageUrl: null,
+        quantity: 1,
+        reservedOfferPrice: null,
+        sellerFullName: 'Example Seller',
+        sellerIncentiveBonus: 250,
+        sellerIncentivePercentage: 10,
+        shippingMethod: null,
+        size: 'M',
+        status: 'CONFIRMED',
+        subcategory: 'Tops',
+        taxAmount: 0,
+        title,
+        total: 100,
+        trackingNumber: null,
+        receivedAt: null,
+        shippedAt: null,
+        createdAt: '2026-09-08T00:00:00.000Z',
+        updatedAt: '2026-09-08T00:00:00.000Z',
+      },
+    ],
     itemStatusCounts: { completed: 0, confirmed: 1, received: 0, shipped: 0 },
-    manualPaymentSubmissions: [{
-      id: `${status}-submission-id`,
-      orderId: `${status}-order-id`,
-      proofFileId: 'proof-id',
-      reviewerId: status === 'APPROVED' ? 'reviewer-id' : null,
-      reviewNote: null,
-      senderAccountNumber: '123456789012',
-      senderAccountTitle: 'Jane Buyer',
-      status,
-      reviewedAt: status === 'APPROVED' ? '2026-09-08T01:00:00.000Z' : null,
-      createdAt: '2026-09-08T00:00:00.000Z',
-      updatedAt: '2026-09-08T00:00:00.000Z',
-    }],
+    manualPaymentSubmissions: [
+      {
+        id: `${status}-submission-id`,
+        orderId: `${status}-order-id`,
+        proofFileId: 'proof-id',
+        reviewerId: status === 'APPROVED' ? 'reviewer-id' : null,
+        reviewNote: null,
+        senderAccountNumber: '123456789012',
+        senderAccountTitle: 'Jane Buyer',
+        status,
+        reviewedAt: status === 'APPROVED' ? '2026-09-08T01:00:00.000Z' : null,
+        createdAt: '2026-09-08T00:00:00.000Z',
+        updatedAt: '2026-09-08T00:00:00.000Z',
+      },
+    ],
     paymentStatus: 'PENDING',
     platformFeeAmount: 0,
     refundStatus: null,
@@ -180,17 +195,31 @@ beforeEach(() => {
   orders.listParameters = [];
   reservedListings.current = [];
   adminComplaintService.listAdminComplaints.mockClear();
-  cancelAdminOrderMutation.mutateAsync.mockReset().mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
+  cancelAdminOrderMutation.mutateAsync
+    .mockReset()
+    .mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
   vi.mocked(toast.error).mockClear();
   vi.mocked(toast.success).mockClear();
   access.permissions = new Set(['COMPLAINTS_READ']);
   adminComplaintService.listAdminComplaints.mockResolvedValue({
     data: [],
-    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 0 },
+    pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      nextPage: null,
+      perPage: 100,
+      prevPage: null,
+      total: 0,
+    },
   });
 });
 
-function makeComplaint(orderId: string, orderItemId: string, listingId: string, status: AdminComplaint['status'] = 'RAISED'): AdminComplaint {
+function makeComplaint(
+  orderId: string,
+  orderItemId: string,
+  listingId: string,
+  status: AdminComplaint['status'] = 'RAISED',
+): AdminComplaint {
   return {
     id: `complaint-${orderItemId}`,
     buyerId: 'buyer-id',
@@ -234,7 +263,9 @@ describe('admin order number search', () => {
     orders.current = [searchedOrder, otherOrder];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -251,12 +282,16 @@ describe('admin order number search', () => {
     fireEvent.click(manualReviewTab);
     fireEvent.change(search, { target: { value: '  # AbCd1234  ' } });
 
-    await waitFor(() => expect(orders.listParameters).toContainEqual(expect.objectContaining({
-      search: '# AbCd1234',
-      size: 100,
-      sortOrder: 'desc',
-      sortBy: 'createdAt',
-    })));
+    await waitFor(() =>
+      expect(orders.listParameters).toContainEqual(
+        expect.objectContaining({
+          search: '# AbCd1234',
+          size: 100,
+          sortOrder: 'desc',
+          sortBy: 'createdAt',
+        }),
+      ),
+    );
     expect(await screen.findByText('Matching order')).toBeInTheDocument();
     expect(screen.queryByText('Different order')).not.toBeInTheDocument();
 
@@ -264,16 +299,22 @@ describe('admin order number search', () => {
     fireEvent.mouseDown(allOrdersTab);
     fireEvent.click(allOrdersTab);
     fireEvent.change(search, { target: { value: '' } });
-    await waitFor(() => expect(orders.listParameters).toContainEqual(expect.objectContaining({
-      search: undefined,
-      size: 100,
-    })));
+    await waitFor(() =>
+      expect(orders.listParameters).toContainEqual(
+        expect.objectContaining({
+          search: undefined,
+          size: 100,
+        }),
+      ),
+    );
     expect(await screen.findByText('Different order')).toBeInTheDocument();
   });
 
   it('hides order number search while reserved listings are selected', async () => {
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -283,24 +324,30 @@ describe('admin order number search', () => {
     const reservedTab = screen.getByRole('tab', { name: 'Reserved' });
     fireEvent.mouseDown(reservedTab);
     fireEvent.click(reservedTab);
-    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Search by order #' })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', { name: 'Search by order #' })).not.toBeInTheDocument(),
+    );
   });
 
   it('shows an awaiting-review state for a reserved listing without an expiry deadline', async () => {
-    reservedListings.current = [{
-      buyerId: 'buyer-id',
-      listingId: 'listing-id',
-      reservationId: 'reservation-id',
-      sellerId: 'seller-id',
-      buyerFullName: 'Jane Buyer',
-      price: 100,
-      sellerFullName: 'Example Seller',
-      title: 'Reserved item under review',
-      reservationExpiresAt: null,
-    }];
+    reservedListings.current = [
+      {
+        buyerId: 'buyer-id',
+        listingId: 'listing-id',
+        reservationId: 'reservation-id',
+        sellerId: 'seller-id',
+        buyerFullName: 'Jane Buyer',
+        price: 100,
+        sellerFullName: 'Example Seller',
+        title: 'Reserved item under review',
+        reservationExpiresAt: null,
+      },
+    ];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -322,7 +369,9 @@ describe('admin order cancellation', () => {
     orders.current = [makeOrder('APPROVED', 'Incentivized item')];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -343,7 +392,9 @@ describe('admin order cancellation', () => {
     orders.current = [order];
 
     const tree = (
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -357,17 +408,27 @@ describe('admin order cancellation', () => {
 
     access.permissions.add('ORDERS_UPDATE');
     rerender(tree);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel order' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Cancel order' })).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
 
     const confirmation = await screen.findByRole('alertdialog');
     expect(within(confirmation).getByText('Cancel order #APPROVED?')).toBeInTheDocument();
-    expect(within(confirmation).getByText('The whole order will be marked cancelled and its sold items will be listed for sale again. This can\'t be undone.')).toBeInTheDocument();
+    expect(
+      within(confirmation).getByText(
+        "The whole order will be marked cancelled and its sold items will be listed for sale again. This can't be undone.",
+      ),
+    ).toBeInTheDocument();
     expect(within(confirmation).getByRole('button', { name: 'Keep order' })).toBeInTheDocument();
-    expect(within(confirmation).getByRole('button', { name: 'Yes, cancel order' })).toBeInTheDocument();
+    expect(
+      within(confirmation).getByRole('button', { name: 'Yes, cancel order' }),
+    ).toBeInTheDocument();
 
     fireEvent.click(within(confirmation).getByRole('button', { name: 'Yes, cancel order' }));
-    await waitFor(() => expect(cancelAdminOrderMutation.mutateAsync).toHaveBeenCalledWith(order.id));
+    await waitFor(() =>
+      expect(cancelAdminOrderMutation.mutateAsync).toHaveBeenCalledWith(order.id),
+    );
     expect(toast.success).toHaveBeenCalledWith('Order cancelled and items relisted');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
@@ -382,7 +443,9 @@ describe('admin order cancellation', () => {
     orders.current = [cancelledOrder];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -397,7 +460,9 @@ describe('admin order cancellation', () => {
     const detailDialog = await screen.findByRole('dialog');
     expect(within(detailDialog).getByText('Order cancelled')).toBeInTheDocument();
     expect(within(detailDialog).getByText('cancelled')).toBeInTheDocument();
-    expect(within(detailDialog).queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+    expect(
+      within(detailDialog).queryByRole('button', { name: 'Cancel order' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the API error and leaves the order open for retry', async () => {
@@ -407,7 +472,9 @@ describe('admin order cancellation', () => {
     orders.current = [order];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -418,7 +485,9 @@ describe('admin order cancellation', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Yes, cancel order' }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not cancel order: Order cannot be cancelled'));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Could not cancel order: Order cannot be cancelled'),
+    );
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Yes, cancel order' })).toBeInTheDocument();
   });
@@ -432,7 +501,9 @@ describe('admin orders manual review filter', () => {
     ];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -458,7 +529,9 @@ describe('admin order complaints', () => {
     orders.current = [order];
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -466,7 +539,9 @@ describe('admin order complaints', () => {
     );
 
     expect(await screen.findByText('delivered')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'View complaint details' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'View complaint details' }),
+    ).not.toBeInTheDocument();
     expect(adminComplaintService.listAdminComplaints).not.toHaveBeenCalled();
   });
 
@@ -478,7 +553,12 @@ describe('admin order complaints', () => {
     order.items[0].listingId = 'listing-one';
     order.items.push(
       { ...order.items[0], id: 'item-two', listingId: 'listing-two', title: 'No complaint item' },
-      { ...order.items[0], id: 'item-three', listingId: 'listing-three', title: 'Closed complaint item' },
+      {
+        ...order.items[0],
+        id: 'item-three',
+        listingId: 'listing-three',
+        title: 'Closed complaint item',
+      },
     );
     orders.current = [order];
     adminComplaintService.listAdminComplaints.mockResolvedValue({
@@ -486,24 +566,37 @@ describe('admin order complaints', () => {
         makeComplaint(order.id, 'item-one', 'listing-one'),
         makeComplaint(order.id, 'item-three', 'listing-three', 'RETURN_RECEIVED'),
       ],
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 2 },
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 2,
+      },
     });
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
       </QueryClientProvider>,
     );
 
-    const complaintButtons = await screen.findAllByRole('button', { name: 'View complaint details' });
+    const complaintButtons = await screen.findAllByRole('button', {
+      name: 'View complaint details',
+    });
     expect(complaintButtons).toHaveLength(2);
     expect(complaintButtons[0].firstElementChild).toHaveClass('bg-destructive');
     expect(complaintButtons[1].firstElementChild).toHaveClass('bg-secondary');
     const itemWithoutComplaint = screen.getByText('No complaint item').closest('tr');
     expect(itemWithoutComplaint).not.toBeNull();
-    expect(within(itemWithoutComplaint!).queryByRole('button', { name: 'View complaint details' })).not.toBeInTheDocument();
+    expect(
+      within(itemWithoutComplaint!).queryByRole('button', { name: 'View complaint details' }),
+    ).not.toBeInTheDocument();
     expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledWith({
       orderIds: [order.id],
       page: 1,
@@ -516,10 +609,19 @@ describe('admin order complaints', () => {
     expect(within(dialog).getByText('Complaint Raised')).toBeInTheDocument();
     expect(within(dialog).getByText('The item arrived damaged.')).toBeInTheDocument();
     expect(within(dialog).getByText('Please review the return.')).toBeInTheDocument();
-    expect(within(dialog).getByAltText('Evidence 1')).toHaveAttribute('src', 'https://cdn.example.test/evidence.png');
-    expect(within(dialog).getByAltText('Return proof 1')).toHaveAttribute('src', 'https://cdn.example.test/return-proof.png');
+    expect(within(dialog).getByAltText('Evidence 1')).toHaveAttribute(
+      'src',
+      'https://cdn.example.test/evidence.png',
+    );
+    expect(within(dialog).getByAltText('Return proof 1')).toHaveAttribute(
+      'src',
+      'https://cdn.example.test/return-proof.png',
+    );
     expect(within(dialog).getByText(/Last updated/)).toBeInTheDocument();
-    expect(within(dialog).getByRole('link', { name: /Open Complaints section/ })).toHaveAttribute('href', '/admin/complaints');
+    expect(within(dialog).getByRole('link', { name: /Open Complaints section/ })).toHaveAttribute(
+      'href',
+      '/admin/complaints',
+    );
   });
 
   it('loads all complaint pages for the current order IDs', async () => {
@@ -530,13 +632,30 @@ describe('admin order complaints', () => {
     order.items[0].listingId = 'paged-listing-one';
     order.items.push({ ...order.items[0], id: 'paged-item-two', listingId: 'paged-listing-two' });
     orders.current = [order];
-    adminComplaintService.listAdminComplaints.mockImplementation(async ({ page }: { page: number }) => ({
-      data: [makeComplaint(order.id, `paged-item-${page === 1 ? 'one' : 'two'}`, `paged-listing-${page === 1 ? 'one' : 'two'}`)],
-      pagination: { currentPage: page, lastPage: 2, nextPage: page === 1 ? 2 : null, perPage: 100, prevPage: page === 1 ? null : 1, total: 2 },
-    }));
+    adminComplaintService.listAdminComplaints.mockImplementation(
+      async ({ page }: { page: number }) => ({
+        data: [
+          makeComplaint(
+            order.id,
+            `paged-item-${page === 1 ? 'one' : 'two'}`,
+            `paged-listing-${page === 1 ? 'one' : 'two'}`,
+          ),
+        ],
+        pagination: {
+          currentPage: page,
+          lastPage: 2,
+          nextPage: page === 1 ? 2 : null,
+          perPage: 100,
+          prevPage: page === 1 ? null : 1,
+          total: 2,
+        },
+      }),
+    );
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
@@ -549,33 +668,48 @@ describe('admin order complaints', () => {
       page: 2,
       size: 100,
     });
-    expect(await screen.findAllByRole('button', { name: 'View complaint details' })).toHaveLength(2);
+    expect(await screen.findAllByRole('button', { name: 'View complaint details' })).toHaveLength(
+      2,
+    );
   });
 
   it('stops loading complaint pages after a later page fails', async () => {
     const order = makeOrder('SUBMITTED', 'Failed complaint page');
     order.items[0].listingId = 'failed-listing-one';
     orders.current = [order];
-    adminComplaintService.listAdminComplaints.mockImplementation(async ({ page }: { page: number }) => {
-      if (page === 2) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        throw new Error('Complaint page failed');
-      }
-      return {
-        data: [makeComplaint(order.id, order.items[0].id, 'failed-listing-one')],
-        pagination: { currentPage: 1, lastPage: 2, nextPage: 2, perPage: 100, prevPage: null, total: 101 },
-      };
-    });
+    adminComplaintService.listAdminComplaints.mockImplementation(
+      async ({ page }: { page: number }) => {
+        if (page === 2) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+          throw new Error('Complaint page failed');
+        }
+        return {
+          data: [makeComplaint(order.id, order.items[0].id, 'failed-listing-one')],
+          pagination: {
+            currentPage: 1,
+            lastPage: 2,
+            nextPage: 2,
+            perPage: 100,
+            prevPage: null,
+            total: 101,
+          },
+        };
+      },
+    );
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <AdminOrders />
         </MemoryRouter>
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByRole('button', { name: 'View complaint details' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'View complaint details' }),
+    ).toBeInTheDocument();
     await waitFor(() => expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledTimes(2));
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(adminComplaintService.listAdminComplaints).toHaveBeenCalledTimes(2);
@@ -594,7 +728,9 @@ describe('admin order notification selection', () => {
     orders.detail = null;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter
           initialEntries={[
             '/admin/orders',
@@ -609,8 +745,12 @@ describe('admin order notification selection', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByTestId('payment-review')).toHaveTextContent('SUBMITTED-order-id:SUBMITTED-submission-id');
-    expect(screen.getByTestId('location')).toHaveTextContent('paymentSubmission=SUBMITTED-submission-id');
+    expect(await screen.findByTestId('payment-review')).toHaveTextContent(
+      'SUBMITTED-order-id:SUBMITTED-submission-id',
+    );
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      'paymentSubmission=SUBMITTED-submission-id',
+    );
     await screen.findAllByText('Payment review item');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Back'));
@@ -622,8 +762,14 @@ describe('admin order notification selection', () => {
     orders.detail = null;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          initialEntries={[
+            '/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id',
+          ]}
+        >
           <LocationCapture />
           <AdminOrders />
         </MemoryRouter>
@@ -633,7 +779,9 @@ describe('admin order notification selection', () => {
     await screen.findAllByText('Payment review item');
     fireEvent.click(await screen.findByText('Close review'));
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/orders$/));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/orders$/),
+    );
     expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -644,8 +792,14 @@ describe('admin order notification selection', () => {
     orders.detailError = null;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=missing-submission']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          initialEntries={[
+            '/admin/orders?order=SUBMITTED-order-id&paymentSubmission=missing-submission',
+          ]}
+        >
           <LocationCapture />
           <AdminOrders />
         </MemoryRouter>
@@ -653,7 +807,9 @@ describe('admin order notification selection', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/orders'));
-    await waitFor(() => expect(screen.getByTestId('location')).not.toHaveTextContent('paymentSubmission'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).not.toHaveTextContent('paymentSubmission'),
+    );
     expect(screen.queryByTestId('payment-review')).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).not.toHaveTextContent('paymentSubmission');
     expect(screen.getByTestId('location')).not.toHaveTextContent('order=');
@@ -665,16 +821,26 @@ describe('admin order notification selection', () => {
     orders.detailError = new Error('Network unavailable');
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          initialEntries={[
+            '/admin/orders?order=SUBMITTED-order-id&paymentSubmission=SUBMITTED-submission-id',
+          ]}
+        >
           <LocationCapture />
           <AdminOrders />
         </MemoryRouter>
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByTestId('payment-review')).toHaveTextContent('SUBMITTED-order-id:SUBMITTED-submission-id');
-    expect(screen.getByTestId('location')).toHaveTextContent('paymentSubmission=SUBMITTED-submission-id');
+    expect(await screen.findByTestId('payment-review')).toHaveTextContent(
+      'SUBMITTED-order-id:SUBMITTED-submission-id',
+    );
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      'paymentSubmission=SUBMITTED-submission-id',
+    );
   });
 
   it('loads selected orders outside the initial order list', async () => {
@@ -682,8 +848,12 @@ describe('admin order notification selection', () => {
     orders.detail = makeOrder('SUBMITTED', 'Older selected item') as unknown as AdminOrderDetail;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}
+        >
           <AdminOrders />
         </MemoryRouter>
       </QueryClientProvider>,
@@ -698,8 +868,12 @@ describe('admin order notification selection', () => {
     orders.detail = null;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter
+          initialEntries={['/admin/orders?order=SUBMITTED-order-id&item=SUBMITTED-item-id']}
+        >
           <AdminOrders />
         </MemoryRouter>
       </QueryClientProvider>,
@@ -714,7 +888,9 @@ describe('admin order notification selection', () => {
     orders.detail = null;
 
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter
           initialEntries={[
             '/admin/orders',

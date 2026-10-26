@@ -127,7 +127,8 @@ export interface SendConversationMessageErrors {
   };
 }
 
-export type SendConversationMessageError = SendConversationMessageErrors[keyof SendConversationMessageErrors];
+export type SendConversationMessageError =
+  SendConversationMessageErrors[keyof SendConversationMessageErrors];
 
 export interface SendConversationMessageResponses {
   /**
@@ -164,4 +165,5 @@ export interface SendConversationMessageResponses {
   };
 }
 
-export type SendConversationMessageResponse = SendConversationMessageResponses[keyof SendConversationMessageResponses];
+export type SendConversationMessageResponse =
+  SendConversationMessageResponses[keyof SendConversationMessageResponses];

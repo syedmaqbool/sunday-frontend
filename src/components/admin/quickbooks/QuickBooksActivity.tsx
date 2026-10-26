@@ -9,13 +9,7 @@ import { ExternalLink, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -44,9 +38,8 @@ function formatStatus(value: string) {
 }
 
 function getJournalReportUrl(environment: AdminQuickBooksEnvironment, transactionId: string) {
-  const host = environment === 'SANDBOX'
-    ? 'https://app.sandbox.qbo.intuit.com'
-    : 'https://app.qbo.intuit.com';
+  const host =
+    environment === 'SANDBOX' ? 'https://app.sandbox.qbo.intuit.com' : 'https://app.qbo.intuit.com';
   const url = new URL('/app/reportv2', host);
   url.searchParams.set('token', 'TX_JOURNAL');
   url.searchParams.set('txnid', transactionId);
@@ -54,7 +47,10 @@ function getJournalReportUrl(environment: AdminQuickBooksEnvironment, transactio
   return url.href;
 }
 
-function QuickBooksReconciliationRows({ environment, records }: {
+function QuickBooksReconciliationRows({
+  environment,
+  records,
+}: {
   environment: AdminQuickBooksEnvironment;
   records: AdminQuickBooksReconciliationRecord[];
 }) {
@@ -71,7 +67,9 @@ function QuickBooksReconciliationRows({ environment, records }: {
   return (
     <>
       {records.map(record => (
-        <TableRow key={`${record.recordType}-${record.externalTransactionId ?? record.accountingPostingBatchId ?? record.sourceEventKeys.join('-')}`}>
+        <TableRow
+          key={`${record.recordType}-${record.externalTransactionId ?? record.accountingPostingBatchId ?? record.sourceEventKeys.join('-')}`}
+        >
           <TableCell className="whitespace-nowrap">{formatDate(record.postingDate)}</TableCell>
           <TableCell>
             <Badge variant={record.status === 'MATCHED' ? 'default' : 'secondary'}>
@@ -79,35 +77,39 @@ function QuickBooksReconciliationRows({ environment, records }: {
             </Badge>
           </TableCell>
           <TableCell className="whitespace-nowrap">
-            {record.syncStatus
-              ? <Badge variant={record.syncStatus === 'SYNCED' ? 'default' : 'secondary'}>{formatStatus(record.syncStatus)}</Badge>
-              : '—'}
+            {record.syncStatus ? (
+              <Badge variant={record.syncStatus === 'SYNCED' ? 'default' : 'secondary'}>
+                {formatStatus(record.syncStatus)}
+              </Badge>
+            ) : (
+              '—'
+            )}
           </TableCell>
-          <TableCell className="font-mono text-xs">
-            {record.externalTransactionId ?? '—'}
-          </TableCell>
+          <TableCell className="font-mono text-xs">{record.externalTransactionId ?? '—'}</TableCell>
           <TableCell className="max-w-[300px]">
             <div className="truncate text-xs text-muted-foreground">
               {record.sourceReferences.length > 0
-                ? record.sourceReferences.map(reference => `${reference.type}: ${reference.id}`).join(', ')
+                ? record.sourceReferences
+                    .map(reference => `${reference.type}: ${reference.id}`)
+                    .join(', ')
                 : record.recordType.replaceAll('_', ' ')}
             </div>
           </TableCell>
           <TableCell className="text-right">
-            {record.recordType === 'BATCH' && record.externalTransactionId
-              ? (
-                  <Button asChild size="sm" variant="outline">
-                    <a
-                      href={getJournalReportUrl(environment, record.externalTransactionId)}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-                      Open journal
-                    </a>
-                  </Button>
-                )
-              : '—'}
+            {record.recordType === 'BATCH' && record.externalTransactionId ? (
+              <Button asChild size="sm" variant="outline">
+                <a
+                  href={getJournalReportUrl(environment, record.externalTransactionId)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+                  Open journal
+                </a>
+              </Button>
+            ) : (
+              '—'
+            )}
           </TableCell>
         </TableRow>
       ))}
@@ -130,15 +132,30 @@ function SyncEventRows({ events }: { events: AdminQuickBooksSyncEvent[] }) {
     <>
       {events.map(event => (
         <TableRow key={event.id}>
-          <TableCell className="max-w-[280px] truncate font-mono text-xs">{event.sourceEventKey}</TableCell>
+          <TableCell className="max-w-[280px] truncate font-mono text-xs">
+            {event.sourceEventKey}
+          </TableCell>
           <TableCell>
-            <Badge variant={event.status === 'SYNCED' ? 'default' : event.status === 'FAILED' ? 'destructive' : 'secondary'}>
+            <Badge
+              variant={
+                event.status === 'SYNCED'
+                  ? 'default'
+                  : event.status === 'FAILED'
+                    ? 'destructive'
+                    : 'secondary'
+              }
+            >
               {formatStatus(event.status)}
             </Badge>
           </TableCell>
           <TableCell>{event.attemptCount}</TableCell>
-          <TableCell className="whitespace-nowrap text-sm">{formatDateTime(event.createdAt)}</TableCell>
-          <TableCell title={event.lastError ?? undefined} className="max-w-[320px] truncate text-sm text-muted-foreground">
+          <TableCell className="whitespace-nowrap text-sm">
+            {formatDateTime(event.createdAt)}
+          </TableCell>
+          <TableCell
+            title={event.lastError ?? undefined}
+            className="max-w-[320px] truncate text-sm text-muted-foreground"
+          >
             {event.lastError ?? '—'}
           </TableCell>
         </TableRow>
@@ -193,7 +210,9 @@ export default function QuickBooksActivity({
       <Card>
         <CardHeader>
           <CardTitle>QuickBooks entries</CardTitle>
-          <CardDescription>QuickBooks sync read access is required to view journal entries and posting status.</CardDescription>
+          <CardDescription>
+            QuickBooks sync read access is required to view journal entries and posting status.
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -203,27 +222,28 @@ export default function QuickBooksActivity({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="
-            flex flex-col gap-3
-            sm:flex-row sm:items-start sm:justify-between
-          "
+          <div
+            className="
+              flex flex-col gap-3
+              sm:flex-row sm:items-start sm:justify-between
+            "
           >
             <div>
               <CardTitle>QuickBooks journal entries</CardTitle>
               <CardDescription>
-                Reconciliation compares Sunday posting batches with entries in the configured QuickBooks company.
-                The posting worker picks up pending entries after their account and seller vendor mappings become effective.
+                Reconciliation compares Sunday posting batches with entries in the configured
+                QuickBooks company. The posting worker picks up pending entries after their account
+                and seller vendor mappings become effective.
                 {postingEnvironment && (
-                  <span className="ml-1">
-                    Active posting environment:
-                    {' '}
-                    {postingEnvironment}
-                    .
-                  </span>
+                  <span className="ml-1">Active posting environment: {postingEnvironment}.</span>
                 )}
               </CardDescription>
             </div>
-            <Button onClick={refresh} disabled={reconciliationQuery.isFetching || syncEventsQuery.isFetching} variant="outline">
+            <Button
+              onClick={refresh}
+              disabled={reconciliationQuery.isFetching || syncEventsQuery.isFetching}
+              variant="outline"
+            >
               <RefreshCw
                 aria-hidden="true"
                 className={`
@@ -241,7 +261,9 @@ export default function QuickBooksActivity({
               <Label htmlFor="quickbooks-reconciliation-start">Start date</Label>
               <Input
                 id="quickbooks-reconciliation-start"
-                onChange={event => setDateRange(current => ({ ...current, dateStart: event.target.value }))}
+                onChange={event =>
+                  setDateRange(current => ({ ...current, dateStart: event.target.value }))
+                }
                 value={dateStart}
                 type="date"
               />
@@ -250,12 +272,16 @@ export default function QuickBooksActivity({
               <Label htmlFor="quickbooks-reconciliation-end">End date</Label>
               <Input
                 id="quickbooks-reconciliation-end"
-                onChange={event => setDateRange(current => ({ ...current, dateEnd: event.target.value }))}
+                onChange={event =>
+                  setDateRange(current => ({ ...current, dateEnd: event.target.value }))
+                }
                 value={dateEnd}
                 type="date"
               />
             </div>
-            <p className="pb-2 text-xs text-muted-foreground">Choose a range of no more than 31 days.</p>
+            <p className="pb-2 text-xs text-muted-foreground">
+              Choose a range of no more than 31 days.
+            </p>
           </div>
 
           {!isPostingEnvironmentConnected && (
@@ -268,42 +294,38 @@ export default function QuickBooksActivity({
           )}
           {isPostingEnvironmentConnected && reconciliationQuery.isError && (
             <p className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-              Could not reconcile entries with QuickBooks. Check the connection and date range, then refresh.
+              Could not reconcile entries with QuickBooks. Check the connection and date range, then
+              refresh.
             </p>
           )}
-          {isPostingEnvironmentConnected && !reconciliationQuery.isLoading && !reconciliationQuery.isError && (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Reconciliation</TableHead>
-                    <TableHead>Sync</TableHead>
-                    <TableHead>QuickBooks transaction ID</TableHead>
-                    <TableHead>Sunday source</TableHead>
-                    <TableHead className="text-right">QuickBooks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <QuickBooksReconciliationRows
-                    environment={postingEnvironment ?? 'SANDBOX'}
-                    records={reconciliationQuery.data?.data ?? []}
-                  />
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          {isPostingEnvironmentConnected &&
+            !reconciliationQuery.isLoading &&
+            !reconciliationQuery.isError && (
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Reconciliation</TableHead>
+                      <TableHead>Sync</TableHead>
+                      <TableHead>QuickBooks transaction ID</TableHead>
+                      <TableHead>Sunday source</TableHead>
+                      <TableHead className="text-right">QuickBooks</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <QuickBooksReconciliationRows
+                      environment={postingEnvironment ?? 'SANDBOX'}
+                      records={reconciliationQuery.data?.data ?? []}
+                    />
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           {reconciliationQuery.data && (
             <p className="text-xs text-muted-foreground">
-              Showing
-              {' '}
-              {reconciliationQuery.data.data.length}
-              {' '}
-              of
-              {' '}
-              {reconciliationQuery.data.pagination.total}
-              {' '}
-              reconciliation records.
+              Showing {reconciliationQuery.data.data.length} of{' '}
+              {reconciliationQuery.data.pagination.total} reconciliation records.
             </p>
           )}
         </CardContent>
@@ -313,42 +335,36 @@ export default function QuickBooksActivity({
         <CardHeader>
           <CardTitle>Sync events</CardTitle>
           <CardDescription>
-            Pending events are waiting for the posting worker. A synced event includes a QuickBooks transaction ID above when reconciliation finds the journal entry.
+            Pending events are waiting for the posting worker. A synced event includes a QuickBooks
+            transaction ID above when reconciliation finds the journal entry.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {syncEventsQuery.isLoading
-            ? <p className="py-8 text-center text-sm text-muted-foreground">Loading sync events…</p>
-            : syncEventsQuery.isError
-              ? <p className="text-sm text-destructive">Could not load QuickBooks sync events.</p>
-              : (
-                  <div className="overflow-x-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Source event</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Attempts</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Last error</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <SyncEventRows events={syncEventsQuery.data?.data ?? []} />
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+          {syncEventsQuery.isLoading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Loading sync events…</p>
+          ) : syncEventsQuery.isError ? (
+            <p className="text-sm text-destructive">Could not load QuickBooks sync events.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Source event</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Attempts</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Last error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <SyncEventRows events={syncEventsQuery.data?.data ?? []} />
+                </TableBody>
+              </Table>
+            </div>
+          )}
           {syncEventsQuery.data && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Showing
-              {' '}
-              {syncEventsQuery.data.data.length}
-              {' '}
-              of
-              {' '}
-              {syncEventsQuery.data.pagination.total}
-              {' '}
+              Showing {syncEventsQuery.data.data.length} of {syncEventsQuery.data.pagination.total}{' '}
               sync events.
             </p>
           )}

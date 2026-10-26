@@ -102,4 +102,5 @@ export interface GetMySupportTicketsResponses {
   };
 }
 
-export type GetMySupportTicketsResponse = GetMySupportTicketsResponses[keyof GetMySupportTicketsResponses];
+export type GetMySupportTicketsResponse =
+  GetMySupportTicketsResponses[keyof GetMySupportTicketsResponses];

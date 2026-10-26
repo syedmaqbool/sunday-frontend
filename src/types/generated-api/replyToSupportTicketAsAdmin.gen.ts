@@ -126,7 +126,8 @@ export interface ReplyToSupportTicketAsAdminErrors {
   };
 }
 
-export type ReplyToSupportTicketAsAdminError = ReplyToSupportTicketAsAdminErrors[keyof ReplyToSupportTicketAsAdminErrors];
+export type ReplyToSupportTicketAsAdminError =
+  ReplyToSupportTicketAsAdminErrors[keyof ReplyToSupportTicketAsAdminErrors];
 
 export interface ReplyToSupportTicketAsAdminResponses {
   /**
@@ -147,4 +148,5 @@ export interface ReplyToSupportTicketAsAdminResponses {
   };
 }
 
-export type ReplyToSupportTicketAsAdminResponse = ReplyToSupportTicketAsAdminResponses[keyof ReplyToSupportTicketAsAdminResponses];
+export type ReplyToSupportTicketAsAdminResponse =
+  ReplyToSupportTicketAsAdminResponses[keyof ReplyToSupportTicketAsAdminResponses];

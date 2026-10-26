@@ -13,9 +13,7 @@ export function listAdminRoles() {
 }
 
 export function createAdminRole(payload: CreateAdminRolePayload) {
-  return authInstance
-    .post('/api/v1/admin/roles', { json: payload })
-    .json<Response<AdminRole>>();
+  return authInstance.post('/api/v1/admin/roles', { json: payload }).json<Response<AdminRole>>();
 }
 
 export function updateAdminRole(roleId: string, payload: UpdateAdminRolePayload) {
@@ -38,7 +36,5 @@ export function updateAdminRolePermissions(
 }
 
 export function listAdminPermissions() {
-  return authInstance
-    .get('/api/v1/admin/permissions')
-    .json<Response<AdminPermission[]>>();
+  return authInstance.get('/api/v1/admin/permissions').json<Response<AdminPermission[]>>();
 }

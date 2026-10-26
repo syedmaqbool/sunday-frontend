@@ -17,6 +17,8 @@ export type SupportTicketMessage = SupportMessage;
 export type CreateTicketPayload = ApiRequestBody<CreateSupportTicketData>;
 export type SendMessagePayload = ApiRequestBody<ReplyToMySupportTicketData>;
 export type AdminSupportTicketParameters = Partial<ApiRequestQuery<GetAdminSupportTicketsData>>;
-export type AdminSupportMessageParameters = Partial<ApiRequestQuery<GetAdminSupportTicketMessagesData>>;
+export type AdminSupportMessageParameters = Partial<
+  ApiRequestQuery<GetAdminSupportTicketMessagesData>
+>;
 export type AdminReplyPayload = ApiRequestBody<ReplyToSupportTicketAsAdminData>;
 export type UpdateSupportTicketStatusPayload = ApiRequestBody<UpdateSupportTicketStatusData>;

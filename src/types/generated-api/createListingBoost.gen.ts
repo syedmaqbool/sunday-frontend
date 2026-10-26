@@ -170,7 +170,13 @@ export interface CreateListingBoostResponses {
         status: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUBMITTED';
         createdAt: string;
       };
-      status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+      status:
+        | 'APPROVED'
+        | 'PENDING_REVIEW'
+        | 'REFUND_REQUIRED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RESUBMISSION_REQUESTED';
       createdAt: string;
     };
     message: string;
@@ -178,4 +184,5 @@ export interface CreateListingBoostResponses {
   };
 }
 
-export type CreateListingBoostResponse = CreateListingBoostResponses[keyof CreateListingBoostResponses];
+export type CreateListingBoostResponse =
+  CreateListingBoostResponses[keyof CreateListingBoostResponses];

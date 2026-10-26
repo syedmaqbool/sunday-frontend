@@ -1,11 +1,6 @@
 import type { UpdateOrderItemStatusPayload } from '@/types/order.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  getOrder,
-  listOrders,
-  listSales,
-  updateItemStatus,
-} from '@/services/myorders.service';
+import { getOrder, listOrders, listSales, updateItemStatus } from '@/services/myorders.service';
 
 export const myOrdersQueryKey = {
   all: () => ['my-orders'] as const,
@@ -52,8 +47,10 @@ export function getMySalesOrderOptions(orderId: string, orderItemId?: string) {
       let response = await listSales(page);
 
       while (
-        page < response.pagination.lastPage
-        && response.data.every(item => !(item.orderId === orderId && (!orderItemId || item.id === orderItemId)))
+        page < response.pagination.lastPage &&
+        response.data.every(
+          item => !(item.orderId === orderId && (!orderItemId || item.id === orderItemId)),
+        )
       ) {
         response = await listSales(++page);
       }

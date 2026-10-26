@@ -8,12 +8,12 @@ import type {
 import { authInstance } from '@/services/ky.instance';
 
 export function listSupportTickets(): Promise<PaginatedResponse<SupportTicket>> {
-  return authInstance
-    .get('/api/v1/support-tickets')
-    .json<PaginatedResponse<SupportTicket>>();
+  return authInstance.get('/api/v1/support-tickets').json<PaginatedResponse<SupportTicket>>();
 }
 
-export function createSupportTicket(payload: CreateTicketPayload): Promise<Response<SupportTicket>> {
+export function createSupportTicket(
+  payload: CreateTicketPayload,
+): Promise<Response<SupportTicket>> {
   return authInstance
     .post('/api/v1/support-tickets', { json: payload })
     .json<Response<SupportTicket>>();

@@ -2,7 +2,7 @@ import type { AdminListing } from '@/types/adminListing.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
 const { listAdminListings, showErrorToast, updateAdminListingTitle } = vi.hoisted(() => ({
@@ -22,7 +22,10 @@ vi.mock('@/services/listing.service', () => ({
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: { permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_UPDATE' }], roleName: 'STAFF' },
+    user: {
+      permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_UPDATE' }],
+      roleName: 'STAFF',
+    },
   }),
 }));
 
@@ -67,7 +70,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   listAdminListings.mockResolvedValue({
     data: [listing],
-    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 10, prevPage: null, total: 1 },
+    pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      nextPage: null,
+      perPage: 10,
+      prevPage: null,
+      total: 1,
+    },
   });
   updateAdminListingTitle.mockResolvedValue({ data: { ...listing, title: 'Updated title' } });
 });
@@ -79,7 +89,9 @@ describe('admin listing title editing', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Edit title' }));
 
-    expect(within(dialog).getByRole('textbox', { name: 'Listing title' })).toHaveValue('Original listing title');
+    expect(within(dialog).getByRole('textbox', { name: 'Listing title' })).toHaveValue(
+      'Original listing title',
+    );
   });
 
   it('trims a title and updates the open dialog on Enter', async () => {
@@ -90,7 +102,9 @@ describe('admin listing title editing', () => {
     fireEvent.change(input, { target: { value: '  Updated title  ' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
-    await waitFor(() => expect(updateAdminListingTitle).toHaveBeenCalledWith('listing-1', { title: 'Updated title' }));
+    await waitFor(() =>
+      expect(updateAdminListingTitle).toHaveBeenCalledWith('listing-1', { title: 'Updated title' }),
+    );
     expect(await screen.findByRole('dialog', { name: 'Updated title' })).toBeInTheDocument();
     await waitFor(() => expect(listAdminListings.mock.calls.length).toBeGreaterThan(1));
   });
@@ -117,7 +131,9 @@ describe('admin listing title editing', () => {
     fireEvent.change(input, { target: { value: title } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save title' }));
 
-    await waitFor(() => expect(updateAdminListingTitle).toHaveBeenCalledWith('listing-1', { title }));
+    await waitFor(() =>
+      expect(updateAdminListingTitle).toHaveBeenCalledWith('listing-1', { title }),
+    );
   });
 
   it('disables saving while the title update is pending', async () => {
@@ -136,7 +152,9 @@ describe('admin listing title editing', () => {
     });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save title' }));
 
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Save title' })).toBeDisabled());
+    await waitFor(() =>
+      expect(within(dialog).getByRole('button', { name: 'Save title' })).toBeDisabled(),
+    );
     resolveUpdate({ data: { ...listing, title: 'Pending title' } });
     await screen.findByRole('dialog', { name: 'Pending title' });
   });
@@ -148,13 +166,17 @@ describe('admin listing title editing', () => {
     let input = within(dialog).getByRole('textbox', { name: 'Listing title' });
     fireEvent.change(input, { target: { value: 'Draft title' } });
     fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
-    expect(within(dialog).queryByRole('textbox', { name: 'Listing title' })).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('textbox', { name: 'Listing title' }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Edit title' }));
     input = within(dialog).getByRole('textbox', { name: 'Listing title' });
     fireEvent.change(input, { target: { value: 'Another draft' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel title edit' }));
-    expect(within(dialog).getByRole('heading', { name: 'Original listing title' })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('heading', { name: 'Original listing title' }),
+    ).toBeInTheDocument();
     expect(updateAdminListingTitle).not.toHaveBeenCalled();
   });
 
@@ -168,7 +190,11 @@ describe('admin listing title editing', () => {
     fireEvent.change(input, { target: { value: 'Retry title' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save title' }));
 
-    await waitFor(() => expect(within(dialog).getByRole('textbox', { name: 'Listing title' })).toHaveValue('Retry title'));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('textbox', { name: 'Listing title' })).toHaveValue(
+        'Retry title',
+      ),
+    );
     expect(updateAdminListingTitle).toHaveBeenCalledTimes(1);
     expect(showErrorToast).toHaveBeenCalledWith(failure, 'Failed to update listing title');
   });

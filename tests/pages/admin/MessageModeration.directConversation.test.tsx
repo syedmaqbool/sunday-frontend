@@ -1,7 +1,12 @@
-import { infiniteQueryOptions, QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  QueryClient,
+  QueryClientProvider,
+  queryOptions,
+} from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import MessageModeration from '@/pages/admin/MessageModeration';
 
 const flaggedMessages = [
@@ -46,31 +51,35 @@ const flaggedMessages = [
 ];
 
 vi.mock('@/queries/adminMessageModeration.query', () => ({
-  getFlaggedConversationOptions: () => infiniteQueryOptions({
-    enabled: false,
-    getNextPageParam: () => 1,
-    initialPageParam: 1,
-    queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
-    queryKey: ['test-flagged-conversation'],
-  }),
-  getFlaggedMessageHistoryOptions: () => infiniteQueryOptions({
-    enabled: false,
-    getNextPageParam: () => null,
-    initialPageParam: 1,
-    queryFn: async () => ({ data: [], pagination: { nextPage: null } }),
-    queryKey: ['test-flagged-message-history'],
-  }),
-  getFlaggedMessagesOptions: () => queryOptions({
-    queryFn: async () => ({ data: flaggedMessages }),
-    queryKey: ['test-flagged-messages'],
-  }),
-  getResolvedFlaggedConversationOptions: () => infiniteQueryOptions({
-    enabled: false,
-    getNextPageParam: () => null,
-    initialPageParam: 1,
-    queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
-    queryKey: ['test-resolved-flagged-conversation'],
-  }),
+  getFlaggedConversationOptions: () =>
+    infiniteQueryOptions({
+      enabled: false,
+      getNextPageParam: () => 1,
+      initialPageParam: 1,
+      queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
+      queryKey: ['test-flagged-conversation'],
+    }),
+  getFlaggedMessageHistoryOptions: () =>
+    infiniteQueryOptions({
+      enabled: false,
+      getNextPageParam: () => null,
+      initialPageParam: 1,
+      queryFn: async () => ({ data: [], pagination: { nextPage: null } }),
+      queryKey: ['test-flagged-message-history'],
+    }),
+  getFlaggedMessagesOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ data: flaggedMessages }),
+      queryKey: ['test-flagged-messages'],
+    }),
+  getResolvedFlaggedConversationOptions: () =>
+    infiniteQueryOptions({
+      enabled: false,
+      getNextPageParam: () => null,
+      initialPageParam: 1,
+      queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
+      queryKey: ['test-resolved-flagged-conversation'],
+    }),
   useDeleteMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useDismissFlagMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
@@ -78,7 +87,9 @@ vi.mock('@/queries/adminMessageModeration.query', () => ({
 describe('admin direct conversation moderation', () => {
   it('shows the direct context in the list and detail while preserving listing titles', async () => {
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <MemoryRouter>
           <MessageModeration />
         </MemoryRouter>

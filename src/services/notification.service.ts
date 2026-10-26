@@ -15,7 +15,5 @@ export function markNotificationRead(notificationId: string) {
 }
 
 export function markAllNotificationsRead() {
-  return authInstance
-    .post('/api/v1/me/notifications/read', { json: {} })
-    .json<Response>();
+  return authInstance.post('/api/v1/me/notifications/read', { json: {} }).json<Response>();
 }

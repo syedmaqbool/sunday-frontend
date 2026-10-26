@@ -98,7 +98,8 @@ export interface CreateAdminTaxSettingErrors {
   };
 }
 
-export type CreateAdminTaxSettingError = CreateAdminTaxSettingErrors[keyof CreateAdminTaxSettingErrors];
+export type CreateAdminTaxSettingError =
+  CreateAdminTaxSettingErrors[keyof CreateAdminTaxSettingErrors];
 
 export interface CreateAdminTaxSettingResponses {
   /**
@@ -118,4 +119,5 @@ export interface CreateAdminTaxSettingResponses {
   };
 }
 
-export type CreateAdminTaxSettingResponse = CreateAdminTaxSettingResponses[keyof CreateAdminTaxSettingResponses];
+export type CreateAdminTaxSettingResponse =
+  CreateAdminTaxSettingResponses[keyof CreateAdminTaxSettingResponses];

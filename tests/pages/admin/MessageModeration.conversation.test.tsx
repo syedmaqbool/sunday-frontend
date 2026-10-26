@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import MessageModeration from '@/pages/admin/MessageModeration';
 
 const apiMocks = vi.hoisted(() => ({
@@ -19,25 +19,27 @@ vi.mock('@/services/ky.instance', () => ({
 }));
 
 const flaggedMessagesResponse = {
-  data: [{
-    id: 'flagged-message-1',
-    buyerId: 'buyer-1',
-    conversationId: 'conversation-1',
-    listingId: 'listing-1',
-    sellerId: 'seller-1',
-    senderId: 'seller-1',
-    buyerFullName: 'Buyer One',
-    content: 'Reach me at 555-0123',
-    flagReasons: ['PHONE_NUMBER'],
-    isFlagged: true,
-    listingTitle: 'Antique chair',
-    sellerFullName: 'Seller One',
-    type: 'LISTING',
-    conversationCreatedAt: '2026-10-07T12:00:00.000Z',
-    readAt: null,
-    createdAt: '2026-10-07T12:01:00.000Z',
-    updatedAt: '2026-10-07T12:01:00.000Z',
-  }],
+  data: [
+    {
+      id: 'flagged-message-1',
+      buyerId: 'buyer-1',
+      conversationId: 'conversation-1',
+      listingId: 'listing-1',
+      sellerId: 'seller-1',
+      senderId: 'seller-1',
+      buyerFullName: 'Buyer One',
+      content: 'Reach me at 555-0123',
+      flagReasons: ['PHONE_NUMBER'],
+      isFlagged: true,
+      listingTitle: 'Antique chair',
+      sellerFullName: 'Seller One',
+      type: 'LISTING',
+      conversationCreatedAt: '2026-10-07T12:00:00.000Z',
+      readAt: null,
+      createdAt: '2026-10-07T12:01:00.000Z',
+      updatedAt: '2026-10-07T12:01:00.000Z',
+    },
+  ],
   message: 'Flagged messages loaded',
   pagination: {
     currentPage: 1,
@@ -63,14 +65,16 @@ const flaggedConversationResponse = {
         id: 'message-1',
         conversationId: 'conversation-1',
         senderId: 'buyer-1',
-        attachments: [{
-          id: 'image-1',
-          filename: 'chair-detail.jpg',
-          mimetype: 'image/jpeg',
-          size: 2048,
-          type: 'IMAGE',
-          url: '/api/v1/admin/messages/flagged-message-1/attachments/image-1?token=private-image',
-        }],
+        attachments: [
+          {
+            id: 'image-1',
+            filename: 'chair-detail.jpg',
+            mimetype: 'image/jpeg',
+            size: 2048,
+            type: 'IMAGE',
+            url: '/api/v1/admin/messages/flagged-message-1/attachments/image-1?token=private-image',
+          },
+        ],
         content: 'The chair has a small mark.',
         flagReasons: [],
         isFlagged: false,
@@ -83,14 +87,16 @@ const flaggedConversationResponse = {
         id: 'flagged-message-1',
         conversationId: 'conversation-1',
         senderId: 'seller-1',
-        attachments: [{
-          id: 'video-1',
-          filename: 'chair-inspection.mp4',
-          mimetype: 'video/mp4',
-          size: 10_240,
-          type: 'VIDEO',
-          url: '/api/v1/admin/messages/flagged-message-1/attachments/video-1?token=private-video',
-        }],
+        attachments: [
+          {
+            id: 'video-1',
+            filename: 'chair-inspection.mp4',
+            mimetype: 'video/mp4',
+            size: 10_240,
+            type: 'VIDEO',
+            url: '/api/v1/admin/messages/flagged-message-1/attachments/video-1?token=private-video',
+          },
+        ],
         content: 'Reach me at 555-0123',
         flagReasons: ['PHONE_NUMBER'],
         isFlagged: true,
@@ -119,19 +125,21 @@ const flaggedConversationPageTwoResponse = {
   ...flaggedConversationResponse,
   data: {
     ...flaggedConversationResponse.data,
-    messages: [{
-      id: 'message-3',
-      conversationId: 'conversation-1',
-      senderId: 'buyer-1',
-      attachments: [],
-      content: 'A later message with contact details.',
-      flagReasons: ['EMAIL_ADDRESS'],
-      isFlagged: true,
-      senderRole: 'BUYER',
-      readAt: null,
-      createdAt: '2026-10-07T12:02:00.000Z',
-      updatedAt: '2026-10-07T12:02:00.000Z',
-    }],
+    messages: [
+      {
+        id: 'message-3',
+        conversationId: 'conversation-1',
+        senderId: 'buyer-1',
+        attachments: [],
+        content: 'A later message with contact details.',
+        flagReasons: ['EMAIL_ADDRESS'],
+        isFlagged: true,
+        senderRole: 'BUYER',
+        readAt: null,
+        createdAt: '2026-10-07T12:02:00.000Z',
+        updatedAt: '2026-10-07T12:02:00.000Z',
+      },
+    ],
   },
   pagination: {
     currentPage: 2,
@@ -160,19 +168,23 @@ describe('admin active flagged conversation review', () => {
     apiMocks.delete.mockReset();
     apiMocks.patch.mockReset();
     apiMocks.get.mockReset();
-    apiMocks.get.mockImplementation((url: string, options?: { searchParams?: { page?: number } }) => {
-      if (url === '/api/v1/admin/messages/flagged') {
-        return Promise.resolve(flaggedMessagesResponse);
-      }
+    apiMocks.get.mockImplementation(
+      (url: string, options?: { searchParams?: { page?: number } }) => {
+        if (url === '/api/v1/admin/messages/flagged') {
+          return Promise.resolve(flaggedMessagesResponse);
+        }
 
-      if (url === '/api/v1/admin/messages/flagged-message-1/conversation') {
-        return Promise.resolve(options?.searchParams?.page === 2
-          ? flaggedConversationPageTwoResponse
-          : flaggedConversationResponse);
-      }
+        if (url === '/api/v1/admin/messages/flagged-message-1/conversation') {
+          return Promise.resolve(
+            options?.searchParams?.page === 2
+              ? flaggedConversationPageTwoResponse
+              : flaggedConversationResponse,
+          );
+        }
 
-      throw new Error(`Unexpected API request: ${url}`);
-    });
+        throw new Error(`Unexpected API request: ${url}`);
+      },
+    );
   });
 
   it('opens the full active conversation without changing participant read state', async () => {
@@ -205,12 +217,16 @@ describe('admin active flagged conversation review', () => {
     expect(screen.getByRole('button', { name: 'Remove Message' })).toBeInTheDocument();
     expect(apiMocks.patch).not.toHaveBeenCalled();
     expect(apiMocks.delete).not.toHaveBeenCalled();
-    expect(apiMocks.get.mock.calls.every(([url]) => String(url).startsWith('/api/v1/admin/messages'))).toBe(true);
+    expect(
+      apiMocks.get.mock.calls.every(([url]) => String(url).startsWith('/api/v1/admin/messages')),
+    ).toBe(true);
 
     const firstMessage = screen.getByText('The chair has a small mark.');
     fireEvent.click(screen.getByRole('button', { name: 'Load more messages' }));
     const laterMessage = await screen.findByText('A later message with contact details.');
-    expect(firstMessage.compareDocumentPosition(laterMessage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      firstMessage.compareDocumentPosition(laterMessage) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(screen.getByText('EMAIL_ADDRESS')).toBeInTheDocument();
     expect(apiMocks.get).toHaveBeenCalledWith(
       '/api/v1/admin/messages/flagged-message-1/conversation',
@@ -221,14 +237,16 @@ describe('admin active flagged conversation review', () => {
   it('opens direct conversations without requiring listing data', async () => {
     const directFlaggedMessagesResponse = {
       ...flaggedMessagesResponse,
-      data: [{
-        ...flaggedMessagesResponse.data[0],
-        id: 'flagged-direct-message',
-        conversationId: 'direct-conversation',
-        listingId: null,
-        listingTitle: null,
-        type: 'DIRECT',
-      }],
+      data: [
+        {
+          ...flaggedMessagesResponse.data[0],
+          id: 'flagged-direct-message',
+          conversationId: 'direct-conversation',
+          listingId: null,
+          listingTitle: null,
+          type: 'DIRECT',
+        },
+      ],
     };
     const directConversationResponse = {
       ...flaggedConversationResponse,
@@ -264,10 +282,12 @@ describe('admin active flagged conversation review', () => {
   it('uses the saved listing title when the original listing is gone', async () => {
     const deletedListingMessagesResponse = {
       ...flaggedMessagesResponse,
-      data: [{
-        ...flaggedMessagesResponse.data[0],
-        listingTitle: 'Saved title for deleted listing',
-      }],
+      data: [
+        {
+          ...flaggedMessagesResponse.data[0],
+          listingTitle: 'Saved title for deleted listing',
+        },
+      ],
     };
     const deletedListingConversationResponse = {
       ...flaggedConversationResponse,
@@ -292,6 +312,8 @@ describe('admin active flagged conversation review', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Review/ }));
 
     const reviewDialog = await screen.findByRole('dialog');
-    expect(await within(reviewDialog).findByText('Saved title for deleted listing')).toBeInTheDocument();
+    expect(
+      await within(reviewDialog).findByText('Saved title for deleted listing'),
+    ).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import type { AdminOrderDetail } from '@/types/adminOrder.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { AdminManualPaymentReviewDialog } from '@/components/admin/AdminManualPaymentReviewDialog';
 
 const state = vi.hoisted(() => ({
@@ -22,15 +22,23 @@ vi.mock('@/queries/adminOrders.query', () => ({
   getAdminPaymentProofOptions: (fileId: string | undefined) => ({
     enabled: Boolean(fileId),
     queryFn: async () => {
-      if (state.proofError)
-        throw new Error('Proof access denied');
+      if (state.proofError) throw new Error('Proof access denied');
       return new Blob(['proof'], { type: 'image/png' });
     },
     queryKey: ['admin-orders', 'payment-proof', fileId],
   }),
-  useApproveAdminManualPaymentMutation: () => ({ isPending: state.isPending, mutateAsync: state.approve }),
-  useRejectAdminManualPaymentMutation: () => ({ isPending: state.isPending, mutateAsync: state.reject }),
-  useRequestAdminManualPaymentResubmissionMutation: () => ({ isPending: state.isPending, mutateAsync: state.requestResubmission }),
+  useApproveAdminManualPaymentMutation: () => ({
+    isPending: state.isPending,
+    mutateAsync: state.approve,
+  }),
+  useRejectAdminManualPaymentMutation: () => ({
+    isPending: state.isPending,
+    mutateAsync: state.reject,
+  }),
+  useRequestAdminManualPaymentResubmissionMutation: () => ({
+    isPending: state.isPending,
+    mutateAsync: state.requestResubmission,
+  }),
 }));
 
 function makeOrder(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail {
@@ -105,7 +113,9 @@ describe('admin manual payment review dialog', () => {
     state.proofError = false;
     state.approve.mockReset().mockResolvedValue({ data: state.order.manualPaymentSubmissions[0] });
     state.reject.mockReset().mockResolvedValue({ data: state.order.manualPaymentSubmissions[0] });
-    state.requestResubmission.mockReset().mockResolvedValue({ data: state.order.manualPaymentSubmissions[0] });
+    state.requestResubmission
+      .mockReset()
+      .mockResolvedValue({ data: state.order.manualPaymentSubmissions[0] });
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn(() => 'blob:payment-proof'),
       revokeObjectURL: vi.fn(),
@@ -116,7 +126,12 @@ describe('admin manual payment review dialog', () => {
     renderDialog();
 
     expect(await screen.findByText('123456789012')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByAltText('Submitted payment proof')).toHaveAttribute('src', 'blob:payment-proof'));
+    await waitFor(() =>
+      expect(screen.getByAltText('Submitted payment proof')).toHaveAttribute(
+        'src',
+        'blob:payment-proof',
+      ),
+    );
     expect(screen.getByText('Prior review information')).toBeInTheDocument();
   });
 
@@ -155,13 +170,17 @@ describe('admin manual payment review dialog', () => {
     expect(await screen.findByText('A reason is required for this action.')).toBeInTheDocument();
     expect(state.reject).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'The sender name does not match.' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'The sender name does not match.' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
 
-    await waitFor(() => expect(state.reject).toHaveBeenCalledWith({
-      orderId: 'order-id',
-      payload: { reviewNote: 'The sender name does not match.' },
-    }));
+    await waitFor(() =>
+      expect(state.reject).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        payload: { reviewNote: 'The sender name does not match.' },
+      }),
+    );
   });
 
   it('submits approval without a note', async () => {
@@ -180,13 +199,17 @@ describe('admin manual payment review dialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Request resubmission' }));
     expect(await screen.findByText('A reason is required for this action.')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Please submit a clearer proof.' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Please submit a clearer proof.' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Request resubmission' }));
 
-    await waitFor(() => expect(state.requestResubmission).toHaveBeenCalledWith({
-      orderId: 'order-id',
-      payload: { reviewNote: 'Please submit a clearer proof.' },
-    }));
+    await waitFor(() =>
+      expect(state.requestResubmission).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        payload: { reviewNote: 'Please submit a clearer proof.' },
+      }),
+    );
   });
 
   it('shows a conflict response and keeps the dialog open', async () => {
@@ -194,10 +217,14 @@ describe('admin manual payment review dialog', () => {
     renderDialog();
 
     await screen.findByText('123456789012');
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Please submit a clearer proof.' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Please submit a clearer proof.' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
 
-    expect(await screen.findByText('Manual payment review is no longer available.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Manual payment review is no longer available.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

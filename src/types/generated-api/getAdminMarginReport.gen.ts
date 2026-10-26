@@ -116,7 +116,8 @@ export interface GetAdminMarginReportErrors {
   };
 }
 
-export type GetAdminMarginReportError = GetAdminMarginReportErrors[keyof GetAdminMarginReportErrors];
+export type GetAdminMarginReportError =
+  GetAdminMarginReportErrors[keyof GetAdminMarginReportErrors];
 
 export interface GetAdminMarginReportResponses {
   /**
@@ -245,7 +246,14 @@ export interface GetAdminMarginReportResponses {
        * PKR amount as a number.
        */
       sellerShare: number;
-      status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+      status:
+        | 'AWAITING_PAYMENT'
+        | 'CANCELLED'
+        | 'CONFIRMED'
+        | 'DELIVERED'
+        | 'PARTIALLY_DELIVERED'
+        | 'PARTIALLY_SHIPPED'
+        | 'SHIPPED';
       createdAt: string;
     }>;
     message: string;
@@ -279,4 +287,5 @@ export interface GetAdminMarginReportResponses {
   };
 }
 
-export type GetAdminMarginReportResponse = GetAdminMarginReportResponses[keyof GetAdminMarginReportResponses];
+export type GetAdminMarginReportResponse =
+  GetAdminMarginReportResponses[keyof GetAdminMarginReportResponses];

@@ -1,11 +1,7 @@
 import type { AuthUser } from '@/types/auth.type';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { ADMIN_SHELL_PERMISSIONS } from '@/lib/adminAccess';
-import {
-  canAccessNavItem,
-  findAdminNavItem,
-  getVisibleAdminSections,
-} from '@/lib/adminNavigation';
+import { canAccessNavItem, findAdminNavItem, getVisibleAdminSections } from '@/lib/adminNavigation';
 
 describe('admin margin report navigation access', () => {
   const financeUser = {
@@ -24,10 +20,8 @@ describe('admin margin report navigation access', () => {
     expect(item?.permission).toBe('FINANCE_DASHBOARD_READ');
     expect(canAccessNavItem(item!, financeUser)).toBe(true);
     expect(canAccessNavItem(item!, ordersUser)).toBe(false);
-    const financeItems = getVisibleAdminSections(financeUser)
-      .flatMap(section => section.items);
-    const orderItems = getVisibleAdminSections(ordersUser)
-      .flatMap(section => section.items);
+    const financeItems = getVisibleAdminSections(financeUser).flatMap(section => section.items);
+    const orderItems = getVisibleAdminSections(ordersUser).flatMap(section => section.items);
 
     expect(financeItems).toContainEqual(item);
     expect(orderItems).not.toContainEqual(item);

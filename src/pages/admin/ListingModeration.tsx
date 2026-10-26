@@ -1232,7 +1232,11 @@
 
 // export default ListingModeration;
 
-import type { AdminListing, ListingStatus, ModerateListingPayload } from '@/types/adminListing.type';
+import type {
+  AdminListing,
+  ListingStatus,
+  ModerateListingPayload,
+} from '@/types/adminListing.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useQuery } from '@tanstack/react-query';
@@ -1262,12 +1266,7 @@ import { AdminListingFeedbackSection as FeedbackHistorySection } from '@/compone
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -1291,14 +1290,24 @@ import {
 } from '@/queries/adminListing.query';
 
 const listingFeedbackSchema = z.object({ feedback: z.string() });
-const LISTING_FILTERS = ['all', 'APPROVED', 'NEEDS_REVISION', 'PENDING', 'REJECTED', 'RESERVED', 'SOLD', 'DELETED'] as const;
+const LISTING_FILTERS = [
+  'all',
+  'APPROVED',
+  'NEEDS_REVISION',
+  'PENDING',
+  'REJECTED',
+  'RESERVED',
+  'SOLD',
+  'DELETED',
+] as const;
 const REVIEW_LOOKUP_PAGE_SIZE = 100;
-const removalReasonSchema = z.object({ reason: z.string().trim().min(1, 'Enter a reason before removing this listing.') });
+const removalReasonSchema = z.object({
+  reason: z.string().trim().min(1, 'Enter a reason before removing this listing.'),
+});
 const listingTitleSchema = z.object({ title: z.string().trim().min(1).max(120) });
 
 function formatVideoTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds < 0)
-    return '0:00';
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -1315,88 +1324,79 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
   const images = media
     .filter(m => m.file)
     .map(m => ({ isVideo: m.type === 'VIDEO', url: m.file!.url }));
-  if (images.length === 0)
-    return <div className="aspect-square rounded-lg bg-muted" />;
+  if (images.length === 0) return <div className="aspect-square rounded-lg bg-muted" />;
   const current = images[index];
 
   return (
     <div className="space-y-2">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-        {current.isVideo
-          ? (
-              <div className="relative h-full w-full bg-black">
-                <video
-                  key={current.url}
-                  src={current.url}
-                  onClick={(event) => {
-                    const video = event.currentTarget;
+        {current.isVideo ? (
+          <div className="relative h-full w-full bg-black">
+            <video
+              key={current.url}
+              src={current.url}
+              onClick={event => {
+                const video = event.currentTarget;
 
-                    if (video.paused) {
-                      void video.play();
-                    }
-                    else {
-                      video.pause();
-                    }
-                  }}
-                  onLoadedMetadata={(event) => {
-                    const duration = event.currentTarget.duration;
-                    if (Number.isFinite(duration)) {
-                      setVideoDurations(previous => ({ ...previous, [current.url]: duration }));
-                    }
-                  }}
-                  onTimeUpdate={event => setCurrentVideoTime(event.currentTarget.currentTime)}
-                  onVolumeChange={(event) => {
-                    const video = event.currentTarget;
+                if (video.paused) {
+                  void video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+              onLoadedMetadata={event => {
+                const duration = event.currentTarget.duration;
+                if (Number.isFinite(duration)) {
+                  setVideoDurations(previous => ({ ...previous, [current.url]: duration }));
+                }
+              }}
+              onTimeUpdate={event => setCurrentVideoTime(event.currentTarget.currentTime)}
+              onVolumeChange={event => {
+                const video = event.currentTarget;
 
-                    if (!video.muted || video.volume !== 0) {
-                      video.muted = true;
-                      video.volume = 0;
-                    }
-                  }}
-                  controls={false}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full bg-black object-contain"
-                />
+                if (!video.muted || video.volume !== 0) {
+                  video.muted = true;
+                  video.volume = 0;
+                }
+              }}
+              controls={false}
+              muted
+              playsInline
+              preload="metadata"
+              className="h-full w-full bg-black object-contain"
+            />
 
-                <button
-                  onClick={(event) => {
-                    const video = event.currentTarget.parentElement?.querySelector('video');
+            <button
+              onClick={event => {
+                const video = event.currentTarget.parentElement?.querySelector('video');
 
-                    if (!video) {
-                      return;
-                    }
+                if (!video) {
+                  return;
+                }
 
-                    if (video.paused) {
-                      void video.play();
-                    }
-                    else {
-                      video.pause();
-                    }
-                  }}
-                  type="button"
-                  className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
-                >
-                  Play / Pause
-                </button>
+                if (video.paused) {
+                  void video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+              type="button"
+              className="absolute bottom-3 left-3 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm"
+            >
+              Play / Pause
+            </button>
 
-                <span className="absolute bottom-3 right-3 rounded-md bg-black/75 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  {formatVideoTime(currentVideoTime)}
-                  {' '}
-                  /
-                  {formatVideoTime(videoDurations[current.url] ?? 0)}
-                </span>
-                <span className="absolute left-3 top-3 rounded-md bg-black/75 px-2 py-1 text-xs text-white backdrop-blur-sm">Muted</span>
-              </div>
-            )
-          : (
-              <img
-                src={current.url}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            )}
+            <span className="absolute bottom-3 right-3 rounded-md bg-black/75 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              {formatVideoTime(currentVideoTime)} /
+              {formatVideoTime(videoDurations[current.url] ?? 0)}
+            </span>
+            <span className="absolute left-3 top-3 rounded-md bg-black/75 px-2 py-1 text-xs text-white backdrop-blur-sm">
+              Muted
+            </span>
+          </div>
+        ) : (
+          <img src={current.url} alt="" className="h-full w-full object-cover" />
+        )}
         {images.length > 1 && (
           <>
             <button
@@ -1423,14 +1423,13 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <span className={`
-              absolute right-2 rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm
-              ${current.isVideo ? 'top-2' : 'bottom-2'}
-            `}
+            <span
+              className={`
+                absolute right-2 rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm
+                ${current.isVideo ? 'top-2' : 'bottom-2'}
+              `}
             >
-              {index + 1}
-              /
-              {images.length}
+              {index + 1}/{images.length}
             </span>
           </>
         )}
@@ -1446,42 +1445,40 @@ function DetailGallery({ media }: { media: AdminListing['media'] }) {
               }}
               className={`
                 relative h-12 w-12 shrink-0 overflow-hidden rounded border-2 transition
-                ${index_ === index
-              ? 'border-primary'
-              : `
-                border-transparent opacity-50
-                hover:opacity-100
-              `}
+                ${
+                  index_ === index
+                    ? 'border-primary'
+                    : `
+                      border-transparent opacity-50
+                      hover:opacity-100
+                    `
+                }
               `}
             >
-              {img.isVideo
-                ? (
-                    <>
-                      <video
-                        src={img.url}
-                        onLoadedMetadata={(event) => {
-                          const duration = event.currentTarget.duration;
-                          if (Number.isFinite(duration)) {
-                            setVideoDurations(previous => ({ ...previous, [img.url]: duration }));
-                          }
-                        }}
-                        muted
-                        preload="metadata"
-                        className="h-full w-full bg-black object-cover"
-                      />
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">▶</span>
-                      <span className="absolute bottom-0.5 right-0.5 rounded bg-black/80 px-1 py-0.5 text-[9px] font-medium text-white">
-                        {formatVideoTime(videoDurations[img.url] ?? 0)}
-                      </span>
-                    </>
-                  )
-                : (
-                    <img
-                      src={img.url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  )}
+              {img.isVideo ? (
+                <>
+                  <video
+                    src={img.url}
+                    onLoadedMetadata={event => {
+                      const duration = event.currentTarget.duration;
+                      if (Number.isFinite(duration)) {
+                        setVideoDurations(previous => ({ ...previous, [img.url]: duration }));
+                      }
+                    }}
+                    muted
+                    preload="metadata"
+                    className="h-full w-full bg-black object-cover"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">
+                    ▶
+                  </span>
+                  <span className="absolute bottom-0.5 right-0.5 rounded bg-black/80 px-1 py-0.5 text-[9px] font-medium text-white">
+                    {formatVideoTime(videoDurations[img.url] ?? 0)}
+                  </span>
+                </>
+              ) : (
+                <img src={img.url} alt="" className="h-full w-full object-cover" />
+              )}
             </button>
           ))}
         </div>
@@ -1501,18 +1498,20 @@ function MediaReorderPanel({
   onCancel: () => void;
   onSave: (mediaIds: string[]) => void;
 }) {
-  const [mediaIds, setMediaIds] = useState(() => [...media]
-    .toSorted((firstMedia, secondMedia) => firstMedia.sortOrder - secondMedia.sortOrder)
-    .map(mediaItem => mediaItem.id));
+  const [mediaIds, setMediaIds] = useState(() =>
+    [...media]
+      .toSorted((firstMedia, secondMedia) => firstMedia.sortOrder - secondMedia.sortOrder)
+      .map(mediaItem => mediaItem.id),
+  );
   const [draggedMediaId, setDraggedMediaId] = useState<string | null>(null);
-  const orderedMedia = mediaIds.flatMap((mediaId) => {
+  const orderedMedia = mediaIds.flatMap(mediaId => {
     const mediaItem = media.find(item => item.id === mediaId);
     return mediaItem ? [mediaItem] : [];
   });
   const coverMediaId = orderedMedia.find(mediaItem => mediaItem.type === 'IMAGE')?.id;
 
   const moveMedia = (mediaId: string, targetIndex: number) => {
-    setMediaIds((currentIds) => {
+    setMediaIds(currentIds => {
       const sourceIndex = currentIds.indexOf(mediaId);
       if (sourceIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length) {
         return currentIds;
@@ -1541,26 +1540,32 @@ function MediaReorderPanel({
   };
 
   return (
-    <section aria-label="Reorder listing media" className="space-y-3 rounded-lg border border-border p-3">
-      <p className="text-xs text-muted-foreground">Drag thumbnails or use the arrows. The first image is the cover.</p>
+    <section
+      aria-label="Reorder listing media"
+      className="space-y-3 rounded-lg border border-border p-3"
+    >
+      <p className="text-xs text-muted-foreground">
+        Drag thumbnails or use the arrows. The first image is the cover.
+      </p>
       <div aria-label="Listing media order" role="list" className="grid grid-cols-4 gap-2">
         {orderedMedia.map((mediaItem, index) => {
-          const filename = mediaItem.file?.filename ?? `${mediaItem.type.toLowerCase()} ${index + 1}`;
+          const filename =
+            mediaItem.file?.filename ?? `${mediaItem.type.toLowerCase()} ${index + 1}`;
           const isCover = mediaItem.id === coverMediaId;
 
           return (
             <div
               key={mediaItem.id}
               onDragEnd={() => setDraggedMediaId(null)}
-              onDragOver={(event) => {
+              onDragOver={event => {
                 event.preventDefault();
               }}
-              onDragStart={(event) => {
+              onDragStart={event => {
                 event.dataTransfer.effectAllowed = 'move';
                 event.dataTransfer.setData('text/plain', mediaItem.id);
                 setDraggedMediaId(mediaItem.id);
               }}
-              onDrop={(event) => {
+              onDrop={event => {
                 event.preventDefault();
                 const sourceMediaId = event.dataTransfer.getData('text/plain') || draggedMediaId;
                 if (sourceMediaId) {
@@ -1576,13 +1581,27 @@ function MediaReorderPanel({
               `}
             >
               <div className="h-full w-full bg-muted">
-                {mediaItem.file?.url && mediaItem.type === 'VIDEO'
-                  ? <video src={mediaItem.file.url} aria-label={filename} muted preload="metadata" className="h-full w-full object-cover" />
-                  : mediaItem.file?.url
-                    ? <img src={mediaItem.file.url} alt="" className="h-full w-full object-cover" />
-                    : <span className="flex h-full items-center justify-center text-xs">{mediaItem.type}</span>}
+                {mediaItem.file?.url && mediaItem.type === 'VIDEO' ? (
+                  <video
+                    src={mediaItem.file.url}
+                    aria-label={filename}
+                    muted
+                    preload="metadata"
+                    className="h-full w-full object-cover"
+                  />
+                ) : mediaItem.file?.url ? (
+                  <img src={mediaItem.file.url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full items-center justify-center text-xs">
+                    {mediaItem.type}
+                  </span>
+                )}
               </div>
-              {isCover && <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">Cover</span>}
+              {isCover && (
+                <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  Cover
+                </span>
+              )}
               <div className="absolute inset-x-0 bottom-0 flex justify-between p-0.5">
                 <button
                   onClick={() => moveMediaBy(mediaItem.id, -1)}
@@ -1620,7 +1639,9 @@ function MediaReorderPanel({
           {isSaving ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : null}
           Save order
         </Button>
-        <Button onClick={onCancel} disabled={isSaving} type="button" variant="outline">Cancel</Button>
+        <Button onClick={onCancel} disabled={isSaving} type="button" variant="outline">
+          Cancel
+        </Button>
       </div>
     </section>
   );
@@ -1629,10 +1650,10 @@ function MediaReorderPanel({
 function ListingModeration() {
   const [searchParameters, setSearchParameters] = useSearchParams();
   const requestedFilter = searchParameters.get('status');
-  const filter: 'all' | 'DELETED' | ListingStatus = requestedFilter
-    && LISTING_FILTERS.includes(requestedFilter as (typeof LISTING_FILTERS)[number])
-    ? requestedFilter as 'all' | 'DELETED' | ListingStatus
-    : 'PENDING';
+  const filter: 'all' | 'DELETED' | ListingStatus =
+    requestedFilter && LISTING_FILTERS.includes(requestedFilter as (typeof LISTING_FILTERS)[number])
+      ? (requestedFilter as 'all' | 'DELETED' | ListingStatus)
+      : 'PENDING';
   const requestedListingId = searchParameters.get('listing');
   const feedbackForm = useForm<z.infer<typeof listingFeedbackSchema>>({
     defaultValues: { feedback: '' },
@@ -1644,7 +1665,9 @@ function ListingModeration() {
   const [isRemovalConfirmationOpen, setIsRemovalConfirmationOpen] = useState(false);
   const [listingToRemove, setListingToRemove] = useState<AdminListing | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [updatedTitle, setUpdatedTitle] = useState<{ listingId: string; title: string } | null>(null);
+  const [updatedTitle, setUpdatedTitle] = useState<{ listingId: string; title: string } | null>(
+    null,
+  );
   const [isReorderingMedia, setIsReorderingMedia] = useState(false);
   const accessControl = useAccessControl();
   const canRemoveListings = accessControl.hasPermissions(['LISTINGS_READ', 'LISTINGS_DELETE']);
@@ -1672,8 +1695,8 @@ function ListingModeration() {
       status: apiStatus,
     }),
     placeholderData: (previousData, previousQuery) => {
-      const hasMatchingFilters = previousQuery?.queryKey[2] === apiStatus
-        && previousQuery?.queryKey[3] === isDeleted;
+      const hasMatchingFilters =
+        previousQuery?.queryKey[2] === apiStatus && previousQuery?.queryKey[3] === isDeleted;
       return hasMatchingFilters ? previousData : undefined;
     },
   });
@@ -1707,7 +1730,7 @@ function ListingModeration() {
     listing => listing.id === requestedListingId,
   );
   const reviewListing = requestedListingId
-    ? selectedPageListing ?? reviewListingFromFirstPage ?? null
+    ? (selectedPageListing ?? reviewListingFromFirstPage ?? null)
     : null;
   const moderateListing = useModerateListingMutation();
   const reorderMedia = useReorderAdminListingMediaMutation();
@@ -1738,8 +1761,7 @@ function ListingModeration() {
       setUpdatedTitle({ listingId: reviewListing.id, title: response.data.title });
       cancelTitleEdit();
       toast.success('Listing title updated');
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update listing title');
     }
   };
@@ -1769,8 +1791,7 @@ function ListingModeration() {
       setIsRemovalConfirmationOpen(false);
       setListingToRemove(null);
       removalReasonForm.reset({ reason: '' });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to remove listing');
     }
   };
@@ -1779,8 +1800,7 @@ function ListingModeration() {
     try {
       await restoreListing.mutateAsync({ listingId: listing.id });
       toast.success('Listing restored');
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to restore listing');
     }
   };
@@ -1790,8 +1810,7 @@ function ListingModeration() {
       await reorderMedia.mutateAsync({ listingId: listing.id, mediaIds });
       toast.success('Media order updated');
       setIsReorderingMedia(false);
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update media order');
     }
   };
@@ -1801,10 +1820,8 @@ function ListingModeration() {
   }, [reviewListing?.id]);
 
   const statusColor = (s: ListingStatus) => {
-    if (s === 'APPROVED')
-      return 'default' as const;
-    if (s === 'REJECTED')
-      return 'destructive' as const;
+    if (s === 'APPROVED') return 'default' as const;
+    if (s === 'REJECTED') return 'destructive' as const;
     return 'secondary' as const;
   };
 
@@ -1817,18 +1834,18 @@ function ListingModeration() {
   const currentReviewIndex = reviewListing
     ? pendingListings.findIndex(l => l.id === reviewListing.id)
     : -1;
-  const updateReviewSelection = (listingId: string | null, nextFilter: 'all' | 'DELETED' | ListingStatus = filter) => {
+  const updateReviewSelection = (
+    listingId: string | null,
+    nextFilter: 'all' | 'DELETED' | ListingStatus = filter,
+  ) => {
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.set('status', nextFilter);
-    if (listingId)
-      nextParameters.set('listing', listingId);
-    else
-      nextParameters.delete('listing');
+    if (listingId) nextParameters.set('listing', listingId);
+    else nextParameters.delete('listing');
     setSearchParameters(nextParameters);
   };
   const goToNext = () => {
-    if (!(currentReviewIndex >= 0
-      && currentReviewIndex < pendingListings.length - 1)) {
+    if (!(currentReviewIndex >= 0 && currentReviewIndex < pendingListings.length - 1)) {
       return;
     }
 
@@ -1837,13 +1854,19 @@ function ListingModeration() {
   };
 
   useEffect(() => {
-    if (isLoading || reviewListingsQuery.isLoading || !requestedListingId || reviewListing)
-      return;
+    if (isLoading || reviewListingsQuery.isLoading || !requestedListingId || reviewListing) return;
 
     const nextParameters = new URLSearchParams(searchParameters);
     nextParameters.delete('listing');
     setSearchParameters(nextParameters, { replace: true });
-  }, [isLoading, requestedListingId, reviewListing, reviewListingsQuery.isLoading, searchParameters, setSearchParameters]);
+  }, [
+    isLoading,
+    requestedListingId,
+    reviewListing,
+    reviewListingsQuery.isLoading,
+    searchParameters,
+    setSearchParameters,
+  ]);
   const handleModerate = async (
     id: string,
     status: ModerateListingPayload['status'],
@@ -1867,14 +1890,15 @@ function ListingModeration() {
         status,
         ...(normalizedFeedback && { feedback: normalizedFeedback }),
       });
-      toast.success(status === 'NEEDS_REVISION'
-        ? 'Listing marked as needing revision'
-        : `Listing ${status.toLowerCase()}`);
+      toast.success(
+        status === 'NEEDS_REVISION'
+          ? 'Listing marked as needing revision'
+          : `Listing ${status.toLowerCase()}`,
+      );
       updateReviewSelection(null);
       feedbackForm.reset({ feedback: '' });
       goToNext();
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update listing');
     }
   };
@@ -1886,15 +1910,13 @@ function ListingModeration() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">
-            Listing Moderation
-          </h1>
+          <h1 className="font-heading text-3xl font-bold text-foreground">Listing Moderation</h1>
           <p className="mt-1 text-muted-foreground">
             Review listings to verify photos match descriptions
           </p>
         </div>
         <Select
-          onValueChange={(v) => {
+          onValueChange={v => {
             setCurrentPage(1);
             updateReviewSelection(null, v as 'all' | 'DELETED' | ListingStatus);
           }}
@@ -1914,197 +1936,160 @@ function ListingModeration() {
         </Select>
       </div>
 
-      {isLoading
-        ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          )
-        : (listings.length === 0
-            ? (
-                <div className="mt-8 text-center text-muted-foreground">
-                  No listings found
-                </div>
-              )
-            : (
-                <>
-                  <div className="mt-6 space-y-3">
-                    {listings.map(listing => (
-                      <Card key={listing.id} className="group">
-                        <CardContent className="
-                          flex flex-col gap-4 p-4
-                          sm:flex-row sm:items-center
-                        "
-                        >
-                          <img
-                            src={listing.coverImage?.url || '/placeholder.svg'}
-                            alt={listing.title}
-                            className="h-20 w-20 rounded-md object-cover"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="truncate font-semibold text-foreground">
-                                {listing.title}
-                              </h3>
-                              <Badge variant={statusColor(listing.status)}>
-                                {formatEnumLabel(listing.status)}
-                              </Badge>
-                              {listing.deletedAt && <Badge variant="destructive">Deleted</Badge>}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {listing.brand}
-                              {' '}
-                              ·
-                              {listing.categoryLabel}
-                              {' '}
-                              · Rs
-                              {' '}
-                              {listing.price.toLocaleString()}
-                              {listing.media?.length > 1
-                                && ` · ${listing.media.length} files`}
-                            </p>
-                            <p className="mt-1 truncate text-xs text-muted-foreground">
-                              {listing.description}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <Button
-                              onClick={() => {
-                                updateReviewSelection(listing.id);
-                                feedbackForm.reset({ feedback: '' });
-                              }}
-                              size="sm"
-                              variant="outline"
-                              className="gap-1"
-                            >
-                              <Eye className="h-4 w-4" />
-                              {' '}
-                              Review
-                            </Button>
-                            {listing.status !== 'APPROVED' && (
-                              <Button
-                                onClick={() => handleModerate(listing.id, 'APPROVED')}
-                                disabled={moderateListing.isPending}
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 text-primary"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                {' '}
-                                Approve
-                              </Button>
-                            )}
-                            {listing.status !== 'REJECTED' && (
-                              <Button
-                                onClick={() => handleModerate(listing.id, 'REJECTED')}
-                                disabled={moderateListing.isPending}
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 text-destructive"
-                              >
-                                <XCircle className="h-4 w-4" />
-                                {' '}
-                                Reject
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                  {listings.length > 0 && (
-                    <div className="
-                      mt-4 flex flex-col gap-3
-                      sm:flex-row sm:items-center sm:justify-between
-                    "
-                    >
-                      <div className="text-sm text-muted-foreground">
-                        {isPlaceholderData
-                          ? (
-                              <span role="status">
-                                Loading page
-                                {' '}
-                                {currentPage}
-                                …
-                              </span>
-                            )
-                          : (
-                              <>
-                                Showing
-                                {' '}
-                                {startRecord}
-                                –
-                                {endRecord}
-                                {' '}
-                                of
-                                {' '}
-                                {totalListings}
-                                {' '}
-                                listings
-                              </>
-                            )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Rows per page</span>
-                        <Select
-                          onValueChange={(value) => {
-                            setItemsPerPage(Number(value));
-                            setCurrentPage(1);
-                          }}
-                          value={String(itemsPerPage)}
-                        >
-                          <SelectTrigger disabled={isPlaceholderData} className="w-[90px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="20">20</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-                          disabled={isPlaceholderData || currentPage === 1}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                        >
-                          <ChevronLeft className="mr-1 h-4 w-4" />
-                          Previous
-                        </Button>
-                        {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
-                          <Button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            aria-current={page === currentPage ? 'page' : undefined}
-                            disabled={isPlaceholderData}
-                            size="sm"
-                            type="button"
-                            variant={page === currentPage ? 'default' : 'outline'}
-                          >
-                            {page}
-                          </Button>
-                        ))}
-                        <Button
-                          onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
-                          disabled={isPlaceholderData || currentPage === totalPages}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                        >
-                          Next
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : listings.length === 0 ? (
+        <div className="mt-8 text-center text-muted-foreground">No listings found</div>
+      ) : (
+        <>
+          <div className="mt-6 space-y-3">
+            {listings.map(listing => (
+              <Card key={listing.id} className="group">
+                <CardContent
+                  className="
+                    flex flex-col gap-4 p-4
+                    sm:flex-row sm:items-center
+                  "
+                >
+                  <img
+                    src={listing.coverImage?.url || '/placeholder.svg'}
+                    alt={listing.title}
+                    className="h-20 w-20 rounded-md object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate font-semibold text-foreground">{listing.title}</h3>
+                      <Badge variant={statusColor(listing.status)}>
+                        {formatEnumLabel(listing.status)}
+                      </Badge>
+                      {listing.deletedAt && <Badge variant="destructive">Deleted</Badge>}
                     </div>
-                  )}
-                </>
-              ))}
+                    <p className="text-sm text-muted-foreground">
+                      {listing.brand} ·{listing.categoryLabel} · Rs {listing.price.toLocaleString()}
+                      {listing.media?.length > 1 && ` · ${listing.media.length} files`}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {listing.description}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      onClick={() => {
+                        updateReviewSelection(listing.id);
+                        feedbackForm.reset({ feedback: '' });
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                    >
+                      <Eye className="h-4 w-4" /> Review
+                    </Button>
+                    {listing.status !== 'APPROVED' && (
+                      <Button
+                        onClick={() => handleModerate(listing.id, 'APPROVED')}
+                        disabled={moderateListing.isPending}
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-primary"
+                      >
+                        <CheckCircle className="h-4 w-4" /> Approve
+                      </Button>
+                    )}
+                    {listing.status !== 'REJECTED' && (
+                      <Button
+                        onClick={() => handleModerate(listing.id, 'REJECTED')}
+                        disabled={moderateListing.isPending}
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-destructive"
+                      >
+                        <XCircle className="h-4 w-4" /> Reject
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {listings.length > 0 && (
+            <div
+              className="
+                mt-4 flex flex-col gap-3
+                sm:flex-row sm:items-center sm:justify-between
+              "
+            >
+              <div className="text-sm text-muted-foreground">
+                {isPlaceholderData ? (
+                  <span role="status">Loading page {currentPage}…</span>
+                ) : (
+                  <>
+                    Showing {startRecord}–{endRecord} of {totalListings} listings
+                  </>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select
+                  onValueChange={value => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  value={String(itemsPerPage)}
+                >
+                  <SelectTrigger disabled={isPlaceholderData} className="w-[90px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                  disabled={isPlaceholderData || currentPage === 1}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Previous
+                </Button>
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                  <Button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    aria-current={page === currentPage ? 'page' : undefined}
+                    disabled={isPlaceholderData}
+                    size="sm"
+                    type="button"
+                    variant={page === currentPage ? 'default' : 'outline'}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                  disabled={isPlaceholderData || currentPage === totalPages}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Next
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Full review modal */}
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (open || reorderMedia.isPending || updateListingTitle.isPending) {
             return;
           }
@@ -2125,57 +2110,72 @@ function ListingModeration() {
             <>
               <DialogHeader>
                 <div className="flex min-w-0 flex-wrap items-center gap-3">
-                  {isEditingTitle
-                    ? (
-                        <form onSubmit={titleForm.handleSubmit(saveTitleEdit)} className="flex flex-1 items-center gap-2">
-                          <Input
-                            aria-label="Listing title"
-                            autoFocus
-                            maxLength={120}
-                            {...titleForm.register('title')}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Escape') {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                cancelTitleEdit();
-                              }
-                              else if (event.key === 'Enter') {
-                                event.preventDefault();
-                                void titleForm.handleSubmit(saveTitleEdit)();
-                              }
-                            }}
-                          />
-                          <Button
-                            aria-label="Save title"
-                            disabled={!titleDraft.trim() || titleDraft.length > 120 || updateListingTitle.isPending}
-                            size="icon"
-                            type="submit"
-                          >
-                            {updateListingTitle.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          </Button>
-                          <Button onClick={cancelTitleEdit} aria-label="Cancel title edit" size="icon" type="button" variant="ghost">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </form>
-                      )
-                    : (
-                        <div className="flex items-center gap-2">
-                          <DialogTitle className="min-w-0 break-words font-heading text-xl">
-                            {(updatedTitle?.listingId === reviewListing.id && updatedTitle.title) || reviewListing.title}
-                          </DialogTitle>
-                          {accessControl.hasPermission('LISTINGS_UPDATE') && (
-                            <Button
-                              onClick={() => beginTitleEdit(reviewListing)}
-                              aria-label="Edit title"
-                              size="icon"
-                              type="button"
-                              variant="ghost"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                  {isEditingTitle ? (
+                    <form
+                      onSubmit={titleForm.handleSubmit(saveTitleEdit)}
+                      className="flex flex-1 items-center gap-2"
+                    >
+                      <Input
+                        aria-label="Listing title"
+                        autoFocus
+                        maxLength={120}
+                        {...titleForm.register('title')}
+                        onKeyDown={event => {
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            cancelTitleEdit();
+                          } else if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void titleForm.handleSubmit(saveTitleEdit)();
+                          }
+                        }}
+                      />
+                      <Button
+                        aria-label="Save title"
+                        disabled={
+                          !titleDraft.trim() ||
+                          titleDraft.length > 120 ||
+                          updateListingTitle.isPending
+                        }
+                        size="icon"
+                        type="submit"
+                      >
+                        {updateListingTitle.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        onClick={cancelTitleEdit}
+                        aria-label="Cancel title edit"
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <DialogTitle className="min-w-0 break-words font-heading text-xl">
+                        {(updatedTitle?.listingId === reviewListing.id && updatedTitle.title) ||
+                          reviewListing.title}
+                      </DialogTitle>
+                      {accessControl.hasPermission('LISTINGS_UPDATE') && (
+                        <Button
+                          onClick={() => beginTitleEdit(reviewListing)}
+                          aria-label="Edit title"
+                          size="icon"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       )}
+                    </div>
+                  )}
                   <Badge variant={statusColor(reviewListing.status)}>
                     {formatEnumLabel(reviewListing.status)}
                   </Badge>
@@ -2183,36 +2183,35 @@ function ListingModeration() {
                 </div>
               </DialogHeader>
 
-              <div className="
-                mt-4 grid min-w-0 grid-cols-1 gap-6
-                md:grid-cols-2
-              "
+              <div
+                className="
+                  mt-4 grid min-w-0 grid-cols-1 gap-6
+                  md:grid-cols-2
+                "
               >
                 {/* Images */}
                 <div className="min-w-0 space-y-3">
-                  {isReorderingMedia
-                    ? (
-                        <MediaReorderPanel
-                          onCancel={() => setIsReorderingMedia(false)}
-                          onSave={mediaIds => submitMediaOrder(reviewListing, mediaIds)}
-                          isSaving={reorderMedia.isPending}
-                          media={reviewListing.media || []}
-                        />
-                      )
-                    : (
-                        <>
-                          <DetailGallery media={reviewListing.media || []} />
-                          {reviewListing.media.length > 1 && (
-                            <Button
-                              onClick={() => setIsReorderingMedia(true)}
-                              type="button"
-                              variant="outline"
-                            >
-                              Reorder media
-                            </Button>
-                          )}
-                        </>
+                  {isReorderingMedia ? (
+                    <MediaReorderPanel
+                      onCancel={() => setIsReorderingMedia(false)}
+                      onSave={mediaIds => submitMediaOrder(reviewListing, mediaIds)}
+                      isSaving={reorderMedia.isPending}
+                      media={reviewListing.media || []}
+                    />
+                  ) : (
+                    <>
+                      <DetailGallery media={reviewListing.media || []} />
+                      {reviewListing.media.length > 1 && (
+                        <Button
+                          onClick={() => setIsReorderingMedia(true)}
+                          type="button"
+                          variant="outline"
+                        >
+                          Reorder media
+                        </Button>
                       )}
+                    </>
+                  )}
                 </div>
 
                 {/* Details */}
@@ -2288,28 +2287,19 @@ function ListingModeration() {
                         Price
                       </p>
                       <p className="text-2xl font-bold text-foreground">
-                        Rs
-                        {' '}
-                        {reviewListing.price.toLocaleString()}
+                        Rs {reviewListing.price.toLocaleString()}
                       </p>
                     </div>
                     {reviewListing.weight && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Weight className="h-4 w-4" />
-                        <span className="text-sm">
-                          {getWeightLabel(reviewListing.weight)}
-                        </span>
+                        <span className="text-sm">{getWeightLabel(reviewListing.weight)}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Submitted
-                    {' '}
-                    {format(
-                      new Date(reviewListing.createdAt),
-                      'MMM d, yyyy \'at\' h:mm a',
-                    )}
+                    Submitted {format(new Date(reviewListing.createdAt), "MMM d, yyyy 'at' h:mm a")}
                     <br />
                     <Link
                       to={`/seller/${reviewListing.sellerId}`}
@@ -2324,9 +2314,7 @@ function ListingModeration() {
                   </div>
 
                   {/* Previous feedback history */}
-                  {reviewListing && (
-                    <FeedbackHistorySection listingId={reviewListing.id} />
-                  )}
+                  {reviewListing && <FeedbackHistorySection listingId={reviewListing.id} />}
 
                   {/* New Feedback */}
                   <div className="space-y-2 border-t border-border pt-4">
@@ -2342,13 +2330,17 @@ function ListingModeration() {
                       render={({ field, fieldState }) => (
                         <Textarea
                           {...field}
-                          onChange={(event) => {
+                          onChange={event => {
                             field.onChange(event);
                             if (event.target.value.trim()) {
                               feedbackForm.clearErrors('feedback');
                             }
                           }}
-                          aria-describedby={fieldState.error ? 'listing-feedback-hint listing-feedback-error' : 'listing-feedback-hint'}
+                          aria-describedby={
+                            fieldState.error
+                              ? 'listing-feedback-hint listing-feedback-error'
+                              : 'listing-feedback-hint'
+                          }
                           aria-invalid={fieldState.invalid}
                           placeholder="Feedback for the seller"
                           rows={3}
@@ -2359,7 +2351,11 @@ function ListingModeration() {
                       Required when requesting revisions. Optional for approval or rejection.
                     </p>
                     {feedbackForm.formState.errors.feedback && (
-                      <p id="listing-feedback-error" role="alert" className="text-sm text-destructive">
+                      <p
+                        id="listing-feedback-error"
+                        role="alert"
+                        className="text-sm text-destructive"
+                      >
                         {feedbackForm.formState.errors.feedback.message}
                       </p>
                     )}
@@ -2374,9 +2370,7 @@ function ListingModeration() {
                         type="button"
                         className="col-start-1 row-start-1 min-w-0 gap-2 whitespace-normal"
                       >
-                        <CheckCircle className="h-4 w-4" />
-                        {' '}
-                        Approve
+                        <CheckCircle className="h-4 w-4" /> Approve
                       </Button>
                     )}
                     {reviewListing.status !== 'NEEDS_REVISION' && (
@@ -2416,29 +2410,23 @@ function ListingModeration() {
                       Restore
                     </Button>
                   )}
-                  {canRemoveListings && !reviewListing.deletedAt && !['RESERVED', 'SOLD'].includes(reviewListing.status) && (
-                    <Button
-                      onClick={() => beginListingRemoval(reviewListing)}
-                      disabled={removeListing.isPending}
-                      type="button"
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      Delete listing
-                    </Button>
-                  )}
+                  {canRemoveListings &&
+                    !reviewListing.deletedAt &&
+                    !['RESERVED', 'SOLD'].includes(reviewListing.status) && (
+                      <Button
+                        onClick={() => beginListingRemoval(reviewListing)}
+                        disabled={removeListing.isPending}
+                        type="button"
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        Delete listing
+                      </Button>
+                    )}
 
                   {currentReviewIndex >= 0 && pendingListings.length > 1 && (
                     <p className="text-center text-xs text-muted-foreground">
-                      Reviewing
-                      {' '}
-                      {currentReviewIndex + 1}
-                      {' '}
-                      of
-                      {' '}
-                      {pendingListings.length}
-                      {' '}
-                      pending
+                      Reviewing {currentReviewIndex + 1} of {pendingListings.length} pending
                     </p>
                   )}
                 </div>
@@ -2449,7 +2437,7 @@ function ListingModeration() {
       </Dialog>
 
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setIsRemovalReasonDialogOpen(open);
           if (!open && !isRemovalConfirmationOpen) {
             setListingToRemove(null);
@@ -2476,17 +2464,23 @@ function ListingModeration() {
               </p>
             )}
             <div className="flex justify-end gap-2">
-              <Button onClick={() => setIsRemovalReasonDialogOpen(false)} type="button" variant="outline">
+              <Button
+                onClick={() => setIsRemovalReasonDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive">Continue</Button>
+              <Button type="submit" variant="destructive">
+                Continue
+              </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setIsRemovalConfirmationOpen(open);
           if (!open) {
             setListingToRemove(null);
@@ -2501,7 +2495,11 @@ function ListingModeration() {
           </DialogHeader>
           <p>{`Remove ${listingToRemove?.title ?? ''}?`}</p>
           <div className="flex justify-end gap-2">
-            <Button onClick={() => setIsRemovalConfirmationOpen(false)} type="button" variant="outline">
+            <Button
+              onClick={() => setIsRemovalConfirmationOpen(false)}
+              type="button"
+              variant="outline"
+            >
               Cancel
             </Button>
             <Button

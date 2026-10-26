@@ -18,10 +18,7 @@ export function createDiscountCode(payload: CreateDiscountCodePayload) {
     .json<Response<DiscountCode>>();
 }
 
-export function updateDiscountCode(
-  discountCodeId: string,
-  payload: UpdateDiscountCodePayload,
-) {
+export function updateDiscountCode(discountCodeId: string, payload: UpdateDiscountCodePayload) {
   return authInstance
     .patch(`/api/v1/admin/settings/discount-codes/${discountCodeId}`, {
       json: payload,

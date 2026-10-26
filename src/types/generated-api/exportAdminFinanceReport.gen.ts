@@ -131,7 +131,8 @@ export interface ExportAdminFinanceReportErrors {
   };
 }
 
-export type ExportAdminFinanceReportError = ExportAdminFinanceReportErrors[keyof ExportAdminFinanceReportErrors];
+export type ExportAdminFinanceReportError =
+  ExportAdminFinanceReportErrors[keyof ExportAdminFinanceReportErrors];
 
 export interface ExportAdminFinanceReportResponses {
   /**
@@ -140,4 +141,5 @@ export interface ExportAdminFinanceReportResponses {
   200: string;
 }
 
-export type ExportAdminFinanceReportResponse = ExportAdminFinanceReportResponses[keyof ExportAdminFinanceReportResponses];
+export type ExportAdminFinanceReportResponse =
+  ExportAdminFinanceReportResponses[keyof ExportAdminFinanceReportResponses];

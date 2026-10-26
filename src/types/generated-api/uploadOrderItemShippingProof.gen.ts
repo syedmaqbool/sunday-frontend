@@ -99,7 +99,8 @@ export interface UploadOrderItemShippingProofErrors {
   };
 }
 
-export type UploadOrderItemShippingProofError = UploadOrderItemShippingProofErrors[keyof UploadOrderItemShippingProofErrors];
+export type UploadOrderItemShippingProofError =
+  UploadOrderItemShippingProofErrors[keyof UploadOrderItemShippingProofErrors];
 
 export interface UploadOrderItemShippingProofResponses {
   /**
@@ -111,4 +112,5 @@ export interface UploadOrderItemShippingProofResponses {
   };
 }
 
-export type UploadOrderItemShippingProofResponse = UploadOrderItemShippingProofResponses[keyof UploadOrderItemShippingProofResponses];
+export type UploadOrderItemShippingProofResponse =
+  UploadOrderItemShippingProofResponses[keyof UploadOrderItemShippingProofResponses];

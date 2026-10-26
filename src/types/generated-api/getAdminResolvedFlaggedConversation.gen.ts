@@ -105,7 +105,8 @@ export interface GetAdminResolvedFlaggedConversationErrors {
   };
 }
 
-export type GetAdminResolvedFlaggedConversationError = GetAdminResolvedFlaggedConversationErrors[keyof GetAdminResolvedFlaggedConversationErrors];
+export type GetAdminResolvedFlaggedConversationError =
+  GetAdminResolvedFlaggedConversationErrors[keyof GetAdminResolvedFlaggedConversationErrors];
 
 export interface GetAdminResolvedFlaggedConversationResponses {
   /**
@@ -179,4 +180,5 @@ export interface GetAdminResolvedFlaggedConversationResponses {
   };
 }
 
-export type GetAdminResolvedFlaggedConversationResponse = GetAdminResolvedFlaggedConversationResponses[keyof GetAdminResolvedFlaggedConversationResponses];
+export type GetAdminResolvedFlaggedConversationResponse =
+  GetAdminResolvedFlaggedConversationResponses[keyof GetAdminResolvedFlaggedConversationResponses];

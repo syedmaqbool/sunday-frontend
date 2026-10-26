@@ -16,32 +16,21 @@ export function getAdminAnalytics(parameters: AnalyticsDateRange = {}) {
     .json<Response<AdminAnalytics>>();
 }
 
-export function listAdminMarketingLeads(
-  parameters: AdminMarketingLeadsParams = {},
-) {
+export function listAdminMarketingLeads(parameters: AdminMarketingLeadsParams = {}) {
   return authInstance
     .get('/api/v1/admin/analytics/marketing-leads', {
-      searchParams: parameters as Record<
-        string,
-        boolean | number | string | undefined
-      >,
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<AdminMarketingLead>>();
 }
 
-export function exportAdminMarketingLeads(
-  parameters: AdminMarketingLeadsExportParams = {},
-) {
+export function exportAdminMarketingLeads(parameters: AdminMarketingLeadsExportParams = {}) {
   const searchParams: Record<string, string> = {};
 
-  if (parameters.search)
-    searchParams.search = parameters.search;
-  if (parameters.leadStatus)
-    searchParams.leadStatus = parameters.leadStatus;
-  if (parameters.startTime)
-    searchParams.startTime = parameters.startTime;
-  if (parameters.endTime)
-    searchParams.endTime = parameters.endTime;
+  if (parameters.search) searchParams.search = parameters.search;
+  if (parameters.leadStatus) searchParams.leadStatus = parameters.leadStatus;
+  if (parameters.startTime) searchParams.startTime = parameters.startTime;
+  if (parameters.endTime) searchParams.endTime = parameters.endTime;
 
   return authInstance.get('/api/v1/admin/analytics/marketing-leads/export', {
     searchParams,

@@ -1,5 +1,16 @@
-import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters, AdminFlaggedBuyerWarning, AdminFlaggedBuyerWarningResponse } from '@/types/adminFlaggedBuyer.type';
-import type { GetAdminFlaggedBuyerComplaintHistoryResponses, GetAdminFlaggedBuyerRulesResponses, GetAdminFlaggedBuyersResponses, UpdateAdminFlaggedBuyerRulesResponses } from '@/types/generated-api';
+import type {
+  AdminFlaggedBuyerComplaintHistoryParameters,
+  AdminFlaggedBuyerRuleUpdate,
+  AdminFlaggedBuyersParameters,
+  AdminFlaggedBuyerWarning,
+  AdminFlaggedBuyerWarningResponse,
+} from '@/types/adminFlaggedBuyer.type';
+import type {
+  GetAdminFlaggedBuyerComplaintHistoryResponses,
+  GetAdminFlaggedBuyerRulesResponses,
+  GetAdminFlaggedBuyersResponses,
+  UpdateAdminFlaggedBuyerRulesResponses,
+} from '@/types/generated-api';
 import { authInstance } from '@/services/ky.instance';
 
 export function getAdminFlaggedBuyers(parameters: AdminFlaggedBuyersParameters) {
@@ -14,7 +25,10 @@ export function getAdminFlaggedBuyerRules() {
     .json<GetAdminFlaggedBuyerRulesResponses['200']>();
 }
 
-export function getAdminFlaggedBuyerComplaintHistory(buyerId: string, parameters: AdminFlaggedBuyerComplaintHistoryParameters) {
+export function getAdminFlaggedBuyerComplaintHistory(
+  buyerId: string,
+  parameters: AdminFlaggedBuyerComplaintHistoryParameters,
+) {
   return authInstance
     .get(`/api/v1/admin/flagged-buyers/${buyerId}/history`, { searchParams: parameters })
     .json<GetAdminFlaggedBuyerComplaintHistoryResponses['200']>();

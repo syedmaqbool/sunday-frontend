@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import AppRoutes from '@/AppRoutes';
 
 const { getMarketplaceListingOptionsMock } = vi.hoisted(() => ({
@@ -19,7 +19,11 @@ vi.mock('@/contexts/CartContext', () => ({
 vi.mock('@/queries/marketplace.query', () => ({
   getListingMediaUrls: vi.fn(() => []),
   getMarketplaceListingOptions: getMarketplaceListingOptionsMock,
-  getReservedOfferAmountOptions: vi.fn(() => ({ enabled: false, queryFn: async () => null, queryKey: ['reserved-offer-amount'] })),
+  getReservedOfferAmountOptions: vi.fn(() => ({
+    enabled: false,
+    queryFn: async () => null,
+    queryKey: ['reserved-offer-amount'],
+  })),
 }));
 
 vi.mock('@/queries/myListings.query', () => ({
@@ -53,7 +57,9 @@ describe('reservation listing fallback route', () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/listings'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/listings'), {
+      timeout: 5000,
+    });
     expect(await screen.findByTestId('listings-page')).toBeInTheDocument();
   });
 });

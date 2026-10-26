@@ -17,7 +17,8 @@ export const adminAnalyticsQueryKey = {
     list: (parameters: AdminMarketingLeadsParams = {}) =>
       [...adminAnalyticsQueryKey.marketingLeads.all(), 'list', parameters] as const,
   },
-  overview: (parameters: AnalyticsDateRange = {}) => [...adminAnalyticsQueryKey.all(), 'overview', parameters] as const,
+  overview: (parameters: AnalyticsDateRange = {}) =>
+    [...adminAnalyticsQueryKey.all(), 'overview', parameters] as const,
 };
 
 export function getAdminAnalyticsQueryOptions(parameters: AnalyticsDateRange = {}) {

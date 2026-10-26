@@ -1,5 +1,10 @@
 import type { ApiRequestBody, ApiResponseData, ApiResponseItem } from './api.type';
-import type { GetBrandsResponses, GetCategoriesResponses, GetMyPreferencesResponses, ReplaceMyPreferencesData } from '@/types/generated-api';
+import type {
+  GetBrandsResponses,
+  GetCategoriesResponses,
+  GetMyPreferencesResponses,
+  ReplaceMyPreferencesData,
+} from '@/types/generated-api';
 
 export type PreferenceBrand = ApiResponseItem<GetBrandsResponses>;
 export type UserPreferences = ApiResponseData<GetMyPreferencesResponses>;

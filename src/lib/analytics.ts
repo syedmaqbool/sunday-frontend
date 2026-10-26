@@ -25,11 +25,11 @@ export function initGA() {
   const analyticsTarget = getAnalyticsTarget();
 
   analyticsTarget.dataLayer = analyticsTarget.dataLayer || [];
-  analyticsTarget.gtag
-    = analyticsTarget.gtag
-      || function (...arguments_: any[]) {
-        analyticsTarget.dataLayer.push(arguments_);
-      };
+  analyticsTarget.gtag =
+    analyticsTarget.gtag ||
+    function (...arguments_: any[]) {
+      analyticsTarget.dataLayer.push(arguments_);
+    };
 
   // Avoid loading an invalid placeholder ID.
   if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.includes('XXXX')) {
@@ -55,8 +55,7 @@ export function initGA() {
 
     const script = document.createElement('script');
     script.async = true;
-    script.src
-      = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
 
     document.head.append(script);
   };
@@ -64,13 +63,8 @@ export function initGA() {
   // Let the page's initial resources finish before requesting GA.
   if (document.readyState === 'complete') {
     setTimeout(loadScript, 2000);
-  }
-  else {
-    window.addEventListener(
-      'load',
-      () => setTimeout(loadScript, 2000),
-      { once: true },
-    );
+  } else {
+    window.addEventListener('load', () => setTimeout(loadScript, 2000), { once: true });
   }
 }
 
@@ -91,10 +85,7 @@ export function trackPageView(path: string, title?: string) {
   });
 }
 
-export function trackEvent(
-  name: string,
-  parameters: Record<string, any> = {},
-) {
+export function trackEvent(name: string, parameters: Record<string, any> = {}) {
   if (typeof document === 'undefined') {
     return;
   }

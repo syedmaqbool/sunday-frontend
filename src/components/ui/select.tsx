@@ -42,10 +42,7 @@ const SelectScrollUpButton = React.forwardRef<
 >(({ className, ...props }, reference) => (
   <SelectPrimitive.ScrollUpButton
     ref={reference}
-    className={cn(
-      'flex cursor-default items-center justify-center py-1',
-      className,
-    )}
+    className={cn('flex cursor-default items-center justify-center py-1', className)}
     {...props}
   >
     <ChevronUp className="h-4 w-4" />
@@ -59,17 +56,13 @@ const SelectScrollDownButton = React.forwardRef<
 >(({ className, ...props }, reference) => (
   <SelectPrimitive.ScrollDownButton
     ref={reference}
-    className={cn(
-      'flex cursor-default items-center justify-center py-1',
-      className,
-    )}
+    className={cn('flex cursor-default items-center justify-center py-1', className)}
     {...props}
   >
     <ChevronDown className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
 ));
-SelectScrollDownButton.displayName
-  = SelectPrimitive.ScrollDownButton.displayName;
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
 
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
@@ -92,8 +85,8 @@ const SelectContent = React.forwardRef<
           data-[side=right]:slide-in-from-left-2
           data-[side=top]:slide-in-from-bottom-2
         `,
-        position === 'popper'
-        && `
+        position === 'popper' &&
+          `
           data-[side=bottom]:translate-y-1
           data-[side=left]:-translate-x-1
           data-[side=right]:translate-x-1
@@ -107,8 +100,8 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.Viewport
         className={cn(
           'p-1',
-          position === 'popper'
-          && 'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+          position === 'popper' &&
+            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
         )}
       >
         {children}

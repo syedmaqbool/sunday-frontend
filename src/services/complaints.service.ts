@@ -21,21 +21,15 @@ export function listComplaintsAgainstMe() {
 }
 
 export function createComplaint(payload: CreateComplaintPayload) {
-  return authInstance
-    .post('/api/v1/complaints', { json: payload })
-    .json<Response<Complaint>>();
+  return authInstance.post('/api/v1/complaints', { json: payload }).json<Response<Complaint>>();
 }
 
-export async function getOrderItemComplaint(
-  orderId: string,
-  orderItemId: string,
-) {
+export async function getOrderItemComplaint(orderId: string, orderItemId: string) {
   try {
     return await authInstance
       .get(`/api/v1/orders/${orderId}/items/${orderItemId}/complaint`)
       .json<Response<Complaint>>();
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof HTTPError && error.response.status === 404) {
       return null;
     }
@@ -44,10 +38,7 @@ export async function getOrderItemComplaint(
   }
 }
 
-export function provideReturnAddress(
-  complaintId: string,
-  payload: ProvideReturnAddressPayload,
-) {
+export function provideReturnAddress(complaintId: string, payload: ProvideReturnAddressPayload) {
   return authInstance
     .post(`/api/v1/complaints/${complaintId}/return-address`, { json: payload })
     .json<Response<Complaint>>();
@@ -59,10 +50,7 @@ export function markComplaintReturnReceived(complaintId: string) {
     .json<Response<Complaint>>();
 }
 
-export function submitReturnProof(
-  complaintId: string,
-  payload: SubmitReturnProofPayload,
-) {
+export function submitReturnProof(complaintId: string, payload: SubmitReturnProofPayload) {
   return authInstance
     .post(`/api/v1/complaints/${complaintId}/return-proof`, { json: payload })
     .json<Response<Complaint>>();

@@ -125,4 +125,5 @@ export interface GetAdminCategoriesResponses {
   };
 }
 
-export type GetAdminCategoriesResponse = GetAdminCategoriesResponses[keyof GetAdminCategoriesResponses];
+export type GetAdminCategoriesResponse =
+  GetAdminCategoriesResponses[keyof GetAdminCategoriesResponses];

@@ -77,7 +77,8 @@ export interface GetAdminFinanceAdjustmentsErrors {
   };
 }
 
-export type GetAdminFinanceAdjustmentsError = GetAdminFinanceAdjustmentsErrors[keyof GetAdminFinanceAdjustmentsErrors];
+export type GetAdminFinanceAdjustmentsError =
+  GetAdminFinanceAdjustmentsErrors[keyof GetAdminFinanceAdjustmentsErrors];
 
 export interface GetAdminFinanceAdjustmentsResponses {
   /**
@@ -151,4 +152,5 @@ export interface GetAdminFinanceAdjustmentsResponses {
   };
 }
 
-export type GetAdminFinanceAdjustmentsResponse = GetAdminFinanceAdjustmentsResponses[keyof GetAdminFinanceAdjustmentsResponses];
+export type GetAdminFinanceAdjustmentsResponse =
+  GetAdminFinanceAdjustmentsResponses[keyof GetAdminFinanceAdjustmentsResponses];

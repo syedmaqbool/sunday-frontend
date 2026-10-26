@@ -68,7 +68,8 @@ export interface DeleteAdminSubcategoryErrors {
   };
 }
 
-export type DeleteAdminSubcategoryError = DeleteAdminSubcategoryErrors[keyof DeleteAdminSubcategoryErrors];
+export type DeleteAdminSubcategoryError =
+  DeleteAdminSubcategoryErrors[keyof DeleteAdminSubcategoryErrors];
 
 export interface DeleteAdminSubcategoryResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminSubcategoryResponses {
   };
 }
 
-export type DeleteAdminSubcategoryResponse = DeleteAdminSubcategoryResponses[keyof DeleteAdminSubcategoryResponses];
+export type DeleteAdminSubcategoryResponse =
+  DeleteAdminSubcategoryResponses[keyof DeleteAdminSubcategoryResponses];

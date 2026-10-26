@@ -75,7 +75,8 @@ export interface GetAdminCommissionTiersErrors {
   };
 }
 
-export type GetAdminCommissionTiersError = GetAdminCommissionTiersErrors[keyof GetAdminCommissionTiersErrors];
+export type GetAdminCommissionTiersError =
+  GetAdminCommissionTiersErrors[keyof GetAdminCommissionTiersErrors];
 
 export interface GetAdminCommissionTiersResponses {
   /**
@@ -128,4 +129,5 @@ export interface GetAdminCommissionTiersResponses {
   };
 }
 
-export type GetAdminCommissionTiersResponse = GetAdminCommissionTiersResponses[keyof GetAdminCommissionTiersResponses];
+export type GetAdminCommissionTiersResponse =
+  GetAdminCommissionTiersResponses[keyof GetAdminCommissionTiersResponses];

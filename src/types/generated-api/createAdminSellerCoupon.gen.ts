@@ -76,7 +76,8 @@ export interface CreateAdminSellerCouponErrors {
   };
 }
 
-export type CreateAdminSellerCouponError = CreateAdminSellerCouponErrors[keyof CreateAdminSellerCouponErrors];
+export type CreateAdminSellerCouponError =
+  CreateAdminSellerCouponErrors[keyof CreateAdminSellerCouponErrors];
 
 export interface CreateAdminSellerCouponResponses {
   /**
@@ -104,4 +105,5 @@ export interface CreateAdminSellerCouponResponses {
   };
 }
 
-export type CreateAdminSellerCouponResponse = CreateAdminSellerCouponResponses[keyof CreateAdminSellerCouponResponses];
+export type CreateAdminSellerCouponResponse =
+  CreateAdminSellerCouponResponses[keyof CreateAdminSellerCouponResponses];

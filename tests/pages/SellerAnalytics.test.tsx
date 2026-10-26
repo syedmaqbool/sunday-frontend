@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import SellerAnalytics from '@/pages/SellerAnalytics';
 
 const getSellerAnalyticsMock = vi.hoisted(() => vi.fn());
@@ -32,7 +32,9 @@ const sellerAnalyticsResponse = {
 
 function renderSellerAnalytics() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
       <SellerAnalytics />
     </QueryClientProvider>,
   );
@@ -49,10 +51,12 @@ describe('seller analytics period filter', () => {
     fireEvent.mouseDown(await screen.findByRole('tab', { name: 'This month' }), { button: 0 });
 
     await waitFor(() => {
-      expect(getSellerAnalyticsMock).toHaveBeenLastCalledWith(expect.objectContaining({
-        endTime: expect.any(String),
-        startTime: expect.any(String),
-      }));
+      expect(getSellerAnalyticsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          endTime: expect.any(String),
+          startTime: expect.any(String),
+        }),
+      );
     });
   });
 });

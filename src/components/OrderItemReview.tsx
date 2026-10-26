@@ -29,7 +29,9 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 30 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
-const reviewMediaFileSchema = z.custom<File>(value => typeof File !== 'undefined' && value instanceof File);
+const reviewMediaFileSchema = z.custom<File>(
+  value => typeof File !== 'undefined' && value instanceof File,
+);
 
 const orderReviewSchema = z.object({
   comment: z.string().max(500).optional(),
@@ -55,8 +57,7 @@ export function OrderItemReview({
   const videoInputReference = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!videoPreviewUrl)
-      return;
+    if (!videoPreviewUrl) return;
 
     return () => URL.revokeObjectURL(videoPreviewUrl);
   }, [videoPreviewUrl]);
@@ -76,14 +77,18 @@ export function OrderItemReview({
   const images = watch('images');
   const video = watch('video');
 
-  const { data: existingResponse, isLoading } = useQuery(getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId));
-  const existing = (existingResponse?.data ?? []).find(
-    review => review.listingId === listingId,
-  ) ?? null;
+  const { data: existingResponse, isLoading } = useQuery(
+    getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId),
+  );
+  const existing =
+    (existingResponse?.data ?? []).find(review => review.listingId === listingId) ?? null;
 
-  const handleAddImages = (files: FileList | null, currentImages: File[], onChange: (files: File[]) => void) => {
-    if (!files)
-      return;
+  const handleAddImages = (
+    files: FileList | null,
+    currentImages: File[],
+    onChange: (files: File[]) => void,
+  ) => {
+    if (!files) return;
     const incoming = [...files];
     const valid: File[] = [];
     for (const f of incoming) {
@@ -98,16 +103,13 @@ export function OrderItemReview({
       valid.push(f);
     }
     const next = [...currentImages, ...valid].slice(0, MAX_IMAGES);
-    if (currentImages.length + valid.length > MAX_IMAGES)
-      toast.error(`Max ${MAX_IMAGES} images`);
+    if (currentImages.length + valid.length > MAX_IMAGES) toast.error(`Max ${MAX_IMAGES} images`);
     onChange(next);
-    if (imageInputReference.current)
-      imageInputReference.current.value = '';
+    if (imageInputReference.current) imageInputReference.current.value = '';
   };
 
   const handleAddVideo = (files: FileList | null, onChange: (file: File) => void) => {
-    if (!files || !files[0])
-      return;
+    if (!files || !files[0]) return;
     const f = files[0];
     if (!VIDEO_TYPES.has(f.type)) {
       toast.error('Unsupported video type (use MP4, WebM, MOV)');
@@ -119,13 +121,12 @@ export function OrderItemReview({
     }
     onChange(f);
     setVideoPreviewUrl(URL.createObjectURL(f));
-    if (videoInputReference.current)
-      videoInputReference.current.value = '';
+    if (videoInputReference.current) videoInputReference.current.value = '';
   };
 
   const submit = useCreateOrderItemReviewMutation(user?.id, sellerId);
 
-  const onSubmit: SubmitHandler<OrderReviewFormValues> = async (values) => {
+  const onSubmit: SubmitHandler<OrderReviewFormValues> = async values => {
     try {
       const imageUrls: string[] = [];
       let videoUrl: string | undefined;
@@ -160,14 +161,12 @@ export function OrderItemReview({
           },
         },
       );
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to upload review media');
     }
   };
 
-  if (!sellerId || isLoading)
-    return null;
+  if (!sellerId || isLoading) return null;
 
   if (existing) {
     return (
@@ -180,11 +179,7 @@ export function OrderItemReview({
               key={s}
               className={`
                 h-3 w-3
-                ${
-            s <= existing.rating
-              ? 'fill-primary text-primary'
-              : 'text-muted-foreground/30'
-            }
+                ${s <= existing.rating ? 'fill-primary text-primary' : 'text-muted-foreground/30'}
               `}
             />
           ))}
@@ -235,11 +230,7 @@ export function OrderItemReview({
                 <Star
                   className={`
                     h-5 w-5 transition-colors
-                    ${
-              star <= display
-                ? 'fill-primary text-primary'
-                : 'text-muted-foreground/30'
-              }
+                    ${star <= display ? 'fill-primary text-primary' : 'text-muted-foreground/30'}
                   `}
                 />
               </button>
@@ -280,7 +271,12 @@ export function OrderItemReview({
                 <img src={url} alt="" className="h-full w-full object-cover" />
                 <button
                   onClick={() =>
-                    setValue('images', images.filter((_, index_) => index_ !== index), { shouldDirty: true, shouldValidate: true })}
+                    setValue(
+                      'images',
+                      images.filter((_, index_) => index_ !== index),
+                      { shouldDirty: true, shouldValidate: true },
+                    )
+                  }
                   aria-label="Remove image"
                   type="button"
                   className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 text-foreground shadow"
@@ -296,11 +292,7 @@ export function OrderItemReview({
       {/* Video preview */}
       {video && videoPreviewUrl && (
         <div className="relative inline-block">
-          <video
-            src={videoPreviewUrl}
-            muted
-            className="h-24 rounded-md border border-border"
-          />
+          <video src={videoPreviewUrl} muted className="h-24 rounded-md border border-border" />
           <button
             onClick={() => {
               setValue('video', null, { shouldDirty: true, shouldValidate: true });
@@ -323,7 +315,7 @@ export function OrderItemReview({
           render={({ field }) => (
             <input
               onChange={event => handleAddImages(event.target.files, field.value, field.onChange)}
-              ref={(element) => {
+              ref={element => {
                 field.ref(element);
                 imageInputReference.current = element;
               }}
@@ -343,9 +335,7 @@ export function OrderItemReview({
           className="gap-1.5"
         >
           <ImagePlus className="h-3.5 w-3.5" />
-          Photos
-          {' '}
-          {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
+          Photos {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}
         </Button>
 
         <Controller
@@ -354,7 +344,7 @@ export function OrderItemReview({
           render={({ field }) => (
             <input
               onChange={event => handleAddVideo(event.target.files, file => field.onChange(file))}
-              ref={(element) => {
+              ref={element => {
                 field.ref(element);
                 videoInputReference.current = element;
               }}
@@ -391,12 +381,7 @@ export function OrderItemReview({
           {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {uploading ? 'Uploading...' : 'Submit'}
         </Button>
-        <Button
-          onClick={() => setOpen(false)}
-          disabled={uploading}
-          size="sm"
-          variant="ghost"
-        >
+        <Button onClick={() => setOpen(false)} disabled={uploading} size="sm" variant="ghost">
           Cancel
         </Button>
       </div>

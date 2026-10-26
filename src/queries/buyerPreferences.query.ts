@@ -19,8 +19,7 @@ export const buyerPreferencesQueryKey = {
   brands: () => [...buyerPreferencesQueryKey.all(), 'brands'] as const,
   categories: () => [...buyerPreferencesQueryKey.all(), 'categories'] as const,
   current: () => [...buyerPreferencesQueryKey.all(), 'current'] as const,
-  subcategories: () =>
-    [...buyerPreferencesQueryKey.all(), 'subcategories'] as const,
+  subcategories: () => [...buyerPreferencesQueryKey.all(), 'subcategories'] as const,
 };
 
 // ── 1. GET USER PREFERENCES QUERY ───────────────────────────────────────────

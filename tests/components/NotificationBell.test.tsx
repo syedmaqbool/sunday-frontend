@@ -3,15 +3,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
 import NotificationBell from '@/components/NotificationBell';
 
-const { listNotifications, markAllNotificationsRead, markNotificationRead, timeline } = vi.hoisted(() => ({
-  listNotifications: vi.fn(),
-  markAllNotificationsRead: vi.fn(),
-  markNotificationRead: vi.fn(),
-  timeline: [] as string[],
-}));
+const { listNotifications, markAllNotificationsRead, markNotificationRead, timeline } = vi.hoisted(
+  () => ({
+    listNotifications: vi.fn(),
+    markAllNotificationsRead: vi.fn(),
+    markNotificationRead: vi.fn(),
+    timeline: [] as string[],
+  }),
+);
 
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => 'test-token' } }));
 
@@ -36,7 +38,9 @@ function LocationObserver() {
   return (
     <>
       <output data-testid="location">{`${location.pathname}${location.search}`}</output>
-      <button onClick={() => navigate(-1)} type="button">Back</button>
+      <button onClick={() => navigate(-1)} type="button">
+        Back
+      </button>
     </>
   );
 }
@@ -68,22 +72,34 @@ function renderBell(notification: Notification | null, initialEntry = '/') {
   listNotifications.mockResolvedValue({
     data: notifications,
     message: 'ok',
-    pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 20, prevPage: null, total: notifications.length },
+    pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      nextPage: null,
+      perPage: 20,
+      prevPage: null,
+      total: notifications.length,
+    },
     statusCode: 200,
   });
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={[initialEntry]}>
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={[initialEntry]}
+      >
         <Routes>
           <Route
-            element={(
+            element={
               <>
-                <NotificationBell audience={(notification?.audience.toLowerCase() ?? 'user') as 'admin' | 'user'} />
+                <NotificationBell
+                  audience={(notification?.audience.toLowerCase() ?? 'user') as 'admin' | 'user'}
+                />
                 <LocationObserver />
               </>
-            )}
+            }
             path="*"
           />
         </Routes>
@@ -119,16 +135,22 @@ describe('notificationBell destination navigation', () => {
       timeline.push('mark-read');
       return { data: {}, statusCode: 200 };
     });
-    renderBell(makeNotification('USER', {
-      resourceId: 'conversation-1',
-      focusedChild: { resourceId: 'message-1', resource: 'message' },
-      resource: 'conversation',
-      section: 'messages',
-    }));
+    renderBell(
+      makeNotification('USER', {
+        resourceId: 'conversation-1',
+        focusedChild: { resourceId: 'message-1', resource: 'message' },
+        resource: 'conversation',
+        section: 'messages',
+      }),
+    );
 
     fireEvent.click(await screen.findByRole('button', { name: /New message/ }));
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/messages?conversation=conversation-1&message=message-1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/messages?conversation=conversation-1&message=message-1',
+      ),
+    );
     expect(timeline.slice(-2)).toEqual(['mark-read', 'navigate']);
   });
 
@@ -138,17 +160,23 @@ describe('notificationBell destination navigation', () => {
       throw new Error('network unavailable');
     });
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    renderBell(makeNotification('ADMIN', {
-      resourceId: 'ticket-2',
-      focusedChild: { resourceId: 'message-2', resource: 'supportTicketMessage' },
-      recipient: 'ADMIN',
-      resource: 'supportTicket',
-      section: 'management',
-    }));
+    renderBell(
+      makeNotification('ADMIN', {
+        resourceId: 'ticket-2',
+        focusedChild: { resourceId: 'message-2', resource: 'supportTicketMessage' },
+        recipient: 'ADMIN',
+        resource: 'supportTicket',
+        section: 'management',
+      }),
+    );
 
     fireEvent.click(await screen.findByRole('button', { name: /New message/ }));
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/support?ticket=ticket-2&message=message-2'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/admin/support?ticket=ticket-2&message=message-2',
+      ),
+    );
     expect(timeline.slice(-2)).toEqual(['mark-read', 'navigate']);
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(consoleError).toHaveBeenCalled();
@@ -157,16 +185,25 @@ describe('notificationBell destination navigation', () => {
 
   it('opens a reservation listing with a refresh-safe URL and browser back returns to the previous page', async () => {
     markNotificationRead.mockResolvedValue({ data: {}, statusCode: 200 });
-    renderBell(makeNotification('USER', {
-      resourceId: 'listing-1',
-      recipient: 'BUYER',
-      resource: 'listing',
-      section: 'detail',
-    }, 'RESERVATION_CREATED'), '/my-offers');
+    renderBell(
+      makeNotification(
+        'USER',
+        {
+          resourceId: 'listing-1',
+          recipient: 'BUYER',
+          resource: 'listing',
+          section: 'detail',
+        },
+        'RESERVATION_CREATED',
+      ),
+      '/my-offers',
+    );
 
     fireEvent.click(await screen.findByRole('button', { name: /New message/ }));
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1'),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/my-offers'));
   });

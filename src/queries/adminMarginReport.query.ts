@@ -8,9 +8,7 @@ export const adminMarginReportQueryKey = {
     [...adminMarginReportQueryKey.all(), 'list', parameters] as const,
 };
 
-export function getAdminMarginReportQueryOptions(
-  parameters: AdminMarginReportParams = {},
-) {
+export function getAdminMarginReportQueryOptions(parameters: AdminMarginReportParams = {}) {
   return queryOptions({
     queryFn: () => getAdminMarginReport(parameters),
     queryKey: adminMarginReportQueryKey.list(parameters),

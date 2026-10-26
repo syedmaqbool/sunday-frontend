@@ -1,7 +1,4 @@
-import type {
-  AdminOrderListParameters,
-  ManualPaymentReviewPayload,
-} from '@/types/adminOrder.type';
+import type { AdminOrderListParameters, ManualPaymentReviewPayload } from '@/types/adminOrder.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   approveAdminManualPayment,
@@ -16,19 +13,15 @@ import {
 
 export const adminOrdersQueryKey = {
   all: () => ['admin-orders'] as const,
-  detail: (orderId: string) =>
-    [...adminOrdersQueryKey.all(), 'orders', 'detail', orderId] as const,
+  detail: (orderId: string) => [...adminOrdersQueryKey.all(), 'orders', 'detail', orderId] as const,
   orders: (parameters: AdminOrderListParameters = {}) =>
     [...adminOrdersQueryKey.all(), 'orders', 'list', parameters] as const,
   proof: (fileId: string) =>
     [...adminOrdersQueryKey.all(), 'payment-proof', 'detail', fileId] as const,
-  reservedListings: () =>
-    [...adminOrdersQueryKey.all(), 'reserved-listings', 'list'] as const,
+  reservedListings: () => [...adminOrdersQueryKey.all(), 'reserved-listings', 'list'] as const,
 };
 
-export function getAdminOrdersOptions(
-  parameters: AdminOrderListParameters = {},
-) {
+export function getAdminOrdersOptions(parameters: AdminOrderListParameters = {}) {
   return queryOptions({
     queryFn: () => listAdminOrders(parameters),
     queryKey: adminOrdersQueryKey.orders(parameters),

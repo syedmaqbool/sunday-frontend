@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import {
   adminOrdersQueryKey,
   getAdminOrdersOptions,
@@ -9,11 +9,13 @@ import {
   useCancelAdminOrderMutation,
 } from '@/queries/adminOrders.query';
 
-const { approveAdminManualPaymentMock, cancelAdminOrderMock, listAdminOrdersMock } = vi.hoisted(() => ({
-  approveAdminManualPaymentMock: vi.fn(),
-  cancelAdminOrderMock: vi.fn(),
-  listAdminOrdersMock: vi.fn(),
-}));
+const { approveAdminManualPaymentMock, cancelAdminOrderMock, listAdminOrdersMock } = vi.hoisted(
+  () => ({
+    approveAdminManualPaymentMock: vi.fn(),
+    cancelAdminOrderMock: vi.fn(),
+    listAdminOrdersMock: vi.fn(),
+  }),
+);
 
 vi.mock('@/services/adminOrders.service', () => ({
   approveAdminManualPayment: approveAdminManualPaymentMock,
@@ -26,14 +28,22 @@ vi.mock('@/services/adminOrders.service', () => ({
   requestAdminManualPaymentResubmission: vi.fn(),
 }));
 
-function MutationHarness({ onReady }: { onReady: (mutation: ReturnType<typeof useApproveAdminManualPaymentMutation>) => void }) {
+function MutationHarness({
+  onReady,
+}: {
+  onReady: (mutation: ReturnType<typeof useApproveAdminManualPaymentMutation>) => void;
+}) {
   const mutation = useApproveAdminManualPaymentMutation();
 
   useEffect(() => onReady(mutation), [mutation, onReady]);
   return null;
 }
 
-function CancelMutationHarness({ onReady }: { onReady: (mutation: ReturnType<typeof useCancelAdminOrderMutation>) => void }) {
+function CancelMutationHarness({
+  onReady,
+}: {
+  onReady: (mutation: ReturnType<typeof useCancelAdminOrderMutation>) => void;
+}) {
   const mutation = useCancelAdminOrderMutation();
 
   useEffect(() => onReady(mutation), [mutation, onReady]);
@@ -48,7 +58,9 @@ describe('admin order query mutations', () => {
         status: 'APPROVED',
       },
     });
-    cancelAdminOrderMock.mockReset().mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
+    cancelAdminOrderMock
+      .mockReset()
+      .mockResolvedValue({ message: 'Order cancelled', statusCode: 200 });
   });
 
   it('invalidates the owning admin order list and detail keys after approval', async () => {
@@ -58,7 +70,11 @@ describe('admin order query mutations', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MutationHarness onReady={(value) => { mutation = value; }} />
+        <MutationHarness
+          onReady={value => {
+            mutation = value;
+          }}
+        />
       </QueryClientProvider>,
     );
 
@@ -67,7 +83,9 @@ describe('admin order query mutations', () => {
 
     expect(approveAdminManualPaymentMock).toHaveBeenCalledWith('order-id', expect.anything());
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.all() });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.detail('order-id') });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: adminOrdersQueryKey.detail('order-id'),
+    });
   });
 
   it('calls the admin cancel service and invalidates the owning order list and detail keys', async () => {
@@ -77,7 +95,11 @@ describe('admin order query mutations', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <CancelMutationHarness onReady={(value) => { mutation = value; }} />
+        <CancelMutationHarness
+          onReady={value => {
+            mutation = value;
+          }}
+        />
       </QueryClientProvider>,
     );
 
@@ -86,7 +108,9 @@ describe('admin order query mutations', () => {
 
     expect(cancelAdminOrderMock).toHaveBeenCalledWith('order-id', expect.anything());
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.all() });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: adminOrdersQueryKey.detail('order-id') });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: adminOrdersQueryKey.detail('order-id'),
+    });
   });
 });
 

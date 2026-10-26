@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vite-plus/test';
 import base from '@/services/ky-base-instance';
 
 describe('shared Ky error handling', () => {

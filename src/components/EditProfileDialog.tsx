@@ -62,15 +62,20 @@ export function EditProfileDialog({ profile }: Props) {
     mode: 'all',
     resolver: zodResolver(profileSchema),
   });
-  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+    watch,
+  } = form;
   const fullName = watch('fullName') ?? '';
   const bio = watch('bio') ?? '';
   const avatarUrl = watch('avatarUrl');
 
   const updateProfile = useUpdateProfileMutation();
   useEffect(() => {
-    if (!open)
-      return;
+    if (!open) return;
 
     reset({
       imageId: profile?.image?.id ?? null,
@@ -89,11 +94,13 @@ export function EditProfileDialog({ profile }: Props) {
     .toUpperCase()
     .slice(0, 2);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>, onImageIdChange: (imageId: string) => void) => {
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    onImageIdChange: (imageId: string) => void,
+  ) => {
     const file = event.target.files?.[0];
 
-    if (!file)
-      return;
+    if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image must be under 5MB');
@@ -105,20 +112,22 @@ export function EditProfileDialog({ profile }: Props) {
     try {
       const response = await uploadProfileFile(file);
 
-      form.setValue('avatarUrl', 'url' in response.data ? response.data.url : URL.createObjectURL(file), { shouldDirty: true, shouldValidate: true });
+      form.setValue(
+        'avatarUrl',
+        'url' in response.data ? response.data.url : URL.createObjectURL(file),
+        { shouldDirty: true, shouldValidate: true },
+      );
       onImageIdChange(response.data.id);
 
       toast.success('Photo uploaded');
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Upload failed');
-    }
-    finally {
+    } finally {
       setUploading(false);
     }
   };
 
-  const save: SubmitHandler<ProfileFormValues> = (values) => {
+  const save: SubmitHandler<ProfileFormValues> = values => {
     const payload: UpdateProfilePayload = {
       bio: values.bio,
       fullName: values.fullName,
@@ -128,16 +137,13 @@ export function EditProfileDialog({ profile }: Props) {
       whatsappTransactionalNotificationsEnabled: true,
     };
 
-    updateProfile.mutate(
-      payload,
-      {
-        onError: (error: any) => showErrorToast(error, 'Failed to save profile'),
-        onSuccess: () => {
-          toast.success('Profile updated');
-          setOpen(false);
-        },
+    updateProfile.mutate(payload, {
+      onError: (error: any) => showErrorToast(error, 'Failed to save profile'),
+      onSuccess: () => {
+        toast.success('Profile updated');
+        setOpen(false);
       },
-    );
+    });
   };
 
   return (
@@ -152,15 +158,22 @@ export function EditProfileDialog({ profile }: Props) {
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Edit your profile</DialogTitle>
-          <DialogDescription>
-            Update your photo, bio, and contact info.
-          </DialogDescription>
+          <DialogDescription>Update your photo, bio, and contact info.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(save, errors_ => toast.error(Object.values(errors_)[0]?.message || 'Check input'))} className="space-y-4 py-2">
+        <form
+          onSubmit={handleSubmit(save, errors_ =>
+            toast.error(Object.values(errors_)[0]?.message || 'Check input'),
+          )}
+          className="space-y-4 py-2"
+        >
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20 border-2 border-primary">
-              <Controller name="avatarUrl" control={control} render={({ field }) => <AvatarImage src={field.value || undefined} />} />
+              <Controller
+                name="avatarUrl"
+                control={control}
+                render={({ field }) => <AvatarImage src={field.value || undefined} />}
+              />
               <AvatarFallback className="bg-primary/10 text-xl font-bold text-primary">
                 {initials}
               </AvatarFallback>
@@ -173,7 +186,7 @@ export function EditProfileDialog({ profile }: Props) {
                 render={({ field }) => (
                   <input
                     onChange={event => handleAvatarUpload(event, field.onChange)}
-                    ref={(element) => {
+                    ref={element => {
                       field.ref(element);
                       fileInputReference.current = element;
                     }}
@@ -192,13 +205,11 @@ export function EditProfileDialog({ profile }: Props) {
                 variant="outline"
                 className="gap-1"
               >
-                {uploading
-                  ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Upload className="h-4 w-4" />
-                    )}
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
 
                 {uploading ? 'Uploading...' : 'Change photo'}
               </Button>
@@ -218,9 +229,7 @@ export function EditProfileDialog({ profile }: Props) {
                 </Button>
               )}
 
-              <p className="mt-1 text-xs text-muted-foreground">
-                JPG, PNG or GIF, max 5MB
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or GIF, max 5MB</p>
             </div>
           </div>
 
@@ -230,15 +239,12 @@ export function EditProfileDialog({ profile }: Props) {
               name="fullName"
               control={control}
               render={({ field }) => (
-                <Input
-                  id="fullName"
-                  maxLength={80}
-                  placeholder="Your name"
-                  {...field}
-                />
+                <Input id="fullName" maxLength={80} placeholder="Your name" {...field} />
               )}
             />
-            {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
+            {errors.fullName && (
+              <p className="text-xs text-destructive">{errors.fullName.message}</p>
+            )}
           </div>
 
           <div>
@@ -288,15 +294,12 @@ export function EditProfileDialog({ profile }: Props) {
                 name="location"
                 control={control}
                 render={({ field }) => (
-                  <Input
-                    id="location"
-                    maxLength={80}
-                    placeholder="Karachi, PK"
-                    {...field}
-                  />
+                  <Input id="location" maxLength={80} placeholder="Karachi, PK" {...field} />
                 )}
               />
-              {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+              {errors.location && (
+                <p className="text-xs text-destructive">{errors.location.message}</p>
+              )}
             </div>
           </div>
 
@@ -305,17 +308,8 @@ export function EditProfileDialog({ profile }: Props) {
               Cancel
             </Button>
 
-            <Button
-              disabled={updateProfile.isPending || uploading}
-              type="submit"
-            >
-              {updateProfile.isPending
-                ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )
-                : (
-                    'Save'
-                  )}
+            <Button disabled={updateProfile.isPending || uploading} type="submit">
+              {updateProfile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
             </Button>
           </DialogFooter>
         </form>

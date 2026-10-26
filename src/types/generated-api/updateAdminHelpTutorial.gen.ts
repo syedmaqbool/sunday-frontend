@@ -132,7 +132,8 @@ export interface UpdateAdminHelpTutorialErrors {
   };
 }
 
-export type UpdateAdminHelpTutorialError = UpdateAdminHelpTutorialErrors[keyof UpdateAdminHelpTutorialErrors];
+export type UpdateAdminHelpTutorialError =
+  UpdateAdminHelpTutorialErrors[keyof UpdateAdminHelpTutorialErrors];
 
 export interface UpdateAdminHelpTutorialResponses {
   /**
@@ -156,4 +157,5 @@ export interface UpdateAdminHelpTutorialResponses {
   };
 }
 
-export type UpdateAdminHelpTutorialResponse = UpdateAdminHelpTutorialResponses[keyof UpdateAdminHelpTutorialResponses];
+export type UpdateAdminHelpTutorialResponse =
+  UpdateAdminHelpTutorialResponses[keyof UpdateAdminHelpTutorialResponses];

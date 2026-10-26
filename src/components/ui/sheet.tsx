@@ -47,8 +47,7 @@ const sheetVariants = cva(
     },
     variants: {
       side: {
-        bottom:
-          `
+        bottom: `
             inset-x-0 bottom-0 border-t
             data-[state=closed]:slide-out-to-bottom
             data-[state=open]:slide-in-from-bottom
@@ -59,8 +58,7 @@ const sheetVariants = cva(
           data-[state=open]:slide-in-from-left
           sm:max-w-sm
         `,
-        right:
-          `
+        right: `
             inset-y-0 right-0 h-full w-3/4 border-l
             data-[state=closed]:slide-out-to-right
             data-[state=open]:slide-in-from-right
@@ -78,8 +76,8 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-  VariantProps<typeof sheetVariants> {}
+    React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
+    VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
@@ -93,7 +91,8 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="
+      <SheetPrimitive.Close
+        className="
         absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity
         hover:opacity-100
         focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
@@ -109,10 +108,7 @@ const SheetContent = React.forwardRef<
 ));
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
-function SheetHeader({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
@@ -128,10 +124,7 @@ function SheetHeader({
 }
 SheetHeader.displayName = 'SheetHeader';
 
-function SheetFooter({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(

@@ -67,9 +67,23 @@ export interface GetMyConversationsResponses {
       buyerFullName: string;
       counterAmount: number | null;
       lastMessageContent: string | null;
-      listingStatus: 'APPROVED' | 'NEEDS_REVISION' | 'PENDING' | 'REJECTED' | 'RESERVED' | 'SOLD' | null;
+      listingStatus:
+        | 'APPROVED'
+        | 'NEEDS_REVISION'
+        | 'PENDING'
+        | 'REJECTED'
+        | 'RESERVED'
+        | 'SOLD'
+        | null;
       listingTitle: string | null;
-      offerStatus: 'ACCEPTED' | 'COUNTERED' | 'EXPIRED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN' | null;
+      offerStatus:
+        | 'ACCEPTED'
+        | 'COUNTERED'
+        | 'EXPIRED'
+        | 'PENDING'
+        | 'REJECTED'
+        | 'WITHDRAWN'
+        | null;
       reservedUntil: string | null;
       sellerFullName: string;
       type: 'DIRECT' | 'LISTING';
@@ -109,4 +123,5 @@ export interface GetMyConversationsResponses {
   };
 }
 
-export type GetMyConversationsResponse = GetMyConversationsResponses[keyof GetMyConversationsResponses];
+export type GetMyConversationsResponse =
+  GetMyConversationsResponses[keyof GetMyConversationsResponses];

@@ -1,12 +1,19 @@
 import type { Order } from '@/types/order.type';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import {
   getManualVerificationState,
   ManualVerificationStatus,
 } from '@/components/ManualVerificationStatus';
 
-function order(overrides: Partial<Pick<Order, 'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'>> = {}) {
+function order(
+  overrides: Partial<
+    Pick<
+      Order,
+      'cancellationReason' | 'expiresAt' | 'manualPaymentSubmission' | 'paymentStatus' | 'status'
+    >
+  > = {},
+) {
   return {
     cancellationReason: null,
     manualPaymentSubmission: {
@@ -31,38 +38,51 @@ describe('manual verification state', () => {
     ['APPROVED', 'APPROVED'],
     ['REJECTED', 'REJECTED'],
     ['RESUBMISSION_REQUESTED', 'RESUBMISSION_REQUESTED'],
-  ] as const)('uses the backend %s state when its previous deadline has elapsed', (status, expected) => {
-    const baseSubmission = order().manualPaymentSubmission!;
-    const testOrder = order({
-      manualPaymentSubmission: { ...baseSubmission, status },
-      expiresAt: '2020-01-01T00:00:00.000Z',
-    });
-    const actualState = getManualVerificationState(testOrder);
+  ] as const)(
+    'uses the backend %s state when its previous deadline has elapsed',
+    (status, expected) => {
+      const baseSubmission = order().manualPaymentSubmission!;
+      const testOrder = order({
+        manualPaymentSubmission: { ...baseSubmission, status },
+        expiresAt: '2020-01-01T00:00:00.000Z',
+      });
+      const actualState = getManualVerificationState(testOrder);
 
-    expect(actualState).toBe(expected);
-  });
+      expect(actualState).toBe(expected);
+    },
+  );
 
   it('keeps accepted-offer proof pending review without a deadline', () => {
     expect(getManualVerificationState(order({ expiresAt: null }))).toBe('SUBMITTED');
   });
 
   it('recognizes an ordinary submitted order as expired when its review window passed before backend cleanup', () => {
-    expect(getManualVerificationState(order({ expiresAt: '2020-01-01T00:00:00.000Z' }))).toBe('EXPIRED');
+    expect(getManualVerificationState(order({ expiresAt: '2020-01-01T00:00:00.000Z' }))).toBe(
+      'EXPIRED',
+    );
   });
 
   it('recognizes payment expiry from the backend cancellation reason', () => {
-    expect(getManualVerificationState(order({
-      cancellationReason: 'PAYMENT_EXPIRED',
-      status: 'CANCELLED',
-    }))).toBe('EXPIRED');
+    expect(
+      getManualVerificationState(
+        order({
+          cancellationReason: 'PAYMENT_EXPIRED',
+          status: 'CANCELLED',
+        }),
+      ),
+    ).toBe('EXPIRED');
     expect(getManualVerificationState(order({ status: 'CANCELLED' }))).toBe('CANCELLED');
   });
 
   it('recognizes an unpaid order as expired when its deadline passed before backend cleanup', () => {
-    expect(getManualVerificationState(order({
-      manualPaymentSubmission: null,
-      expiresAt: '2020-01-01T00:00:00.000Z',
-    }))).toBe('EXPIRED');
+    expect(
+      getManualVerificationState(
+        order({
+          manualPaymentSubmission: null,
+          expiresAt: '2020-01-01T00:00:00.000Z',
+        }),
+      ),
+    ).toBe('EXPIRED');
   });
 
   it('keeps orders without a manual submission on the legacy path', () => {
@@ -106,10 +126,11 @@ describe('manualVerificationStatus', () => {
 
   it('shows the expired payment deadline before backend cleanup updates the order', () => {
     render(
-      <ManualVerificationStatus order={order({
-        manualPaymentSubmission: null,
-        expiresAt: '2020-01-01T00:00:00.000Z',
-      })}
+      <ManualVerificationStatus
+        order={order({
+          manualPaymentSubmission: null,
+          expiresAt: '2020-01-01T00:00:00.000Z',
+        })}
       />,
     );
 
@@ -120,10 +141,11 @@ describe('manualVerificationStatus', () => {
   it('shows the correction deadline when the backend requests resubmission', () => {
     const submission = order().manualPaymentSubmission!;
     render(
-      <ManualVerificationStatus order={order({
-        manualPaymentSubmission: { ...submission, status: 'RESUBMISSION_REQUESTED' },
-        expiresAt: '2099-01-01T00:00:00.000Z',
-      })}
+      <ManualVerificationStatus
+        order={order({
+          manualPaymentSubmission: { ...submission, status: 'RESUBMISSION_REQUESTED' },
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        })}
       />,
     );
 

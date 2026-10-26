@@ -8,12 +8,7 @@ import { z } from 'zod';
 import ClothingTypesManager from '@/components/admin/ClothingTypesManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -68,7 +63,9 @@ function CategoryManagement() {
   const { toast } = useToast();
 
   const { data: categories = [], isLoading: loadingCats } = useQuery(getAdminCategoriesOptions());
-  const { data: subcategories = [], isLoading: loadingSubs } = useQuery(getAdminSubcategoriesOptions());
+  const { data: subcategories = [], isLoading: loadingSubs } = useQuery(
+    getAdminSubcategoriesOptions(),
+  );
 
   const createCat = useCreateCategoryMutation();
   const updateCat = useUpdateCategoryMutation();
@@ -80,7 +77,10 @@ function CategoryManagement() {
   // ── Category dialog state ──────────────────────────────────────────────────
   const [catOpen, setCatOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
-  const catForm = useForm<CatForm>({ defaultValues: emptyCat, resolver: zodResolver(categoryFormSchema) });
+  const catForm = useForm<CatForm>({
+    defaultValues: emptyCat,
+    resolver: zodResolver(categoryFormSchema),
+  });
 
   const openNewCat = () => {
     setEditingCat(null);
@@ -118,8 +118,7 @@ function CategoryManagement() {
           },
         },
       );
-    }
-    else {
+    } else {
       createCat.mutate(
         {
           icon: values.icon,
@@ -148,7 +147,10 @@ function CategoryManagement() {
   // ── Subcategory dialog state ───────────────────────────────────────────────
   const [subOpen, setSubOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<Subcategory | null>(null);
-  const subForm = useForm<SubForm>({ defaultValues: emptySub, resolver: zodResolver(subcategoryFormSchema) });
+  const subForm = useForm<SubForm>({
+    defaultValues: emptySub,
+    resolver: zodResolver(subcategoryFormSchema),
+  });
 
   const openNewSub = () => {
     setEditingSub(null);
@@ -188,8 +190,7 @@ function CategoryManagement() {
           },
         },
       );
-    }
-    else {
+    } else {
       createSub.mutate(
         {
           categoryId: values.categoryId,
@@ -216,11 +217,8 @@ function CategoryManagement() {
     });
   };
 
-  const busy
-    = createCat.isPending
-      || updateCat.isPending
-      || createSub.isPending
-      || updateSub.isPending;
+  const busy =
+    createCat.isPending || updateCat.isPending || createSub.isPending || updateSub.isPending;
 
   if (loadingCats || loadingSubs) {
     return (
@@ -232,72 +230,58 @@ function CategoryManagement() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-heading text-2xl font-bold text-foreground">
-        Category Management
-      </h1>
+      <h1 className="font-heading text-2xl font-bold text-foreground">Category Management</h1>
 
       {/* ── Categories ── */}
       <Card>
-        <CardHeader className="
-          flex flex-col items-start justify-between gap-3
-          sm:flex-row sm:items-center
-        "
+        <CardHeader
+          className="
+            flex flex-col items-start justify-between gap-3
+            sm:flex-row sm:items-center
+          "
         >
           <CardTitle>Categories</CardTitle>
           <Button onClick={openNewCat} size="sm" className="gap-1">
-            <Plus className="h-4 w-4" />
-            {' '}
-            Add Category
+            <Plus className="h-4 w-4" /> Add Category
           </Button>
         </CardHeader>
         <CardContent>
-          {categories.length === 0
-            ? (
-                <p className="text-sm text-muted-foreground">No categories yet.</p>
-              )
-            : (
-                <div className="divide-y divide-border">
-                  {categories.map(cat => (
-                    <div
-                      key={cat.id}
-                      className="flex items-center justify-between py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{cat.icon}</span>
-                        <div>
-                          <p className="font-medium text-foreground">{cat.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {cat.value}
-                            {' '}
-                            · order
-                            {cat.sortOrder}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={() => openEditCat(cat)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteCat(cat.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="
-                            text-destructive
-                            hover:text-destructive
-                          "
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+          {categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No categories yet.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {categories.map(cat => (
+                <div key={cat.id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{cat.icon}</span>
+                    <div>
+                      <p className="font-medium text-foreground">{cat.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cat.value} · order
+                        {cat.sortOrder}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button onClick={() => openEditCat(cat)} size="icon" variant="ghost">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteCat(cat.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="
+                        text-destructive
+                        hover:text-destructive
+                      "
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -305,10 +289,11 @@ function CategoryManagement() {
 
       {/* ── Subcategories ── */}
       <Card>
-        <CardHeader className="
-          flex flex-col items-start justify-between gap-3
-          sm:flex-row sm:items-center
-        "
+        <CardHeader
+          className="
+            flex flex-col items-start justify-between gap-3
+            sm:flex-row sm:items-center
+          "
         >
           <CardTitle>Subcategories</CardTitle>
           <Button
@@ -317,71 +302,51 @@ function CategoryManagement() {
             size="sm"
             className="gap-1"
           >
-            <Plus className="h-4 w-4" />
-            {' '}
-            Add Subcategory
+            <Plus className="h-4 w-4" /> Add Subcategory
           </Button>
         </CardHeader>
         <CardContent>
-          {subcategories.length === 0
-            ? (
-                <p className="text-sm text-muted-foreground">
-                  No subcategories yet.
-                </p>
-              )
-            : (
-                <div className="divide-y divide-border">
-                  {subcategories.map(sub => (
-                    <div
-                      key={sub.id}
-                      className="flex items-center justify-between py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{sub.icon}</span>
-                        <div>
-                          <p className="font-medium text-foreground">{sub.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {sub.value}
-                            {' '}
-                            ·
-                            {sub.categoryLabel}
-                            {' '}
-                            · order
-                            {' '}
-                            {sub.sortOrder}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={() => openEditSub(sub)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteSub(sub.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="
-                            text-destructive
-                            hover:text-destructive
-                          "
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+          {subcategories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No subcategories yet.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {subcategories.map(sub => (
+                <div key={sub.id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{sub.icon}</span>
+                    <div>
+                      <p className="font-medium text-foreground">{sub.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {sub.value} ·{sub.categoryLabel} · order {sub.sortOrder}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button onClick={() => openEditSub(sub)} size="icon" variant="ghost">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteSub(sub.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="
+                        text-destructive
+                        hover:text-destructive
+                      "
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* ── Category Dialog ── */}
       <Dialog
-        onOpenChange={(o) => {
+        onOpenChange={o => {
           setCatOpen(o);
           if (!o) {
             catForm.reset(emptyCat);
@@ -392,15 +357,14 @@ function CategoryManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingCat ? 'Edit Category' : 'Add Category'}
-            </DialogTitle>
+            <DialogTitle>{editingCat ? 'Edit Category' : 'Add Category'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={catForm.handleSubmit(handleSaveCat)} className="space-y-4">
-            <div className="
-              grid gap-4
-              sm:grid-cols-2
-            "
+            <div
+              className="
+                grid gap-4
+                sm:grid-cols-2
+              "
             >
               <div className="space-y-2">
                 <Label>Label</Label>
@@ -410,7 +374,7 @@ function CategoryManagement() {
                   render={({ field }) => (
                     <Input
                       {...field}
-                      onChange={(event) => {
+                      onChange={event => {
                         field.onChange(event);
                         const value = catForm.getValues('value');
                         if (!editingCat && !value)
@@ -425,9 +389,7 @@ function CategoryManagement() {
                 <Label>
                   Slug (value)
                   {editingCat && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">
-                      (immutable)
-                    </span>
+                    <span className="ml-1 text-[10px] text-muted-foreground">(immutable)</span>
                   )}
                 </Label>
                 <Controller
@@ -444,25 +406,41 @@ function CategoryManagement() {
                 />
               </div>
             </div>
-            <div className="
-              grid gap-4
-              sm:grid-cols-2
-            "
+            <div
+              className="
+                grid gap-4
+                sm:grid-cols-2
+              "
             >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
-                <Controller name="icon" control={catForm.control} render={({ field }) => <Input {...field} placeholder="📦" />} />
+                <Controller
+                  name="icon"
+                  control={catForm.control}
+                  render={({ field }) => <Input {...field} placeholder="📦" />}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
-                <Controller name="sortOrder" control={catForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))} ref={field.ref} value={field.value} type="number" />} />
+                <Controller
+                  name="sortOrder"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <Input
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onChange={event =>
+                        field.onChange(Math.trunc(Number(event.target.value) || 0))
+                      }
+                      ref={field.ref}
+                      value={field.value}
+                      type="number"
+                    />
+                  )}
+                />
               </div>
             </div>
-            <Button
-              disabled={busy}
-              type="submit"
-              className="mt-4 w-full"
-            >
+            <Button disabled={busy} type="submit" className="mt-4 w-full">
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingCat ? 'Save Changes' : 'Create Category'}
             </Button>
@@ -472,7 +450,7 @@ function CategoryManagement() {
 
       {/* ── Subcategory Dialog ── */}
       <Dialog
-        onOpenChange={(o) => {
+        onOpenChange={o => {
           setSubOpen(o);
           if (!o) {
             subForm.reset(emptySub);
@@ -483,9 +461,7 @@ function CategoryManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingSub ? 'Edit Subcategory' : 'Add Subcategory'}
-            </DialogTitle>
+            <DialogTitle>{editingSub ? 'Edit Subcategory' : 'Add Subcategory'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={subForm.handleSubmit(handleSaveSub)} className="space-y-4">
             <div className="space-y-2">
@@ -509,10 +485,11 @@ function CategoryManagement() {
                 )}
               />
             </div>
-            <div className="
-              grid gap-4
-              sm:grid-cols-2
-            "
+            <div
+              className="
+                grid gap-4
+                sm:grid-cols-2
+              "
             >
               <div className="space-y-2">
                 <Label>Label</Label>
@@ -522,7 +499,7 @@ function CategoryManagement() {
                   render={({ field }) => (
                     <Input
                       {...field}
-                      onChange={(event) => {
+                      onChange={event => {
                         field.onChange(event);
                         const value = subForm.getValues('value');
                         if (!editingSub && !value)
@@ -537,9 +514,7 @@ function CategoryManagement() {
                 <Label>
                   Slug (value)
                   {editingSub && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">
-                      (immutable)
-                    </span>
+                    <span className="ml-1 text-[10px] text-muted-foreground">(immutable)</span>
                   )}
                 </Label>
                 <Controller
@@ -556,25 +531,41 @@ function CategoryManagement() {
                 />
               </div>
             </div>
-            <div className="
-              grid gap-4
-              sm:grid-cols-2
-            "
+            <div
+              className="
+                grid gap-4
+                sm:grid-cols-2
+              "
             >
               <div className="space-y-2">
                 <Label>Icon (emoji)</Label>
-                <Controller name="icon" control={subForm.control} render={({ field }) => <Input {...field} placeholder="📦" />} />
+                <Controller
+                  name="icon"
+                  control={subForm.control}
+                  render={({ field }) => <Input {...field} placeholder="📦" />}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Sort Order</Label>
-                <Controller name="sortOrder" control={subForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Math.trunc(Number(event.target.value) || 0))} ref={field.ref} value={field.value} type="number" />} />
+                <Controller
+                  name="sortOrder"
+                  control={subForm.control}
+                  render={({ field }) => (
+                    <Input
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onChange={event =>
+                        field.onChange(Math.trunc(Number(event.target.value) || 0))
+                      }
+                      ref={field.ref}
+                      value={field.value}
+                      type="number"
+                    />
+                  )}
+                />
               </div>
             </div>
-            <Button
-              disabled={busy}
-              type="submit"
-              className="mt-4 w-full"
-            >
+            <Button disabled={busy} type="submit" className="mt-4 w-full">
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingSub ? 'Save Changes' : 'Create Subcategory'}
             </Button>

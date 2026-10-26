@@ -48,4 +48,5 @@ export interface UploadFileFromUrlResponses {
   };
 }
 
-export type UploadFileFromUrlResponse = UploadFileFromUrlResponses[keyof UploadFileFromUrlResponses];
+export type UploadFileFromUrlResponse =
+  UploadFileFromUrlResponses[keyof UploadFileFromUrlResponses];

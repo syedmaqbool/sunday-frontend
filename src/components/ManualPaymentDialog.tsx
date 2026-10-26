@@ -24,16 +24,15 @@ import {
   useUploadPaymentProofMutation,
 } from '@/queries/checkout.query';
 
-const SUPPORTED_IMAGE_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_PROOF_SIZE = 5 * 1024 * 1024;
 
 export const manualPaymentSchema = z.object({
   screenshot: z
-    .custom<File>(value => typeof File !== 'undefined' && value instanceof File, 'Transaction screenshot is required.')
+    .custom<File>(
+      value => typeof File !== 'undefined' && value instanceof File,
+      'Transaction screenshot is required.',
+    )
     .refine(file => SUPPORTED_IMAGE_TYPES.has(file.type), 'Use a JPEG, PNG, or WebP image.')
     .refine(file => file.size <= MAX_PROOF_SIZE, 'Screenshot must be 5 MB or smaller.'),
   senderAccountNumber: z
@@ -68,13 +67,11 @@ interface ManualPaymentDialogProps {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message)
-    return error.message;
+  if (error instanceof Error && error.message) return error.message;
 
   if (typeof error === 'object' && error !== null && 'message' in error) {
     const message = error.message;
-    if (typeof message === 'string' && message)
-      return message;
+    if (typeof message === 'string' && message) return message;
   }
 
   return fallback;
@@ -84,8 +81,7 @@ async function handleCopyPaymentDetail(value: string, label: 'Account number' | 
   try {
     await navigator.clipboard.writeText(value);
     toast.success(`${label} copied to clipboard.`);
-  }
-  catch (error) {
+  } catch (error) {
     showErrorToast(error, `Could not copy ${label.toLowerCase()}.`);
   }
 }
@@ -105,7 +101,11 @@ export function ManualPaymentDialog({
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploaded' | 'uploading'>('idle');
   const uploadInFlight = useRef(false);
   const uploadPaymentProof = useUploadPaymentProofMutation();
-  const { data: instructionsResponse, error: instructionsError, isLoading: loadingInstructions } = useQuery({
+  const {
+    data: instructionsResponse,
+    error: instructionsError,
+    isLoading: loadingInstructions,
+  } = useQuery({
     ...getPaymentInstructionsOptions(),
     enabled: open,
   });
@@ -119,12 +119,15 @@ export function ManualPaymentDialog({
     mode: 'all',
     resolver: zodResolver(manualPaymentSchema),
   });
-  const { control, formState: { errors }, handleSubmit } = form;
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+  } = form;
   const busy = submitting || uploadInFlight.current || uploadPaymentProof.isPending;
 
-  const handlePaymentSubmit: SubmitHandler<ManualPaymentFormValues> = async (values) => {
-    if (uploadInFlight.current || submitting)
-      return;
+  const handlePaymentSubmit: SubmitHandler<ManualPaymentFormValues> = async values => {
+    if (uploadInFlight.current || submitting) return;
 
     uploadInFlight.current = true;
     setUploadError(null);
@@ -135,8 +138,7 @@ export function ManualPaymentDialog({
     try {
       const response = await uploadPaymentProof.mutateAsync(values.screenshot);
       const proofFileId = response.data?.id;
-      if (!proofFileId)
-        throw new Error('The screenshot upload did not return a file ID.');
+      if (!proofFileId) throw new Error('The screenshot upload did not return a file ID.');
 
       setUploadProgress(100);
       setUploadStatus('uploaded');
@@ -146,20 +148,16 @@ export function ManualPaymentDialog({
         senderAccountNumber: values.senderAccountNumber.trim(),
         senderAccountTitle: values.senderAccountTitle.trim(),
       });
-    }
-    catch (submissionError) {
-      if (!proofUploaded)
-        setUploadStatus('idle');
+    } catch (submissionError) {
+      if (!proofUploaded) setUploadStatus('idle');
       setUploadError(errorMessage(submissionError, 'Payment could not be submitted.'));
-    }
-    finally {
+    } finally {
       uploadInFlight.current = false;
     }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && busy)
-      return;
+    if (!nextOpen && busy) return;
     onOpenChange(nextOpen);
   };
 
@@ -167,13 +165,16 @@ export function ManualPaymentDialog({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="
-        max-h-[90vh] overflow-y-auto
-        sm:max-w-lg
-      "
+      <DialogContent
+        className="
+          max-h-[90vh] overflow-y-auto
+          sm:max-w-lg
+        "
       >
         <DialogHeader>
-          <DialogTitle>{mode === 'resubmit' ? 'Resubmit payment proof' : 'Complete manual payment'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'resubmit' ? 'Resubmit payment proof' : 'Complete manual payment'}
+          </DialogTitle>
           <DialogDescription>
             {mode === 'resubmit'
               ? 'Send updated sender details and a new transaction screenshot for the store to review.'
@@ -186,90 +187,83 @@ export function ManualPaymentDialog({
         {mode === 'create' && paymentAmount !== undefined && (
           <div className="space-y-1 rounded-md border border-border p-3 text-sm">
             <p className="font-medium text-foreground">
-              Boost amount:
-              {' '}
-              Rs
-              {' '}
-              {paymentAmount.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+              Boost amount: Rs{' '}
+              {paymentAmount.toLocaleString('en-US', {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })}
             </p>
             {paymentDurationDays !== undefined && (
-              <p className="text-muted-foreground">
-                Campaign duration:
-                {' '}
-                {paymentDurationDays}
-                {' '}
-                days
-              </p>
+              <p className="text-muted-foreground">Campaign duration: {paymentDurationDays} days</p>
             )}
           </div>
         )}
 
         <div className="space-y-3 rounded-md border border-border bg-muted/40 p-4">
           <h3 className="font-medium text-foreground">Payment instructions</h3>
-          {loadingInstructions
-            ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading payment instructions...
-                </div>
-              )
-            : instructionsError
-              ? (
-                  <p className="flex items-start gap-2 text-sm text-destructive">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    {errorMessage(instructionsError, 'Payment instructions could not be loaded.')}
-                  </p>
-                )
-              : instructions
-                ? (
-                    <dl className="
-                      grid gap-2 text-sm
-                      sm:grid-cols-2
-                    "
-                    >
-                      <div>
-                        <dt className="text-muted-foreground">Bank or wallet</dt>
-                        <dd className="font-medium text-foreground">{instructions.bankOrWalletLabel}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">Account title</dt>
-                        <dd className="font-medium text-foreground">{instructions.accountTitle}</dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-muted-foreground">Account number</dt>
-                        <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
-                          <span className="min-w-0 break-all">{instructions.accountNumber}</span>
-                          <Button
-                            onClick={() => void handleCopyPaymentDetail(instructions.accountNumber, 'Account number')}
-                            aria-label="Copy account number"
-                            size="icon"
-                            type="button"
-                            variant="ghost"
-                            className="h-8 w-8 shrink-0"
-                          >
-                            <Copy aria-hidden="true" />
-                          </Button>
-                        </dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-muted-foreground">IBAN</dt>
-                        <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
-                          <span className="min-w-0 break-all">{instructions.accountIban}</span>
-                          <Button
-                            onClick={() => void handleCopyPaymentDetail(instructions.accountIban, 'IBAN')}
-                            aria-label="Copy IBAN"
-                            size="icon"
-                            type="button"
-                            variant="ghost"
-                            className="h-8 w-8 shrink-0"
-                          >
-                            <Copy aria-hidden="true" />
-                          </Button>
-                        </dd>
-                      </div>
-                    </dl>
-                  )
-                : <p className="text-sm text-muted-foreground">Payment instructions are unavailable.</p>}
+          {loadingInstructions ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading payment instructions...
+            </div>
+          ) : instructionsError ? (
+            <p className="flex items-start gap-2 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {errorMessage(instructionsError, 'Payment instructions could not be loaded.')}
+            </p>
+          ) : instructions ? (
+            <dl
+              className="
+                grid gap-2 text-sm
+                sm:grid-cols-2
+              "
+            >
+              <div>
+                <dt className="text-muted-foreground">Bank or wallet</dt>
+                <dd className="font-medium text-foreground">{instructions.bankOrWalletLabel}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Account title</dt>
+                <dd className="font-medium text-foreground">{instructions.accountTitle}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">Account number</dt>
+                <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
+                  <span className="min-w-0 break-all">{instructions.accountNumber}</span>
+                  <Button
+                    onClick={() =>
+                      void handleCopyPaymentDetail(instructions.accountNumber, 'Account number')
+                    }
+                    aria-label="Copy account number"
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0"
+                  >
+                    <Copy aria-hidden="true" />
+                  </Button>
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">IBAN</dt>
+                <dd className="flex min-w-0 items-center gap-1 font-medium text-foreground">
+                  <span className="min-w-0 break-all">{instructions.accountIban}</span>
+                  <Button
+                    onClick={() => void handleCopyPaymentDetail(instructions.accountIban, 'IBAN')}
+                    aria-label="Copy IBAN"
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0"
+                  >
+                    <Copy aria-hidden="true" />
+                  </Button>
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">Payment instructions are unavailable.</p>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -278,9 +272,17 @@ export function ManualPaymentDialog({
             <Controller
               name="senderAccountTitle"
               control={control}
-              render={({ field }) => <Input id="senderAccountTitle" placeholder="Your account title or name" {...field} />}
+              render={({ field }) => (
+                <Input
+                  id="senderAccountTitle"
+                  placeholder="Your account title or name"
+                  {...field}
+                />
+              )}
             />
-            {errors.senderAccountTitle && <p className="text-sm text-destructive">{errors.senderAccountTitle.message}</p>}
+            {errors.senderAccountTitle && (
+              <p className="text-sm text-destructive">{errors.senderAccountTitle.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -288,9 +290,13 @@ export function ManualPaymentDialog({
             <Controller
               name="senderAccountNumber"
               control={control}
-              render={({ field }) => <Input id="senderAccountNumber" placeholder="Your account number" {...field} />}
+              render={({ field }) => (
+                <Input id="senderAccountNumber" placeholder="Your account number" {...field} />
+              )}
             />
-            {errors.senderAccountNumber && <p className="text-sm text-destructive">{errors.senderAccountNumber.message}</p>}
+            {errors.senderAccountNumber && (
+              <p className="text-sm text-destructive">{errors.senderAccountNumber.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -309,7 +315,9 @@ export function ManualPaymentDialog({
               )}
             />
             <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP, up to 5 MB.</p>
-            {errors.screenshot && <p className="text-sm text-destructive">{errors.screenshot.message}</p>}
+            {errors.screenshot && (
+              <p className="text-sm text-destructive">{errors.screenshot.message}</p>
+            )}
           </div>
 
           {(uploadStatus !== 'idle' || submitting) && (
@@ -317,15 +325,14 @@ export function ManualPaymentDialog({
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   {submitting
-                    ? mode === 'resubmit' ? 'Resubmitting payment proof...' : 'Creating order...'
+                    ? mode === 'resubmit'
+                      ? 'Resubmitting payment proof...'
+                      : 'Creating order...'
                     : uploadStatus === 'uploaded'
                       ? 'Screenshot uploaded.'
                       : 'Uploading screenshot...'}
                 </span>
-                <span>
-                  {uploadProgress}
-                  %
-                </span>
+                <span>{uploadProgress}%</span>
               </div>
               <Progress value={uploadProgress} aria-label="Payment proof upload progress" />
             </div>
@@ -340,7 +347,12 @@ export function ManualPaymentDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={() => handleOpenChange(false)} disabled={busy} type="button" variant="ghost">
+          <Button
+            onClick={() => handleOpenChange(false)}
+            disabled={busy}
+            type="button"
+            variant="ghost"
+          >
             Cancel
           </Button>
           <Button

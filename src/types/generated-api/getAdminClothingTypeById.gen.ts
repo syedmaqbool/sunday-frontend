@@ -96,7 +96,8 @@ export interface GetAdminClothingTypeByIdErrors {
   };
 }
 
-export type GetAdminClothingTypeByIdError = GetAdminClothingTypeByIdErrors[keyof GetAdminClothingTypeByIdErrors];
+export type GetAdminClothingTypeByIdError =
+  GetAdminClothingTypeByIdErrors[keyof GetAdminClothingTypeByIdErrors];
 
 export interface GetAdminClothingTypeByIdResponses {
   /**
@@ -117,4 +118,5 @@ export interface GetAdminClothingTypeByIdResponses {
   };
 }
 
-export type GetAdminClothingTypeByIdResponse = GetAdminClothingTypeByIdResponses[keyof GetAdminClothingTypeByIdResponses];
+export type GetAdminClothingTypeByIdResponse =
+  GetAdminClothingTypeByIdResponses[keyof GetAdminClothingTypeByIdResponses];

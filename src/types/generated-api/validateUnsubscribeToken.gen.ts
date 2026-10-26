@@ -40,7 +40,8 @@ export interface ValidateUnsubscribeTokenErrors {
   };
 }
 
-export type ValidateUnsubscribeTokenError = ValidateUnsubscribeTokenErrors[keyof ValidateUnsubscribeTokenErrors];
+export type ValidateUnsubscribeTokenError =
+  ValidateUnsubscribeTokenErrors[keyof ValidateUnsubscribeTokenErrors];
 
 export interface ValidateUnsubscribeTokenResponses {
   /**
@@ -56,4 +57,5 @@ export interface ValidateUnsubscribeTokenResponses {
   };
 }
 
-export type ValidateUnsubscribeTokenResponse = ValidateUnsubscribeTokenResponses[keyof ValidateUnsubscribeTokenResponses];
+export type ValidateUnsubscribeTokenResponse =
+  ValidateUnsubscribeTokenResponses[keyof ValidateUnsubscribeTokenResponses];

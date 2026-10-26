@@ -36,38 +36,40 @@ import {
   useRequestAdminManualPaymentResubmissionMutation,
 } from '@/queries/adminOrders.query';
 
-const reviewFormSchema = z.object({
-  action: z.enum(['approve', 'reject', 'resubmit']),
-  reviewNote: z.string(),
-}).superRefine((values, context) => {
-  if (values.action !== 'approve' && values.reviewNote.trim().length === 0) {
-    context.addIssue({
-      path: ['reviewNote'],
-      code: z.ZodIssueCode.custom,
-      message: 'A reason is required for this action.',
-    });
-  }
-});
+const reviewFormSchema = z
+  .object({
+    action: z.enum(['approve', 'reject', 'resubmit']),
+    reviewNote: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (values.action !== 'approve' && values.reviewNote.trim().length === 0) {
+      context.addIssue({
+        path: ['reviewNote'],
+        code: z.ZodIssueCode.custom,
+        message: 'A reason is required for this action.',
+      });
+    }
+  });
 
 type ReviewFormValues = z.infer<typeof reviewFormSchema>;
 
 export function maskSenderAccountNumber(accountNumber: string) {
-  if (accountNumber.length <= 4)
-    return '••••';
+  if (accountNumber.length <= 4) return '••••';
 
   return `${'•'.repeat(accountNumber.length - 4)}${accountNumber.slice(-4)}`;
 }
 
 function latestSubmission(submissions: AdminManualPaymentSubmission[]) {
-  return [...submissions].toSorted((left, right) =>
-    new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
+  return (
+    [...submissions].toSorted(
+      (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+    )[0] ?? null
+  );
 }
 
 function reviewStatusVariant(status: AdminManualPaymentSubmission['status']) {
-  if (status === 'APPROVED')
-    return 'default' as const;
-  if (status === 'REJECTED')
-    return 'destructive' as const;
+  if (status === 'APPROVED') return 'default' as const;
+  if (status === 'REJECTED') return 'destructive' as const;
   return 'outline' as const;
 }
 
@@ -93,17 +95,19 @@ export function AdminManualPaymentReviewDialog({
   const orderQuery = useQuery(getAdminOrderOptions(orderId ?? 'missing', Boolean(orderId)));
   const order = orderQuery.data?.data;
   const currentSubmission = useMemo(
-    () => submissionId
-      ? order?.manualPaymentSubmissions.find(submission => submission.id === submissionId) ?? null
-      : latestSubmission(order?.manualPaymentSubmissions ?? []),
+    () =>
+      submissionId
+        ? (order?.manualPaymentSubmissions.find(submission => submission.id === submissionId) ??
+          null)
+        : latestSubmission(order?.manualPaymentSubmissions ?? []),
     [order?.manualPaymentSubmissions, submissionId],
   );
   const proofQuery = useQuery(getAdminPaymentProofOptions(currentSubmission?.proofFileId));
   const approveMutation = useApproveAdminManualPaymentMutation();
   const rejectMutation = useRejectAdminManualPaymentMutation();
   const resubmissionMutation = useRequestAdminManualPaymentResubmissionMutation();
-  const isMutating
-    = approveMutation.isPending || rejectMutation.isPending || resubmissionMutation.isPending;
+  const isMutating =
+    approveMutation.isPending || rejectMutation.isPending || resubmissionMutation.isPending;
 
   useEffect(() => {
     setPreviewFailed(false);
@@ -131,15 +135,13 @@ export function AdminManualPaymentReviewDialog({
       if (values.action === 'approve') {
         await approveMutation.mutateAsync(orderId);
         toast.success('Manual payment approved.');
-      }
-      else if (values.action === 'reject') {
+      } else if (values.action === 'reject') {
         await rejectMutation.mutateAsync({
           orderId,
           payload: { reviewNote: values.reviewNote.trim() },
         });
         toast.success('Manual payment rejected.');
-      }
-      else {
+      } else {
         await resubmissionMutation.mutateAsync({
           orderId,
           payload: { reviewNote: values.reviewNote.trim() },
@@ -147,8 +149,7 @@ export function AdminManualPaymentReviewDialog({
         toast.success('Resubmission requested.');
       }
       onClose();
-    }
-    catch (error) {
+    } catch (error) {
       setActionError(error instanceof Error ? error.message : 'The review could not be saved.');
     }
   };
@@ -187,21 +188,19 @@ export function AdminManualPaymentReviewDialog({
 
         {order && (
           <div className="space-y-5">
-            <div className="
-              grid gap-4
-              sm:grid-cols-2
-            "
+            <div
+              className="
+                grid gap-4
+                sm:grid-cols-2
+              "
             >
               <Summary title="Order">
-                <p className="font-medium">
-                  #
-                  {order.id.slice(0, 8)}
-                </p>
-                <p className="text-sm text-muted-foreground">{format(new Date(order.createdAt), 'PPp')}</p>
+                <p className="font-medium">#{order.id.slice(0, 8)}</p>
                 <p className="text-sm text-muted-foreground">
-                  Total: Rs
-                  {' '}
-                  {order.total.toLocaleString()}
+                  {format(new Date(order.createdAt), 'PPp')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total: Rs {order.total.toLocaleString()}
                 </p>
               </Summary>
               <Summary title="Buyer">
@@ -237,19 +236,18 @@ export function AdminManualPaymentReviewDialog({
                         {submissionId ? 'Selected submission' : 'Current submission'}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Submitted
-                        {' '}
-                        {format(new Date(currentSubmission.createdAt), 'PPp')}
+                        Submitted {format(new Date(currentSubmission.createdAt), 'PPp')}
                       </p>
                     </div>
                     <Badge variant={reviewStatusVariant(currentSubmission.status)}>
                       {currentSubmission.status.replaceAll('_', ' ')}
                     </Badge>
                   </div>
-                  <div className="
-                    mt-4 grid gap-4
-                    sm:grid-cols-2
-                  "
+                  <div
+                    className="
+                      mt-4 grid gap-4
+                      sm:grid-cols-2
+                    "
                   >
                     <Summary title="Sender account">
                       <p className="font-mono text-sm">
@@ -257,7 +255,9 @@ export function AdminManualPaymentReviewDialog({
                           ? currentSubmission.senderAccountNumber
                           : maskSenderAccountNumber(currentSubmission.senderAccountNumber)}
                       </p>
-                      <p className="text-sm text-muted-foreground">{currentSubmission.senderAccountTitle}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {currentSubmission.senderAccountTitle}
+                      </p>
                     </Summary>
                     <Summary title="Review">
                       <p className="text-sm">
@@ -266,50 +266,55 @@ export function AdminManualPaymentReviewDialog({
                           : 'Awaiting first review'}
                       </p>
                       {currentSubmission.reviewNote && (
-                        <p className="text-sm text-muted-foreground">{currentSubmission.reviewNote}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {currentSubmission.reviewNote}
+                        </p>
                       )}
                     </Summary>
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-border p-4">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Protected proof</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    Protected proof
+                  </p>
                   <div className="mt-3 flex min-h-40 items-center justify-center rounded-md bg-muted/40 p-3">
-                    {currentSubmission.proofFileId
-                      ? proofQuery.isPending
-                        ? (
-                            <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Loading protected proof…
-                            </div>
-                          )
-                        : proofQuery.isError || previewFailed
-                          ? (
-                              <div className="text-center text-sm text-muted-foreground">
-                                <FileWarning className="mx-auto mb-2 h-5 w-5" />
-                                Proof is unavailable or access was denied.
-                              </div>
-                            )
-                          : previewUrl
-                            ? (
-                                <img
-                                  src={previewUrl}
-                                  onError={() => setPreviewFailed(true)}
-                                  alt="Submitted payment proof"
-                                  className="max-h-80 rounded object-contain"
-                                />
-                              )
-                            : (
-                                <p className="text-sm text-muted-foreground">Proof preview is unavailable.</p>
-                              )
-                      : (
-                          <p className="text-sm text-muted-foreground">No proof file was submitted.</p>
-                        )}
+                    {currentSubmission.proofFileId ? (
+                      proofQuery.isPending ? (
+                        <div
+                          role="status"
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading protected proof…
+                        </div>
+                      ) : proofQuery.isError || previewFailed ? (
+                        <div className="text-center text-sm text-muted-foreground">
+                          <FileWarning className="mx-auto mb-2 h-5 w-5" />
+                          Proof is unavailable or access was denied.
+                        </div>
+                      ) : previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          onError={() => setPreviewFailed(true)}
+                          alt="Submitted payment proof"
+                          className="max-h-80 rounded object-contain"
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Proof preview is unavailable.
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No proof file was submitted.</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Prior review information</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    Prior review information
+                  </p>
                   {order.manualPaymentSubmissions.map(submission => (
                     <div
                       key={submission.id}
@@ -319,11 +324,17 @@ export function AdminManualPaymentReviewDialog({
                       "
                     >
                       <div>
-                        <Badge variant={reviewStatusVariant(submission.status)}>{submission.status.replaceAll('_', ' ')}</Badge>
-                        {submission.reviewNote && <p className="mt-2 text-muted-foreground">{submission.reviewNote}</p>}
+                        <Badge variant={reviewStatusVariant(submission.status)}>
+                          {submission.status.replaceAll('_', ' ')}
+                        </Badge>
+                        {submission.reviewNote && (
+                          <p className="mt-2 text-muted-foreground">{submission.reviewNote}</p>
+                        )}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {submission.reviewedAt ? format(new Date(submission.reviewedAt), 'PPp') : 'Not reviewed'}
+                        {submission.reviewedAt
+                          ? format(new Date(submission.reviewedAt), 'PPp')
+                          : 'Not reviewed'}
                       </span>
                     </div>
                   ))}
@@ -333,7 +344,8 @@ export function AdminManualPaymentReviewDialog({
                   <Alert>
                     <Clock3 className="h-4 w-4" />
                     <AlertDescription>
-                      You can view this submission, but ORDERS_UPDATE permission is required to review it.
+                      You can view this submission, but ORDERS_UPDATE permission is required to
+                      review it.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -365,20 +377,37 @@ export function AdminManualPaymentReviewDialog({
                           <AlertDescription>{actionError}</AlertDescription>
                         </Alert>
                       )}
-                      <DialogFooter className="
-                        flex-col gap-2
-                        sm:flex-row
-                      "
+                      <DialogFooter
+                        className="
+                          flex-col gap-2
+                          sm:flex-row
+                        "
                       >
-                        <Button onClick={() => runAction('approve')} disabled={isMutating} type="button">
-                          {approveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <Button
+                          onClick={() => runAction('approve')}
+                          disabled={isMutating}
+                          type="button"
+                        >
+                          {approveMutation.isPending && (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          )}
                           <CheckCircle2 className="h-4 w-4" />
                           Approve payment
                         </Button>
-                        <Button onClick={() => runAction('resubmit')} disabled={isMutating} type="button" variant="outline">
+                        <Button
+                          onClick={() => runAction('resubmit')}
+                          disabled={isMutating}
+                          type="button"
+                          variant="outline"
+                        >
                           Request resubmission
                         </Button>
-                        <Button onClick={() => runAction('reject')} disabled={isMutating} type="button" variant="destructive">
+                        <Button
+                          onClick={() => runAction('reject')}
+                          disabled={isMutating}
+                          type="button"
+                          variant="destructive"
+                        >
                           Reject payment
                         </Button>
                       </DialogFooter>
@@ -394,13 +423,7 @@ export function AdminManualPaymentReviewDialog({
   );
 }
 
-function Summary({
-  children,
-  title,
-}: {
-  children: React.ReactNode;
-  title: string;
-}) {
+function Summary({ children, title }: { children: React.ReactNode; title: string }) {
   return (
     <div className={cn('rounded-md bg-muted/40 p-3')}>
       <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{title}</p>

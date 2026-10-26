@@ -62,4 +62,5 @@ export interface GetHelpCategoriesResponses {
   };
 }
 
-export type GetHelpCategoriesResponse = GetHelpCategoriesResponses[keyof GetHelpCategoriesResponses];
+export type GetHelpCategoriesResponse =
+  GetHelpCategoriesResponses[keyof GetHelpCategoriesResponses];

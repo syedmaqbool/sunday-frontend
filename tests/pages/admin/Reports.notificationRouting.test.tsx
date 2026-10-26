@@ -1,33 +1,35 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import Reports from '@/pages/admin/Reports';
 
 const { reports } = vi.hoisted(() => ({
-  reports: [{
-    id: 'report-1',
-    listingId: 'listing-1',
-    reportedUserId: null,
-    adminNotes: null,
-    details: null,
-    listingTitle: 'Selected report listing',
-    messageContent: null,
-    reason: 'MISLEADING_LISTING',
-    reportedUserFullName: null,
-    reporterFullName: 'Reporter',
-    resolverFullName: null,
-    status: 'OPEN',
-    resolvedAt: null,
-    resolvedBy: null,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  }],
+  reports: [
+    {
+      id: 'report-1',
+      listingId: 'listing-1',
+      reportedUserId: null,
+      adminNotes: null,
+      details: null,
+      listingTitle: 'Selected report listing',
+      messageContent: null,
+      reason: 'MISLEADING_LISTING',
+      reportedUserFullName: null,
+      reporterFullName: 'Reporter',
+      resolverFullName: null,
+      status: 'OPEN',
+      resolvedAt: null,
+      resolvedBy: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+  ],
 }));
 
 vi.mock('@/queries/adminReport.query', () => ({
   getAdminReportsOptions: (status: string) => ({
-    queryFn: async () => status === 'OPEN' || status === 'all' ? reports : [],
+    queryFn: async () => (status === 'OPEN' || status === 'all' ? reports : []),
     queryKey: ['admin-reports', status],
   }),
   useResolveReportMutation: () => ({ isPending: false, mutate: vi.fn() }),
@@ -39,7 +41,9 @@ function LocationControls() {
   return (
     <>
       <output data-testid="location">{`${location.pathname}${location.search}`}</output>
-      <button onClick={() => navigate(-1)} type="button">Back</button>
+      <button onClick={() => navigate(-1)} type="button">
+        Back
+      </button>
     </>
   );
 }
@@ -61,7 +65,9 @@ describe('admin report notification navigation', () => {
     renderReports(['/admin/reports', '/admin/reports?report=report-1']);
 
     expect(await screen.findByText('Selected report listing')).toBeInTheDocument();
-    expect(document.querySelector('[data-selected="true"]')).toHaveTextContent('Selected report listing');
+    expect(document.querySelector('[data-selected="true"]')).toHaveTextContent(
+      'Selected report listing',
+    );
     expect(screen.getByTestId('location')).toHaveTextContent('report=report-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));

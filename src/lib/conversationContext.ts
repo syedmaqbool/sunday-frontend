@@ -4,8 +4,7 @@ export function getConversationContextLabel(
   type: Conversation['type'],
   listingTitle: string | null,
 ) {
-  if (type === 'DIRECT' || listingTitle === null)
-    return 'General enquiry';
+  if (type === 'DIRECT' || listingTitle === null) return 'General enquiry';
 
   return listingTitle;
 }

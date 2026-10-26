@@ -127,7 +127,8 @@ export interface UpdateAdminPayoutRunItemStatusErrors {
   };
 }
 
-export type UpdateAdminPayoutRunItemStatusError = UpdateAdminPayoutRunItemStatusErrors[keyof UpdateAdminPayoutRunItemStatusErrors];
+export type UpdateAdminPayoutRunItemStatusError =
+  UpdateAdminPayoutRunItemStatusErrors[keyof UpdateAdminPayoutRunItemStatusErrors];
 
 export interface UpdateAdminPayoutRunItemStatusResponses {
   /**
@@ -168,4 +169,5 @@ export interface UpdateAdminPayoutRunItemStatusResponses {
   };
 }
 
-export type UpdateAdminPayoutRunItemStatusResponse = UpdateAdminPayoutRunItemStatusResponses[keyof UpdateAdminPayoutRunItemStatusResponses];
+export type UpdateAdminPayoutRunItemStatusResponse =
+  UpdateAdminPayoutRunItemStatusResponses[keyof UpdateAdminPayoutRunItemStatusResponses];

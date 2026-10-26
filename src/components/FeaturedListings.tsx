@@ -23,23 +23,20 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   });
   const preferences = preferencesResponse?.data;
 
-  const isPersonalized = variant === 'personalized'
-    && !!user?.id
-    && !!preferences?.onboardingCompleted;
+  const isPersonalized =
+    variant === 'personalized' && !!user?.id && !!preferences?.onboardingCompleted;
 
   const { data: featuredResponse } = useQuery({
     ...getFeaturedListingsOptions(),
     enabled: variant === 'fresh',
   });
   const { data: forYouResponse } = useQuery(getForYouListingsOptions(user?.id, isPersonalized));
-  const listings = variant === 'personalized'
-    ? forYouResponse?.data ?? []
-    : featuredResponse?.data ?? [];
+  const listings =
+    variant === 'personalized' ? (forYouResponse?.data ?? []) : (featuredResponse?.data ?? []);
 
   const checkScroll = useCallback(() => {
     const element = scrollReference.current;
-    if (!element)
-      return;
+    if (!element) return;
     setCanScrollLeft(element.scrollLeft > 0);
     setCanScrollRight(element.scrollLeft < element.scrollWidth - element.clientWidth - 1);
   }, []);
@@ -47,8 +44,7 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   const scrollBy = useCallback(
     (direction: 'left' | 'right') => {
       const element = scrollReference.current;
-      if (!element)
-        return;
+      if (!element) return;
       const cardWidth = element.firstElementChild?.clientWidth || 280;
       const gap = 16;
       const scrollAmount = (cardWidth + gap) * 2;
@@ -62,27 +58,24 @@ function FeaturedListings({ variant = 'fresh' }: FeaturedListingsProps) {
   );
 
   // Hide personalized section when user has no preferences (avoid duplicating Fresh Drops)
-  if (variant === 'personalized' && !isPersonalized)
-    return null;
-  if (listings.length === 0)
-    return null;
+  if (variant === 'personalized' && !isPersonalized) return null;
+  if (listings.length === 0) return null;
 
   return (
     <section className="container py-16">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="
-            font-heading text-3xl font-bold text-foreground
-            md:text-4xl
-          "
+          <h2
+            className="
+              font-heading text-3xl font-bold text-foreground
+              md:text-4xl
+            "
           >
             {isPersonalized ? 'Picked for You' : 'Fresh Drops'}
           </h2>
           <p className="mt-2 flex items-center gap-1.5 text-muted-foreground">
             {isPersonalized && <Sparkles className="h-4 w-4 text-primary" />}
-            {isPersonalized
-              ? 'Based on your style preferences'
-              : 'Just listed by our community'}
+            {isPersonalized ? 'Based on your style preferences' : 'Just listed by our community'}
           </p>
         </div>
         <div className="flex gap-2">

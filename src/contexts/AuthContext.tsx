@@ -7,15 +7,7 @@ import type {
   AuthUser,
   RegisterData,
 } from '@/types/auth.type';
-import {
-  createContext,
-
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { fetchAuthMe, login, logout, register } from '@/services/auth.service';
 
@@ -87,11 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data.user);
         setProfile(response.data.profile);
         setPreferences(response.data.preferences);
-      }
-      catch {
+      } catch {
         tokenStorage.clear();
-      }
-      finally {
+      } finally {
         setLoading(false);
       }
     };
@@ -138,11 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async (): Promise<void> => {
     try {
       await logout();
-    }
-    catch {
+    } catch {
       // server-side fail ho bhi jaye — client state zaroor clear karo
-    }
-    finally {
+    } finally {
       tokenStorage.clear();
       setUser(null);
       setSession(null);

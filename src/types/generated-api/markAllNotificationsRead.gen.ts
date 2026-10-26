@@ -38,7 +38,8 @@ export interface MarkAllNotificationsReadErrors {
   };
 }
 
-export type MarkAllNotificationsReadError = MarkAllNotificationsReadErrors[keyof MarkAllNotificationsReadErrors];
+export type MarkAllNotificationsReadError =
+  MarkAllNotificationsReadErrors[keyof MarkAllNotificationsReadErrors];
 
 export interface MarkAllNotificationsReadResponses {
   /**
@@ -50,4 +51,5 @@ export interface MarkAllNotificationsReadResponses {
   };
 }
 
-export type MarkAllNotificationsReadResponse = MarkAllNotificationsReadResponses[keyof MarkAllNotificationsReadResponses];
+export type MarkAllNotificationsReadResponse =
+  MarkAllNotificationsReadResponses[keyof MarkAllNotificationsReadResponses];

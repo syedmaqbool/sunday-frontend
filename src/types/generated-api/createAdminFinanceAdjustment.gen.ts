@@ -167,7 +167,8 @@ export interface CreateAdminFinanceAdjustmentErrors {
   };
 }
 
-export type CreateAdminFinanceAdjustmentError = CreateAdminFinanceAdjustmentErrors[keyof CreateAdminFinanceAdjustmentErrors];
+export type CreateAdminFinanceAdjustmentError =
+  CreateAdminFinanceAdjustmentErrors[keyof CreateAdminFinanceAdjustmentErrors];
 
 export interface CreateAdminFinanceAdjustmentResponses {
   /**
@@ -252,4 +253,5 @@ export interface CreateAdminFinanceAdjustmentResponses {
   };
 }
 
-export type CreateAdminFinanceAdjustmentResponse = CreateAdminFinanceAdjustmentResponses[keyof CreateAdminFinanceAdjustmentResponses];
+export type CreateAdminFinanceAdjustmentResponse =
+  CreateAdminFinanceAdjustmentResponses[keyof CreateAdminFinanceAdjustmentResponses];

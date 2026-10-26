@@ -24,19 +24,17 @@ import { getHelpTutorialsOptions } from '@/queries/helpTutorial.query';
 function HelpCenter() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const activeCategoryKey
-    = activeCategory === 'all' ? undefined : activeCategory;
+  const activeCategoryKey = activeCategory === 'all' ? undefined : activeCategory;
 
   const { data: categories = [] } = useQuery(getHelpCategoriesOptions());
 
-  const { data: faqs = [], isLoading: loadingFaqs } = useQuery(getHelpFaqsOptions(activeCategoryKey));
+  const { data: faqs = [], isLoading: loadingFaqs } = useQuery(
+    getHelpFaqsOptions(activeCategoryKey),
+  );
 
   const { data: tutorials = [] } = useQuery(getHelpTutorialsOptions());
 
-  const categoryMap = useMemo(
-    () => new Map(categories.map(c => [c.key, c])),
-    [categories],
-  );
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.key, c])), [categories]);
 
   const sortedTutorials = useMemo(
     () => tutorials.toSorted((a, b) => a.sortOrder - b.sortOrder),
@@ -45,11 +43,9 @@ function HelpCenter() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return faqs.filter((f) => {
-      const matchQ
-        = !q
-          || f.question.toLowerCase().includes(q)
-          || f.answer.toLowerCase().includes(q);
+    return faqs.filter(f => {
+      const matchQ =
+        !q || f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q);
       return matchQ;
     });
   }, [query, faqs]);
@@ -59,27 +55,26 @@ function HelpCenter() {
       <Navbar />
 
       <section className="border-b border-border bg-gradient-to-b from-muted/40 to-background">
-        <div className="
-          container py-14
-          md:py-20
-        "
+        <div
+          className="
+            container py-14
+            md:py-20
+          "
         >
           <div className="mx-auto max-w-2xl text-center">
             <Badge variant="outline" className="mb-4 gap-1.5">
-              <LifeBuoy className="h-3.5 w-3.5" />
-              {' '}
-              Support & Help
+              <LifeBuoy className="h-3.5 w-3.5" /> Support & Help
             </Badge>
-            <h1 className="
-              font-heading text-4xl font-bold tracking-tight text-foreground
-              md:text-5xl
-            "
+            <h1
+              className="
+                font-heading text-4xl font-bold tracking-tight text-foreground
+                md:text-5xl
+              "
             >
               How can we help you?
             </h1>
             <p className="mt-3 text-muted-foreground">
-              Browse our FAQs, follow a quick tutorial, or get in touch with our
-              team.
+              Browse our FAQs, follow a quick tutorial, or get in touch with our team.
             </p>
 
             <div className="relative mt-7">
@@ -97,13 +92,14 @@ function HelpCenter() {
 
       {categories.length > 0 && (
         <section className="container py-10">
-          <div className="
-            grid gap-3
-            sm:grid-cols-2
-            lg:grid-cols-3
-          "
+          <div
+            className="
+              grid gap-3
+              sm:grid-cols-2
+              lg:grid-cols-3
+            "
           >
-            {categories.map((c) => {
+            {categories.map(c => {
               const isActive = activeCategory === c.key;
               return (
                 <button
@@ -112,23 +108,21 @@ function HelpCenter() {
                   className={`
                     group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors
                     ${
-                isActive
-                  ? 'border-primary bg-primary/5'
-                  : `
-                    border-border bg-card
-                    hover:border-primary/40 hover:bg-muted/40
-                  `
-                }
+                      isActive
+                        ? 'border-primary bg-primary/5'
+                        : `
+                          border-border bg-card
+                          hover:border-primary/40 hover:bg-muted/40
+                        `
+                    }
                   `}
                 >
                   <div
                     className={`
                       flex h-11 w-11 shrink-0 items-center justify-center rounded-lg
                       ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
-                }
+                        isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                      }
                     `}
                   >
                     <BookOpen className="h-5 w-5" />
@@ -145,11 +139,7 @@ function HelpCenter() {
           </div>
           {activeCategory !== 'all' && (
             <div className="mt-3">
-              <Button
-                onClick={() => setActiveCategory('all')}
-                size="sm"
-                variant="ghost"
-              >
+              <Button onClick={() => setActiveCategory('all')} size="sm" variant="ghost">
                 Clear filter
               </Button>
             </div>
@@ -163,67 +153,55 @@ function HelpCenter() {
             Frequently asked questions
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filtered.length}
-            {' '}
-            {filtered.length === 1 ? 'article' : 'articles'}
+            {filtered.length} {filtered.length === 1 ? 'article' : 'articles'}
           </p>
         </div>
 
-        {loadingFaqs
-          ? (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )
-          : (filtered.length === 0
-              ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
-                      <Search className="h-10 w-10" />
-                      <p className="font-medium text-foreground">No results found</p>
-                      <p className="text-sm">
-                        Try a different search or clear your filters.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )
-              : (
-                  <Accordion collapsible type="single" className="space-y-2">
-                    {filtered.map((f) => {
-                      const cat = categoryMap.get(f.categoryKey);
-                      return (
-                        <AccordionItem
-                          key={f.id}
-                          value={f.id}
-                          className="rounded-lg border border-border bg-card px-4"
-                        >
-                          <AccordionTrigger className="
-                            py-4 text-left
-                            hover:no-underline
-                          "
-                          >
-                            <div className="flex items-center gap-3 text-left">
-                              {cat && (
-                                <Badge
-                                  variant="secondary"
-                                  className="shrink-0 text-[10px]"
-                                >
-                                  {cat.label}
-                                </Badge>
-                              )}
-                              <span className="font-medium text-foreground">
-                                {f.question}
-                              </span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="whitespace-pre-line pb-4 pl-[5.25rem] pr-4 text-sm leading-relaxed text-muted-foreground">
-                            {f.answer}
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
-                ))}
+        {loadingFaqs ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
+              <Search className="h-10 w-10" />
+              <p className="font-medium text-foreground">No results found</p>
+              <p className="text-sm">Try a different search or clear your filters.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Accordion collapsible type="single" className="space-y-2">
+            {filtered.map(f => {
+              const cat = categoryMap.get(f.categoryKey);
+              return (
+                <AccordionItem
+                  key={f.id}
+                  value={f.id}
+                  className="rounded-lg border border-border bg-card px-4"
+                >
+                  <AccordionTrigger
+                    className="
+                      py-4 text-left
+                      hover:no-underline
+                    "
+                  >
+                    <div className="flex items-center gap-3 text-left">
+                      {cat && (
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                          {cat.label}
+                        </Badge>
+                      )}
+                      <span className="font-medium text-foreground">{f.question}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="whitespace-pre-line pb-4 pl-[5.25rem] pr-4 text-sm leading-relaxed text-muted-foreground">
+                    {f.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        )}
       </section>
 
       {sortedTutorials.length > 0 && (
@@ -235,12 +213,13 @@ function HelpCenter() {
                 Quick tutorials
               </h2>
             </div>
-            <div className="
-              grid gap-4
-              md:grid-cols-3
-            "
+            <div
+              className="
+                grid gap-4
+                md:grid-cols-3
+              "
             >
-              {sortedTutorials.map((t) => {
+              {sortedTutorials.map(t => {
                 return (
                   <Card key={t.id} className="flex flex-col">
                     <CardContent className="flex flex-1 flex-col gap-4 p-5">
@@ -253,9 +232,7 @@ function HelpCenter() {
                       <ol className="flex-1 space-y-2">
                         {t.steps.map((step, index) => (
                           <li key={step} className="flex gap-2 text-sm">
-                            <span className="font-medium text-muted-foreground">
-                              {index + 1}
-                            </span>
+                            <span className="font-medium text-muted-foreground">{index + 1}</span>
                             <span className="text-muted-foreground">{step}</span>
                           </li>
                         ))}
@@ -279,10 +256,11 @@ function HelpCenter() {
 
       <section className="container py-14">
         <Card className="overflow-hidden">
-          <CardContent className="
-            flex flex-col items-center gap-4 p-10 text-center
-            md:flex-row md:text-left
-          "
+          <CardContent
+            className="
+              flex flex-col items-center gap-4 p-10 text-center
+              md:flex-row md:text-left
+            "
           >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Mail className="h-6 w-6" />
@@ -296,9 +274,7 @@ function HelpCenter() {
               </p>
             </div>
             <Button asChild className="gap-2">
-              <a href="mailto:support@sunday.app">
-                Contact support
-              </a>
+              <a href="mailto:support@sunday.app">Contact support</a>
             </Button>
           </CardContent>
         </Card>

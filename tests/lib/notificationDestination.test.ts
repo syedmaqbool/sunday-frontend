@@ -1,64 +1,101 @@
 import type { Notification } from '@/types/notification.type';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { getNotificationDestinationPath } from '@/lib/notificationDestination';
 
-function notification(destination: Notification['destination'], audience: Notification['audience'] = 'USER') {
+function notification(
+  destination: Notification['destination'],
+  audience: Notification['audience'] = 'USER',
+) {
   return { audience, destination } as Notification;
 }
 
 describe('getNotificationDestinationPath', () => {
   it('opens profile overview notifications without query parameters', () => {
-    expect(getNotificationDestinationPath(notification({
-      resource: 'profile',
-      section: 'overview',
-    }))).toBe('/profile');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resource: 'profile',
+          section: 'overview',
+        }),
+      ),
+    ).toBe('/profile');
   });
 
   it('opens a user conversation and focuses the notified message', () => {
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'conversation-1',
-      focusedChild: { resourceId: 'message-1', resource: 'message' },
-      resource: 'conversation',
-      section: 'messages',
-    }))).toBe('/messages?conversation=conversation-1&message=message-1');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'conversation-1',
+          focusedChild: { resourceId: 'message-1', resource: 'message' },
+          resource: 'conversation',
+          section: 'messages',
+        }),
+      ),
+    ).toBe('/messages?conversation=conversation-1&message=message-1');
   });
 
   it('opens user and admin support tickets with their message focus', () => {
     const focusedChild = { resourceId: 'message-1', resource: 'supportTicketMessage' } as const;
 
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'ticket-1',
-      focusedChild,
-      resource: 'supportTicket',
-      section: 'detail',
-    }))).toBe('/support?ticket=ticket-1&message=message-1');
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'ticket-1',
-      focusedChild,
-      recipient: 'ADMIN',
-      resource: 'supportTicket',
-      section: 'management',
-    }, 'ADMIN'))).toBe('/admin/support?ticket=ticket-1&message=message-1');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'ticket-1',
+          focusedChild,
+          resource: 'supportTicket',
+          section: 'detail',
+        }),
+      ),
+    ).toBe('/support?ticket=ticket-1&message=message-1');
+    expect(
+      getNotificationDestinationPath(
+        notification(
+          {
+            resourceId: 'ticket-1',
+            focusedChild,
+            recipient: 'ADMIN',
+            resource: 'supportTicket',
+            section: 'management',
+          },
+          'ADMIN',
+        ),
+      ),
+    ).toBe('/admin/support?ticket=ticket-1&message=message-1');
   });
 
   it('falls back to the relevant list when the target is absent', () => {
-    expect(getNotificationDestinationPath(notification({
-      resource: 'conversation',
-      section: 'messages',
-    }))).toBe('/messages');
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'ADMIN',
-      resource: 'supportTicket',
-      section: 'management',
-    }, 'ADMIN'))).toBe('/admin/support');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resource: 'conversation',
+          section: 'messages',
+        }),
+      ),
+    ).toBe('/messages');
+    expect(
+      getNotificationDestinationPath(
+        notification(
+          {
+            recipient: 'ADMIN',
+            resource: 'supportTicket',
+            section: 'management',
+          },
+          'ADMIN',
+        ),
+      ),
+    ).toBe('/admin/support');
   });
 
   it('falls back from a user report with no reported content to listings', () => {
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'listing-1',
-      resource: 'report',
-      section: 'list',
-    }))).toBe('/listings');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'listing-1',
+          resource: 'report',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/listings');
   });
 
   it('opens seller listing editor notifications in the status-specific tab', () => {
@@ -68,199 +105,273 @@ describe('getNotificationDestinationPath', () => {
       section: 'editor',
     } as const;
 
-    expect(getNotificationDestinationPath({
-      ...notification(destination),
-      metadata: { status: 'APPROVED' },
-      type: 'LISTING_APPROVED',
-    })).toBe('/my-listings?tab=approved');
-    expect(getNotificationDestinationPath({
-      ...notification(destination),
-      metadata: { status: 'REJECTED' },
-      type: 'LISTING_REJECTED',
-    })).toBe('/my-listings?tab=pending');
+    expect(
+      getNotificationDestinationPath({
+        ...notification(destination),
+        metadata: { status: 'APPROVED' },
+        type: 'LISTING_APPROVED',
+      }),
+    ).toBe('/my-listings?tab=approved');
+    expect(
+      getNotificationDestinationPath({
+        ...notification(destination),
+        metadata: { status: 'REJECTED' },
+        type: 'LISTING_REJECTED',
+      }),
+    ).toBe('/my-listings?tab=pending');
   });
 
   it('opens both complaint notification types in the recipient returns tab with the complaint selected', () => {
     for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'complaint 1',
-          recipient: 'BUYER',
-          resource: 'complaint',
-          section: 'my-returns',
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'complaint 1',
+            recipient: 'BUYER',
+            resource: 'complaint',
+            section: 'my-returns',
+          }),
+          type,
         }),
-        type,
-      })).toBe('/profile?tab=returns&returnsTab=my-returns&complaint=complaint+1');
+      ).toBe('/profile?tab=returns&returnsTab=my-returns&complaint=complaint+1');
 
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'complaint-2',
-          recipient: 'SELLER',
-          resource: 'complaint',
-          section: 'returned-to-me',
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'complaint-2',
+            recipient: 'SELLER',
+            resource: 'complaint',
+            section: 'returned-to-me',
+          }),
+          type,
         }),
-        type,
-      })).toBe('/profile?tab=returns&returnsTab=returned-to-me&complaint=complaint-2');
+      ).toBe('/profile?tab=returns&returnsTab=returned-to-me&complaint=complaint-2');
     }
   });
 
   it('opens admin report notifications with the report selected and falls back to the list without an id', () => {
     for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'report 1',
-          recipient: 'ADMIN',
-          resource: 'report',
-          section: 'management',
-        }, 'ADMIN'),
-        type,
-      })).toBe('/admin/reports?report=report+1');
+      expect(
+        getNotificationDestinationPath({
+          ...notification(
+            {
+              resourceId: 'report 1',
+              recipient: 'ADMIN',
+              resource: 'report',
+              section: 'management',
+            },
+            'ADMIN',
+          ),
+          type,
+        }),
+      ).toBe('/admin/reports?report=report+1');
     }
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'ADMIN',
-      resource: 'report',
-      section: 'list',
-    }, 'ADMIN'))).toBe('/admin/reports');
+    expect(
+      getNotificationDestinationPath(
+        notification(
+          {
+            recipient: 'ADMIN',
+            resource: 'report',
+            section: 'list',
+          },
+          'ADMIN',
+        ),
+      ),
+    ).toBe('/admin/reports');
   });
 
   it('opens user report notifications on the reported listing, conversation message, or seller', () => {
     for (const type of ['COMPLAINT_RAISED', 'COMPLAINT_UPDATED'] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'listing 1',
-          resource: 'listing',
-          section: 'detail',
-        }),
-        type,
-      })).toBe('/listing/listing%201');
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'conversation-1',
-          focusedChild: { resourceId: 'message-1', resource: 'message' },
-          resource: 'conversation',
-          section: 'messages',
-        }),
-        type,
-      })).toBe('/messages?conversation=conversation-1&message=message-1');
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'seller 1',
-          resource: 'seller',
-          section: 'listings',
-        }),
-        type,
-      })).toBe('/seller/seller%201');
-    }
-  });
-
-  it('opens a review notification on the recipient seller profile with the review selected', () => {
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'seller 1',
-      focusedChild: { resourceId: 'review 1', resource: 'review' },
-      recipient: 'SELLER',
-      resource: 'seller',
-      section: 'reviews',
-    }))).toBe('/seller/seller%201?tab=reviews&review=review+1');
-
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'seller-1',
-      recipient: 'SELLER',
-      resource: 'seller',
-      section: 'reviews',
-    }))).toBe('/seller/seller-1?tab=reviews');
-  });
-
-  it('falls back to the returns or report list when notification targets are missing', () => {
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'BUYER',
-      resource: 'complaint',
-      section: 'list',
-    }))).toBe('/profile?tab=returns&returnsTab=my-returns');
-    expect(getNotificationDestinationPath(notification({
-      resource: 'report',
-      section: 'list',
-    }))).toBe('/listings');
-  });
-
-  it('opens buyer refund activity warnings in the returns tab', () => {
-    expect(getNotificationDestinationPath({
-      ...notification({
-        recipient: 'BUYER',
-        resource: 'complaint',
-        section: 'my-returns',
-      }),
-      type: 'REFUND_ACTIVITY_WARNING',
-    })).toBe('/profile?tab=returns&returnsTab=my-returns');
-  });
-
-  it('opens admin listing submissions in moderation with URL-backed selection state', () => {
-    expect(getNotificationDestinationPath({
-      ...notification({
-        resourceId: 'listing-1',
-        resource: 'listing',
-        section: 'moderation',
-      }, 'ADMIN'),
-      type: 'LISTING_SUBMITTED',
-    })).toBe('/admin/listings?listing=listing-1&status=PENDING');
-  });
-
-  it('falls back to admin listing moderation when a submitted listing is missing', () => {
-    expect(getNotificationDestinationPath({
-      ...notification({
-        resource: 'listing',
-        section: 'list',
-      }, 'ADMIN'),
-      type: 'LISTING_SUBMITTED',
-    })).toBe('/admin/listings');
-  });
-
-  it('opens the reservation listing for both participants for every reservation notification', () => {
-    for (const type of ['RESERVATION_CREATED', 'RESERVATION_EXPIRED', 'RESERVATION_CANCELLED'] as const) {
-      for (const recipient of ['BUYER', 'SELLER'] as const) {
-        expect(getNotificationDestinationPath({
+      expect(
+        getNotificationDestinationPath({
           ...notification({
             resourceId: 'listing 1',
-            recipient,
             resource: 'listing',
             section: 'detail',
           }),
           type,
-        })).toBe('/listing/listing%201');
+        }),
+      ).toBe('/listing/listing%201');
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'conversation-1',
+            focusedChild: { resourceId: 'message-1', resource: 'message' },
+            resource: 'conversation',
+            section: 'messages',
+          }),
+          type,
+        }),
+      ).toBe('/messages?conversation=conversation-1&message=message-1');
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'seller 1',
+            resource: 'seller',
+            section: 'listings',
+          }),
+          type,
+        }),
+      ).toBe('/seller/seller%201');
+    }
+  });
+
+  it('opens a review notification on the recipient seller profile with the review selected', () => {
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'seller 1',
+          focusedChild: { resourceId: 'review 1', resource: 'review' },
+          recipient: 'SELLER',
+          resource: 'seller',
+          section: 'reviews',
+        }),
+      ),
+    ).toBe('/seller/seller%201?tab=reviews&review=review+1');
+
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'seller-1',
+          recipient: 'SELLER',
+          resource: 'seller',
+          section: 'reviews',
+        }),
+      ),
+    ).toBe('/seller/seller-1?tab=reviews');
+  });
+
+  it('falls back to the returns or report list when notification targets are missing', () => {
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'BUYER',
+          resource: 'complaint',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/profile?tab=returns&returnsTab=my-returns');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resource: 'report',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/listings');
+  });
+
+  it('opens buyer refund activity warnings in the returns tab', () => {
+    expect(
+      getNotificationDestinationPath({
+        ...notification({
+          recipient: 'BUYER',
+          resource: 'complaint',
+          section: 'my-returns',
+        }),
+        type: 'REFUND_ACTIVITY_WARNING',
+      }),
+    ).toBe('/profile?tab=returns&returnsTab=my-returns');
+  });
+
+  it('opens admin listing submissions in moderation with URL-backed selection state', () => {
+    expect(
+      getNotificationDestinationPath({
+        ...notification(
+          {
+            resourceId: 'listing-1',
+            resource: 'listing',
+            section: 'moderation',
+          },
+          'ADMIN',
+        ),
+        type: 'LISTING_SUBMITTED',
+      }),
+    ).toBe('/admin/listings?listing=listing-1&status=PENDING');
+  });
+
+  it('falls back to admin listing moderation when a submitted listing is missing', () => {
+    expect(
+      getNotificationDestinationPath({
+        ...notification(
+          {
+            resource: 'listing',
+            section: 'list',
+          },
+          'ADMIN',
+        ),
+        type: 'LISTING_SUBMITTED',
+      }),
+    ).toBe('/admin/listings');
+  });
+
+  it('opens the reservation listing for both participants for every reservation notification', () => {
+    for (const type of [
+      'RESERVATION_CREATED',
+      'RESERVATION_EXPIRED',
+      'RESERVATION_CANCELLED',
+    ] as const) {
+      for (const recipient of ['BUYER', 'SELLER'] as const) {
+        expect(
+          getNotificationDestinationPath({
+            ...notification({
+              resourceId: 'listing 1',
+              recipient,
+              resource: 'listing',
+              section: 'detail',
+            }),
+            type,
+          }),
+        ).toBe('/listing/listing%201');
       }
     }
   });
 
   it('falls back to the listings page when a reservation listing identifier is missing', () => {
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'BUYER',
-      resource: 'listing',
-      section: 'list',
-    }))).toBe('/listings');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'BUYER',
+          resource: 'listing',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/listings');
   });
 
   it('falls back to the seller listing list when the listing editor target is missing', () => {
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'SELLER',
-      resource: 'listing',
-      section: 'list',
-    }))).toBe('/my-listings');
-    expect(getNotificationDestinationPath(notification({
-      resource: 'listing',
-      section: 'editor',
-    }))).toBe('/my-listings');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'SELLER',
+          resource: 'listing',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/my-listings');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resource: 'listing',
+          section: 'editor',
+        }),
+      ),
+    ).toBe('/my-listings');
   });
 
   it('opens seller notifications in received offers with the exact offer selected', () => {
     for (const type of ['OFFER_CREATED', 'OFFER_WITHDRAWN'] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'offer 1',
-          recipient: 'SELLER',
-          resource: 'offer',
-          section: 'received',
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'offer 1',
+            recipient: 'SELLER',
+            resource: 'offer',
+            section: 'received',
+          }),
+          type,
         }),
-        type,
-      })).toBe('/my-listings?offer=offer+1&tab=offers');
+      ).toBe('/my-listings?offer=offer+1&tab=offers');
     }
   });
 
@@ -271,15 +382,17 @@ describe('getNotificationDestinationPath', () => {
       'OFFER_COUNTERED',
       'OFFER_EXPIRED',
     ] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'offer-1',
-          recipient: 'BUYER',
-          resource: 'offer',
-          section: 'sent',
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'offer-1',
+            recipient: 'BUYER',
+            resource: 'offer',
+            section: 'sent',
+          }),
+          type,
         }),
-        type,
-      })).toBe('/my-offers?offer=offer-1');
+      ).toBe('/my-offers?offer=offer-1');
     }
   });
 
@@ -300,44 +413,66 @@ describe('getNotificationDestinationPath', () => {
           resource: 'order',
           section: sections[recipient],
         } as const;
-        const path = recipient === 'BUYER'
-          ? '/order-confirmation/order-1'
-          : (recipient === 'SELLER'
+        const path =
+          recipient === 'BUYER'
+            ? '/order-confirmation/order-1'
+            : recipient === 'SELLER'
               ? '/profile?order=order-1&item=item-1&tab=sold'
-              : '/admin/orders?order=order-1&item=item-1');
+              : '/admin/orders?order=order-1&item=item-1';
 
-        expect(getNotificationDestinationPath({
-          ...notification(destination, audience),
-          type,
-        })).toBe(path);
+        expect(
+          getNotificationDestinationPath({
+            ...notification(destination, audience),
+            type,
+          }),
+        ).toBe(path);
       }
     }
   });
 
   it('falls back to each recipient order list when an order identifier is missing', () => {
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'BUYER',
-      resource: 'order',
-      section: 'detail',
-    }))).toBe('/profile');
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'SELLER',
-      resource: 'order',
-      section: 'sold',
-    }))).toBe('/profile?tab=sold');
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'ADMIN',
-      resource: 'order',
-      section: 'list',
-    }, 'ADMIN'))).toBe('/admin/orders');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'BUYER',
+          resource: 'order',
+          section: 'detail',
+        }),
+      ),
+    ).toBe('/profile');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'SELLER',
+          resource: 'order',
+          section: 'sold',
+        }),
+      ),
+    ).toBe('/profile?tab=sold');
+    expect(
+      getNotificationDestinationPath(
+        notification(
+          {
+            recipient: 'ADMIN',
+            resource: 'order',
+            section: 'list',
+          },
+          'ADMIN',
+        ),
+      ),
+    ).toBe('/admin/orders');
   });
 
   it('falls back to the user order list when the order recipient cannot be determined', () => {
-    expect(getNotificationDestinationPath(notification({
-      resourceId: 'order-1',
-      resource: 'order',
-      section: 'list',
-    }))).toBe('/profile');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          resourceId: 'order-1',
+          resource: 'order',
+          section: 'list',
+        }),
+      ),
+    ).toBe('/profile');
   });
 
   it('opens buyer payment notifications at the identified order', () => {
@@ -349,48 +484,65 @@ describe('getNotificationDestinationPath', () => {
       'MANUAL_PAYMENT_CANCELLED',
       'MANUAL_PAYMENT_EXPIRED',
     ] as const) {
-      expect(getNotificationDestinationPath({
-        ...notification({
-          resourceId: 'order-1',
-          recipient: 'BUYER',
-          resource: 'order',
-          section: 'detail',
+      expect(
+        getNotificationDestinationPath({
+          ...notification({
+            resourceId: 'order-1',
+            recipient: 'BUYER',
+            resource: 'order',
+            section: 'detail',
+          }),
+          type,
         }),
-        type,
-      })).toBe('/order-confirmation/order-1');
+      ).toBe('/order-confirmation/order-1');
     }
   });
 
   it('opens admin manual payment submissions at the exact order review', () => {
-    expect(getNotificationDestinationPath({
-      ...notification({
-        resourceId: 'order-1',
-        focusedChild: { resourceId: 'submission-1', resource: 'manualPaymentSubmission' },
-        recipient: 'ADMIN',
-        resource: 'order',
-        section: 'manual-payment-review',
-      }, 'ADMIN'),
-      type: 'MANUAL_PAYMENT_SUBMITTED',
-    })).toBe('/admin/orders?order=order-1&paymentSubmission=submission-1');
+    expect(
+      getNotificationDestinationPath({
+        ...notification(
+          {
+            resourceId: 'order-1',
+            focusedChild: { resourceId: 'submission-1', resource: 'manualPaymentSubmission' },
+            recipient: 'ADMIN',
+            resource: 'order',
+            section: 'manual-payment-review',
+          },
+          'ADMIN',
+        ),
+        type: 'MANUAL_PAYMENT_SUBMITTED',
+      }),
+    ).toBe('/admin/orders?order=order-1&paymentSubmission=submission-1');
   });
 
   it('does not route payment notifications without a supported destination', () => {
-    expect(getNotificationDestinationPath({
-      ...notification(null),
-      type: 'PAYMENT_REFUND_REQUIRED',
-    })).toBeNull();
+    expect(
+      getNotificationDestinationPath({
+        ...notification(null),
+        type: 'PAYMENT_REFUND_REQUIRED',
+      }),
+    ).toBeNull();
   });
 
   it('opens the appropriate offer list when an older notification has no offer identifier', () => {
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'SELLER',
-      resource: 'offer',
-      section: 'received',
-    }))).toBe('/my-listings?tab=offers');
-    expect(getNotificationDestinationPath(notification({
-      recipient: 'BUYER',
-      resource: 'offer',
-      section: 'sent',
-    }))).toBe('/my-offers');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'SELLER',
+          resource: 'offer',
+          section: 'received',
+        }),
+      ),
+    ).toBe('/my-listings?tab=offers');
+    expect(
+      getNotificationDestinationPath(
+        notification({
+          recipient: 'BUYER',
+          resource: 'offer',
+          section: 'sent',
+        }),
+      ),
+    ).toBe('/my-offers');
   });
 });

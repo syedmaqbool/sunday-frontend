@@ -23,11 +23,11 @@ import { sendRegisterOtp } from '@/services/auth.service';
 const authBaseSchema = z.object({
   dob: z
     .string()
-    .refine((value) => {
+    .refine(value => {
       const dobDate = new Date(value);
       return !Number.isNaN(dobDate.getTime()) && dobDate < new Date();
     }, 'Please enter a valid date.')
-    .refine((value) => {
+    .refine(value => {
       const dobDate = new Date(value);
       const age = (Date.now() - dobDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
       return age >= 13;
@@ -37,7 +37,9 @@ const authBaseSchema = z.object({
   name: z.string().trim().min(1, 'Full name is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   phone: internationalPhoneSchema,
-  termsAccepted: z.boolean().refine(value => value === true, 'Please accept the Terms & Conditions to continue.'),
+  termsAccepted: z
+    .boolean()
+    .refine(value => value === true, 'Please accept the Terms & Conditions to continue.'),
 });
 
 const authSchema = authBaseSchema.extend({
@@ -79,9 +81,10 @@ function Auth() {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
   const requestedReturnTo = (location.state as { from?: unknown } | null)?.from;
-  const returnTo = typeof requestedReturnTo === 'string' && requestedReturnTo.startsWith('/')
-    ? requestedReturnTo
-    : null;
+  const returnTo =
+    typeof requestedReturnTo === 'string' && requestedReturnTo.startsWith('/')
+      ? requestedReturnTo
+      : null;
   const form = useForm<AuthFormValues>({
     defaultValues: {
       dob: '',
@@ -156,8 +159,7 @@ function Auth() {
         description: 'Check your email for the 6-character code.',
         title: otpSent ? 'OTP resent' : 'OTP sent',
       });
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
       if (error instanceof HTTPError) {
         if (error.response.status === 409) {
           form.setValue('otp', '');
@@ -173,19 +175,23 @@ function Auth() {
         if (error.response.status === 429) {
           const cooldown = parseRetryAfterSeconds(error.response.headers.get('Retry-After'));
           setOtpCooldown(cooldown);
-          toast(getErrorToastOptions(error, `Please wait ${cooldown} seconds before requesting another OTP.`));
+          toast(
+            getErrorToastOptions(
+              error,
+              `Please wait ${cooldown} seconds before requesting another OTP.`,
+            ),
+          );
           return;
         }
       }
 
       toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
-    }
-    finally {
+    } finally {
       setSendingOtp(false);
     }
   };
 
-  const onSubmit: SubmitHandler<AuthFormValues> = async (values) => {
+  const onSubmit: SubmitHandler<AuthFormValues> = async values => {
     setLoading(true);
     setOtpError(null);
 
@@ -223,8 +229,7 @@ function Auth() {
         });
 
         navigate('/preferences');
-      }
-      else {
+      } else {
         authSubmissionInProgress.current = true;
         const data = await signIn(values.email, values.password);
 
@@ -234,13 +239,11 @@ function Auth() {
         if (onboardingDone) {
           toast({ title: 'Welcome back!' });
           navigate(returnTo ?? '/');
-        }
-        else {
+        } else {
           navigate('/preferences');
         }
       }
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
       authSubmissionInProgress.current = false;
       if (mode === 'register' && error instanceof HTTPError && error.response.status === 401) {
         const message = 'Invalid or expired OTP.';
@@ -250,16 +253,14 @@ function Auth() {
       }
 
       toast(getErrorToastOptions(error, 'Something went wrong. Please try again.'));
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
   const onInvalid = () => {
     const firstError = Object.values(errors)[0]?.message;
-    if (!firstError)
-      return;
+    if (!firstError) return;
 
     toast({
       description: String(firstError),
@@ -272,7 +273,9 @@ function Auth() {
     ? 'Sending...'
     : otpCooldown > 0
       ? `${otpSent ? 'Resend OTP' : 'Send OTP'} (${otpCooldown}s)`
-      : otpSent ? 'Resend OTP' : 'Send OTP';
+      : otpSent
+        ? 'Resend OTP'
+        : 'Send OTP';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -289,9 +292,7 @@ function Auth() {
               {mode === 'login' ? 'Welcome back' : 'Create account'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {mode === 'login'
-                ? 'Sign in to your account'
-                : 'Join the fashion marketplace'}
+              {mode === 'login' ? 'Sign in to your account' : 'Join the fashion marketplace'}
             </p>
 
             <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-6 space-y-4">
@@ -302,15 +303,11 @@ function Auth() {
                     <Controller
                       name="name"
                       control={control}
-                      render={({ field }) => (
-                        <Input
-                          id="name"
-                          placeholder="Your name"
-                          {...field}
-                        />
-                      )}
+                      render={({ field }) => <Input id="name" placeholder="Your name" {...field} />}
                     />
-                    {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                    {errors.name && (
+                      <p className="text-sm text-destructive">{errors.name.message}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
@@ -327,7 +324,9 @@ function Auth() {
                         />
                       )}
                     />
-                    {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone.message}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dob">Date of Birth</Label>
@@ -361,7 +360,7 @@ function Auth() {
                           readOnly={mode === 'register' && emailLocked}
                           type="email"
                           {...field}
-                          onChange={(event) => {
+                          onChange={event => {
                             field.onChange(event);
                             if (mode === 'register') {
                               setEmailExistsError(null);
@@ -385,8 +384,7 @@ function Auth() {
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                 {mode === 'register' && emailExistsError && (
                   <p className="text-sm text-destructive">
-                    {emailExistsError}
-                    {' '}
+                    {emailExistsError}{' '}
                     <Link to="/forgot-password" className="underline">
                       Forgot password?
                     </Link>
@@ -420,7 +418,9 @@ function Auth() {
                     />
                   )}
                 />
-                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
                 {mode === 'login' && (
                   <div className="text-right">
                     <Link
@@ -447,9 +447,14 @@ function Auth() {
                         render={({ field }) => (
                           <InputOTP
                             id="otp"
-                            onChange={(value) => {
+                            onChange={value => {
                               setOtpError(null);
-                              field.onChange(value.replaceAll(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 6));
+                              field.onChange(
+                                value
+                                  .replaceAll(/[^0-9a-z]/gi, '')
+                                  .toUpperCase()
+                                  .slice(0, 6),
+                              );
                             }}
                             value={field.value}
                             maxLength={6}
@@ -468,8 +473,12 @@ function Auth() {
                       <p className="text-sm text-muted-foreground">
                         If you don’t see the code, check your spam or junk folder.
                       </p>
-                      {errors.otp && <p className="text-sm text-destructive">{errors.otp.message}</p>}
-                      {!errors.otp && otpError && <p className="text-sm text-destructive">{otpError}</p>}
+                      {errors.otp && (
+                        <p className="text-sm text-destructive">{errors.otp.message}</p>
+                      )}
+                      {!errors.otp && otpError && (
+                        <p className="text-sm text-destructive">{otpError}</p>
+                      )}
                     </div>
                   )}
                   <div className="space-y-3 pt-1">
@@ -489,8 +498,7 @@ function Auth() {
                         htmlFor="terms"
                         className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
                       >
-                        I agree to the
-                        {' '}
+                        I agree to the{' '}
                         <Link
                           target="_blank"
                           to="/terms"
@@ -500,13 +508,13 @@ function Auth() {
                           "
                         >
                           Terms & Conditions
-                        </Link>
-                        {' '}
-                        and understand that my account may be suspended if I
-                        violate them.
+                        </Link>{' '}
+                        and understand that my account may be suspended if I violate them.
                       </Label>
                     </div>
-                    {errors.termsAccepted && <p className="text-sm text-destructive">{errors.termsAccepted.message}</p>}
+                    {errors.termsAccepted && (
+                      <p className="text-sm text-destructive">{errors.termsAccepted.message}</p>
+                    )}
                     <div className="flex items-start gap-2">
                       <Controller
                         name="marketingConsent"
@@ -523,8 +531,8 @@ function Auth() {
                         htmlFor="marketing"
                         className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
                       >
-                        I would like to receive marketing emails about new
-                        arrivals, promotions, and platform updates. (Optional)
+                        I would like to receive marketing emails about new arrivals, promotions, and
+                        platform updates. (Optional)
                       </Label>
                     </div>
                   </div>
@@ -537,52 +545,44 @@ function Auth() {
                 type="submit"
                 className="w-full"
               >
-                {loading
-                  ? 'Please wait...'
-                  : (mode === 'login'
-                      ? 'Sign In'
-                      : 'Create Account')}
+                {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              {mode === 'login'
-                ? (
-                    <>
-                      Don't have an account?
-                      {' '}
-                      <button
-                        onClick={() => {
-                          setMode('register');
-                          resetSignupVerificationState();
-                        }}
-                        className="
-                          font-medium text-primary
-                          hover:underline
-                        "
-                      >
-                        Sign up
-                      </button>
-                    </>
-                  )
-                : (
-                    <>
-                      Already have an account?
-                      {' '}
-                      <button
-                        onClick={() => {
-                          setMode('login');
-                          resetSignupVerificationState();
-                        }}
-                        className="
-                          font-medium text-primary
-                          hover:underline
-                        "
-                      >
-                        Sign in
-                      </button>
-                    </>
-                  )}
+              {mode === 'login' ? (
+                <>
+                  Don't have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setMode('register');
+                      resetSignupVerificationState();
+                    }}
+                    className="
+                      font-medium text-primary
+                      hover:underline
+                    "
+                  >
+                    Sign up
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setMode('login');
+                      resetSignupVerificationState();
+                    }}
+                    className="
+                      font-medium text-primary
+                      hover:underline
+                    "
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

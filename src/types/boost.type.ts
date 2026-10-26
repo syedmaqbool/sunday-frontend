@@ -1,4 +1,10 @@
-import type { ApiRequestBody, ApiRequestQuery, ApiResponseData, ApiResponseItem, ApiSuccessResponse } from './api.type';
+import type {
+  ApiRequestBody,
+  ApiRequestQuery,
+  ApiResponseData,
+  ApiResponseItem,
+  ApiSuccessResponse,
+} from './api.type';
 import type {
   CreateListingBoostCampaignData,
   CreateListingBoostCampaignResponses,
@@ -41,6 +47,6 @@ export type ResubmitBoostPaymentProofVariables = {
 export type BoostableListingsParameters = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
 export type BoostWithPackagePayload = ApiRequestBody<CreateListingPackageBoostsData>;
 export type BoostWithCampaignPayload = ApiRequestBody<CreateListingBoostCampaignData>;
-export type BoostPurchaseResponse
-  = | ApiSuccessResponse<CreateListingBoostCampaignResponses>
-    | ApiSuccessResponse<CreateListingPackageBoostsResponses>;
+export type BoostPurchaseResponse =
+  | ApiSuccessResponse<CreateListingBoostCampaignResponses>
+  | ApiSuccessResponse<CreateListingPackageBoostsResponses>;

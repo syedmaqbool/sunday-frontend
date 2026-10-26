@@ -54,11 +54,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -85,37 +81,36 @@ import {
   useUpdateOrderItemStatusMutation,
 } from '@/queries/myOrders.query';
 import { getMyProfileQueryOptions, myProfileQueryKey } from '@/queries/myProfile.query';
-import {
-  updateItemStatus,
-  uploadShippingProof,
-} from '@/services/myorders.service';
+import { updateItemStatus, uploadShippingProof } from '@/services/myorders.service';
 
 const shipmentProofFileSchema = z.custom<File>(
   value => typeof File !== 'undefined' && value instanceof File,
   'Please upload a proof image',
 );
 
-const shipmentFormSchema = z.object({
-  expectedDate: z.date().optional(),
-  method: z.string().min(1, 'Please select a shipping method'),
-  proofFile: shipmentProofFileSchema.nullable(),
-  tracking: z.string().trim().min(1, 'Please enter a tracking number').max(100),
-}).superRefine((values, context) => {
-  if (!values.expectedDate) {
-    context.addIssue({
-      path: ['expectedDate'],
-      code: z.ZodIssueCode.custom,
-      message: 'Please select an expected delivery date',
-    });
-  }
-  if (!values.proofFile) {
-    context.addIssue({
-      path: ['proofFile'],
-      code: z.ZodIssueCode.custom,
-      message: 'Please upload a proof image',
-    });
-  }
-});
+const shipmentFormSchema = z
+  .object({
+    expectedDate: z.date().optional(),
+    method: z.string().min(1, 'Please select a shipping method'),
+    proofFile: shipmentProofFileSchema.nullable(),
+    tracking: z.string().trim().min(1, 'Please enter a tracking number').max(100),
+  })
+  .superRefine((values, context) => {
+    if (!values.expectedDate) {
+      context.addIssue({
+        path: ['expectedDate'],
+        code: z.ZodIssueCode.custom,
+        message: 'Please select an expected delivery date',
+      });
+    }
+    if (!values.proofFile) {
+      context.addIssue({
+        path: ['proofFile'],
+        code: z.ZodIssueCode.custom,
+        message: 'Please upload a proof image',
+      });
+    }
+  });
 
 type ShipmentFormValues = z.infer<typeof shipmentFormSchema>;
 
@@ -138,14 +133,13 @@ const SHIPPING_METHODS = [
 function statusBadge(status: OrderItem['status'], shippedAt?: string | null) {
   if (status === 'DELIVERED') {
     return (
-      <Badge className="
-        gap-1 bg-emerald-500/15 text-emerald-700
-        hover:bg-emerald-500/20
-      "
+      <Badge
+        className="
+          gap-1 bg-emerald-500/15 text-emerald-700
+          hover:bg-emerald-500/20
+        "
       >
-        <CheckCircle2 className="h-3 w-3" />
-        {' '}
-        Completed
+        <CheckCircle2 className="h-3 w-3" /> Completed
       </Badge>
     );
   }
@@ -166,9 +160,7 @@ function statusBadge(status: OrderItem['status'], shippedAt?: string | null) {
   }
   return (
     <Badge variant="outline" className="gap-1">
-      <CheckCircle2 className="h-3 w-3" />
-      {' '}
-      Confirmed
+      <CheckCircle2 className="h-3 w-3" /> Confirmed
     </Badge>
   );
 }
@@ -182,16 +174,15 @@ function UserProfile() {
   const [bankModalOpen, setBankModalOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery(getMyProfileQueryOptions());
-  const { data: ordersResponse, isLoading: ordersLoading }
-    = useQuery(getMyOrdersOptions());
-  const { data: salesResponse, isLoading: salesLoading }
-    = useQuery(getMySalesOptions());
-  const selectedSalesQuery = useQuery(getMySalesOrderOptions(searchParams.get('order') ?? '', searchParams.get('item') ?? undefined));
+  const { data: ordersResponse, isLoading: ordersLoading } = useQuery(getMyOrdersOptions());
+  const { data: salesResponse, isLoading: salesLoading } = useQuery(getMySalesOptions());
+  const selectedSalesQuery = useQuery(
+    getMySalesOrderOptions(searchParams.get('order') ?? '', searchParams.get('item') ?? undefined),
+  );
   const { data: rating } = useQuery(getSellerRatingOptions(user?.id));
 
   useEffect(() => {
-    if (!authLoading && !user)
-      navigate('/auth', { replace: true });
+    if (!authLoading && !user) navigate('/auth', { replace: true });
   }, [authLoading, user, navigate]);
 
   const isLoading = profileLoading || ordersLoading || salesLoading;
@@ -201,38 +192,60 @@ function UserProfile() {
   const selectedOrderId = searchParams.get('order');
   const selectedItemId = searchParams.get('item');
   const salesWithSelectedOrder = useMemo(() => {
-    const selectedOrderSales = selectedSalesQuery.data?.data.filter(item => item.orderId === selectedOrderId) ?? [];
+    const selectedOrderSales =
+      selectedSalesQuery.data?.data.filter(item => item.orderId === selectedOrderId) ?? [];
     const existingSaleIds = new Set(sales.map(item => item.id));
     return [...sales, ...selectedOrderSales.filter(item => !existingSaleIds.has(item.id))];
   }, [sales, selectedOrderId, selectedSalesQuery.data]);
-  const selectedSale = salesWithSelectedOrder.find(item => item.orderId === selectedOrderId
-    && (!selectedItemId || item.id === selectedItemId))
-  ?? salesWithSelectedOrder.find(item => item.orderId === selectedOrderId);
+  const selectedSale =
+    salesWithSelectedOrder.find(
+      item => item.orderId === selectedOrderId && (!selectedItemId || item.id === selectedItemId),
+    ) ?? salesWithSelectedOrder.find(item => item.orderId === selectedOrderId);
 
   useEffect(() => {
-    if (salesLoading || !selectedOrderId || selectedSalesQuery.isLoading || selectedSalesQuery.isError)
+    if (
+      salesLoading ||
+      !selectedOrderId ||
+      selectedSalesQuery.isLoading ||
+      selectedSalesQuery.isError
+    )
       return;
 
     const orderSales = salesWithSelectedOrder.filter(item => item.orderId === selectedOrderId);
-    if (orderSales.length === 0 || (selectedItemId && orderSales.every(item => item.id !== selectedItemId))) {
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current);
-        if (orderSales.length === 0)
-          next.delete('order');
-        next.delete('item');
-        next.set('tab', 'sold');
-        return next;
-      }, { replace: true });
+    if (
+      orderSales.length === 0 ||
+      (selectedItemId && orderSales.every(item => item.id !== selectedItemId))
+    ) {
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current);
+          if (orderSales.length === 0) next.delete('order');
+          next.delete('item');
+          next.set('tab', 'sold');
+          return next;
+        },
+        { replace: true },
+      );
       return;
     }
 
     const saleId = selectedItemId ? selectedSale?.id : orderSales[0]?.id;
     if (saleId)
-      document.querySelector(`[id="sold-order-item-${CSS.escape(saleId)}"]`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-  }, [salesLoading, salesWithSelectedOrder, selectedItemId, selectedOrderId, selectedSale, selectedSalesQuery.isError, selectedSalesQuery.isLoading, setSearchParams]);
+      document
+        .querySelector(`[id="sold-order-item-${CSS.escape(saleId)}"]`)
+        ?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }, [
+    salesLoading,
+    salesWithSelectedOrder,
+    selectedItemId,
+    selectedOrderId,
+    selectedSale,
+    selectedSalesQuery.isError,
+    selectedSalesQuery.isLoading,
+    setSearchParams,
+  ]);
 
-  if (authLoading || !user)
-    return null;
+  if (authLoading || !user) return null;
 
   const boughtCount = orders.reduce(
     (sum, o) => sum + o.items.reduce((s, it) => s + (it.quantity || 0), 0),
@@ -250,368 +263,316 @@ function UserProfile() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="container max-w-4xl flex-1 py-8">
-        {isLoading
-          ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )
-          : (
-              <>
-                {/* Profile header */}
-                <div className="
-                  flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6
-                  sm:flex-row sm:items-start
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            {/* Profile header */}
+            <div
+              className="
+                flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6
+                sm:flex-row sm:items-start
+              "
+            >
+              <Avatar className="h-20 w-20 border-2 border-primary">
+                <AvatarImage src={profile?.image?.url ?? undefined} />
+                <AvatarFallback className="bg-primary/10 text-xl font-bold text-primary">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className="
+                  flex-1 text-center
+                  sm:text-left
                 "
+              >
+                <h1 className="font-heading text-2xl font-bold text-card-foreground">
+                  {profile?.fullName || user.email}
+                </h1>
+                {profile?.createdAt && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Member since {format(profile.createdAt, 'MMMM yyyy')}
+                  </p>
+                )}
+                <div
+                  className="
+                    mt-2 flex flex-wrap items-center justify-center gap-3
+                    sm:justify-start
+                  "
                 >
-                  <Avatar className="h-20 w-20 border-2 border-primary">
-                    <AvatarImage src={profile?.image?.url ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-xl font-bold text-primary">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="
-                    flex-1 text-center
-                    sm:text-left
-                  "
-                  >
-                    <h1 className="font-heading text-2xl font-bold text-card-foreground">
-                      {profile?.fullName || user.email}
-                    </h1>
-                    {profile?.createdAt && (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Member since
-                        {' '}
-                        {format(profile.createdAt, 'MMMM yyyy')}
-                      </p>
-                    )}
-                    <div className="
-                      mt-2 flex flex-wrap items-center justify-center gap-3
-                      sm:justify-start
-                    "
-                    >
-                      {rating && rating.totalReviews > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map(s => (
-                              <Star
-                                key={s}
-                                className={`
-                                  h-4 w-4
-                                  ${s <= Math.round(rating.avgRating) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}
-                                `}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm font-medium">
-                            {rating.avgRating.toFixed(1)}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            (
-                            {rating.totalReviews}
-                            {' '}
-                            review
-                            {rating.totalReviews === 1 ? '' : 's'}
-                            )
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <ShoppingBag className="h-4 w-4" />
-                        {' '}
-                        {boughtCount}
-                        {' '}
-                        bought
+                  {rating && rating.totalReviews > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star
+                            key={s}
+                            className={`
+                              h-4 w-4
+                              ${s <= Math.round(rating.avgRating) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}
+                            `}
+                          />
+                        ))}
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Package className="h-4 w-4" />
-                        {' '}
-                        {sales.length}
-                        {' '}
-                        sold
-                      </div>
+                      <span className="text-sm font-medium">{rating.avgRating.toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        ({rating.totalReviews} review
+                        {rating.totalReviews === 1 ? '' : 's'})
+                      </span>
                     </div>
-                    {(profile?.bio || profile?.location || profile?.phone) && (
-                      <div className="mt-3 space-y-1 text-sm">
-                        {profile.bio && (
-                          <p className="text-card-foreground">{profile.bio}</p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
-                          {profile.location && (
-                            <span className="inline-flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5" />
-                              {' '}
-                              {profile.location}
-                            </span>
-                          )}
-                          {profile.phone && (
-                            <span className="inline-flex items-center gap-1">
-                              <Phone className="h-3.5 w-3.5" />
-                              {' '}
-                              {profile.phone}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                  )}
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <ShoppingBag className="h-4 w-4" /> {boughtCount} bought
                   </div>
-                  <div className="
-                    flex flex-col gap-2
-                    sm:items-end
-                  "
-                  >
-                    <EditProfileDialog profile={profile} />
-                    <ShareProfileDialog
-                      userId={user.id}
-                      userName={profile?.fullName}
-                    />
-                    <Button
-                      onClick={() => navigate('/preferences')}
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1"
-                    >
-                      <Settings className="h-4 w-4" />
-                      {' '}
-                      Settings
-                    </Button>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Package className="h-4 w-4" /> {sales.length} sold
                   </div>
                 </div>
-
-                {/* Payout details */}
-                <Card className="mt-6">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-                          <Landmark className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h2 className="font-heading text-base font-semibold text-foreground">
-                            Payout details
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
-                            Bank account we use to pay you out when your items sell.
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => setBankModalOpen(true)}
-                        size="sm"
-                        variant={
-                          profile?.bankIban || profile?.bankAccountNumber
-                            ? 'outline'
-                            : 'default'
-                        }
-                      >
-                        {profile?.bankIban || profile?.bankAccountNumber
-                          ? 'Edit'
-                          : 'Add details'}
-                      </Button>
+                {(profile?.bio || profile?.location || profile?.phone) && (
+                  <div className="mt-3 space-y-1 text-sm">
+                    {profile.bio && <p className="text-card-foreground">{profile.bio}</p>}
+                    <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+                      {profile.location && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" /> {profile.location}
+                        </span>
+                      )}
+                      {profile.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5" /> {profile.phone}
+                        </span>
+                      )}
                     </div>
-
-                    {profile?.bankIban || profile?.bankAccountNumber
-                      ? (
-                          <dl className="
-                            mt-4 grid gap-x-6 gap-y-3 text-sm
-                            sm:grid-cols-2
-                          "
-                          >
-                            <div>
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Account holder
-                              </dt>
-                              <dd>{profile.bankAccountHolder || '—'}</dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Bank
-                              </dt>
-                              <dd>{profile.bankName || '—'}</dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Account number
-                              </dt>
-                              <dd className="font-mono">
-                                {profile.bankAccountNumber
-                                  ? `•••• ${profile.bankAccountNumber.slice(-4)}`
-                                  : '—'}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                IBAN
-                              </dt>
-                              <dd className="font-mono">
-                                {profile.bankIban
-                                  ? `${profile.bankIban.slice(0, 4)} •••• •••• ${profile.bankIban.slice(-4)}`
-                                  : '—'}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                SWIFT / BIC
-                              </dt>
-                              <dd className="font-mono">{profile.bankSwift || '—'}</dd>
-                            </div>
-                          </dl>
-                        )
-                      : (
-                          <p className="mt-4 text-sm text-muted-foreground">
-                            No payout details on file yet. Add them now or you'll be
-                            asked when you create your first listing.
-                          </p>
-                        )}
-                  </CardContent>
-                </Card>
-
-                {/* Tabs */}
-                <Tabs
-                  onValueChange={(tab) => {
-                    setSearchParams((current) => {
-                      const next = new URLSearchParams(current);
-                      next.set('tab', tab);
-                      if (tab !== 'sold') {
-                        next.delete('order');
-                        next.delete('item');
-                      }
-                      return next;
-                    });
-                  }}
-                  value={profileTab}
-                  className="mt-6"
+                  </div>
+                )}
+              </div>
+              <div
+                className="
+                  flex flex-col gap-2
+                  sm:items-end
+                "
+              >
+                <EditProfileDialog profile={profile} />
+                <ShareProfileDialog userId={user.id} userName={profile?.fullName} />
+                <Button
+                  onClick={() => navigate('/preferences')}
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
                 >
-                  <TabsList className="w-full justify-between">
-                    <TabsTrigger
-                      value="bought"
-                      className="
-                        min-w-0 px-1 text-xs
-                        sm:px-3 sm:text-sm
-                      "
-                    >
-                      Bought (
-                      {orders.length}
-                      )
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="sold"
-                      className="
-                        min-w-0 px-1 text-xs
-                        sm:px-3 sm:text-sm
-                      "
-                    >
-                      Sold (
-                      {sales.length}
-                      )
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="returns"
-                      className="
-                        min-w-0 px-1 text-xs
-                        sm:px-3 sm:text-sm
-                      "
-                    >
-                      Returns
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="reviews"
-                      className="
-                        min-w-0 px-1 text-xs
-                        sm:px-3 sm:text-sm
-                      "
-                    >
-                      Reviews
-                      {rating?.totalReviews ? ` (${rating.totalReviews})` : ''}
-                    </TabsTrigger>
-                  </TabsList>
+                  <Settings className="h-4 w-4" /> Settings
+                </Button>
+              </div>
+            </div>
 
-                  {/* Bought tab */}
-                  <TabsContent value="bought" className="mt-4">
-                    {orders.length === 0
-                      ? (
-                          <div className="flex flex-col items-center py-12 text-center">
-                            <ShoppingBag className="h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 font-heading text-lg font-semibold">
-                              No purchases yet
-                            </p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              Items you buy will appear here
-                            </p>
-                            <Button
-                              onClick={() => navigate('/listings')}
-                              className="mt-4"
-                            >
-                              Browse Listings
-                            </Button>
-                          </div>
-                        )
-                      : (
-                          <>
-                            <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-                              <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                              <p>
-                                Tap
-                                {' '}
-                                <span className="font-medium">Details</span>
-                                {' '}
-                                on any
-                                order to leave a review for each item you bought.
-                              </p>
-                            </div>
-                            <div className="space-y-3">
-                              {orders.map(order => (
-                                <OrderCard key={order.id} order={order} />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                  </TabsContent>
+            {/* Payout details */}
+            <Card className="mt-6">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Landmark className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-base font-semibold text-foreground">
+                        Payout details
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Bank account we use to pay you out when your items sell.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setBankModalOpen(true)}
+                    size="sm"
+                    variant={
+                      profile?.bankIban || profile?.bankAccountNumber ? 'outline' : 'default'
+                    }
+                  >
+                    {profile?.bankIban || profile?.bankAccountNumber ? 'Edit' : 'Add details'}
+                  </Button>
+                </div>
 
-                  {/* Sold tab */}
-                  <TabsContent value="sold" className="mt-4">
-                    {sales.length === 0
-                      ? (
-                          <div className="flex flex-col items-center py-12 text-center">
-                            <Package className="h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 font-heading text-lg font-semibold">
-                              No sales yet
-                            </p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              Items you sell will appear here
-                            </p>
-                            <Button
-                              onClick={() => navigate('/create-listing')}
-                              className="mt-4"
-                            >
-                              Create Listing
-                            </Button>
-                          </div>
-                        )
-                      : (
-                          <div className="space-y-3">
-                            {salesWithSelectedOrder.map(item => (
-                              <SoldOrderCard
-                                key={item.id}
-                                item={item}
-                                selected={item.id === selectedSale?.id}
-                              />
-                            ))}
-                          </div>
-                        )}
-                  </TabsContent>
+                {profile?.bankIban || profile?.bankAccountNumber ? (
+                  <dl
+                    className="
+                      mt-4 grid gap-x-6 gap-y-3 text-sm
+                      sm:grid-cols-2
+                    "
+                  >
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Account holder
+                      </dt>
+                      <dd>{profile.bankAccountHolder || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Bank
+                      </dt>
+                      <dd>{profile.bankName || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Account number
+                      </dt>
+                      <dd className="font-mono">
+                        {profile.bankAccountNumber
+                          ? `•••• ${profile.bankAccountNumber.slice(-4)}`
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                        IBAN
+                      </dt>
+                      <dd className="font-mono">
+                        {profile.bankIban
+                          ? `${profile.bankIban.slice(0, 4)} •••• •••• ${profile.bankIban.slice(-4)}`
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                        SWIFT / BIC
+                      </dt>
+                      <dd className="font-mono">{profile.bankSwift || '—'}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    No payout details on file yet. Add them now or you'll be asked when you create
+                    your first listing.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-                  {/* Returns tab */}
-                  <TabsContent value="returns" className="mt-4">
-                    <ReturnsTab />
-                  </TabsContent>
+            {/* Tabs */}
+            <Tabs
+              onValueChange={tab => {
+                setSearchParams(current => {
+                  const next = new URLSearchParams(current);
+                  next.set('tab', tab);
+                  if (tab !== 'sold') {
+                    next.delete('order');
+                    next.delete('item');
+                  }
+                  return next;
+                });
+              }}
+              value={profileTab}
+              className="mt-6"
+            >
+              <TabsList className="w-full justify-between">
+                <TabsTrigger
+                  value="bought"
+                  className="
+                    min-w-0 px-1 text-xs
+                    sm:px-3 sm:text-sm
+                  "
+                >
+                  Bought ({orders.length})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sold"
+                  className="
+                    min-w-0 px-1 text-xs
+                    sm:px-3 sm:text-sm
+                  "
+                >
+                  Sold ({sales.length})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="returns"
+                  className="
+                    min-w-0 px-1 text-xs
+                    sm:px-3 sm:text-sm
+                  "
+                >
+                  Returns
+                </TabsTrigger>
+                <TabsTrigger
+                  value="reviews"
+                  className="
+                    min-w-0 px-1 text-xs
+                    sm:px-3 sm:text-sm
+                  "
+                >
+                  Reviews
+                  {rating?.totalReviews ? ` (${rating.totalReviews})` : ''}
+                </TabsTrigger>
+              </TabsList>
 
-                  <TabsContent value="reviews" className="mt-4">
-                    <ReviewsList userId={user.id} limit={50} />
-                  </TabsContent>
-                </Tabs>
-              </>
-            )}
+              {/* Bought tab */}
+              <TabsContent value="bought" className="mt-4">
+                {orders.length === 0 ? (
+                  <div className="flex flex-col items-center py-12 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 font-heading text-lg font-semibold">No purchases yet</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Items you buy will appear here
+                    </p>
+                    <Button onClick={() => navigate('/listings')} className="mt-4">
+                      Browse Listings
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                      <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                      <p>
+                        Tap <span className="font-medium">Details</span> on any order to leave a
+                        review for each item you bought.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {orders.map(order => (
+                        <OrderCard key={order.id} order={order} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </TabsContent>
+
+              {/* Sold tab */}
+              <TabsContent value="sold" className="mt-4">
+                {sales.length === 0 ? (
+                  <div className="flex flex-col items-center py-12 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 font-heading text-lg font-semibold">No sales yet</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Items you sell will appear here
+                    </p>
+                    <Button onClick={() => navigate('/create-listing')} className="mt-4">
+                      Create Listing
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {salesWithSelectedOrder.map(item => (
+                      <SoldOrderCard
+                        key={item.id}
+                        item={item}
+                        selected={item.id === selectedSale?.id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Returns tab */}
+              <TabsContent value="returns" className="mt-4">
+                <ReturnsTab />
+              </TabsContent>
+
+              <TabsContent value="reviews" className="mt-4">
+                <ReviewsList userId={user.id} limit={50} />
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
       </main>
       <Footer />
 
@@ -641,7 +602,8 @@ function OrderCard({ order }: { order: Order }) {
   const items = order.items;
   const itemCount = items.reduce((s, it) => s + it.quantity, 0);
   const firstImage = items[0]?.imageUrl || '/placeholder.svg';
-  const visiblePaymentStatus = order.status === 'CANCELLED' && order.paymentStatus !== 'PAID' ? null : order.paymentStatus;
+  const visiblePaymentStatus =
+    order.status === 'CANCELLED' && order.paymentStatus !== 'PAID' ? null : order.paymentStatus;
 
   return (
     <Card>
@@ -655,28 +617,19 @@ function OrderCard({ order }: { order: Order }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">
-                Order #
-                {order.id.slice(0, 8).toUpperCase()}
+                Order #{order.id.slice(0, 8).toUpperCase()}
               </span>
               <Badge variant="secondary">{formatEnumLabel(order.status)}</Badge>
               {visiblePaymentStatus && (
                 <Badge variant={visiblePaymentStatus === 'PAID' ? 'default' : 'outline'}>
-                  Payment:
-                  {' '}
-                  {formatEnumLabel(visiblePaymentStatus)}
+                  Payment: {formatEnumLabel(visiblePaymentStatus)}
                 </Badge>
               )}
               <ManualVerificationStatus compact order={order} className="basis-full" />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {itemCount}
-              {' '}
-              item
-              {itemCount === 1 ? '' : 's'}
-              {' '}
-              · Rs
-              {' '}
-              {Number(order.total).toLocaleString()}
+              {itemCount} item
+              {itemCount === 1 ? '' : 's'} · Rs {Number(order.total).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">
               {format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}
@@ -686,12 +639,7 @@ function OrderCard({ order }: { order: Order }) {
             <Button asChild size="sm" variant="outline">
               <Link to={`/order-confirmation/${order.id}`}>View Order</Link>
             </Button>
-            <Button
-              onClick={() => setOpen(v => !v)}
-              size="sm"
-              variant="ghost"
-              className="gap-1"
-            >
+            <Button onClick={() => setOpen(v => !v)} size="sm" variant="ghost" className="gap-1">
               <Receipt className="h-4 w-4" />
               {open ? 'Hide' : 'Details'}
               <ChevronDown
@@ -708,9 +656,7 @@ function OrderCard({ order }: { order: Order }) {
           <div className="mt-4 space-y-4 border-t border-border pt-4">
             {/* Items */}
             <div>
-              <h4 className="mb-2 text-sm font-semibold text-foreground">
-                Items
-              </h4>
+              <h4 className="mb-2 text-sm font-semibold text-foreground">Items</h4>
               <div className="space-y-2">
                 {items.map(item => (
                   <div key={item.id} className="flex flex-col gap-1.5">
@@ -732,9 +678,7 @@ function OrderCard({ order }: { order: Order }) {
                         </Link>
                         <p className="text-xs text-muted-foreground">
                           {item.brand ? `${item.brand} · ` : ''}
-                          Qty
-                          {' '}
-                          {item.quantity}
+                          Qty {item.quantity}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           {statusBadge(item.status, item.shippedAt)}
@@ -751,29 +695,17 @@ function OrderCard({ order }: { order: Order }) {
                             )}
                             {item.trackingNumber && (
                               <p>
-                                Tracking:
-                                {' '}
+                                Tracking:{' '}
                                 <span className="font-medium text-foreground">
                                   {item.trackingNumber}
                                 </span>
                               </p>
                             )}
                             {item.expectedDelivery && (
-                              <p>
-                                ETA
-                                {' '}
-                                {format(
-                                  new Date(item.expectedDelivery),
-                                  'dd MMM yyyy',
-                                )}
-                              </p>
+                              <p>ETA {format(new Date(item.expectedDelivery), 'dd MMM yyyy')}</p>
                             )}
                             {item.proofImageUrl && (
-                              <a
-                                href={item.proofImageUrl}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
+                              <a href={item.proofImageUrl} rel="noreferrer" target="_blank">
                                 <img
                                   src={item.proofImageUrl}
                                   alt="Shipping proof"
@@ -792,16 +724,14 @@ function OrderCard({ order }: { order: Order }) {
                             onChanged={() =>
                               queryClient.invalidateQueries({
                                 queryKey: myOrdersQueryKey.all(),
-                              })}
+                              })
+                            }
                           />
                         )}
 
                         {/* Complaint + Review after delivered */}
                         {item.status === 'DELIVERED' && (
-                          <ComplaintActions
-                            orderId={order.id}
-                            orderItemId={item.id}
-                          />
+                          <ComplaintActions orderId={order.id} orderItemId={item.id} />
                         )}
                         {item.status === 'DELIVERED' && (
                           <OrderItemReview
@@ -814,9 +744,7 @@ function OrderCard({ order }: { order: Order }) {
                         )}
                       </div>
                       <p className="whitespace-nowrap text-sm font-semibold">
-                        Rs
-                        {' '}
-                        {(Number(item.price) * item.quantity).toLocaleString()}
+                        Rs {(Number(item.price) * item.quantity).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -828,9 +756,7 @@ function OrderCard({ order }: { order: Order }) {
 
             {/* Billing */}
             <div>
-              <h4 className="mb-2 text-sm font-semibold text-foreground">
-                Billing summary
-              </h4>
+              <h4 className="mb-2 text-sm font-semibold text-foreground">Billing summary</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
@@ -846,9 +772,7 @@ function OrderCard({ order }: { order: Order }) {
                       {order.discountCode ? ` (${order.discountCode})` : ''}
                     </span>
                     <span className="text-primary">
-                      −Rs
-                      {' '}
-                      {Number(order.discountAmount).toLocaleString()}
+                      −Rs {Number(order.discountAmount).toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -881,15 +805,11 @@ function OrderCard({ order }: { order: Order }) {
             {/* Shipping address */}
             <div>
               <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                <MapPin className="h-4 w-4" />
-                {' '}
-                Shipping address
+                <MapPin className="h-4 w-4" /> Shipping address
               </h4>
               <div className="text-sm text-muted-foreground">
                 <p className="text-foreground">
-                  {order.shippingFirstName}
-                  {' '}
-                  {order.shippingLastName}
+                  {order.shippingFirstName} {order.shippingLastName}
                 </p>
                 <p>{order.shippingAddress}</p>
                 <p>
@@ -918,16 +838,15 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
     resolver: zodResolver(shipmentFormSchema),
   });
   const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const bonusPayableAt = item.receivedAt
-    ? addDays(new Date(item.receivedAt), 14)
-    : null;
+  const bonusPayableAt = item.receivedAt ? addDays(new Date(item.receivedAt), 14) : null;
   useEffect(() => {
     setCurrentTimestamp(Date.now());
   }, []);
-  const bonusIsPayable = item.status === 'DELIVERED'
-    && bonusPayableAt !== null
-    && currentTimestamp !== null
-    && currentTimestamp >= bonusPayableAt.getTime();
+  const bonusIsPayable =
+    item.status === 'DELIVERED' &&
+    bonusPayableAt !== null &&
+    currentTimestamp !== null &&
+    currentTimestamp >= bonusPayableAt.getTime();
 
   const resetForm = () => {
     shipmentForm.reset({ expectedDate: undefined, method: '', proofFile: null, tracking: '' });
@@ -935,19 +854,20 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
   };
 
   const handleFileChange = (file: File | undefined, onChange: (file: File | null) => void) => {
-    if (!file)
-      return;
-    if (!file.type.startsWith('image/'))
-      return toast.error('Please select an image file');
-    if (file.size > 5 * 1024 * 1024)
-      return toast.error('Image must be under 5MB');
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return toast.error('Please select an image file');
+    if (file.size > 5 * 1024 * 1024) return toast.error('Image must be under 5MB');
     onChange(file);
     setProofPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async ({ expectedDate, method, proofFile, tracking }: ShipmentFormValues) => {
-    if (!proofFile || !expectedDate)
-      return;
+  const handleSubmit = async ({
+    expectedDate,
+    method,
+    proofFile,
+    tracking,
+  }: ShipmentFormValues) => {
+    if (!proofFile || !expectedDate) return;
     setBusy(true);
     try {
       // 1. Upload proof image
@@ -968,22 +888,24 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
       setDialogOpen(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update status');
-    }
-    finally {
+    } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Card id={`sold-order-item-${item.id}`} className={selected ? 'ring-2 ring-primary' : undefined}>
+    <Card
+      id={`sold-order-item-${item.id}`}
+      className={selected ? 'ring-2 ring-primary' : undefined}
+    >
       <CardContent className="flex flex-col gap-4 p-4">
-        <div className="
-          flex flex-col gap-4
-          sm:flex-row sm:items-start
-        "
+        <div
+          className="
+            flex flex-col gap-4
+            sm:flex-row sm:items-start
+          "
         >
           <Link to={`/listing/${item.listingId}`}>
             <img
@@ -1005,118 +927,84 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
               </Link>
               <Badge variant="secondary">Sold</Badge>
               {statusBadge(item.status, item.shippedAt)}
-              <SellerComplaintBadge
-                orderId={item.orderId}
-                orderItemId={item.id}
-              />
+              <SellerComplaintBadge orderId={item.orderId} orderItemId={item.id} />
             </div>
             <p className="text-sm text-muted-foreground">
               {item.brand ? `${item.brand} · ` : ''}
               Qty
-              {item.quantity}
-              {' '}
-              · Rs
-              {' '}
-              {Number(item.total).toLocaleString()}
+              {item.quantity} · Rs {Number(item.total).toLocaleString()}
             </p>
             {item.sellerIncentiveBonus > 0 && (
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">
-                  {bonusIsPayable ? 'Payable seller incentive bonus' : 'Pending seller incentive bonus'}
+                  {bonusIsPayable
+                    ? 'Payable seller incentive bonus'
+                    : 'Pending seller incentive bonus'}
                   :
-                </span>
-                {' '}
-                Rs
-                {' '}
-                {item.sellerIncentiveBonus.toLocaleString()}
+                </span>{' '}
+                Rs {item.sellerIncentiveBonus.toLocaleString()}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Buyer:
-              {' '}
-              {item.buyerFullName}
-            </p>
+            <p className="text-xs text-muted-foreground">Buyer: {item.buyerFullName}</p>
             <p className="text-xs text-muted-foreground">
               {format(new Date(item.createdAt), 'dd MMM yyyy')}
             </p>
           </div>
           {item.status === 'CONFIRMED' && (
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="sm"
-              className="gap-1.5"
-            >
-              <Truck className="h-4 w-4" />
-              {' '}
-              Mark as Shipped
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5">
+              <Truck className="h-4 w-4" /> Mark as Shipped
             </Button>
           )}
         </div>
 
         {/* Shipment details */}
-        {item.status === 'SHIPPED'
-          && (item.shippingMethod
-            || item.trackingNumber
-            || item.proofImageUrl) && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                <Truck className="h-4 w-4" />
-                {' '}
-                Shipment details
-              </h4>
-              <div className="space-y-1 text-sm text-muted-foreground">
-                {item.shippingMethod && (
-                  <p>
-                    <span className="font-medium text-foreground">
-                      Method:
-                    </span>
-                    {' '}
-                    {item.shippingMethod}
-                  </p>
-                )}
-                {item.trackingNumber && (
-                  <p>
-                    <span className="font-medium text-foreground">
-                      Tracking:
-                    </span>
-                    {' '}
-                    {item.trackingNumber}
-                  </p>
-                )}
-                {item.expectedDelivery && (
-                  <p>
-                    <span className="font-medium text-foreground">ETA:</span>
-                    {' '}
-                    {format(new Date(item.expectedDelivery), 'dd MMM yyyy')}
-                  </p>
-                )}
-                {item.proofImageUrl && (
-                  <a
-                    href={item.proofImageUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <img
-                      src={item.proofImageUrl}
-                      alt="Proof"
-                      className="mt-2 h-24 w-24 rounded-md border border-border object-cover"
-                    />
-                  </a>
-                )}
+        {item.status === 'SHIPPED' &&
+          (item.shippingMethod || item.trackingNumber || item.proofImageUrl) && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                  <Truck className="h-4 w-4" /> Shipment details
+                </h4>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  {item.shippingMethod && (
+                    <p>
+                      <span className="font-medium text-foreground">Method:</span>{' '}
+                      {item.shippingMethod}
+                    </p>
+                  )}
+                  {item.trackingNumber && (
+                    <p>
+                      <span className="font-medium text-foreground">Tracking:</span>{' '}
+                      {item.trackingNumber}
+                    </p>
+                  )}
+                  {item.expectedDelivery && (
+                    <p>
+                      <span className="font-medium text-foreground">ETA:</span>{' '}
+                      {format(new Date(item.expectedDelivery), 'dd MMM yyyy')}
+                    </p>
+                  )}
+                  {item.proofImageUrl && (
+                    <a href={item.proofImageUrl} rel="noreferrer" target="_blank">
+                      <img
+                        src={item.proofImageUrl}
+                        alt="Proof"
+                        className="mt-2 h-24 w-24 rounded-md border border-border object-cover"
+                      />
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
       </CardContent>
 
       {/* Mark as Shipped dialog */}
       <Dialog
-        onOpenChange={(o) => {
+        onOpenChange={o => {
           setDialogOpen(o);
-          if (!o)
-            resetForm();
+          if (!o) resetForm();
         }}
         open={dialogOpen}
       >
@@ -1128,13 +1016,10 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
             </DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={shipmentForm.handleSubmit(
-              handleSubmit,
-              (errors) => {
-                const firstError = Object.values(errors)[0];
-                toast.error(firstError?.message ?? 'Please complete the shipment details');
-              },
-            )}
+            onSubmit={shipmentForm.handleSubmit(handleSubmit, errors => {
+              const firstError = Object.values(errors)[0];
+              toast.error(firstError?.message ?? 'Please complete the shipment details');
+            })}
             className="space-y-4"
           >
             <div className="space-y-4">
@@ -1165,11 +1050,7 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
                   name="tracking"
                   control={shipmentForm.control}
                   render={({ field }) => (
-                    <Input
-                      {...field}
-                      maxLength={100}
-                      placeholder="e.g. CG1234567890"
-                    />
+                    <Input {...field} maxLength={100} placeholder="e.g. CG1234567890" />
                   )}
                 />
               </div>
@@ -1195,8 +1076,7 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
                       <PopoverContent align="start" className="w-auto p-0">
                         <Calendar
                           onSelect={field.onChange}
-                          disabled={d =>
-                            d < new Date(new Date().setHours(0, 0, 0, 0))}
+                          disabled={d => d < new Date(new Date().setHours(0, 0, 0, 0))}
                           initialFocus
                           mode="single"
                           selected={field.value}
@@ -1211,47 +1091,48 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
                 <Controller
                   name="proofFile"
                   control={shipmentForm.control}
-                  render={({ field }) => proofPreview
-                    ? (
-                        <div className="relative inline-block">
-                          <img
-                            src={proofPreview}
-                            alt="Preview"
-                            className="h-32 w-32 rounded-md border border-border object-cover"
-                          />
-                          <button
-                            onClick={() => {
-                              field.onChange(null);
-                              shipmentForm.clearErrors('proofFile');
-                              setProofPreview(null);
-                            }}
-                            type="button"
-                            className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )
-                    : (
-                        <label className="
+                  render={({ field }) =>
+                    proofPreview ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={proofPreview}
+                          alt="Preview"
+                          className="h-32 w-32 rounded-md border border-border object-cover"
+                        />
+                        <button
+                          onClick={() => {
+                            field.onChange(null);
+                            shipmentForm.clearErrors('proofFile');
+                            setProofPreview(null);
+                          }}
+                          type="button"
+                          className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        className="
                           flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground
                           hover:bg-muted/50
                         "
-                        >
-                          <Upload className="h-4 w-4" />
-                          Upload receipt or parcel photo
-                          <input
-                            onChange={event => handleFileChange(event.target.files?.[0], field.onChange)}
-                            accept="image/*"
-                            type="file"
-                            className="hidden"
-                          />
-                        </label>
-                      )}
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload receipt or parcel photo
+                        <input
+                          onChange={event =>
+                            handleFileChange(event.target.files?.[0], field.onChange)
+                          }
+                          accept="image/*"
+                          type="file"
+                          className="hidden"
+                        />
+                      </label>
+                    )
+                  }
                 />
-                <p className="text-xs text-muted-foreground">
-                  JPEG/PNG/WebP, max 5MB.
-                </p>
+                <p className="text-xs text-muted-foreground">JPEG/PNG/WebP, max 5MB.</p>
               </div>
               <SellerShipmentNotice />
             </div>
@@ -1265,13 +1146,11 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
                 Cancel
               </Button>
               <Button disabled={busy} type="submit" className="gap-1.5">
-                {busy
-                  ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <Truck className="h-4 w-4" />
-                    )}
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Truck className="h-4 w-4" />
+                )}
                 Confirm Shipment
               </Button>
             </DialogFooter>
@@ -1343,16 +1222,13 @@ function ReturnStatusBadge({ status }: { status: ComplaintStatus }) {
     'RETURN_APPROVED',
     'RETURN_ADDRESS_PROVIDED',
   ].includes(status);
-  const Icon = isCompleted
-    ? CheckCircle2
-    : (isReturn
-        ? PackageCheck
-        : AlertTriangle);
+  const Icon = isCompleted ? CheckCircle2 : isReturn ? PackageCheck : AlertTriangle;
   return (
-    <Badge className="
-      gap-1 bg-amber-500/15 text-amber-700
-      hover:bg-amber-500/20
-    "
+    <Badge
+      className="
+        gap-1 bg-amber-500/15 text-amber-700
+        hover:bg-amber-500/20
+      "
     >
       <Icon className="h-3 w-3" />
       {RETURN_STATUS_LABEL[status] ?? status}
@@ -1360,13 +1236,26 @@ function ReturnStatusBadge({ status }: { status: ComplaintStatus }) {
   );
 }
 
-function ComplaintCard({ complaint, selected = false, showReturnAddressLink = false }: { complaint: Complaint; selected?: boolean; showReturnAddressLink?: boolean }) {
+function ComplaintCard({
+  complaint,
+  selected = false,
+  showReturnAddressLink = false,
+}: {
+  complaint: Complaint;
+  selected?: boolean;
+  showReturnAddressLink?: boolean;
+}) {
   return (
-    <Card aria-current={selected ? 'true' : undefined} data-selected={selected || undefined} className={selected ? 'border-primary ring-2 ring-primary/20' : undefined}>
-      <CardContent className="
-        flex flex-col gap-3 p-4
-        sm:flex-row
-      "
+    <Card
+      aria-current={selected ? 'true' : undefined}
+      data-selected={selected || undefined}
+      className={selected ? 'border-primary ring-2 ring-primary/20' : undefined}
+    >
+      <CardContent
+        className="
+          flex flex-col gap-3 p-4
+          sm:flex-row
+        "
       >
         <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-md bg-muted">
           <Package className="h-6 w-6 text-muted-foreground" />
@@ -1374,39 +1263,27 @@ function ComplaintCard({ complaint, selected = false, showReturnAddressLink = fa
         <div className="flex-1 space-y-1.5">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="font-medium text-foreground">
-                {complaint.listingTitle}
-              </p>
+              <p className="font-medium text-foreground">{complaint.listingTitle}</p>
             </div>
             <ReturnStatusBadge status={complaint.status} />
           </div>
           {complaint.reason && (
             <p className="text-sm">
-              <span className="font-medium">Reason:</span>
-              {' '}
-              {complaint.reason}
+              <span className="font-medium">Reason:</span> {complaint.reason}
             </p>
           )}
           {(complaint.returnCarrier || complaint.returnTracking) && (
             <p className="text-xs text-muted-foreground">
-              Return:
-              {' '}
-              {complaint.returnCarrier ?? '—'}
+              Return: {complaint.returnCarrier ?? '—'}
               {complaint.returnTracking ? ` · ${complaint.returnTracking}` : ''}
             </p>
           )}
           {complaint.adminNotes && (
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Admin note:</span>
-              {' '}
-              {complaint.adminNotes}
-              {showReturnAddressLink
-                && complaint.status === 'RETURN_APPROVED' && (
+              <span className="font-medium">Admin note:</span> {complaint.adminNotes}
+              {showReturnAddressLink && complaint.status === 'RETURN_APPROVED' && (
                 <p className="mt-2">
-                  <Link
-                    to="/profile?tab=sold"
-                    className="cursor-pointer text-primary underline"
-                  >
+                  <Link to="/profile?tab=sold" className="cursor-pointer text-primary underline">
                     Please provide the return address if you haven’t already.
                   </Link>
                 </p>
@@ -1414,9 +1291,7 @@ function ComplaintCard({ complaint, selected = false, showReturnAddressLink = fa
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Opened
-            {' '}
-            {format(new Date(complaint.createdAt), 'MMM d, yyyy')}
+            Opened {format(new Date(complaint.createdAt), 'MMM d, yyyy')}
           </p>
         </div>
       </CardContent>
@@ -1427,24 +1302,36 @@ function ComplaintCard({ complaint, selected = false, showReturnAddressLink = fa
 export function ReturnsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: myReturns = [], isLoading: loadingMine } = useQuery(getMyRefundComplaintsOptions());
-  const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery(getComplaintsAgainstMeOptions());
-  const selectedReturnsTab = searchParams.get('returnsTab') === 'returned-to-me' ? 'returned-to-me' : 'my-returns';
+  const { data: returnedToMe = [], isLoading: loadingSeller } = useQuery(
+    getComplaintsAgainstMeOptions(),
+  );
+  const selectedReturnsTab =
+    searchParams.get('returnsTab') === 'returned-to-me' ? 'returned-to-me' : 'my-returns';
   const selectedComplaintId = searchParams.get('complaint');
 
   useEffect(() => {
-    if (loadingMine || loadingSeller || !selectedComplaintId)
-      return;
+    if (loadingMine || loadingSeller || !selectedComplaintId) return;
 
     const complaints = selectedReturnsTab === 'my-returns' ? myReturns : returnedToMe;
-    if (complaints.some(complaint => complaint.id === selectedComplaintId))
-      return;
+    if (complaints.some(complaint => complaint.id === selectedComplaintId)) return;
 
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      next.delete('complaint');
-      return next;
-    }, { replace: true });
-  }, [loadingMine, loadingSeller, myReturns, returnedToMe, selectedComplaintId, selectedReturnsTab, setSearchParams]);
+    setSearchParams(
+      current => {
+        const next = new URLSearchParams(current);
+        next.delete('complaint');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [
+    loadingMine,
+    loadingSeller,
+    myReturns,
+    returnedToMe,
+    selectedComplaintId,
+    selectedReturnsTab,
+    setSearchParams,
+  ]);
 
   if (loadingMine || loadingSeller) {
     return (
@@ -1456,8 +1343,8 @@ export function ReturnsTab() {
 
   return (
     <Tabs
-      onValueChange={(value) => {
-        setSearchParams((current) => {
+      onValueChange={value => {
+        setSearchParams(current => {
           const next = new URLSearchParams(current);
           next.set('returnsTab', value);
           next.delete('complaint');
@@ -1467,52 +1354,43 @@ export function ReturnsTab() {
       value={selectedReturnsTab}
     >
       <TabsList>
-        <TabsTrigger value="my-returns">
-          My Returns (
-          {myReturns.length}
-          )
-        </TabsTrigger>
-        <TabsTrigger value="returned-to-me">
-          Returned to Me (
-          {returnedToMe.length}
-          )
-        </TabsTrigger>
+        <TabsTrigger value="my-returns">My Returns ({myReturns.length})</TabsTrigger>
+        <TabsTrigger value="returned-to-me">Returned to Me ({returnedToMe.length})</TabsTrigger>
       </TabsList>
       <TabsContent value="my-returns" className="mt-4">
-        {myReturns.length === 0
-          ? (
-              <div className="flex flex-col items-center py-10 text-center">
-                <Undo2 className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  You haven't filed any returns yet.
-                </p>
-              </div>
-            )
-          : (
-              <div className="space-y-3">
-                {myReturns.map(c => (
-                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} />
-                ))}
-              </div>
-            )}
+        {myReturns.length === 0 ? (
+          <div className="flex flex-col items-center py-10 text-center">
+            <Undo2 className="h-10 w-10 text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">You haven't filed any returns yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {myReturns.map(c => (
+              <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} />
+            ))}
+          </div>
+        )}
       </TabsContent>
       <TabsContent value="returned-to-me" className="mt-4">
-        {returnedToMe.length === 0
-          ? (
-              <div className="flex flex-col items-center py-10 text-center">
-                <Undo2 className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  No returns have been filed against your sales.
-                </p>
-              </div>
-            )
-          : (
-              <div className="space-y-3">
-                {returnedToMe.map(c => (
-                  <ComplaintCard key={c.id} complaint={c} selected={c.id === selectedComplaintId} showReturnAddressLink />
-                ))}
-              </div>
-            )}
+        {returnedToMe.length === 0 ? (
+          <div className="flex flex-col items-center py-10 text-center">
+            <Undo2 className="h-10 w-10 text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">
+              No returns have been filed against your sales.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {returnedToMe.map(c => (
+              <ComplaintCard
+                key={c.id}
+                complaint={c}
+                selected={c.id === selectedComplaintId}
+                showReturnAddressLink
+              />
+            ))}
+          </div>
+        )}
       </TabsContent>
     </Tabs>
   );

@@ -204,9 +204,7 @@ interface HeroContent {
   url?: string;
 }
 
-const DEFAULTS: Required<
-  Omit<HeroContent, 'alt' | 'badgeIconUrl' | 'mobileUrl' | 'url'>
-> = {
+const DEFAULTS: Required<Omit<HeroContent, 'alt' | 'badgeIconUrl' | 'mobileUrl' | 'url'>> = {
   badgeText: '',
   headlineLine1: '',
   headlineLine1Color: '',
@@ -218,8 +216,7 @@ const DEFAULTS: Required<
   secondaryCtaBorderColor: '',
   secondaryCtaLabel: '',
   secondaryCtaTextColor: '',
-  subtitle:
-    '',
+  subtitle: '',
   subtitleColor: '',
 };
 
@@ -231,37 +228,25 @@ function isValidUrl(url?: string) {
 function HeroSection() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { data, isError, isLoading } = useQuery(
-    getPublicHeroImageOptions(),
-  );
+  const { data, isError, isLoading } = useQuery(getPublicHeroImageOptions());
 
   if (isLoading || (!data && !isError)) {
-    return (
-      <section
-        aria-label="Loading hero"
-        role="status"
-        className="min-h-[85vh] bg-muted"
-      />
-    );
+    return <section aria-label="Loading hero" role="status" className="min-h-[85vh] bg-muted" />;
   }
 
   // Filter out empty values and bare origin URLs.
   const cleaned = Object.fromEntries(
     Object.entries(data ?? {}).filter(([_, value]) => {
-      if (!value || value === '')
-        return false;
+      if (!value || value === '') return false;
 
-      return !(
-        typeof value === 'string'
-        && /^https?:\/\/[^/]+\/?$/.test(value)
-      );
+      return !(typeof value === 'string' && /^https?:\/\/[^/]+\/?$/.test(value));
     }),
   ) as HeroContent;
 
   const c = { ...DEFAULTS, ...cleaned };
 
-  const heroImage
-    = (isMobile && isValidUrl(cleaned.mobileUrl)
+  const heroImage =
+    (isMobile && isValidUrl(cleaned.mobileUrl)
       ? cleaned.mobileUrl
       : isValidUrl(cleaned.url)
         ? cleaned.url
@@ -272,7 +257,7 @@ function HeroSection() {
       <div className="absolute inset-0">
         <img
           src={heroImage}
-          ref={(node) => {
+          ref={node => {
             node?.setAttribute('fetchpriority', 'high');
           }}
           alt={cleaned.alt || 'Fashion editorial'}
@@ -289,21 +274,19 @@ function HeroSection() {
           transition={{ duration: 0.7, ease: 'easeOut' }}
           className="max-w-xl"
         >
-          {isValidUrl(c.badgeIconUrl)
-            ? (
-                <img
-                  src={c.badgeIconUrl}
-                  alt={c.badgeText || 'Badge'}
-                  className="mb-4 h-12 w-auto object-contain"
-                />
-              )
-            : (
-                c.badgeText?.trim() && (
-                  <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
-                    {c.badgeText}
-                  </span>
-                )
-              )}
+          {isValidUrl(c.badgeIconUrl) ? (
+            <img
+              src={c.badgeIconUrl}
+              alt={c.badgeText || 'Badge'}
+              className="mb-4 h-12 w-auto object-contain"
+            />
+          ) : (
+            c.badgeText?.trim() && (
+              <span className="mb-4 inline-block rounded-sm bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary-foreground">
+                {c.badgeText}
+              </span>
+            )
+          )}
 
           <h1
             className="
@@ -312,11 +295,7 @@ function HeroSection() {
             "
           >
             <span
-              style={
-                c.headlineLine1Color
-                  ? { color: c.headlineLine1Color }
-                  : undefined
-              }
+              style={c.headlineLine1Color ? { color: c.headlineLine1Color } : undefined}
               className={c.headlineLine1Color ? '' : 'text-gold'}
             >
               {c.headlineLine1}
@@ -325,30 +304,21 @@ function HeroSection() {
             <br />
 
             <span
-              style={
-                c.headlineLine2Color
-                  ? { color: c.headlineLine2Color }
-                  : undefined
-              }
-              className={
-                c.headlineLine2Color ? 'italic' : 'italic text-gold'
-              }
+              style={c.headlineLine2Color ? { color: c.headlineLine2Color } : undefined}
+              className={c.headlineLine2Color ? 'italic' : 'italic text-gold'}
             >
               {c.headlineLine2}
             </span>
           </h1>
 
           <p
-            style={
-              c.subtitleColor ? { color: c.subtitleColor } : undefined
-            }
+            style={c.subtitleColor ? { color: c.subtitleColor } : undefined}
             className="mt-5 max-w-md whitespace-pre-wrap text-lg leading-relaxed text-surface-dark-foreground/80"
           >
             {c.subtitle}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-
             {data && (
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button
@@ -390,7 +360,6 @@ function HeroSection() {
                 </Button>
               </div>
             )}
-
           </div>
         </motion.div>
       </div>

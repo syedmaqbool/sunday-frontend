@@ -1,8 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  getFlagKeywords,
-  updateFlagKeywords,
-} from '@/services/flagKeyword.service';
+import { getFlagKeywords, updateFlagKeywords } from '@/services/flagKeyword.service';
 
 export const flagKeywordsQueryKey = {
   all: () => ['admin-flag-keywords'] as const,

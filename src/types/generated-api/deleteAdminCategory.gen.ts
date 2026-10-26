@@ -80,4 +80,5 @@ export interface DeleteAdminCategoryResponses {
   };
 }
 
-export type DeleteAdminCategoryResponse = DeleteAdminCategoryResponses[keyof DeleteAdminCategoryResponses];
+export type DeleteAdminCategoryResponse =
+  DeleteAdminCategoryResponses[keyof DeleteAdminCategoryResponses];

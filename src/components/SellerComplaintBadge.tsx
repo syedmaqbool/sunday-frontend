@@ -21,10 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { showErrorToast } from '@/lib/errorToast';
 import { getComplaintDetailsOptions } from '@/queries/complaint.query';
 import { myOrdersQueryKey } from '@/queries/myOrders.query';
-import {
-  markComplaintReturnReceived,
-  provideReturnAddress,
-} from '@/services/complaints.service';
+import { markComplaintReturnReceived, provideReturnAddress } from '@/services/complaints.service';
 
 const returnAddressSchema = z.object({
   address: z.string().trim().min(1, 'Street address is required.'),
@@ -37,7 +34,14 @@ const returnAddressSchema = z.object({
 
 type ReturnAddressFormValues = z.infer<typeof returnAddressSchema>;
 
-const emptyReturnAddressForm: ReturnAddressFormValues = { address: '', city: '', name: '', notes: '', phone: '', postal: '' };
+const emptyReturnAddressForm: ReturnAddressFormValues = {
+  address: '',
+  city: '',
+  name: '',
+  notes: '',
+  phone: '',
+  postal: '',
+};
 
 export function SellerComplaintBadge({
   orderId,
@@ -49,7 +53,10 @@ export function SellerComplaintBadge({
   const queryClient = useQueryClient();
   const [addressOpen, setAddressOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const form = useForm<ReturnAddressFormValues>({ defaultValues: emptyReturnAddressForm, resolver: zodResolver(returnAddressSchema) });
+  const form = useForm<ReturnAddressFormValues>({
+    defaultValues: emptyReturnAddressForm,
+    resolver: zodResolver(returnAddressSchema),
+  });
 
   const { data: complaint, refetch } = useQuery(getComplaintDetailsOptions(orderId, orderItemId));
 
@@ -69,8 +76,7 @@ export function SellerComplaintBadge({
     });
   }, [addressOpen, complaint, form]);
 
-  if (!complaint)
-    return null;
+  if (!complaint) return null;
 
   const saveAddress = async (values: ReturnAddressFormValues) => {
     setBusy(true);
@@ -87,11 +93,9 @@ export function SellerComplaintBadge({
       setAddressOpen(false);
       await refetch();
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to save return address');
-    }
-    finally {
+    } finally {
       setBusy(false);
     }
   };
@@ -100,16 +104,12 @@ export function SellerComplaintBadge({
     setBusy(true);
     try {
       await markComplaintReturnReceived(complaint.id);
-      toast.success(
-        'Marked return as received. Admin will finalize the refund.',
-      );
+      toast.success('Marked return as received. Admin will finalize the refund.');
       await refetch();
       queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update status');
-    }
-    finally {
+    } finally {
       setBusy(false);
     }
   };
@@ -152,13 +152,11 @@ export function SellerComplaintBadge({
           variant="outline"
           className="h-7 gap-1 text-xs"
         >
-          {busy
-            ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              )
-            : (
-                <PackageCheck className="h-3 w-3" />
-              )}
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <PackageCheck className="h-3 w-3" />
+          )}
           Mark return received
         </Button>
       )}
@@ -167,42 +165,63 @@ export function SellerComplaintBadge({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-heading">
-              <MapPin className="h-5 w-5" />
-              {' '}
-              Return shipping address
+              <MapPin className="h-5 w-5" /> Return shipping address
             </DialogTitle>
             <DialogDescription>
-              Provide the address where the buyer should ship the return. The
-              buyer will see this immediately.
+              Provide the address where the buyer should ship the return. The buyer will see this
+              immediately.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(saveAddress, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the return address.'))} className="space-y-3">
+          <form
+            onSubmit={form.handleSubmit(saveAddress, errors =>
+              toast.error(Object.values(errors)[0]?.message ?? 'Check the return address.'),
+            )}
+            className="space-y-3"
+          >
             <div>
               <Label htmlFor="ret-name">Recipient name *</Label>
-              <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="ret-name" maxLength={100} />} />
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="ret-name" maxLength={100} />}
+              />
             </div>
             <div>
               <Label htmlFor="ret-address">Street address *</Label>
-              <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="ret-address" maxLength={200} />} />
+              <Controller
+                name="address"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="ret-address" maxLength={200} />}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="ret-city">City *</Label>
-                <Controller name="city" control={form.control} render={({ field }) => <Input {...field} id="ret-city" maxLength={80} />} />
+                <Controller
+                  name="city"
+                  control={form.control}
+                  render={({ field }) => <Input {...field} id="ret-city" maxLength={80} />}
+                />
               </div>
               <div>
                 <Label htmlFor="ret-postal">Postal code</Label>
-                <Controller name="postal" control={form.control} render={({ field }) => <Input {...field} id="ret-postal" maxLength={20} />} />
+                <Controller
+                  name="postal"
+                  control={form.control}
+                  render={({ field }) => <Input {...field} id="ret-postal" maxLength={20} />}
+                />
               </div>
             </div>
             <div>
               <Label htmlFor="ret-phone">Phone</Label>
-              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="ret-phone" maxLength={30} />} />
+              <Controller
+                name="phone"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="ret-phone" maxLength={30} />}
+              />
             </div>
             <div>
-              <Label htmlFor="ret-notes">
-                Instructions for the buyer (optional)
-              </Label>
+              <Label htmlFor="ret-notes">Instructions for the buyer (optional)</Label>
               <Controller
                 name="notes"
                 control={form.control}
@@ -227,13 +246,11 @@ export function SellerComplaintBadge({
                 Cancel
               </Button>
               <Button disabled={busy} type="submit">
-                {busy
-                  ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )
-                  : (
-                      <MapPin className="mr-2 h-4 w-4" />
-                    )}
+                {busy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPin className="mr-2 h-4 w-4" />
+                )}
                 Share with buyer
               </Button>
             </DialogFooter>

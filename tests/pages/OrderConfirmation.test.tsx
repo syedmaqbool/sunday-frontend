@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { HTTPError } from 'ky';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 
 const {
@@ -20,7 +20,10 @@ const {
   resubmitManualPaymentMock: vi.fn(),
   uploadPaymentProofMock: vi.fn(),
 }));
-const authState = vi.hoisted(() => ({ loading: false, user: { id: 'buyer-id' } as { id: string } | null }));
+const authState = vi.hoisted(() => ({
+  loading: false,
+  user: { id: 'buyer-id' } as { id: string } | null,
+}));
 
 const testState = { currentError: null as unknown, currentOrder: null as Order | null };
 
@@ -55,8 +58,7 @@ vi.mock('@/queries/marketplace.query', () => ({
 vi.mock('@/queries/myOrders.query', () => ({
   getMyOrderOptions: () => ({
     queryFn: async () => {
-      if (testState.currentError)
-        throw testState.currentError;
+      if (testState.currentError) throw testState.currentError;
       return { data: testState.currentOrder };
     },
     queryKey: ['my-orders', 'detail', testState.currentOrder?.id],
@@ -91,49 +93,51 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     currency: 'PKR',
     discountAmount: 0,
     discountCode: null,
-    items: [{
-      id: 'item-id',
-      buyerId: 'buyer-id',
-      commissionTierId: null,
-      listingId: 'listing-id',
-      offerId: null,
-      orderId: 'order-id',
-      reservationId: null,
-      sellerId: 'seller-id',
-      sellerIncentiveId: null,
-      brand: 'Example',
-      buyerFullName: 'Jane Buyer',
-      category: 'Clothing',
-      commissionAmount: 0,
-      commissionRate: 0,
-      commissionTierName: null,
-      condition: 'NEW',
-      currency: 'PKR',
-      description: 'Example item',
-      discountAmount: 0,
-      expectedDelivery: null,
-      imageUrl: '',
-      platformFeeAmount: 0,
-      price: 100,
-      proofImageUrl: null,
-      quantity: 1,
-      reservedOfferPrice: null,
-      sellerFullName: 'Example Seller',
-      sellerIncentiveBonus: 0,
-      sellerIncentivePercentage: null,
-      shippingMethod: null,
-      size: 'M',
-      status: 'CONFIRMED',
-      subcategory: 'Tops',
-      taxAmount: 0,
-      title: 'Example item',
-      total: 100,
-      trackingNumber: null,
-      receivedAt: null,
-      shippedAt: null,
-      createdAt: '2026-09-08T00:00:00.000Z',
-      updatedAt: '2026-09-08T00:00:00.000Z',
-    }],
+    items: [
+      {
+        id: 'item-id',
+        buyerId: 'buyer-id',
+        commissionTierId: null,
+        listingId: 'listing-id',
+        offerId: null,
+        orderId: 'order-id',
+        reservationId: null,
+        sellerId: 'seller-id',
+        sellerIncentiveId: null,
+        brand: 'Example',
+        buyerFullName: 'Jane Buyer',
+        category: 'Clothing',
+        commissionAmount: 0,
+        commissionRate: 0,
+        commissionTierName: null,
+        condition: 'NEW',
+        currency: 'PKR',
+        description: 'Example item',
+        discountAmount: 0,
+        expectedDelivery: null,
+        imageUrl: '',
+        platformFeeAmount: 0,
+        price: 100,
+        proofImageUrl: null,
+        quantity: 1,
+        reservedOfferPrice: null,
+        sellerFullName: 'Example Seller',
+        sellerIncentiveBonus: 0,
+        sellerIncentivePercentage: null,
+        shippingMethod: null,
+        size: 'M',
+        status: 'CONFIRMED',
+        subcategory: 'Tops',
+        taxAmount: 0,
+        title: 'Example item',
+        total: 100,
+        trackingNumber: null,
+        receivedAt: null,
+        shippedAt: null,
+        createdAt: '2026-09-08T00:00:00.000Z',
+        updatedAt: '2026-09-08T00:00:00.000Z',
+      },
+    ],
     manualPaymentSubmission: {
       id: 'submission-id',
       orderId: 'order-id',
@@ -203,24 +207,28 @@ describe('order confirmation manual actions', () => {
     testState.currentOrder = makeOrder({
       discountAmount: 80,
       discountCode: 'MARKET10',
-      items: [{
-        ...item,
-        sellerIncentiveId: 'incentive-id',
-        discountAmount: 80,
-        platformFeeAmount: 100,
-        sellerIncentiveBonus: 200,
-        sellerIncentivePercentage: 20,
-        taxAmount: 100,
-        total: 1120,
-      }],
+      items: [
+        {
+          ...item,
+          sellerIncentiveId: 'incentive-id',
+          discountAmount: 80,
+          platformFeeAmount: 100,
+          sellerIncentiveBonus: 200,
+          sellerIncentivePercentage: 20,
+          taxAmount: 100,
+          total: 1120,
+        },
+      ],
       platformFeeAmount: 100,
-      sellerIncentives: [{
-        id: 'incentive-id',
-        sellerId: 'seller-id',
-        allocations: [{ listingId: 'listing-id', orderItemId: 'item-id', bonusAmount: 200 }],
-        bonusAmount: 200,
-        percentage: 20,
-      }],
+      sellerIncentives: [
+        {
+          id: 'incentive-id',
+          sellerId: 'seller-id',
+          allocations: [{ listingId: 'listing-id', orderItemId: 'item-id', bonusAmount: 200 }],
+          bonusAmount: 200,
+          percentage: 20,
+        },
+      ],
       subtotal: 1000,
       taxAmount: 100,
       taxRate: 10,
@@ -230,10 +238,14 @@ describe('order confirmation manual actions', () => {
 
     await screen.findByText('Payment pending verification');
 
-    expect(screen.getByText('Marketplace discount (MARKET10)').parentElement).toHaveTextContent('80');
+    expect(screen.getByText('Marketplace discount (MARKET10)').parentElement).toHaveTextContent(
+      '80',
+    );
     expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('100');
     expect(screen.getByText('Total').parentElement).toHaveTextContent('Rs 1,120');
-    expect(screen.queryByText(/seller incentive|seller bonus|seller coupon/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/seller incentive|seller bonus|seller coupon/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/200/)).not.toBeInTheDocument();
   });
 
@@ -310,7 +322,10 @@ describe('order confirmation manual actions', () => {
   });
 
   it('opens the existing resubmission flow and refreshes the order after replacement proof', async () => {
-    const requestedSubmission = { ...makeOrder().manualPaymentSubmission!, status: 'RESUBMISSION_REQUESTED' as const };
+    const requestedSubmission = {
+      ...makeOrder().manualPaymentSubmission!,
+      status: 'RESUBMISSION_REQUESTED' as const,
+    };
     testState.currentOrder = makeOrder({
       canCancel: true,
       canResubmit: true,
@@ -332,24 +347,32 @@ describe('order confirmation manual actions', () => {
     expect(screen.getByText(/payment correction deadline/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('heading', { name: 'Resubmit payment proof' }),
+    ).toBeInTheDocument();
     expect(await within(dialog).findByText('Sunday Store')).toBeInTheDocument();
 
-    fireEvent.change(within(dialog).getByLabelText('Sender account title/name'), { target: { value: 'Jane Buyer' } });
-    fireEvent.change(within(dialog).getByLabelText('Sender account number'), { target: { value: '123456789' } });
+    fireEvent.change(within(dialog).getByLabelText('Sender account title/name'), {
+      target: { value: 'Jane Buyer' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('Sender account number'), {
+      target: { value: '123456789' },
+    });
     fireEvent.change(within(dialog).getByLabelText('Transaction screenshot'), {
       target: { files: [new File(['proof'], 'proof.png', { type: 'image/png' })] },
     });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Resubmit payment proof' }));
 
-    await waitFor(() => expect(resubmitManualPaymentMock).toHaveBeenCalledWith({
-      orderId: 'order-id',
-      payload: {
-        proofFileId: 'proof-file-id',
-        senderAccountNumber: '123456789',
-        senderAccountTitle: 'Jane Buyer',
-      },
-    }));
+    await waitFor(() =>
+      expect(resubmitManualPaymentMock).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        payload: {
+          proofFileId: 'proof-file-id',
+          senderAccountNumber: '123456789',
+          senderAccountTitle: 'Jane Buyer',
+        },
+      }),
+    );
     expect(refetchQueries).toHaveBeenCalledWith({ queryKey: ['my-orders', 'detail', 'order-id'] });
     expect(await screen.findByText('Pending review')).toBeInTheDocument();
   });
@@ -382,12 +405,16 @@ describe('order confirmation manual actions', () => {
 
     await screen.findByRole('heading', { name: 'Resubmission requested' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
-    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }),
+    );
 
     await waitFor(() => expect(cancelOrderMock).toHaveBeenCalledWith('order-id'));
     expect(await screen.findByRole('heading', { name: 'Order cancelled' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Resubmit payment proof' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows backend expiry and hides both correction actions after the correction window closes', async () => {
@@ -405,9 +432,13 @@ describe('order confirmation manual actions', () => {
     });
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Payment window expired' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Payment window expired' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Resubmit payment proof' }),
+    ).not.toBeInTheDocument();
   });
 
   it('hides correction actions after the deadline while the backend capability flags remain true', async () => {
@@ -425,7 +456,9 @@ describe('order confirmation manual actions', () => {
     await screen.findByRole('heading', { name: 'Resubmission requested' });
 
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Resubmit payment proof' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Resubmit payment proof' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps historical orders viewable without gateway payment actions', async () => {
@@ -454,7 +487,9 @@ describe('order confirmation manual actions', () => {
 
     expect(screen.getByText('Payment status:')).toBeInTheDocument();
     expect(screen.getByText('Paid')).toBeInTheDocument();
-    expect(screen.getByText('This order was cancelled. Your payment has been refunded.')).toBeInTheDocument();
+    expect(
+      screen.getByText('This order was cancelled. Your payment has been refunded.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Example item')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
   });
@@ -479,7 +514,9 @@ describe('order confirmation manual actions', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }),
+    );
 
     await waitFor(() => expect(cancelOrderMock).toHaveBeenCalledWith('order-id'));
     expect(fetchMarketplaceListingMock).toHaveBeenCalledWith('listing-id');
@@ -504,9 +541,13 @@ describe('order confirmation manual actions', () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
-    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel order' }),
+    );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('This order changed while you were viewing it.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This order changed while you were viewing it.',
+    );
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 

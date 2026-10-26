@@ -4,13 +4,7 @@ import type { HelpTutorial } from '@/types/helpTutorial.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import {
-  BookOpen,
-  Loader2,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { BookOpen, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { createElement, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -168,10 +162,7 @@ const tutorialFieldsSchema = z.object({
   title: z.string().trim().min(1).max(200),
 });
 
-function validateTutorialCta(
-  data: { ctaLabel: string; ctaTo: string },
-  context: z.RefinementCtx,
-) {
+function validateTutorialCta(data: { ctaLabel: string; ctaTo: string }, context: z.RefinementCtx) {
   if (Boolean(data.ctaLabel) !== Boolean(data.ctaTo)) {
     context.addIssue({
       path: ['ctaTo'],
@@ -184,12 +175,11 @@ function validateTutorialCta(
 const tutorialStepValueSchema = z.string().trim().min(1).max(500);
 const tutorialStepFormSchema = z.object({ value: tutorialStepValueSchema });
 
-const tutorialFormSchema = tutorialFieldsSchema.extend({
-  steps: z
-    .array(tutorialStepFormSchema)
-    .min(1, 'At least one step')
-    .max(20, 'At most 20 steps'),
-}).superRefine(validateTutorialCta);
+const tutorialFormSchema = tutorialFieldsSchema
+  .extend({
+    steps: z.array(tutorialStepFormSchema).min(1, 'At least one step').max(20, 'At most 20 steps'),
+  })
+  .superRefine(validateTutorialCta);
 
 type TutorialFormValues = z.infer<typeof tutorialFormSchema>;
 
@@ -205,8 +195,7 @@ const emptyTutorialForm = {
 
 function tutorialErrorMessage(error: unknown) {
   const code = getApiErrorCode(error);
-  if (code === 'APP_HELP_TUTORIAL_CONFLICT')
-    return 'A tutorial with that title already exists.';
+  if (code === 'APP_HELP_TUTORIAL_CONFLICT') return 'A tutorial with that title already exists.';
   if (code === 'APP_HELP_TUTORIAL_INVALID_CTA')
     return 'Set both CTA label and path, or clear both.';
   return error instanceof Error ? error.message : 'Failed to save tutorial';
@@ -219,7 +208,7 @@ function IconSelect({ onChange, value }: { onChange: (v: string) => void; value:
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="max-h-64">
-        {HELP_ICON_OPTIONS.map((name) => {
+        {HELP_ICON_OPTIONS.map(name => {
           return (
             <SelectItem key={name} value={name}>
               <span className="flex items-center gap-2">
@@ -242,8 +231,8 @@ function HelpManagement() {
   const updateCategories = useUpdateHelpCategoriesMutation();
   const updateFaqs = useUpdateHelpFaqsMutation();
 
-  const categories: Category[] = (settings?.helpCategories ?? []).map(
-    category => adaptCategory(category),
+  const categories: Category[] = (settings?.helpCategories ?? []).map(category =>
+    adaptCategory(category),
   );
   const faqs: Faq[] = (settings?.helpFaqs ?? []).map(faq => adaptFaq(faq));
 
@@ -284,13 +273,9 @@ function HelpManagement() {
   const saveCategory = (values: z.infer<typeof categorySchema>) => {
     let next: Category[];
     if (catEdit) {
-      next = categories.map(c =>
-        c.key === catEdit.key ? { ...c, ...values } : c,
-      );
-    }
-    else {
-      if (categories.some(c => c.key === values.key))
-        return toast.error('That key already exists');
+      next = categories.map(c => (c.key === catEdit.key ? { ...c, ...values } : c));
+    } else {
+      if (categories.some(c => c.key === values.key)) return toast.error('That key already exists');
       const newCategory: Category = {
         key: values.key,
         active: true,
@@ -360,11 +345,8 @@ function HelpManagement() {
   const saveFaq = (values: z.infer<typeof faqSchema>) => {
     let next: Faq[];
     if (faqEdit) {
-      next = faqs.map(f =>
-        f.id === faqEdit.id ? { ...f, ...values } : f,
-      );
-    }
-    else {
+      next = faqs.map(f => (f.id === faqEdit.id ? { ...f, ...values } : f));
+    } else {
       const newFaq: Faq = {
         id: `faq-${Date.now()}`,
         answer: values.answer,
@@ -433,7 +415,7 @@ function HelpManagement() {
     setTutOpen(true);
   };
 
-  const saveTutorial: SubmitHandler<TutorialFormValues> = (values) => {
+  const saveTutorial: SubmitHandler<TutorialFormValues> = values => {
     const payload = {
       ctaLabel: values.ctaLabel || null,
       ctaTo: values.ctaTo || null,
@@ -455,8 +437,7 @@ function HelpManagement() {
           },
         },
       );
-    }
-    else {
+    } else {
       createTutorial.mutate(payload, {
         onError: (error: unknown) => showErrorToast(error, tutorialErrorMessage(error)),
         onSuccess: () => {
@@ -491,9 +472,7 @@ function HelpManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-bold text-foreground">
-          Help Center
-        </h1>
+        <h1 className="font-heading text-3xl font-bold text-foreground">Help Center</h1>
         <p className="mt-1 text-muted-foreground">
           Manage the categories, FAQs, and tutorials shown on /help.
         </p>
@@ -514,214 +493,176 @@ function HelpManagement() {
               disabled={categories.length === 0}
               className="gap-2"
             >
-              <Plus className="h-4 w-4" />
-              {' '}
-              Add FAQ
+              <Plus className="h-4 w-4" /> Add FAQ
             </Button>
           </div>
-          {faqs.length === 0
-            ? (
-                <EmptyState label="No FAQs yet" />
-              )
-            : (
-                faqs.map((f) => {
-                  const cat = categories.find(c => c.key === f.category_key);
-                  return (
-                    <Card key={f.id}>
-                      <CardContent className="
-                        flex flex-col gap-3 p-4
-                        sm:flex-row sm:items-start
-                      "
+          {faqs.length === 0 ? (
+            <EmptyState label="No FAQs yet" />
+          ) : (
+            faqs.map(f => {
+              const cat = categories.find(c => c.key === f.category_key);
+              return (
+                <Card key={f.id}>
+                  <CardContent
+                    className="
+                      flex flex-col gap-3 p-4
+                      sm:flex-row sm:items-start
+                    "
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {cat?.label ?? f.category_key}
+                        </Badge>
+                        {!f.published && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Draft
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">#{f.sort_order}</span>
+                      </div>
+                      <p className="mt-1 font-medium text-foreground">{f.question}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                        {f.answer}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Switch
+                        onCheckedChange={v => toggleFaqPublished(f.id, v)}
+                        checked={f.published}
+                      />
+                      <Button onClick={() => openFaqDialog(f)} size="icon" variant="ghost">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => deleteFaq(f.id)}
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive"
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px]">
-                              {cat?.label ?? f.category_key}
-                            </Badge>
-                            {!f.published && (
-                              <Badge variant="outline" className="text-[10px]">
-                                Draft
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground">
-                              #
-                              {f.sort_order}
-                            </span>
-                          </div>
-                          <p className="mt-1 font-medium text-foreground">
-                            {f.question}
-                          </p>
-                          <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-                            {f.answer}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Switch
-                            onCheckedChange={v => toggleFaqPublished(f.id, v)}
-                            checked={f.published}
-                          />
-                          <Button
-                            onClick={() => openFaqDialog(f)}
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => deleteFaq(f.id)}
-                            size="icon"
-                            variant="ghost"
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </TabsContent>
 
         {/* ── Tutorials (own paginated CRUD endpoints) ── */}
         <TabsContent value="tutorials" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openTutorialDialog(null)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {' '}
-              Add tutorial
+              <Plus className="h-4 w-4" /> Add tutorial
             </Button>
           </div>
-          {loadingTutorials
-            ? (
-                <div className="flex justify-center py-16">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              )
-            : tutorials.length === 0
-              ? (
-                  <EmptyState label="No tutorials yet" />
-                )
-              : (
-                  tutorials.map(t => (
-                    <Card key={t.id}>
-                      <CardContent className="
-                        flex flex-col gap-3 p-4
-                        sm:flex-row sm:items-start
-                      "
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                          {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            {!t.published && (
-                              <Badge variant="outline" className="text-[10px]">
-                                Draft
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground">
-                              #
-                              {t.sortOrder}
-                            </span>
-                          </div>
-                          <p className="mt-1 font-medium text-foreground">
-                            {t.title}
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {t.steps.length}
-                            {' '}
-                            step
-                            {t.steps.length === 1 ? '' : 's'}
-                            {t.ctaLabel && t.ctaTo ? ` · CTA: ${t.ctaLabel} → ${t.ctaTo}` : ''}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Switch
-                            onCheckedChange={v => toggleTutorialPublished(t.id, v)}
-                            checked={t.published}
-                          />
-                          <Button
-                            onClick={() => openTutorialDialog(t)}
-                            size="icon"
-                            variant="ghost"
+          {loadingTutorials ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : tutorials.length === 0 ? (
+            <EmptyState label="No tutorials yet" />
+          ) : (
+            tutorials.map(t => (
+              <Card key={t.id}>
+                <CardContent
+                  className="
+                    flex flex-col gap-3 p-4
+                    sm:flex-row sm:items-start
+                  "
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                    {createElement(getHelpIcon(t.icon), { className: 'h-5 w-5' })}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {!t.published && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Draft
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">#{t.sortOrder}</span>
+                    </div>
+                    <p className="mt-1 font-medium text-foreground">{t.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t.steps.length} step
+                      {t.steps.length === 1 ? '' : 's'}
+                      {t.ctaLabel && t.ctaTo ? ` · CTA: ${t.ctaLabel} → ${t.ctaTo}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Switch
+                      onCheckedChange={v => toggleTutorialPublished(t.id, v)}
+                      checked={t.published}
+                    />
+                    <Button onClick={() => openTutorialDialog(t)} size="icon" variant="ghost">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete tutorial?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This permanently removes "{t.title}" and cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteTutorial(t.id)}
+                            className="
+                              bg-destructive text-destructive-foreground
+                              hover:bg-destructive/90
+                            "
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete tutorial?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This permanently removes "
-                                  {t.title}
-                                  " and cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteTutorial(t.id)}
-                                  className="
-                                    bg-destructive text-destructive-foreground
-                                    hover:bg-destructive/90
-                                  "
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
           {tutPagination && tutPagination.lastPage > 1 && (
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={(event) => {
+                    onClick={event => {
                       event.preventDefault();
-                      if (tutPagination.prevPage)
-                        setTutPage(tutPagination.prevPage);
+                      if (tutPagination.prevPage) setTutPage(tutPagination.prevPage);
                     }}
                     aria-disabled={tutPagination.prevPage == null}
                     href="#"
-                    className={tutPagination.prevPage == null ? 'pointer-events-none opacity-50' : undefined}
+                    className={
+                      tutPagination.prevPage == null ? 'pointer-events-none opacity-50' : undefined
+                    }
                   />
                 </PaginationItem>
                 <PaginationItem>
                   <span className="px-3 text-sm text-muted-foreground">
-                    Page
-                    {' '}
-                    {tutPagination.currentPage}
-                    {' '}
-                    of
-                    {' '}
-                    {tutPagination.lastPage}
+                    Page {tutPagination.currentPage} of {tutPagination.lastPage}
                   </span>
                 </PaginationItem>
                 <PaginationItem>
                   <PaginationNext
-                    onClick={(event) => {
+                    onClick={event => {
                       event.preventDefault();
-                      if (tutPagination.nextPage)
-                        setTutPage(tutPagination.nextPage);
+                      if (tutPagination.nextPage) setTutPage(tutPagination.nextPage);
                     }}
                     aria-disabled={tutPagination.nextPage == null}
                     href="#"
-                    className={tutPagination.nextPage == null ? 'pointer-events-none opacity-50' : undefined}
+                    className={
+                      tutPagination.nextPage == null ? 'pointer-events-none opacity-50' : undefined
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>
@@ -733,78 +674,61 @@ function HelpManagement() {
         <TabsContent value="categories" className="space-y-3 pt-4">
           <div className="flex justify-end">
             <Button onClick={() => openCategoryDialog(null)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {' '}
-              Add category
+              <Plus className="h-4 w-4" /> Add category
             </Button>
           </div>
-          {categories.length === 0
-            ? (
-                <EmptyState label="No categories yet" />
-              )
-            : (
-                categories.map((c) => {
-                  return (
-                    <Card key={c.key}>
-                      <CardContent className="
-                        flex flex-col gap-3 p-4
-                        sm:flex-row sm:items-center
-                      "
+          {categories.length === 0 ? (
+            <EmptyState label="No categories yet" />
+          ) : (
+            categories.map(c => {
+              return (
+                <Card key={c.key}>
+                  <CardContent
+                    className="
+                      flex flex-col gap-3 p-4
+                      sm:flex-row sm:items-center
+                    "
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                      {createElement(getHelpIcon(c.icon), { className: 'h-5 w-5' })}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                          {c.key}
+                        </Badge>
+                        {!c.active && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Hidden
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">#{c.sort_order}</span>
+                      </div>
+                      <p className="mt-1 font-medium text-foreground">{c.label}</p>
+                      <p className="mt-0.5 truncate text-sm text-muted-foreground">{c.blurb}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Switch
+                        onCheckedChange={v => toggleCategoryActive(c.key, v)}
+                        checked={c.active}
+                      />
+                      <Button onClick={() => openCategoryDialog(c)} size="icon" variant="ghost">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => deleteCategory(c.key)}
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                          {createElement(getHelpIcon(c.icon), { className: 'h-5 w-5' })}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge
-                              variant="secondary"
-                              className="font-mono text-[10px]"
-                            >
-                              {c.key}
-                            </Badge>
-                            {!c.active && (
-                              <Badge variant="outline" className="text-[10px]">
-                                Hidden
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground">
-                              #
-                              {c.sort_order}
-                            </span>
-                          </div>
-                          <p className="mt-1 font-medium text-foreground">
-                            {c.label}
-                          </p>
-                          <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                            {c.blurb}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Switch
-                            onCheckedChange={v => toggleCategoryActive(c.key, v)}
-                            checked={c.active}
-                          />
-                          <Button
-                            onClick={() => openCategoryDialog(c)}
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => deleteCategory(c.key)}
-                            size="icon"
-                            variant="ghost"
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </TabsContent>
       </Tabs>
 
@@ -812,11 +736,14 @@ function HelpManagement() {
       <Dialog onOpenChange={setCatOpen} open={catOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {catEdit ? 'Edit category' : 'Add category'}
-            </DialogTitle>
+            <DialogTitle>{catEdit ? 'Edit category' : 'Add category'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={catForm.handleSubmit(saveCategory, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the category fields.'))} className="space-y-3">
+          <form
+            onSubmit={catForm.handleSubmit(saveCategory, errors =>
+              toast.error(Object.values(errors)[0]?.message ?? 'Check the category fields.'),
+            )}
+            className="space-y-3"
+          >
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Key</Label>
@@ -835,34 +762,56 @@ function HelpManagement() {
               </div>
               <div className="space-y-1.5">
                 <Label>Label</Label>
-                <Controller name="label" control={catForm.control} render={({ field }) => <Input {...field} />} />
+                <Controller
+                  name="label"
+                  control={catForm.control}
+                  render={({ field }) => <Input {...field} />}
+                />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Blurb</Label>
-              <Controller name="blurb" control={catForm.control} render={({ field }) => <Input {...field} />} />
+              <Controller
+                name="blurb"
+                control={catForm.control}
+                render={({ field }) => <Input {...field} />}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Icon</Label>
-                <Controller name="icon" control={catForm.control} render={({ field }) => <IconSelect onChange={field.onChange} value={field.value} />} />
+                <Controller
+                  name="icon"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <IconSelect onChange={field.onChange} value={field.value} />
+                  )}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Sort order</Label>
-                <Controller name="sort_order" control={catForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Number(event.target.value) || 0)} ref={field.ref} value={field.value} type="number" />} />
+                <Controller
+                  name="sort_order"
+                  control={catForm.control}
+                  render={({ field }) => (
+                    <Input
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onChange={event => field.onChange(Number(event.target.value) || 0)}
+                      ref={field.ref}
+                      value={field.value}
+                      type="number"
+                    />
+                  )}
+                />
               </div>
             </div>
             <DialogFooter>
               <Button onClick={() => setCatOpen(false)} type="button" variant="outline">
                 Cancel
               </Button>
-              <Button
-                disabled={updateCategories.isPending}
-                type="submit"
-              >
-                {updateCategories.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button disabled={updateCategories.isPending} type="submit">
+                {updateCategories.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save
               </Button>
             </DialogFooter>
@@ -876,7 +825,12 @@ function HelpManagement() {
           <DialogHeader>
             <DialogTitle>{faqEdit ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={faqForm.handleSubmit(saveFaq, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the FAQ fields.'))} className="space-y-3">
+          <form
+            onSubmit={faqForm.handleSubmit(saveFaq, errors =>
+              toast.error(Object.values(errors)[0]?.message ?? 'Check the FAQ fields.'),
+            )}
+            className="space-y-3"
+          >
             <div className="space-y-1.5">
               <Label>Category</Label>
               <Controller
@@ -900,24 +854,43 @@ function HelpManagement() {
             </div>
             <div className="space-y-1.5">
               <Label>Question</Label>
-              <Controller name="question" control={faqForm.control} render={({ field }) => <Input {...field} maxLength={200} />} />
+              <Controller
+                name="question"
+                control={faqForm.control}
+                render={({ field }) => <Input {...field} maxLength={200} />}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Answer</Label>
-              <Controller name="answer" control={faqForm.control} render={({ field }) => <Textarea {...field} maxLength={2000} rows={6} />} />
+              <Controller
+                name="answer"
+                control={faqForm.control}
+                render={({ field }) => <Textarea {...field} maxLength={2000} rows={6} />}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Sort order</Label>
-              <Controller name="sort_order" control={faqForm.control} render={({ field }) => <Input name={field.name} onBlur={field.onBlur} onChange={event => field.onChange(Number(event.target.value) || 0)} ref={field.ref} value={field.value} type="number" />} />
+              <Controller
+                name="sort_order"
+                control={faqForm.control}
+                render={({ field }) => (
+                  <Input
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    onChange={event => field.onChange(Number(event.target.value) || 0)}
+                    ref={field.ref}
+                    value={field.value}
+                    type="number"
+                  />
+                )}
+              />
             </div>
             <DialogFooter>
               <Button onClick={() => setFaqOpen(false)} type="button" variant="outline">
                 Cancel
               </Button>
               <Button disabled={updateFaqs.isPending} type="submit">
-                {updateFaqs.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {updateFaqs.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save
               </Button>
             </DialogFooter>
@@ -929,15 +902,22 @@ function HelpManagement() {
       <Dialog onOpenChange={setTutOpen} open={tutOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {tutEdit ? 'Edit tutorial' : 'Add tutorial'}
-            </DialogTitle>
+            <DialogTitle>{tutEdit ? 'Edit tutorial' : 'Add tutorial'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={tutForm.handleSubmit(saveTutorial, () => toast.error('Please correct the highlighted tutorial fields.'))} className="space-y-3">
+          <form
+            onSubmit={tutForm.handleSubmit(saveTutorial, () =>
+              toast.error('Please correct the highlighted tutorial fields.'),
+            )}
+            className="space-y-3"
+          >
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div className="space-y-1.5">
                 <Label>Title</Label>
-                <Controller name="title" control={tutForm.control} render={({ field }) => <Input {...field} />} />
+                <Controller
+                  name="title"
+                  control={tutForm.control}
+                  render={({ field }) => <Input {...field} />}
+                />
                 {tutForm.formState.errors.title?.message && (
                   <p className="text-sm text-destructive">
                     {tutForm.formState.errors.title.message}
@@ -965,9 +945,7 @@ function HelpManagement() {
               <Controller
                 name="icon"
                 control={tutForm.control}
-                render={({ field }) => (
-                  <IconSelect onChange={field.onChange} value={field.value} />
-                )}
+                render={({ field }) => <IconSelect onChange={field.onChange} value={field.value} />}
               />
             </div>
             <div className="space-y-1.5">
@@ -975,11 +953,14 @@ function HelpManagement() {
               {tutorialSteps.fields.map((field, index) => (
                 <div key={field.id} className="flex gap-2">
                   <span className="flex h-9 w-7 shrink-0 items-center justify-center text-xs text-muted-foreground">
-                    {index + 1}
-                    .
+                    {index + 1}.
                   </span>
                   <div className="min-w-0 flex-1">
-                    <Controller name={`steps.${index}.value`} control={tutForm.control} render={({ field }) => <Input {...field} />} />
+                    <Controller
+                      name={`steps.${index}.value`}
+                      control={tutForm.control}
+                      render={({ field }) => <Input {...field} />}
+                    />
                     {tutForm.formState.errors.steps?.[index]?.value?.message && (
                       <p className="mt-1 text-sm text-destructive">
                         {tutForm.formState.errors.steps[index]?.value?.message}
@@ -1018,9 +999,7 @@ function HelpManagement() {
                 variant="outline"
                 className="gap-2"
               >
-                <Plus className="h-3.5 w-3.5" />
-                {' '}
-                Add step
+                <Plus className="h-3.5 w-3.5" /> Add step
               </Button>
             </div>
             <div className="space-y-1.5">
@@ -1041,23 +1020,28 @@ function HelpManagement() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Controller name="ctaLabel" control={tutForm.control} render={({ field }) => <Input {...field} placeholder="CTA label, e.g. Start browsing" />} />
-                <Controller name="ctaTo" control={tutForm.control} render={({ field }) => <Input {...field} placeholder="/listings" />} />
+                <Controller
+                  name="ctaLabel"
+                  control={tutForm.control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="CTA label, e.g. Start browsing" />
+                  )}
+                />
+                <Controller
+                  name="ctaTo"
+                  control={tutForm.control}
+                  render={({ field }) => <Input {...field} placeholder="/listings" />}
+                />
               </div>
               {tutForm.formState.errors.ctaTo?.message && (
-                <p className="text-sm text-destructive">
-                  {tutForm.formState.errors.ctaTo.message}
-                </p>
+                <p className="text-sm text-destructive">{tutForm.formState.errors.ctaTo.message}</p>
               )}
             </div>
             <DialogFooter>
               <Button onClick={() => setTutOpen(false)} type="button" variant="outline">
                 Cancel
               </Button>
-              <Button
-                disabled={createTutorial.isPending || updateTutorial.isPending}
-                type="submit"
-              >
+              <Button disabled={createTutorial.isPending || updateTutorial.isPending} type="submit">
                 {(createTutorial.isPending || updateTutorial.isPending) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}

@@ -76,27 +76,29 @@ export interface UploadFileResponses {
    * Default Response
    */
   201: {
-    data: {
-      /**
-       * Unique identifier of the uploaded file.
-       */
-      id: string;
-      /**
-       * Original filename of the uploaded file.
-       */
-      filename: string;
-      /**
-       * MIME type of the uploaded file.
-       */
-      mimetype: string;
-      size: number | string;
-      /**
-       * Publicly accessible URL of the uploaded file.
-       */
-      url: string;
-    } | {
-      id: string;
-    };
+    data:
+      | {
+          /**
+           * Unique identifier of the uploaded file.
+           */
+          id: string;
+          /**
+           * Original filename of the uploaded file.
+           */
+          filename: string;
+          /**
+           * MIME type of the uploaded file.
+           */
+          mimetype: string;
+          size: number | string;
+          /**
+           * Publicly accessible URL of the uploaded file.
+           */
+          url: string;
+        }
+      | {
+          id: string;
+        };
     message: string;
     statusCode: 201;
   };

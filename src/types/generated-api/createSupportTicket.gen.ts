@@ -95,4 +95,5 @@ export interface CreateSupportTicketResponses {
   };
 }
 
-export type CreateSupportTicketResponse = CreateSupportTicketResponses[keyof CreateSupportTicketResponses];
+export type CreateSupportTicketResponse =
+  CreateSupportTicketResponses[keyof CreateSupportTicketResponses];

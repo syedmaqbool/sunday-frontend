@@ -1,11 +1,6 @@
 import type { CreateBrandPayload, UpdateBrandPayload } from '@/types/brand.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  createBrand,
-  deleteBrand,
-  listBrands,
-  updateBrand,
-} from '@/services/brand.service';
+import { createBrand, deleteBrand, listBrands, updateBrand } from '@/services/brand.service';
 
 export const brandsQueryKey = {
   all: () => ['brands'] as const,
@@ -39,13 +34,8 @@ export function useUpdateBrandMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      brandId,
-      payload,
-    }: {
-      brandId: string;
-      payload: UpdateBrandPayload;
-    }) => updateBrand(brandId, payload),
+    mutationFn: ({ brandId, payload }: { brandId: string; payload: UpdateBrandPayload }) =>
+      updateBrand(brandId, payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });

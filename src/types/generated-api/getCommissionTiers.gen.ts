@@ -66,4 +66,5 @@ export interface GetCommissionTiersResponses {
   };
 }
 
-export type GetCommissionTiersResponse = GetCommissionTiersResponses[keyof GetCommissionTiersResponses];
+export type GetCommissionTiersResponse =
+  GetCommissionTiersResponses[keyof GetCommissionTiersResponses];

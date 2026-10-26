@@ -124,7 +124,8 @@ export interface ApproveAdminFinanceAdjustmentErrors {
   };
 }
 
-export type ApproveAdminFinanceAdjustmentError = ApproveAdminFinanceAdjustmentErrors[keyof ApproveAdminFinanceAdjustmentErrors];
+export type ApproveAdminFinanceAdjustmentError =
+  ApproveAdminFinanceAdjustmentErrors[keyof ApproveAdminFinanceAdjustmentErrors];
 
 export interface ApproveAdminFinanceAdjustmentResponses {
   /**
@@ -169,4 +170,5 @@ export interface ApproveAdminFinanceAdjustmentResponses {
   };
 }
 
-export type ApproveAdminFinanceAdjustmentResponse = ApproveAdminFinanceAdjustmentResponses[keyof ApproveAdminFinanceAdjustmentResponses];
+export type ApproveAdminFinanceAdjustmentResponse =
+  ApproveAdminFinanceAdjustmentResponses[keyof ApproveAdminFinanceAdjustmentResponses];

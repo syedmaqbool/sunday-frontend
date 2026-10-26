@@ -28,10 +28,11 @@ export default function CategoryGrid() {
 
   return (
     <section className="container py-16">
-      <h2 className="
-        text-center font-heading text-2xl font-bold text-foreground
-        md:text-3xl
-      "
+      <h2
+        className="
+          text-center font-heading text-2xl font-bold text-foreground
+          md:text-3xl
+        "
       >
         Shop by Category
       </h2>

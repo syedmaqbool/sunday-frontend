@@ -96,7 +96,8 @@ export interface GetAdminSiteSettingByKeyErrors {
   };
 }
 
-export type GetAdminSiteSettingByKeyError = GetAdminSiteSettingByKeyErrors[keyof GetAdminSiteSettingByKeyErrors];
+export type GetAdminSiteSettingByKeyError =
+  GetAdminSiteSettingByKeyErrors[keyof GetAdminSiteSettingByKeyErrors];
 
 export interface GetAdminSiteSettingByKeyResponses {
   /**
@@ -105,45 +106,49 @@ export interface GetAdminSiteSettingByKeyResponses {
   200: {
     data: {
       key: string;
-      value: {
-        addressBody: string;
-        addressLabel: string;
-        emailAddress: string;
-        emailLabel: string;
-        mapUrl: string;
-        officeHours: string;
-        phoneLabel: string;
-        phoneNumber: string;
-      } | {
-        alt: string;
-        badgeIconUrl: string;
-        badgeText: string;
-        headlineLine1: string;
-        headlineLine1Color: string;
-        headlineLine2: string;
-        headlineLine2Color: string;
-        mobileUrl: string;
-        primaryCtaBg: string;
-        primaryCtaLabel: string;
-        primaryCtaTextColor: string;
-        secondaryCtaBorderColor: string;
-        secondaryCtaLabel: string;
-        secondaryCtaTextColor: string;
-        siteLogoUrl: string;
-        subtitle: string;
-        subtitleColor: string;
-        url: string;
-      } | {
-        ctaLabel: string;
-        ctaUrl: string;
-        eyebrow: string;
-        subtitle: string;
-        title: string;
-      };
+      value:
+        | {
+            addressBody: string;
+            addressLabel: string;
+            emailAddress: string;
+            emailLabel: string;
+            mapUrl: string;
+            officeHours: string;
+            phoneLabel: string;
+            phoneNumber: string;
+          }
+        | {
+            alt: string;
+            badgeIconUrl: string;
+            badgeText: string;
+            headlineLine1: string;
+            headlineLine1Color: string;
+            headlineLine2: string;
+            headlineLine2Color: string;
+            mobileUrl: string;
+            primaryCtaBg: string;
+            primaryCtaLabel: string;
+            primaryCtaTextColor: string;
+            secondaryCtaBorderColor: string;
+            secondaryCtaLabel: string;
+            secondaryCtaTextColor: string;
+            siteLogoUrl: string;
+            subtitle: string;
+            subtitleColor: string;
+            url: string;
+          }
+        | {
+            ctaLabel: string;
+            ctaUrl: string;
+            eyebrow: string;
+            subtitle: string;
+            title: string;
+          };
     };
     message: string;
     statusCode: 200;
   };
 }
 
-export type GetAdminSiteSettingByKeyResponse = GetAdminSiteSettingByKeyResponses[keyof GetAdminSiteSettingByKeyResponses];
+export type GetAdminSiteSettingByKeyResponse =
+  GetAdminSiteSettingByKeyResponses[keyof GetAdminSiteSettingByKeyResponses];

@@ -124,7 +124,8 @@ export interface CancelAdminFinanceAdjustmentErrors {
   };
 }
 
-export type CancelAdminFinanceAdjustmentError = CancelAdminFinanceAdjustmentErrors[keyof CancelAdminFinanceAdjustmentErrors];
+export type CancelAdminFinanceAdjustmentError =
+  CancelAdminFinanceAdjustmentErrors[keyof CancelAdminFinanceAdjustmentErrors];
 
 export interface CancelAdminFinanceAdjustmentResponses {
   /**
@@ -169,4 +170,5 @@ export interface CancelAdminFinanceAdjustmentResponses {
   };
 }
 
-export type CancelAdminFinanceAdjustmentResponse = CancelAdminFinanceAdjustmentResponses[keyof CancelAdminFinanceAdjustmentResponses];
+export type CancelAdminFinanceAdjustmentResponse =
+  CancelAdminFinanceAdjustmentResponses[keyof CancelAdminFinanceAdjustmentResponses];

@@ -152,7 +152,8 @@ export interface DisconnectAdminQuickBooksConnectionErrors {
   };
 }
 
-export type DisconnectAdminQuickBooksConnectionError = DisconnectAdminQuickBooksConnectionErrors[keyof DisconnectAdminQuickBooksConnectionErrors];
+export type DisconnectAdminQuickBooksConnectionError =
+  DisconnectAdminQuickBooksConnectionErrors[keyof DisconnectAdminQuickBooksConnectionErrors];
 
 export interface DisconnectAdminQuickBooksConnectionResponses {
   /**
@@ -164,4 +165,5 @@ export interface DisconnectAdminQuickBooksConnectionResponses {
   };
 }
 
-export type DisconnectAdminQuickBooksConnectionResponse = DisconnectAdminQuickBooksConnectionResponses[keyof DisconnectAdminQuickBooksConnectionResponses];
+export type DisconnectAdminQuickBooksConnectionResponse =
+  DisconnectAdminQuickBooksConnectionResponses[keyof DisconnectAdminQuickBooksConnectionResponses];

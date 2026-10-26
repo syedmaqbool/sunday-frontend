@@ -68,7 +68,8 @@ export interface MarkNotificationReadErrors {
   };
 }
 
-export type MarkNotificationReadError = MarkNotificationReadErrors[keyof MarkNotificationReadErrors];
+export type MarkNotificationReadError =
+  MarkNotificationReadErrors[keyof MarkNotificationReadErrors];
 
 export interface MarkNotificationReadResponses {
   /**
@@ -85,18 +86,82 @@ export interface MarkNotificationReadResponses {
         resourceId?: string;
         focusedChild?: {
           resourceId: string;
-          resource: 'manualPaymentSubmission' | 'message' | 'orderItem' | 'review' | 'supportTicketMessage';
+          resource:
+            | 'manualPaymentSubmission'
+            | 'message'
+            | 'orderItem'
+            | 'review'
+            | 'supportTicketMessage';
         };
         recipient?: 'ADMIN' | 'BUYER' | 'SELLER';
-        resource: 'complaint' | 'conversation' | 'listing' | 'offer' | 'order' | 'profile' | 'report' | 'seller' | 'supportTicket';
-        section: 'detail' | 'editor' | 'list' | 'listings' | 'management' | 'manual-payment-review' | 'messages' | 'moderation' | 'my-returns' | 'overview' | 'received' | 'returned-to-me' | 'reviews' | 'sent' | 'sold';
+        resource:
+          | 'complaint'
+          | 'conversation'
+          | 'listing'
+          | 'offer'
+          | 'order'
+          | 'profile'
+          | 'report'
+          | 'seller'
+          | 'supportTicket';
+        section:
+          | 'detail'
+          | 'editor'
+          | 'list'
+          | 'listings'
+          | 'management'
+          | 'manual-payment-review'
+          | 'messages'
+          | 'moderation'
+          | 'my-returns'
+          | 'overview'
+          | 'received'
+          | 'returned-to-me'
+          | 'reviews'
+          | 'sent'
+          | 'sold';
       } | null;
       entityType: string | null;
       metadata: {
         [key: string]: unknown;
       };
       title: string;
-      type: 'COMPLAINT_RAISED' | 'COMPLAINT_UPDATED' | 'LISTING_APPROVED' | 'LISTING_FEEDBACK_ADDED' | 'LISTING_NEEDS_REVISION' | 'LISTING_REJECTED' | 'LISTING_REMOVED' | 'LISTING_RESTORED' | 'LISTING_SUBMITTED' | 'MANUAL_PAYMENT_APPROVED' | 'MANUAL_PAYMENT_CANCELLED' | 'MANUAL_PAYMENT_EXPIRED' | 'MANUAL_PAYMENT_REJECTED' | 'MANUAL_PAYMENT_RESUBMISSION_REQUESTED' | 'MANUAL_PAYMENT_SUBMITTED' | 'MESSAGE_RECEIVED' | 'OFFER_ACCEPTED' | 'OFFER_COUNTERED' | 'OFFER_CREATED' | 'OFFER_EXPIRED' | 'OFFER_REJECTED' | 'OFFER_WITHDRAWN' | 'ORDER_CREATED' | 'ORDER_ITEM_DELIVERED' | 'ORDER_ITEM_SHIPPED' | 'PAYMENT_REFUND_REQUIRED' | 'PAYMENT_REFUNDED' | 'REFUND_ACTIVITY_WARNING' | 'RESERVATION_CANCELLED' | 'RESERVATION_CREATED' | 'RESERVATION_EXPIRED' | 'REVIEW_RECEIVED' | 'SUPPORT_TICKET_CREATED' | 'SUPPORT_TICKET_REPLIED' | 'SUPPORT_TICKET_STATUS_UPDATED';
+      type:
+        | 'COMPLAINT_RAISED'
+        | 'COMPLAINT_UPDATED'
+        | 'LISTING_APPROVED'
+        | 'LISTING_FEEDBACK_ADDED'
+        | 'LISTING_NEEDS_REVISION'
+        | 'LISTING_REJECTED'
+        | 'LISTING_REMOVED'
+        | 'LISTING_RESTORED'
+        | 'LISTING_SUBMITTED'
+        | 'MANUAL_PAYMENT_APPROVED'
+        | 'MANUAL_PAYMENT_CANCELLED'
+        | 'MANUAL_PAYMENT_EXPIRED'
+        | 'MANUAL_PAYMENT_REJECTED'
+        | 'MANUAL_PAYMENT_RESUBMISSION_REQUESTED'
+        | 'MANUAL_PAYMENT_SUBMITTED'
+        | 'MESSAGE_RECEIVED'
+        | 'OFFER_ACCEPTED'
+        | 'OFFER_COUNTERED'
+        | 'OFFER_CREATED'
+        | 'OFFER_EXPIRED'
+        | 'OFFER_REJECTED'
+        | 'OFFER_WITHDRAWN'
+        | 'ORDER_CREATED'
+        | 'ORDER_ITEM_DELIVERED'
+        | 'ORDER_ITEM_SHIPPED'
+        | 'PAYMENT_REFUND_REQUIRED'
+        | 'PAYMENT_REFUNDED'
+        | 'REFUND_ACTIVITY_WARNING'
+        | 'RESERVATION_CANCELLED'
+        | 'RESERVATION_CREATED'
+        | 'RESERVATION_EXPIRED'
+        | 'REVIEW_RECEIVED'
+        | 'SUPPORT_TICKET_CREATED'
+        | 'SUPPORT_TICKET_REPLIED'
+        | 'SUPPORT_TICKET_STATUS_UPDATED';
       readAt: string | null;
       createdAt: string;
       updatedAt: string;
@@ -106,4 +171,5 @@ export interface MarkNotificationReadResponses {
   };
 }
 
-export type MarkNotificationReadResponse = MarkNotificationReadResponses[keyof MarkNotificationReadResponses];
+export type MarkNotificationReadResponse =
+  MarkNotificationReadResponses[keyof MarkNotificationReadResponses];

@@ -7,13 +7,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,12 +25,14 @@ const PLACEHOLDERS: Record<string, string[]> = {
 };
 
 const emailTemplatesFormSchema = z.object({
-  templates: z.array(z.object({
-    key: z.string(),
-    id: z.string(),
-    body: z.string(),
-    subject: z.string(),
-  })),
+  templates: z.array(
+    z.object({
+      key: z.string(),
+      id: z.string(),
+      body: z.string(),
+      subject: z.string(),
+    }),
+  ),
 });
 
 type EmailTemplatesFormValues = z.infer<typeof emailTemplatesFormSchema>;
@@ -93,20 +89,15 @@ function EmailTemplates() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="font-heading text-3xl font-semibold text-foreground">
-            Email Templates
-          </h1>
+          <h1 className="font-heading text-3xl font-semibold text-foreground">Email Templates</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage subject lines and body content for automated email
-            notifications.
+            Manage subject lines and body content for automated email notifications.
           </p>
         </div>
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
           <Mail className="h-12 w-12" />
           <p className="text-sm">No email templates configured yet.</p>
-          <p className="text-xs">
-            Ask the backend team to seed initial templates.
-          </p>
+          <p className="text-xs">Ask the backend team to seed initial templates.</p>
         </div>
       </div>
     );
@@ -115,12 +106,9 @@ function EmailTemplates() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-semibold text-foreground">
-          Email Templates
-        </h1>
+        <h1 className="font-heading text-3xl font-semibold text-foreground">Email Templates</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage subject lines and body content for automated email
-          notifications.
+          Manage subject lines and body content for automated email notifications.
         </p>
       </div>
 
@@ -137,15 +125,13 @@ function EmailTemplates() {
                   </div>
                   <div>
                     <CardTitle className="text-xl">{tpl.key}</CardTitle>
-                    <CardDescription className="mt-1 font-mono text-xs">
-                      {tpl.id}
-                    </CardDescription>
+                    <CardDescription className="mt-1 font-mono text-xs">{tpl.id}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <form
-                  onSubmit={form.handleSubmit((values) => {
+                  onSubmit={form.handleSubmit(values => {
                     const template = values.templates[index];
                     if (template)
                       save(template as EmailTemplateAPI, values.templates as EmailTemplateAPI[]);
@@ -154,7 +140,11 @@ function EmailTemplates() {
                 >
                   <div className="space-y-2">
                     <Label>Subject</Label>
-                    <Controller name={`templates.${index}.subject`} control={form.control} render={({ field }) => <Input {...field} />} />
+                    <Controller
+                      name={`templates.${index}.subject`}
+                      control={form.control}
+                      render={({ field }) => <Input {...field} />}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Body</Label>
@@ -162,11 +152,7 @@ function EmailTemplates() {
                       name={`templates.${index}.body`}
                       control={form.control}
                       render={({ field }) => (
-                        <Textarea
-                          {...field}
-                          rows={10}
-                          className="font-mono text-sm"
-                        />
+                        <Textarea {...field} rows={10} className="font-mono text-sm" />
                       )}
                     />
                   </div>
@@ -189,13 +175,11 @@ function EmailTemplates() {
                   )}
                   <div className="flex justify-end">
                     <Button disabled={isSaving} type="submit">
-                      {isSaving
-                        ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          )
-                        : (
-                            <Save className="mr-2 h-4 w-4" />
-                          )}
+                      {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
                       Save Changes
                     </Button>
                   </div>

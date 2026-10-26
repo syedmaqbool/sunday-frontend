@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Boost from '@/pages/Boost';
 
 const {
@@ -55,7 +55,14 @@ describe('seller boost status', () => {
     listMyBoostPurchasesMock.mockReset().mockResolvedValue({
       data: [],
       message: 'Boost purchases fetched.',
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 0 },
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 0,
+      },
       statusCode: 200,
     });
     getPaymentInstructionsMock.mockReset().mockResolvedValue({
@@ -94,42 +101,8 @@ describe('seller boost status', () => {
       statusCode: 200,
     });
     listMyBoostsMock.mockReset().mockResolvedValue({
-      data: [{
-        id: 'boost-1',
-        boostPurchaseId: 'purchase-1',
-        listingId: 'listing-1',
-        packageId: 'package-1',
-        sellerId: 'seller-1',
-        durationDays: 7,
-        isActive: false,
-        packageName: 'One week',
-        paymentStatus: 'PENDING',
-        placement: 'FOR_YOU',
-        pricePaid: 2100,
-        endsAt: '2026-10-25T08:00:00.000Z',
-        startsAt: '2026-10-18T08:00:00.000Z',
-        createdAt: '2026-10-18T08:00:00.000Z',
-        updatedAt: '2026-10-18T08:00:00.000Z',
-      }],
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 1 },
-    });
-    listBoostableListingsMock.mockResolvedValue({
-      data: [{
-        id: 'listing-1',
-        coverImage: { url: '/listing.png' },
-        price: 10_000,
-        title: 'Leather Tote',
-      }],
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 1 },
-    });
-  });
-
-  it('shows a pending purchase as awaiting review without counting it as active', async () => {
-    listMyBoostPurchasesMock.mockResolvedValue({
-      data: [{
-        id: 'purchase-1',
-        amount: 2100,
-        boosts: [{
+      data: [
+        {
           id: 'boost-1',
           boostPurchaseId: 'purchase-1',
           listingId: 'listing-1',
@@ -145,13 +118,76 @@ describe('seller boost status', () => {
           startsAt: '2026-10-18T08:00:00.000Z',
           createdAt: '2026-10-18T08:00:00.000Z',
           updatedAt: '2026-10-18T08:00:00.000Z',
-        }],
-        paymentSubmission: { reviewNote: null, status: 'SUBMITTED', reviewedAt: null },
-        status: 'PENDING_REVIEW',
-        refundCompletedAt: null,
-      }],
+        },
+      ],
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 1,
+      },
+    });
+    listBoostableListingsMock.mockResolvedValue({
+      data: [
+        {
+          id: 'listing-1',
+          coverImage: { url: '/listing.png' },
+          price: 10_000,
+          title: 'Leather Tote',
+        },
+      ],
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 1,
+      },
+    });
+  });
+
+  it('shows a pending purchase as awaiting review without counting it as active', async () => {
+    listMyBoostPurchasesMock.mockResolvedValue({
+      data: [
+        {
+          id: 'purchase-1',
+          amount: 2100,
+          boosts: [
+            {
+              id: 'boost-1',
+              boostPurchaseId: 'purchase-1',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 2100,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: { reviewNote: null, status: 'SUBMITTED', reviewedAt: null },
+          status: 'PENDING_REVIEW',
+          refundCompletedAt: null,
+        },
+      ],
       message: 'Boost purchases fetched.',
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 1 },
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 1,
+      },
       statusCode: 200,
     });
     renderBoostPage();
@@ -170,23 +206,25 @@ describe('seller boost status', () => {
         {
           id: 'purchase-pending',
           amount: 600,
-          boosts: [{
-            id: 'boost-pending',
-            boostPurchaseId: 'purchase-pending',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: false,
-            packageName: 'One week',
-            paymentStatus: 'PENDING',
-            placement: 'FOR_YOU',
-            pricePaid: 600,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
+          boosts: [
+            {
+              id: 'boost-pending',
+              boostPurchaseId: 'purchase-pending',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 600,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
           paymentSubmission: { reviewNote: null, status: 'SUBMITTED', reviewedAt: null },
           status: 'PENDING_REVIEW',
           refundCompletedAt: null,
@@ -194,126 +232,163 @@ describe('seller boost status', () => {
         {
           id: 'purchase-active',
           amount: 2000,
-          boosts: [{
-            id: 'boost-active',
-            boostPurchaseId: 'purchase-active',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: true,
-            packageName: 'One week',
-            paymentStatus: 'PAID',
-            placement: 'FOR_YOU',
-            pricePaid: 2000,
-            endsAt: activeWindowEnd,
-            startsAt: activeWindowStart,
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
-          paymentSubmission: { reviewNote: 'Payment verified.', status: 'APPROVED', reviewedAt: '2026-10-18T09:00:00.000Z' },
+          boosts: [
+            {
+              id: 'boost-active',
+              boostPurchaseId: 'purchase-active',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: true,
+              packageName: 'One week',
+              paymentStatus: 'PAID',
+              placement: 'FOR_YOU',
+              pricePaid: 2000,
+              endsAt: activeWindowEnd,
+              startsAt: activeWindowStart,
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: {
+            reviewNote: 'Payment verified.',
+            status: 'APPROVED',
+            reviewedAt: '2026-10-18T09:00:00.000Z',
+          },
           status: 'APPROVED',
           refundCompletedAt: null,
         },
         {
           id: 'purchase-rejected',
           amount: 1500,
-          boosts: [{
-            id: 'boost-rejected',
-            boostPurchaseId: 'purchase-rejected',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: false,
-            packageName: 'One week',
-            paymentStatus: 'PENDING',
-            placement: 'FOR_YOU',
-            pricePaid: 1500,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
-          paymentSubmission: { reviewNote: 'Receipt is unclear.', status: 'REJECTED', reviewedAt: '2026-10-18T09:00:00.000Z' },
+          boosts: [
+            {
+              id: 'boost-rejected',
+              boostPurchaseId: 'purchase-rejected',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 1500,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: {
+            reviewNote: 'Receipt is unclear.',
+            status: 'REJECTED',
+            reviewedAt: '2026-10-18T09:00:00.000Z',
+          },
           status: 'REJECTED',
           refundCompletedAt: null,
         },
         {
           id: 'purchase-resubmit',
           amount: 800,
-          boosts: [{
-            id: 'boost-resubmit',
-            boostPurchaseId: 'purchase-resubmit',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: false,
-            packageName: 'One week',
-            paymentStatus: 'PENDING',
-            placement: 'FOR_YOU',
-            pricePaid: 800,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
-          paymentSubmission: { reviewNote: 'Please provide a clearer receipt.', status: 'RESUBMISSION_REQUESTED', reviewedAt: '2026-10-18T09:00:00.000Z' },
+          boosts: [
+            {
+              id: 'boost-resubmit',
+              boostPurchaseId: 'purchase-resubmit',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 800,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: {
+            reviewNote: 'Please provide a clearer receipt.',
+            status: 'RESUBMISSION_REQUESTED',
+            reviewedAt: '2026-10-18T09:00:00.000Z',
+          },
           status: 'RESUBMISSION_REQUESTED',
           refundCompletedAt: null,
         },
         {
           id: 'purchase-refund-required',
           amount: 1200,
-          boosts: [{
-            id: 'boost-refund-required',
-            boostPurchaseId: 'purchase-refund-required',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: false,
-            packageName: 'One week',
-            paymentStatus: 'PENDING',
-            placement: 'FOR_YOU',
-            pricePaid: 1200,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
-          paymentSubmission: { reviewNote: 'Listing is no longer eligible.', status: 'APPROVED', reviewedAt: '2026-10-18T09:00:00.000Z' },
+          boosts: [
+            {
+              id: 'boost-refund-required',
+              boostPurchaseId: 'purchase-refund-required',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 1200,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: {
+            reviewNote: 'Listing is no longer eligible.',
+            status: 'APPROVED',
+            reviewedAt: '2026-10-18T09:00:00.000Z',
+          },
           status: 'REFUND_REQUIRED',
           refundCompletedAt: null,
         },
         {
           id: 'purchase-refunded',
           amount: 700,
-          boosts: [{
-            id: 'boost-refunded',
-            boostPurchaseId: 'purchase-refunded',
-            listingId: 'listing-1',
-            packageId: 'package-1',
-            sellerId: 'seller-1',
-            durationDays: 7,
-            isActive: false,
-            packageName: 'One week',
-            paymentStatus: 'PENDING',
-            placement: 'FOR_YOU',
-            pricePaid: 700,
-            endsAt: '2026-10-25T08:00:00.000Z',
-            startsAt: '2026-10-18T08:00:00.000Z',
-            createdAt: '2026-10-18T08:00:00.000Z',
-            updatedAt: '2026-10-18T08:00:00.000Z',
-          }],
-          paymentSubmission: { reviewNote: 'Listing is no longer eligible.', status: 'APPROVED', reviewedAt: '2026-10-18T09:00:00.000Z' },
+          boosts: [
+            {
+              id: 'boost-refunded',
+              boostPurchaseId: 'purchase-refunded',
+              listingId: 'listing-1',
+              packageId: 'package-1',
+              sellerId: 'seller-1',
+              durationDays: 7,
+              isActive: false,
+              packageName: 'One week',
+              paymentStatus: 'PENDING',
+              placement: 'FOR_YOU',
+              pricePaid: 700,
+              endsAt: '2026-10-25T08:00:00.000Z',
+              startsAt: '2026-10-18T08:00:00.000Z',
+              createdAt: '2026-10-18T08:00:00.000Z',
+              updatedAt: '2026-10-18T08:00:00.000Z',
+            },
+          ],
+          paymentSubmission: {
+            reviewNote: 'Listing is no longer eligible.',
+            status: 'APPROVED',
+            reviewedAt: '2026-10-18T09:00:00.000Z',
+          },
           status: 'REFUNDED',
           refundCompletedAt: '2026-10-19T10:00:00.000Z',
         },
       ],
       message: 'Boost purchases fetched.',
-      pagination: { currentPage: 1, lastPage: 1, nextPage: null, perPage: 100, prevPage: null, total: 6 },
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 6,
+      },
       statusCode: 200,
     });
 
@@ -333,7 +408,9 @@ describe('seller boost status', () => {
 
     fireEvent.click(resubmitButton);
     const paymentDialog = await screen.findByRole('dialog');
-    expect(within(paymentDialog).getByRole('heading', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    expect(
+      within(paymentDialog).getByRole('heading', { name: 'Resubmit payment proof' }),
+    ).toBeInTheDocument();
     expect(await within(paymentDialog).findByText('Sunday Store')).toBeInTheDocument();
     fireEvent.change(within(paymentDialog).getByLabelText('Sender account title/name'), {
       target: { value: 'Jane Doe' },
@@ -347,38 +424,40 @@ describe('seller boost status', () => {
     fireEvent.click(within(paymentDialog).getByRole('button', { name: 'Resubmit payment proof' }));
 
     await waitFor(() => expect(uploadPaymentProofMock).toHaveBeenCalledOnce());
-    await waitFor(() => expect(resubmitBoostPaymentProofMock).toHaveBeenCalledWith(
-      'listing-1',
-      'purchase-resubmit',
-      {
+    await waitFor(() =>
+      expect(resubmitBoostPaymentProofMock).toHaveBeenCalledWith('listing-1', 'purchase-resubmit', {
         proofFileId: 'replacement-proof-id',
         senderAccountNumber: '123456789',
         senderAccountTitle: 'Jane Doe',
-      },
-    ));
+      }),
+    );
   });
 
   it('lets sellers move through every page of purchase history', async () => {
-    listMyBoostPurchasesMock.mockImplementation(({ page }: { page: number }) => Promise.resolve({
-      data: [{
-        id: `purchase-${page}`,
-        amount: page === 1 ? 600 : 900,
-        boosts: [],
-        paymentSubmission: null,
-        status: page === 1 ? 'PENDING_REVIEW' : 'REJECTED',
-        refundCompletedAt: null,
-      }],
-      message: 'Boost purchases fetched.',
-      pagination: {
-        currentPage: page,
-        lastPage: 2,
-        nextPage: page === 1 ? 2 : null,
-        perPage: 100,
-        prevPage: page === 1 ? null : 1,
-        total: 2,
-      },
-      statusCode: 200,
-    }));
+    listMyBoostPurchasesMock.mockImplementation(({ page }: { page: number }) =>
+      Promise.resolve({
+        data: [
+          {
+            id: `purchase-${page}`,
+            amount: page === 1 ? 600 : 900,
+            boosts: [],
+            paymentSubmission: null,
+            status: page === 1 ? 'PENDING_REVIEW' : 'REJECTED',
+            refundCompletedAt: null,
+          },
+        ],
+        message: 'Boost purchases fetched.',
+        pagination: {
+          currentPage: page,
+          lastPage: 2,
+          nextPage: page === 1 ? 2 : null,
+          perPage: 100,
+          prevPage: page === 1 ? null : 1,
+          total: 2,
+        },
+        statusCode: 200,
+      }),
+    );
 
     renderBoostPage();
 

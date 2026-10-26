@@ -68,7 +68,8 @@ export interface GetAdminQuickBooksConnectionErrors {
   };
 }
 
-export type GetAdminQuickBooksConnectionError = GetAdminQuickBooksConnectionErrors[keyof GetAdminQuickBooksConnectionErrors];
+export type GetAdminQuickBooksConnectionError =
+  GetAdminQuickBooksConnectionErrors[keyof GetAdminQuickBooksConnectionErrors];
 
 export interface GetAdminQuickBooksConnectionResponses {
   /**
@@ -88,4 +89,5 @@ export interface GetAdminQuickBooksConnectionResponses {
   };
 }
 
-export type GetAdminQuickBooksConnectionResponse = GetAdminQuickBooksConnectionResponses[keyof GetAdminQuickBooksConnectionResponses];
+export type GetAdminQuickBooksConnectionResponse =
+  GetAdminQuickBooksConnectionResponses[keyof GetAdminQuickBooksConnectionResponses];

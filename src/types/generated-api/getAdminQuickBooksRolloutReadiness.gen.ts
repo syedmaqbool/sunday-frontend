@@ -66,7 +66,8 @@ export interface GetAdminQuickBooksRolloutReadinessErrors {
   };
 }
 
-export type GetAdminQuickBooksRolloutReadinessError = GetAdminQuickBooksRolloutReadinessErrors[keyof GetAdminQuickBooksRolloutReadinessErrors];
+export type GetAdminQuickBooksRolloutReadinessError =
+  GetAdminQuickBooksRolloutReadinessErrors[keyof GetAdminQuickBooksRolloutReadinessErrors];
 
 export interface GetAdminQuickBooksRolloutReadinessResponses {
   /**
@@ -110,4 +111,5 @@ export interface GetAdminQuickBooksRolloutReadinessResponses {
   };
 }
 
-export type GetAdminQuickBooksRolloutReadinessResponse = GetAdminQuickBooksRolloutReadinessResponses[keyof GetAdminQuickBooksRolloutReadinessResponses];
+export type GetAdminQuickBooksRolloutReadinessResponse =
+  GetAdminQuickBooksRolloutReadinessResponses[keyof GetAdminQuickBooksRolloutReadinessResponses];

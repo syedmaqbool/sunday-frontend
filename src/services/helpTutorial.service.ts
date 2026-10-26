@@ -8,9 +8,7 @@ import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function getHelpTutorials() {
-  return authInstance
-    .get('api/v1/help-tutorials')
-    .json<Response<HelpTutorial[]>>();
+  return authInstance.get('api/v1/help-tutorials').json<Response<HelpTutorial[]>>();
 }
 
 export function listAdminHelpTutorials(params: AdminHelpTutorialParameters) {
@@ -30,17 +28,12 @@ export function createAdminHelpTutorial(payload: CreateHelpTutorialPayload) {
     .json<Response<HelpTutorial>>();
 }
 
-export function updateAdminHelpTutorial(
-  resourceId: string,
-  payload: UpdateHelpTutorialPayload,
-) {
+export function updateAdminHelpTutorial(resourceId: string, payload: UpdateHelpTutorialPayload) {
   return authInstance
     .patch(`api/v1/admin/settings/help-tutorials/${resourceId}`, { json: payload })
     .json<Response<HelpTutorial>>();
 }
 
 export function deleteAdminHelpTutorial(resourceId: string) {
-  return authInstance
-    .delete(`api/v1/admin/settings/help-tutorials/${resourceId}`)
-    .json<Response>();
+  return authInstance.delete(`api/v1/admin/settings/help-tutorials/${resourceId}`).json<Response>();
 }

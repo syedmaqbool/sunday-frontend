@@ -14,9 +14,7 @@ export function listOrders() {
 }
 
 export function getOrder(orderId: string) {
-  return authInstance
-    .get(`/api/v1/me/orders/${orderId}`)
-    .json<Response<Order>>();
+  return authInstance.get(`/api/v1/me/orders/${orderId}`).json<Response<Order>>();
 }
 
 export function listSales(page = 1) {

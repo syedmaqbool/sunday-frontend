@@ -6,7 +6,16 @@ export interface CreateAdminQuickBooksAccountMappingVersionData {
     effectiveDate: string;
     mappings: Array<{
       accountId: string;
-      category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_INCENTIVE_MARKETING_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+      category:
+        | 'ADJUSTMENTS'
+        | 'BUYER_DISCOUNTS_COGS'
+        | 'COMMISSION_REVENUE'
+        | 'PAYMENT_CLEARING'
+        | 'REFUNDS'
+        | 'SELLER_COUPONS_COGS'
+        | 'SELLER_INCENTIVE_MARKETING_COGS'
+        | 'SELLER_PAYABLE'
+        | 'SELLER_PAYOUT_FEES_COGS';
       displayName: string;
     }>;
     reason: string;
@@ -102,7 +111,8 @@ export interface CreateAdminQuickBooksAccountMappingVersionErrors {
   };
 }
 
-export type CreateAdminQuickBooksAccountMappingVersionError = CreateAdminQuickBooksAccountMappingVersionErrors[keyof CreateAdminQuickBooksAccountMappingVersionErrors];
+export type CreateAdminQuickBooksAccountMappingVersionError =
+  CreateAdminQuickBooksAccountMappingVersionErrors[keyof CreateAdminQuickBooksAccountMappingVersionErrors];
 
 export interface CreateAdminQuickBooksAccountMappingVersionResponses {
   /**
@@ -115,7 +125,16 @@ export interface CreateAdminQuickBooksAccountMappingVersionResponses {
       effectiveDate: string;
       mappings: Array<{
         accountId: string;
-        category: 'ADJUSTMENTS' | 'BUYER_DISCOUNTS_COGS' | 'COMMISSION_REVENUE' | 'PAYMENT_CLEARING' | 'REFUNDS' | 'SELLER_COUPONS_COGS' | 'SELLER_INCENTIVE_MARKETING_COGS' | 'SELLER_PAYABLE' | 'SELLER_PAYOUT_FEES_COGS';
+        category:
+          | 'ADJUSTMENTS'
+          | 'BUYER_DISCOUNTS_COGS'
+          | 'COMMISSION_REVENUE'
+          | 'PAYMENT_CLEARING'
+          | 'REFUNDS'
+          | 'SELLER_COUPONS_COGS'
+          | 'SELLER_INCENTIVE_MARKETING_COGS'
+          | 'SELLER_PAYABLE'
+          | 'SELLER_PAYOUT_FEES_COGS';
         displayName: string;
       }>;
       reason: string;
@@ -127,4 +146,5 @@ export interface CreateAdminQuickBooksAccountMappingVersionResponses {
   };
 }
 
-export type CreateAdminQuickBooksAccountMappingVersionResponse = CreateAdminQuickBooksAccountMappingVersionResponses[keyof CreateAdminQuickBooksAccountMappingVersionResponses];
+export type CreateAdminQuickBooksAccountMappingVersionResponse =
+  CreateAdminQuickBooksAccountMappingVersionResponses[keyof CreateAdminQuickBooksAccountMappingVersionResponses];

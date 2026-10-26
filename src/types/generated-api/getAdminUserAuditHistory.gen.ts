@@ -105,7 +105,8 @@ export interface GetAdminUserAuditHistoryErrors {
   };
 }
 
-export type GetAdminUserAuditHistoryError = GetAdminUserAuditHistoryErrors[keyof GetAdminUserAuditHistoryErrors];
+export type GetAdminUserAuditHistoryError =
+  GetAdminUserAuditHistoryErrors[keyof GetAdminUserAuditHistoryErrors];
 
 export interface GetAdminUserAuditHistoryResponses {
   /**
@@ -160,4 +161,5 @@ export interface GetAdminUserAuditHistoryResponses {
   };
 }
 
-export type GetAdminUserAuditHistoryResponse = GetAdminUserAuditHistoryResponses[keyof GetAdminUserAuditHistoryResponses];
+export type GetAdminUserAuditHistoryResponse =
+  GetAdminUserAuditHistoryResponses[keyof GetAdminUserAuditHistoryResponses];

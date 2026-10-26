@@ -103,7 +103,8 @@ export interface GetAdminFlaggedBuyersErrors {
   };
 }
 
-export type GetAdminFlaggedBuyersError = GetAdminFlaggedBuyersErrors[keyof GetAdminFlaggedBuyersErrors];
+export type GetAdminFlaggedBuyersError =
+  GetAdminFlaggedBuyersErrors[keyof GetAdminFlaggedBuyersErrors];
 
 export interface GetAdminFlaggedBuyersResponses {
   /**
@@ -151,4 +152,5 @@ export interface GetAdminFlaggedBuyersResponses {
   };
 }
 
-export type GetAdminFlaggedBuyersResponse = GetAdminFlaggedBuyersResponses[keyof GetAdminFlaggedBuyersResponses];
+export type GetAdminFlaggedBuyersResponse =
+  GetAdminFlaggedBuyersResponses[keyof GetAdminFlaggedBuyersResponses];

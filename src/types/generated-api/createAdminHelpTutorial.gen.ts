@@ -102,7 +102,8 @@ export interface CreateAdminHelpTutorialErrors {
   };
 }
 
-export type CreateAdminHelpTutorialError = CreateAdminHelpTutorialErrors[keyof CreateAdminHelpTutorialErrors];
+export type CreateAdminHelpTutorialError =
+  CreateAdminHelpTutorialErrors[keyof CreateAdminHelpTutorialErrors];
 
 export interface CreateAdminHelpTutorialResponses {
   /**
@@ -126,4 +127,5 @@ export interface CreateAdminHelpTutorialResponses {
   };
 }
 
-export type CreateAdminHelpTutorialResponse = CreateAdminHelpTutorialResponses[keyof CreateAdminHelpTutorialResponses];
+export type CreateAdminHelpTutorialResponse =
+  CreateAdminHelpTutorialResponses[keyof CreateAdminHelpTutorialResponses];

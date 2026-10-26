@@ -11,17 +11,13 @@ import type {
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function listFlaggedMessages(
-  parameters: FlaggedMessagesParameters = {},
-) {
+export function listFlaggedMessages(parameters: FlaggedMessagesParameters = {}) {
   return authInstance
     .get('/api/v1/admin/messages/flagged', { searchParams: parameters })
     .json<PaginatedResponse<FlaggedMessage>>();
 }
 
-export function listFlaggedMessageHistory(
-  parameters: FlaggedMessageHistoryParameters,
-) {
+export function listFlaggedMessageHistory(parameters: FlaggedMessageHistoryParameters) {
   return authInstance
     .get('/api/v1/admin/messages/history', { searchParams: parameters })
     .json<PaginatedResponse<FlaggedMessageHistory>>();
@@ -46,13 +42,9 @@ export function getFlaggedConversation(
 }
 
 export function dismissFlaggedMessage(messageId: string) {
-  return authInstance
-    .patch(`/api/v1/admin/messages/${messageId}/dismiss`)
-    .json<Response>();
+  return authInstance.patch(`/api/v1/admin/messages/${messageId}/dismiss`).json<Response>();
 }
 
 export function deleteMessage(messageId: string) {
-  return authInstance
-    .delete(`/api/v1/admin/messages/${messageId}`)
-    .json<Response>();
+  return authInstance.delete(`/api/v1/admin/messages/${messageId}`).json<Response>();
 }

@@ -40,13 +40,8 @@ export function getAdminSupportMessagesOptions(ticketId: string | null) {
 export function useReplyToSupportTicketMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      ticketId,
-      content,
-    }: {
-      ticketId: string;
-      content: string;
-    }) => replyToSupportTicket(ticketId, content),
+    mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
+      replyToSupportTicket(ticketId, content),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({
         queryKey: adminSupportQueryKey.messages(variables.ticketId),
@@ -59,13 +54,8 @@ export function useReplyToSupportTicketMutation() {
 export function useUpdateSupportTicketStatusMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      ticketId,
-      status,
-    }: {
-      ticketId: string;
-      status: SupportTicketStatus;
-    }) => updateSupportTicketStatus(ticketId, status),
+    mutationFn: ({ ticketId, status }: { ticketId: string; status: SupportTicketStatus }) =>
+      updateSupportTicketStatus(ticketId, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
     },

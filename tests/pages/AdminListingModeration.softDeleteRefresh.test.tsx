@@ -2,7 +2,7 @@ import type { AdminListing } from '@/types/adminListing.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingModeration from '@/pages/admin/ListingModeration';
 
 const { listAdminListings, removeAdminListing, restoreAdminListing } = vi.hoisted(() => ({
@@ -21,7 +21,10 @@ vi.mock('@/services/listing.service', () => ({
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: { permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_DELETE' }], roleName: 'STAFF' },
+    user: {
+      permissions: [{ name: 'LISTINGS_READ' }, { name: 'LISTINGS_DELETE' }],
+      roleName: 'STAFF',
+    },
   }),
 }));
 
@@ -71,8 +74,7 @@ beforeEach(() => {
     let data: AdminListing[];
     if (isDeleted) {
       data = restoreAdminListing.mock.results.length > 0 ? [] : [deletedListing];
-    }
-    else {
+    } else {
       data = removeAdminListing.mock.results.length > 0 ? [] : [listing];
     }
     return {
@@ -87,8 +89,16 @@ beforeEach(() => {
       },
     };
   });
-  removeAdminListing.mockResolvedValue({ data: listing, message: 'Listing removed', statusCode: 200 });
-  restoreAdminListing.mockResolvedValue({ data: listing, message: 'Listing restored', statusCode: 200 });
+  removeAdminListing.mockResolvedValue({
+    data: listing,
+    message: 'Listing removed',
+    statusCode: 200,
+  });
+  restoreAdminListing.mockResolvedValue({
+    data: listing,
+    message: 'Listing restored',
+    statusCode: 200,
+  });
 });
 
 describe('admin listing removal query refresh', () => {

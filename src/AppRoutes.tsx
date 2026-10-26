@@ -58,60 +58,431 @@ const UserProfile = lazy(() => import('./pages/UserProfile'));
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Index /></Suspense>} path="/" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Listings /></Suspense>} path="/listings" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Contact /></Suspense>} path="/contact" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ListingDetail /></Suspense>} path="/listing/:id" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/create-listing" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><CreateListing /></Suspense>} path="/edit-listing/:id" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><MyListings /></Suspense>} path="/my-listings" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Boost /></Suspense>} path="/boost" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><MyOffers /></Suspense>} path="/my-offers" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Checkout /></Suspense>} path="/checkout" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Preferences /></Suspense>} path="/preferences" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><HelpCenter /></Suspense>} path="/help" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Terms /></Suspense>} path="/terms" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ReturnsPolicy /></Suspense>} path="/returns" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Support /></Suspense>} path="/support" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Messages /></Suspense>} path="/messages" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Cookies /></Suspense>} path="/cookies" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><SellerAnalytics /></Suspense>} path="/seller-analytics" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><SellerProfile /></Suspense>} path="/seller/:id" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><UserProfile /></Suspense>} path="/profile" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Privacy /></Suspense>} path="/privacy" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><OrderConfirmation /></Suspense>} path="/order-confirmation/:id" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Auth /></Suspense>} path="/auth" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><ForgotPassword /></Suspense>} path="/forgot-password" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><AdminDashboard /></Suspense>} path="/admin">
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><Overview /></Suspense>} index />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><ListingModeration /></Suspense>} path="listings" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><MessageModeration /></Suspense>} path="messages" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><UserManagement /></Suspense>} path="users" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><CategoryManagement /></Suspense>} path="categories" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><BrandManagement /></Suspense>} path="brands" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><DiscountCodes /></Suspense>} path="discounts" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><FlagKeywords /></Suspense>} path="flag-keywords" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><HelpManagement /></Suspense>} path="help" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><Reports /></Suspense>} path="reports" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminOrders /></Suspense>} path="orders" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminComplaints /></Suspense>} path="complaints" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><FlaggedBuyers /></Suspense>} path="flagged-buyers" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><TaxSettings /></Suspense>} path="tax" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><EmailTemplates /></Suspense>} path="email-templates" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminSupport /></Suspense>} path="support" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><BoostManagement /></Suspense>} path="boosts" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminAnalytics /></Suspense>} path="analytics" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><AdminPayouts /></Suspense>} path="payouts" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><MarginFinancials /></Suspense>} path="margins" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><QuickBooksConnection /></Suspense>} path="quickbooks" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><CommissionManagement /></Suspense>} path="commission" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SiteSettings /></Suspense>} path="site-settings" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><SellerCoupons /></Suspense>} path="seller-coupons" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><StaffUsers /></Suspense>} path="access-control/staff-users" />
-        <Route element={<Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}><RolesPermissions /></Suspense>} path="access-control/roles" />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Index />
+          </Suspense>
+        }
+        path="/"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Listings />
+          </Suspense>
+        }
+        path="/listings"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Contact />
+          </Suspense>
+        }
+        path="/contact"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <ListingDetail />
+          </Suspense>
+        }
+        path="/listing/:id"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <CreateListing />
+          </Suspense>
+        }
+        path="/create-listing"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <CreateListing />
+          </Suspense>
+        }
+        path="/edit-listing/:id"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <MyListings />
+          </Suspense>
+        }
+        path="/my-listings"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Boost />
+          </Suspense>
+        }
+        path="/boost"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <MyOffers />
+          </Suspense>
+        }
+        path="/my-offers"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Checkout />
+          </Suspense>
+        }
+        path="/checkout"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Preferences />
+          </Suspense>
+        }
+        path="/preferences"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <HelpCenter />
+          </Suspense>
+        }
+        path="/help"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Terms />
+          </Suspense>
+        }
+        path="/terms"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <ReturnsPolicy />
+          </Suspense>
+        }
+        path="/returns"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Support />
+          </Suspense>
+        }
+        path="/support"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Messages />
+          </Suspense>
+        }
+        path="/messages"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Cookies />
+          </Suspense>
+        }
+        path="/cookies"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <SellerAnalytics />
+          </Suspense>
+        }
+        path="/seller-analytics"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <SellerProfile />
+          </Suspense>
+        }
+        path="/seller/:id"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <UserProfile />
+          </Suspense>
+        }
+        path="/profile"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Privacy />
+          </Suspense>
+        }
+        path="/privacy"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <OrderConfirmation />
+          </Suspense>
+        }
+        path="/order-confirmation/:id"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Auth />
+          </Suspense>
+        }
+        path="/auth"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <ForgotPassword />
+          </Suspense>
+        }
+        path="/forgot-password"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <AdminDashboard />
+          </Suspense>
+        }
+        path="/admin"
+      >
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <Overview />
+            </Suspense>
+          }
+          index
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <ListingModeration />
+            </Suspense>
+          }
+          path="listings"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <MessageModeration />
+            </Suspense>
+          }
+          path="messages"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <UserManagement />
+            </Suspense>
+          }
+          path="users"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <CategoryManagement />
+            </Suspense>
+          }
+          path="categories"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <BrandManagement />
+            </Suspense>
+          }
+          path="brands"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <DiscountCodes />
+            </Suspense>
+          }
+          path="discounts"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <FlagKeywords />
+            </Suspense>
+          }
+          path="flag-keywords"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <HelpManagement />
+            </Suspense>
+          }
+          path="help"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <Reports />
+            </Suspense>
+          }
+          path="reports"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <AdminOrders />
+            </Suspense>
+          }
+          path="orders"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <AdminComplaints />
+            </Suspense>
+          }
+          path="complaints"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <FlaggedBuyers />
+            </Suspense>
+          }
+          path="flagged-buyers"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <TaxSettings />
+            </Suspense>
+          }
+          path="tax"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <EmailTemplates />
+            </Suspense>
+          }
+          path="email-templates"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <AdminSupport />
+            </Suspense>
+          }
+          path="support"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <BoostManagement />
+            </Suspense>
+          }
+          path="boosts"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <AdminAnalytics />
+            </Suspense>
+          }
+          path="analytics"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <AdminPayouts />
+            </Suspense>
+          }
+          path="payouts"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <MarginFinancials />
+            </Suspense>
+          }
+          path="margins"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <QuickBooksConnection />
+            </Suspense>
+          }
+          path="quickbooks"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <CommissionManagement />
+            </Suspense>
+          }
+          path="commission"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <SiteSettings />
+            </Suspense>
+          }
+          path="site-settings"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <SellerCoupons />
+            </Suspense>
+          }
+          path="seller-coupons"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <StaffUsers />
+            </Suspense>
+          }
+          path="access-control/staff-users"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <RolesPermissions />
+            </Suspense>
+          }
+          path="access-control/roles"
+        />
       </Route>
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><Unsubscribe /></Suspense>} path="/unsubscribe" />
-      <Route element={<Suspense fallback={<LoadingSpinner className="min-h-screen" />}><NotFound /></Suspense>} path="*" />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <Unsubscribe />
+          </Suspense>
+        }
+        path="/unsubscribe"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <NotFound />
+          </Suspense>
+        }
+        path="*"
+      />
     </Routes>
   );
 }

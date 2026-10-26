@@ -46,10 +46,7 @@ export function cancelOrder(orderId: string) {
     .json<Response<CancelOrderResult>>();
 }
 
-export function resubmitManualPayment(
-  orderId: string,
-  payload: ResubmitManualPaymentPayload,
-) {
+export function resubmitManualPayment(orderId: string, payload: ResubmitManualPaymentPayload) {
   return authInstance
     .post(`/api/v1/checkout/orders/${orderId}/resubmit`, { json: payload })
     .json<Response<ResubmitManualPaymentResult>>();

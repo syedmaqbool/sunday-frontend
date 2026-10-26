@@ -30,8 +30,7 @@ export function useCreateDiscountCodeMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateDiscountCodePayload) =>
-      createDiscountCode(payload),
+    mutationFn: (payload: CreateDiscountCodePayload) => createDiscountCode(payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

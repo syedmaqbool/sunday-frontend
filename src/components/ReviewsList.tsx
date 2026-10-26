@@ -35,8 +35,7 @@ export function ReviewsList({
   const focusedReview = reviews.find(review => review.id === focusedReviewId);
 
   useEffect(() => {
-    if (!focusedReviewId || isLoading || isError || isFetching || !reviewsResponse)
-      return;
+    if (!focusedReviewId || isLoading || isError || isFetching || !reviewsResponse) return;
 
     if (focusedReview) {
       focusedReviewReference.current?.focus({ preventScroll: true });
@@ -50,12 +49,20 @@ export function ReviewsList({
     }
 
     onFocusedReviewMissing?.();
-  }, [fetchNextPage, focusedReview, focusedReviewId, hasNextPage, isError, isFetching, isLoading, onFocusedReviewMissing, reviewsResponse]);
+  }, [
+    fetchNextPage,
+    focusedReview,
+    focusedReviewId,
+    hasNextPage,
+    isError,
+    isFetching,
+    isLoading,
+    onFocusedReviewMissing,
+    reviewsResponse,
+  ]);
 
-  if (isLoading)
-    return null;
-  if (reviews.length === 0)
-    return <p className="text-sm text-muted-foreground">No reviews yet</p>;
+  if (isLoading) return null;
+  if (reviews.length === 0) return <p className="text-sm text-muted-foreground">No reviews yet</p>;
 
   const avgRating = (
     reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
@@ -71,22 +78,18 @@ export function ReviewsList({
               className={`
                 h-4 w-4
                 ${
-            s <= Math.round(Number(avgRating))
-              ? 'fill-primary text-primary'
-              : 'text-muted-foreground/30'
-            }
+                  s <= Math.round(Number(avgRating))
+                    ? 'fill-primary text-primary'
+                    : 'text-muted-foreground/30'
+                }
               `}
             />
           ))}
         </div>
         <span className="text-sm font-medium text-foreground">{avgRating}</span>
         <span className="text-sm text-muted-foreground">
-          (
-          {reviews.length}
-          {' '}
-          review
-          {reviews.length === 1 ? '' : 's'}
-          )
+          ({reviews.length} review
+          {reviews.length === 1 ? '' : 's'})
         </span>
       </div>
 
@@ -108,10 +111,10 @@ export function ReviewsList({
                       className={`
                         h-3 w-3
                         ${
-                    s <= review.rating
-                      ? 'fill-primary text-primary'
-                      : 'text-muted-foreground/30'
-                    }
+                          s <= review.rating
+                            ? 'fill-primary text-primary'
+                            : 'text-muted-foreground/30'
+                        }
                       `}
                     />
                   ))}
@@ -119,27 +122,22 @@ export function ReviewsList({
                 <span className="text-xs font-medium text-foreground">
                   {review.reviewerFullName || 'User'}
                 </span>
-                <span className="text-xs capitalize text-muted-foreground">
-                  (
-                  {review.role}
-                  )
-                </span>
+                <span className="text-xs capitalize text-muted-foreground">({review.role})</span>
               </div>
               <span className="text-xs text-muted-foreground">
                 {format(new Date(review.createdAt), 'MMM d, yyyy')}
               </span>
             </div>
             {review.comment && (
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                {review.comment}
-              </p>
+              <p className="mt-1.5 text-sm text-muted-foreground">{review.comment}</p>
             )}
 
             {review.imageUrls && review.imageUrls.length > 0 && (
-              <div className="
-                mt-2 grid grid-cols-3 gap-1.5
-                sm:grid-cols-4
-              "
+              <div
+                className="
+                  mt-2 grid grid-cols-3 gap-1.5
+                  sm:grid-cols-4
+                "
               >
                 {review.imageUrls.map(url => (
                   <button
@@ -171,11 +169,7 @@ export function ReviewsList({
             )}
 
             {review.listingTitle && (
-              <p className="mt-1.5 text-xs text-muted-foreground/70">
-                Re:
-                {' '}
-                {review.listingTitle}
-              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground/70">Re: {review.listingTitle}</p>
             )}
           </div>
         ))}
@@ -183,13 +177,7 @@ export function ReviewsList({
 
       <Dialog onOpenChange={o => !o && setLightbox(null)} open={!!lightbox}>
         <DialogContent className="max-w-3xl border-0 bg-transparent p-0 shadow-none">
-          {lightbox && (
-            <img
-              src={lightbox}
-              alt="Review"
-              className="h-auto w-full rounded-lg"
-            />
-          )}
+          {lightbox && <img src={lightbox} alt="Review" className="h-auto w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </div>
@@ -204,9 +192,7 @@ export function StarRating({ rating }: { rating: number }) {
           key={s}
           className={`
             h-3.5 w-3.5
-            ${
-        s <= rating ? 'fill-primary text-primary' : 'text-muted-foreground/30'
-        }
+            ${s <= rating ? 'fill-primary text-primary' : 'text-muted-foreground/30'}
           `}
         />
       ))}

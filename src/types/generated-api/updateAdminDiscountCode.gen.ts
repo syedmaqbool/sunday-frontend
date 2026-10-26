@@ -133,7 +133,8 @@ export interface UpdateAdminDiscountCodeErrors {
   };
 }
 
-export type UpdateAdminDiscountCodeError = UpdateAdminDiscountCodeErrors[keyof UpdateAdminDiscountCodeErrors];
+export type UpdateAdminDiscountCodeError =
+  UpdateAdminDiscountCodeErrors[keyof UpdateAdminDiscountCodeErrors];
 
 export interface UpdateAdminDiscountCodeResponses {
   /**
@@ -158,4 +159,5 @@ export interface UpdateAdminDiscountCodeResponses {
   };
 }
 
-export type UpdateAdminDiscountCodeResponse = UpdateAdminDiscountCodeResponses[keyof UpdateAdminDiscountCodeResponses];
+export type UpdateAdminDiscountCodeResponse =
+  UpdateAdminDiscountCodeResponses[keyof UpdateAdminDiscountCodeResponses];

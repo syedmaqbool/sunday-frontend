@@ -1,4 +1,9 @@
-import type { AdminFlaggedBuyerComplaintHistoryParameters, AdminFlaggedBuyerRuleUpdate, AdminFlaggedBuyersParameters, AdminFlaggedBuyerWarningSubmission } from '@/types/adminFlaggedBuyer.type';
+import type {
+  AdminFlaggedBuyerComplaintHistoryParameters,
+  AdminFlaggedBuyerRuleUpdate,
+  AdminFlaggedBuyersParameters,
+  AdminFlaggedBuyerWarningSubmission,
+} from '@/types/adminFlaggedBuyer.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAdminFlaggedBuyerComplaintHistory,
@@ -10,12 +15,17 @@ import {
 
 export const adminFlaggedBuyersQueryKey = {
   all: () => ['admin-flagged-buyers'] as const,
-  history: (buyerId: string, parameters: AdminFlaggedBuyerComplaintHistoryParameters) => [...adminFlaggedBuyersQueryKey.all(), 'history', buyerId, parameters] as const,
-  list: (parameters: AdminFlaggedBuyersParameters) => [...adminFlaggedBuyersQueryKey.all(), 'list', parameters] as const,
+  history: (buyerId: string, parameters: AdminFlaggedBuyerComplaintHistoryParameters) =>
+    [...adminFlaggedBuyersQueryKey.all(), 'history', buyerId, parameters] as const,
+  list: (parameters: AdminFlaggedBuyersParameters) =>
+    [...adminFlaggedBuyersQueryKey.all(), 'list', parameters] as const,
   rules: () => [...adminFlaggedBuyersQueryKey.all(), 'rules'] as const,
 };
 
-export function getAdminFlaggedBuyerComplaintHistoryOptions(buyerId: string, parameters: AdminFlaggedBuyerComplaintHistoryParameters) {
+export function getAdminFlaggedBuyerComplaintHistoryOptions(
+  buyerId: string,
+  parameters: AdminFlaggedBuyerComplaintHistoryParameters,
+) {
   return queryOptions({
     queryFn: () => getAdminFlaggedBuyerComplaintHistory(buyerId, parameters),
     queryKey: adminFlaggedBuyersQueryKey.history(buyerId, parameters),
@@ -46,6 +56,7 @@ export function useUpdateAdminFlaggedBuyerRulesMutation() {
 
 export function useWarnAdminFlaggedBuyerMutation() {
   return useMutation({
-    mutationFn: ({ buyerId, body }: AdminFlaggedBuyerWarningSubmission) => warnAdminFlaggedBuyer(buyerId, body),
+    mutationFn: ({ buyerId, body }: AdminFlaggedBuyerWarningSubmission) =>
+      warnAdminFlaggedBuyer(buyerId, body),
   });
 }

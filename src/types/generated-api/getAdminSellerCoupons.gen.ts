@@ -75,7 +75,8 @@ export interface GetAdminSellerCouponsErrors {
   };
 }
 
-export type GetAdminSellerCouponsError = GetAdminSellerCouponsErrors[keyof GetAdminSellerCouponsErrors];
+export type GetAdminSellerCouponsError =
+  GetAdminSellerCouponsErrors[keyof GetAdminSellerCouponsErrors];
 
 export interface GetAdminSellerCouponsResponses {
   /**
@@ -133,4 +134,5 @@ export interface GetAdminSellerCouponsResponses {
   };
 }
 
-export type GetAdminSellerCouponsResponse = GetAdminSellerCouponsResponses[keyof GetAdminSellerCouponsResponses];
+export type GetAdminSellerCouponsResponse =
+  GetAdminSellerCouponsResponses[keyof GetAdminSellerCouponsResponses];

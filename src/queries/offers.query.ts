@@ -19,13 +19,13 @@ export const offersQueryKey = {
   all: () => ['offers'] as const,
   buyerListing: (listingId: string, userId?: string) =>
     [...offersQueryKey.all(), 'buyer-listing', 'list', listingId, userId ?? null] as const,
-  mine: (userId?: string) =>
-    [...offersQueryKey.all(), 'mine', 'list', userId ?? null] as const,
+  mine: (userId?: string) => [...offersQueryKey.all(), 'mine', 'list', userId ?? null] as const,
   received: (userId?: string, listingId?: string) =>
     [...offersQueryKey.all(), 'received', 'list', userId ?? null, listingId ?? 'all'] as const,
   reviewedIds: {
     all: () => [...offersQueryKey.all(), 'reviewed-ids'] as const,
-    list: (userId?: string) => [...offersQueryKey.reviewedIds.all(), 'list', userId ?? null] as const,
+    list: (userId?: string) =>
+      [...offersQueryKey.reviewedIds.all(), 'list', userId ?? null] as const,
   },
   selection: (offerId: string, recipient: 'BUYER' | 'SELLER', userId?: string) =>
     [...offersQueryKey.all(), 'selection', 'detail', recipient, offerId, userId ?? null] as const,
@@ -68,8 +68,7 @@ export function getBuyerListingOffersOptions(listingId: string, userId?: string)
       try {
         const response = await listMyOffers({ page: 1, size: 100 });
         return (response?.data ?? []).filter(offer => offer.listingId === listingId);
-      }
-      catch {
+      } catch {
         return [];
       }
     },
@@ -135,9 +134,7 @@ export function useWithdrawOfferMutation(listingId?: string, userId?: string) {
     mutationFn: (offerId: string) => withdrawOffer(offerId),
     onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: listingId
-          ? offersQueryKey.buyerListing(listingId, userId)
-          : offersQueryKey.all(),
+        queryKey: listingId ? offersQueryKey.buyerListing(listingId, userId) : offersQueryKey.all(),
       });
       qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
       qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
@@ -158,10 +155,8 @@ export function useRespondToOfferMutation(userId?: string, listingId?: string) {
       action: 'accept' | 'counter' | 'reject';
       counterAmount?: number;
     }) => {
-      if (action === 'accept')
-        return acceptOffer(id);
-      if (action === 'reject')
-        return rejectOffer(id);
+      if (action === 'accept') return acceptOffer(id);
+      if (action === 'reject') return rejectOffer(id);
       return counterOffer(id, { counterAmount: counterAmount! });
     },
     onSuccess: () => {

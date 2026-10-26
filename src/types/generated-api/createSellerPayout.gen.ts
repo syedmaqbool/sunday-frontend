@@ -189,4 +189,5 @@ export interface CreateSellerPayoutResponses {
   };
 }
 
-export type CreateSellerPayoutResponse = CreateSellerPayoutResponses[keyof CreateSellerPayoutResponses];
+export type CreateSellerPayoutResponse =
+  CreateSellerPayoutResponses[keyof CreateSellerPayoutResponses];

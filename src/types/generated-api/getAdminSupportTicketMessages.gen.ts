@@ -105,7 +105,8 @@ export interface GetAdminSupportTicketMessagesErrors {
   };
 }
 
-export type GetAdminSupportTicketMessagesError = GetAdminSupportTicketMessagesErrors[keyof GetAdminSupportTicketMessagesErrors];
+export type GetAdminSupportTicketMessagesError =
+  GetAdminSupportTicketMessagesErrors[keyof GetAdminSupportTicketMessagesErrors];
 
 export interface GetAdminSupportTicketMessagesResponses {
   /**
@@ -155,4 +156,5 @@ export interface GetAdminSupportTicketMessagesResponses {
   };
 }
 
-export type GetAdminSupportTicketMessagesResponse = GetAdminSupportTicketMessagesResponses[keyof GetAdminSupportTicketMessagesResponses];
+export type GetAdminSupportTicketMessagesResponse =
+  GetAdminSupportTicketMessagesResponses[keyof GetAdminSupportTicketMessagesResponses];

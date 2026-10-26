@@ -21,19 +21,15 @@ import { getListingMediaUrls } from '@/queries/marketplace.query';
 export default function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice } = useCart();
   const navigate = useNavigate();
-  const { data: commissionTiersResponse } = useQuery(getCommissionTiersOptions({ onlyActive: true }));
-  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(
-    tier => tier.active,
+  const { data: commissionTiersResponse } = useQuery(
+    getCommissionTiersOptions({ onlyActive: true }),
   );
+  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(tier => tier.active);
 
   const itemFees = useMemo(
     () =>
       items.map(({ listing }) => {
-        const c = calcCommission(
-          commissionTiers,
-          listing.categoryValue,
-          listing.price,
-        );
+        const c = calcCommission(commissionTiers, listing.categoryValue, listing.price);
         return { listingId: listing.id, amount: c.amount, rate: c.rate };
       }),
     [items, commissionTiers],
@@ -61,138 +57,110 @@ export default function CartDrawer() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="
-        flex w-full flex-col
-        sm:max-w-md
-      "
+      <SheetContent
+        className="
+          flex w-full flex-col
+          sm:max-w-md
+        "
       >
         <SheetHeader>
-          <SheetTitle className="font-heading text-xl">
-            Your Cart (
-            {totalItems}
-            )
-          </SheetTitle>
+          <SheetTitle className="font-heading text-xl">Your Cart ({totalItems})</SheetTitle>
         </SheetHeader>
 
-        {items.length === 0
-          ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-                <ShoppingBag className="h-12 w-12 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">Your cart is empty</p>
-                <SheetClose asChild>
-                  <Button
-                    onClick={() => navigate('/listings')}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Browse listings
-                  </Button>
-                </SheetClose>
-              </div>
-            )
-          : (
-              <>
-                <ScrollArea className="-mx-6 flex-1 px-6">
-                  <div className="flex flex-col gap-4 py-4">
-                    {items.map(({ listing }) => {
-                      const fee = itemFees.find(f => f.listingId === listing.id);
-                      return (
-                        <div key={listing.id} className="flex gap-3">
-                          <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                            <img
-                              src={getListingMediaUrls(listing)[0]}
-                              alt={listing.title}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div className="flex flex-1 flex-col justify-between">
-                            <div>
-                              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                {listing.brand}
-                              </p>
-                              <p className="line-clamp-1 text-sm font-medium text-foreground">
-                                {listing.title}
-                              </p>
-                              {fee && fee.amount > 0 && (
-                                <p className="text-[11px] text-muted-foreground">
-                                  + Platform fee (
-                                  {fee.rate}
-                                  %): Rs
-                                  {' '}
-                                  {fee.amount.toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">1 item</span>
-                              <p className="text-sm font-bold text-foreground">
-                                Rs
-                                {' '}
-                                {listing.price.toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => removeItem(listing.id)}
-                            size="icon"
-                            variant="ghost"
-                            className="
-                              h-6 w-6 flex-shrink-0 text-muted-foreground
-                              hover:text-destructive
-                            "
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+        {items.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <ShoppingBag className="h-12 w-12 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Your cart is empty</p>
+            <SheetClose asChild>
+              <Button onClick={() => navigate('/listings')} size="sm" variant="outline">
+                Browse listings
+              </Button>
+            </SheetClose>
+          </div>
+        ) : (
+          <>
+            <ScrollArea className="-mx-6 flex-1 px-6">
+              <div className="flex flex-col gap-4 py-4">
+                {items.map(({ listing }) => {
+                  const fee = itemFees.find(f => f.listingId === listing.id);
+                  return (
+                    <div key={listing.id} className="flex gap-3">
+                      <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                        <img
+                          src={getListingMediaUrls(listing)[0]}
+                          alt={listing.title}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            {listing.brand}
+                          </p>
+                          <p className="line-clamp-1 text-sm font-medium text-foreground">
+                            {listing.title}
+                          </p>
+                          {fee && fee.amount > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              + Platform fee ({fee.rate}
+                              %): Rs {fee.amount.toLocaleString()}
+                            </p>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-
-                <div className="space-y-2 border-t border-border pt-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground">
-                      Rs
-                      {' '}
-                      {totalPrice.toLocaleString()}
-                    </span>
-                  </div>
-                  {platformFee > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Platform fee</span>
-                      <span className="text-foreground">
-                        Rs
-                        {' '}
-                        {platformFee.toLocaleString()}
-                      </span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">1 item</span>
+                          <p className="text-sm font-bold text-foreground">
+                            Rs {listing.price.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => removeItem(listing.id)}
+                        size="icon"
+                        variant="ghost"
+                        className="
+                          h-6 w-6 flex-shrink-0 text-muted-foreground
+                          hover:text-destructive
+                        "
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  )}
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">
-                      Total payable
-                    </span>
-                    <span className="text-lg font-bold text-foreground">
-                      Rs
-                      {' '}
-                      {totalPayable.toLocaleString()}
-                    </span>
-                  </div>
-                  <SheetClose asChild>
-                    <Button
-                      onClick={() => navigate('/checkout')}
-                      size="lg"
-                      className="mt-2 w-full gap-2"
-                    >
-                      Checkout
-                      {' '}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </SheetClose>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            <div className="space-y-2 border-t border-border pt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-foreground">Rs {totalPrice.toLocaleString()}</span>
+              </div>
+              {platformFee > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Platform fee</span>
+                  <span className="text-foreground">Rs {platformFee.toLocaleString()}</span>
                 </div>
-              </>
-            )}
+              )}
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Total payable</span>
+                <span className="text-lg font-bold text-foreground">
+                  Rs {totalPayable.toLocaleString()}
+                </span>
+              </div>
+              <SheetClose asChild>
+                <Button
+                  onClick={() => navigate('/checkout')}
+                  size="lg"
+                  className="mt-2 w-full gap-2"
+                >
+                  Checkout <ArrowRight className="h-4 w-4" />
+                </Button>
+              </SheetClose>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );

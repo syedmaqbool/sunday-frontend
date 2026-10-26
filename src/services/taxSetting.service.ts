@@ -7,9 +7,7 @@ import type {
 import { authInstance } from '@/services/ky.instance';
 
 export function getTaxSettings() {
-  return authInstance
-    .get('/api/v1/tax-settings')
-    .json<Response<TaxSetting>>();
+  return authInstance.get('/api/v1/tax-settings').json<Response<TaxSetting>>();
 }
 
 export function listTaxSettings() {
@@ -24,10 +22,7 @@ export function createTaxSetting(payload: CreateTaxSettingPayload) {
     .json<Response<TaxSetting>>();
 }
 
-export function updateTaxSetting(
-  resourceId: string,
-  payload: UpdateTaxSettingPayload,
-) {
+export function updateTaxSetting(resourceId: string, payload: UpdateTaxSettingPayload) {
   return authInstance
     .patch(`/api/v1/admin/settings/tax-settings/${resourceId}`, {
       json: payload,
@@ -36,7 +31,5 @@ export function updateTaxSetting(
 }
 
 export function deleteTaxSetting(resourceId: string) {
-  return authInstance
-    .delete(`/api/v1/admin/settings/tax-settings/${resourceId}`)
-    .json<Response>();
+  return authInstance.delete(`/api/v1/admin/settings/tax-settings/${resourceId}`).json<Response>();
 }

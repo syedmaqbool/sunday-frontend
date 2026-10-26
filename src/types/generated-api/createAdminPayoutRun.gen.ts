@@ -170,7 +170,8 @@ export interface CreateAdminPayoutRunErrors {
   };
 }
 
-export type CreateAdminPayoutRunError = CreateAdminPayoutRunErrors[keyof CreateAdminPayoutRunErrors];
+export type CreateAdminPayoutRunError =
+  CreateAdminPayoutRunErrors[keyof CreateAdminPayoutRunErrors];
 
 export interface CreateAdminPayoutRunResponses {
   /**
@@ -197,4 +198,5 @@ export interface CreateAdminPayoutRunResponses {
   };
 }
 
-export type CreateAdminPayoutRunResponse = CreateAdminPayoutRunResponses[keyof CreateAdminPayoutRunResponses];
+export type CreateAdminPayoutRunResponse =
+  CreateAdminPayoutRunResponses[keyof CreateAdminPayoutRunResponses];

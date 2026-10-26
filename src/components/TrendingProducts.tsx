@@ -8,16 +8,16 @@ export default function TrendingProducts() {
   const { data: trendingResponse } = useQuery(getTrendingListingsOptions());
   const trending = trendingResponse?.data ?? [];
 
-  if (trending.length === 0)
-    return null;
+  if (trending.length === 0) return null;
 
   return (
     <section className="container py-16">
       <div>
-        <h2 className="
-          font-heading text-3xl font-bold text-foreground
-          md:text-4xl
-        "
+        <h2
+          className="
+            font-heading text-3xl font-bold text-foreground
+            md:text-4xl
+          "
         >
           Trending Now
         </h2>
@@ -26,12 +26,13 @@ export default function TrendingProducts() {
           Most popular picks this week
         </p>
       </div>
-      <div className="
-        mt-8 grid grid-cols-2 gap-4
-        sm:grid-cols-3
-        lg:grid-cols-4
-        xl:grid-cols-6
-      "
+      <div
+        className="
+          mt-8 grid grid-cols-2 gap-4
+          sm:grid-cols-3
+          lg:grid-cols-4
+          xl:grid-cols-6
+        "
       >
         {trending.map((listing, index) => (
           <ListingCard key={listing.id} index={index} listing={listing} />

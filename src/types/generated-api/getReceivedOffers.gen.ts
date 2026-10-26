@@ -127,4 +127,5 @@ export interface GetReceivedOffersResponses {
   };
 }
 
-export type GetReceivedOffersResponse = GetReceivedOffersResponses[keyof GetReceivedOffersResponses];
+export type GetReceivedOffersResponse =
+  GetReceivedOffersResponses[keyof GetReceivedOffersResponses];

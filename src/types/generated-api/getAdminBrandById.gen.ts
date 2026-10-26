@@ -88,4 +88,5 @@ export interface GetAdminBrandByIdResponses {
   };
 }
 
-export type GetAdminBrandByIdResponse = GetAdminBrandByIdResponses[keyof GetAdminBrandByIdResponses];
+export type GetAdminBrandByIdResponse =
+  GetAdminBrandByIdResponses[keyof GetAdminBrandByIdResponses];

@@ -68,7 +68,8 @@ export interface DeleteAdminSellerCouponErrors {
   };
 }
 
-export type DeleteAdminSellerCouponError = DeleteAdminSellerCouponErrors[keyof DeleteAdminSellerCouponErrors];
+export type DeleteAdminSellerCouponError =
+  DeleteAdminSellerCouponErrors[keyof DeleteAdminSellerCouponErrors];
 
 export interface DeleteAdminSellerCouponResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminSellerCouponResponses {
   };
 }
 
-export type DeleteAdminSellerCouponResponse = DeleteAdminSellerCouponResponses[keyof DeleteAdminSellerCouponResponses];
+export type DeleteAdminSellerCouponResponse =
+  DeleteAdminSellerCouponResponses[keyof DeleteAdminSellerCouponResponses];

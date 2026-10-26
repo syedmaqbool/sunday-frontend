@@ -29,10 +29,7 @@ function getShareUrl(userId: string) {
   return `${location.origin}/seller/${userId}`;
 }
 
-export function ShareProfileDialog({
-  userId,
-  userName,
-}: ShareProfileDialogProps) {
+export function ShareProfileDialog({ userId, userName }: ShareProfileDialogProps) {
   const [copied, setCopied] = useState(false);
   const profileUrl = getShareUrl(userId);
   const displayName = userName || 'My';
@@ -46,8 +43,7 @@ export function ShareProfileDialog({
       setCopied(true);
       toast.success('Link copied to clipboard');
       setTimeout(setCopied, 2000, false);
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Failed to copy link');
     }
   };
@@ -85,28 +81,26 @@ export function ShareProfileDialog({
     <Dialog>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-1">
-          <Share2 className="h-4 w-4" />
-          {' '}
-          Share Profile
+          <Share2 className="h-4 w-4" /> Share Profile
         </Button>
       </DialogTrigger>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-md overflow-hidden p-0">
-        <div className="
-          min-w-0 p-5
-          sm:p-6
-        "
-        >
-          <DialogHeader className="
-            min-w-0 pr-6 text-left
-            sm:text-left
+        <div
+          className="
+            min-w-0 p-5
+            sm:p-6
           "
+        >
+          <DialogHeader
+            className="
+              min-w-0 pr-6 text-left
+              sm:text-left
+            "
           >
             <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Share2 aria-hidden="true" className="h-5 w-5 text-primary" />
             </div>
-            <DialogTitle className="text-xl leading-tight">
-              Share your profile
-            </DialogTitle>
+            <DialogTitle className="text-xl leading-tight">Share your profile</DialogTitle>
             <DialogDescription className="max-w-sm">
               Send your public profile to friends or share it on social media.
             </DialogDescription>
@@ -158,22 +152,14 @@ export function ShareProfileDialog({
                     {profileUrl}
                   </span>
                 </div>
-                <Button
-                  onClick={handleCopyLink}
-                  size="sm"
-                  className="w-full gap-1"
-                >
-                  {copied
-                    ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          {' '}
-                          Copied
-                        </>
-                      )
-                    : (
-                        <>Copy</>
-                      )}
+                <Button onClick={handleCopyLink} size="sm" className="w-full gap-1">
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" /> Copied
+                    </>
+                  ) : (
+                    <>Copy</>
+                  )}
                 </Button>
               </div>
             </div>

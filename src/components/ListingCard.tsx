@@ -8,16 +8,18 @@ import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 interface ListingCardProps {
   index?: number;
-  listing: MarketplaceListing | {
-    id: string;
-    brand: string;
-    condition: string;
-    images?: string[];
-    price: number;
-    size: string;
-    status: string;
-    title: string;
-  };
+  listing:
+    | MarketplaceListing
+    | {
+        id: string;
+        brand: string;
+        condition: string;
+        images?: string[];
+        price: number;
+        size: string;
+        status: string;
+        title: string;
+      };
   sellerRating?: { avgRating: number; totalReviews: number } | null;
   showSellerByline?: boolean;
 }
@@ -28,9 +30,10 @@ function ListingCard({
   sellerRating,
   showSellerByline = false,
 }: ListingCardProps) {
-  const image = 'categoryId' in listing
-    ? getListingMediaUrls(listing)[0]
-    : listing.images?.find((value): value is string => typeof value === 'string');
+  const image =
+    'categoryId' in listing
+      ? getListingMediaUrls(listing)[0]
+      : listing.images?.find((value): value is string => typeof value === 'string');
   const status = listing.status.toLowerCase();
   const previewImage = image || '/placeholder.svg';
   const seller = 'seller' in listing ? listing.seller : undefined;
@@ -52,10 +55,9 @@ function ListingCard({
         />
         <div className="pointer-events-none relative">
           <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-muted">
-
             <img
               src={previewImage}
-              ref={(node) => {
+              ref={node => {
                 node?.setAttribute('fetchpriority', 'high');
               }}
               alt={listing.title}
@@ -66,11 +68,7 @@ function ListingCard({
               className={`
                 h-full w-full object-cover transition-transform duration-500
                 group-hover:scale-105
-                ${
-    status === 'sold' || status === 'reserved'
-      ? 'opacity-60 grayscale'
-      : ''
-    }
+                ${status === 'sold' || status === 'reserved' ? 'opacity-60 grayscale' : ''}
               `}
             />
 
@@ -102,9 +100,7 @@ function ListingCard({
               {listing.title}
             </h3>
             <p className="text-sm font-semibold text-foreground">
-              Rs
-              {' '}
-              {listing.price.toLocaleString()}
+              Rs {listing.price.toLocaleString()}
             </p>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">

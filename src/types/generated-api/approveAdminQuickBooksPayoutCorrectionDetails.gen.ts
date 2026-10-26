@@ -128,7 +128,8 @@ export interface ApproveAdminQuickBooksPayoutCorrectionDetailsErrors {
   };
 }
 
-export type ApproveAdminQuickBooksPayoutCorrectionDetailsError = ApproveAdminQuickBooksPayoutCorrectionDetailsErrors[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsErrors];
+export type ApproveAdminQuickBooksPayoutCorrectionDetailsError =
+  ApproveAdminQuickBooksPayoutCorrectionDetailsErrors[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsErrors];
 
 export interface ApproveAdminQuickBooksPayoutCorrectionDetailsResponses {
   /**
@@ -140,4 +141,5 @@ export interface ApproveAdminQuickBooksPayoutCorrectionDetailsResponses {
   };
 }
 
-export type ApproveAdminQuickBooksPayoutCorrectionDetailsResponse = ApproveAdminQuickBooksPayoutCorrectionDetailsResponses[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsResponses];
+export type ApproveAdminQuickBooksPayoutCorrectionDetailsResponse =
+  ApproveAdminQuickBooksPayoutCorrectionDetailsResponses[keyof ApproveAdminQuickBooksPayoutCorrectionDetailsResponses];

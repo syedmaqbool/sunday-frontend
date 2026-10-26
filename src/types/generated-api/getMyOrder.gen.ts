@@ -212,7 +212,14 @@ export interface GetMyOrderResponses {
       shippingLastName: string;
       shippingPhone: string;
       shippingPostal: string;
-      status: 'AWAITING_PAYMENT' | 'CANCELLED' | 'CONFIRMED' | 'DELIVERED' | 'PARTIALLY_DELIVERED' | 'PARTIALLY_SHIPPED' | 'SHIPPED';
+      status:
+        | 'AWAITING_PAYMENT'
+        | 'CANCELLED'
+        | 'CONFIRMED'
+        | 'DELIVERED'
+        | 'PARTIALLY_DELIVERED'
+        | 'PARTIALLY_SHIPPED'
+        | 'SHIPPED';
       /**
        * PKR amount as a number.
        */

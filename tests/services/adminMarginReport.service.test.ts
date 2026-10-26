@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { getAdminMarginReport } from '@/services/adminMarginReport.service';
 
 const getMock = vi.hoisted(() => vi.fn());

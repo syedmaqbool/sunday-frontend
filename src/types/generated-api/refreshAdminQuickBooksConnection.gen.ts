@@ -180,7 +180,8 @@ export interface RefreshAdminQuickBooksConnectionErrors {
   };
 }
 
-export type RefreshAdminQuickBooksConnectionError = RefreshAdminQuickBooksConnectionErrors[keyof RefreshAdminQuickBooksConnectionErrors];
+export type RefreshAdminQuickBooksConnectionError =
+  RefreshAdminQuickBooksConnectionErrors[keyof RefreshAdminQuickBooksConnectionErrors];
 
 export interface RefreshAdminQuickBooksConnectionResponses {
   /**
@@ -200,4 +201,5 @@ export interface RefreshAdminQuickBooksConnectionResponses {
   };
 }
 
-export type RefreshAdminQuickBooksConnectionResponse = RefreshAdminQuickBooksConnectionResponses[keyof RefreshAdminQuickBooksConnectionResponses];
+export type RefreshAdminQuickBooksConnectionResponse =
+  RefreshAdminQuickBooksConnectionResponses[keyof RefreshAdminQuickBooksConnectionResponses];

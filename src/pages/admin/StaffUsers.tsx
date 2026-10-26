@@ -5,10 +5,7 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import AdminUsersTable, {
-  joinedDate,
-  statusBadge,
-} from '@/components/admin/AdminUsersTable';
+import AdminUsersTable, { joinedDate, statusBadge } from '@/components/admin/AdminUsersTable';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -64,8 +61,14 @@ export default function StaffUsers() {
   const [status, setStatus] = useState<'ACTIVE' | 'ALL' | 'INACTIVE'>('ALL');
   const [createOpen, setCreateOpen] = useState(false);
   const [reassignUser, setReassignUser] = useState<AdminUser | null>(null);
-  const form = useForm<StaffFormState>({ defaultValues: EMPTY_FORM, resolver: zodResolver(staffCreateFormSchema) });
-  const roleForm = useForm<RoleReassignFormValues>({ defaultValues: { roleId: '' }, resolver: zodResolver(roleReassignFormSchema) });
+  const form = useForm<StaffFormState>({
+    defaultValues: EMPTY_FORM,
+    resolver: zodResolver(staffCreateFormSchema),
+  });
+  const roleForm = useForm<RoleReassignFormValues>({
+    defaultValues: { roleId: '' },
+    resolver: zodResolver(roleReassignFormSchema),
+  });
   const deferredSearch = useDeferredValue(search);
 
   const { data: usersResponse, isLoading } = useQuery(
@@ -82,10 +85,7 @@ export default function StaffUsers() {
   const createUser = useCreateAdminUserMutation();
   const updateUserRole = useUpdateUserRoleMutation();
 
-  const roleOptions = useMemo(
-    () => roles.map(role => ({ id: role.id, name: role.name })),
-    [roles],
-  );
+  const roleOptions = useMemo(() => roles.map(role => ({ id: role.id, name: role.name })), [roles]);
 
   const users = usersResponse?.data ?? [];
   const total = usersResponse?.pagination.total ?? 0;
@@ -108,8 +108,7 @@ export default function StaffUsers() {
       toast.success('Staff user created.');
       resetCreateForm();
       setPage(1);
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to create staff user.');
     }
   };
@@ -127,8 +126,7 @@ export default function StaffUsers() {
       toast.success('Staff role updated.');
       setReassignUser(null);
       roleForm.reset({ roleId: '' });
-    }
-    catch (error: any) {
+    } catch (error: any) {
       showErrorToast(error, 'Failed to update staff role.');
     }
   };
@@ -137,11 +135,11 @@ export default function StaffUsers() {
     <>
       <AdminUsersTable
         onPageChange={setPage}
-        onSearchChange={(value) => {
+        onSearchChange={value => {
           setPage(1);
           setSearch(value);
         }}
-        onStatusChange={(value) => {
+        onStatusChange={value => {
           setPage(1);
           setStatus(value);
         }}
@@ -150,21 +148,18 @@ export default function StaffUsers() {
             key: 'phone',
             label: 'Phone',
             render: user => (
-              <span className="text-sm text-muted-foreground">
-                {user.phone || '—'}
-              </span>
+              <span className="text-sm text-muted-foreground">{user.phone || '—'}</span>
             ),
           },
           {
             key: 'role',
             label: 'Assigned role',
-            render: user => user.roleName
-              ? (
-                  <span className="font-medium text-foreground">{user.roleName}</span>
-                )
-              : (
-                  <span className="text-sm text-muted-foreground">No role</span>
-                ),
+            render: user =>
+              user.roleName ? (
+                <span className="font-medium text-foreground">{user.roleName}</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">No role</span>
+              ),
           },
           {
             key: 'status',
@@ -175,9 +170,7 @@ export default function StaffUsers() {
             key: 'joined',
             label: 'Created',
             render: user => (
-              <span className="text-sm text-muted-foreground">
-                {joinedDate(user.createdAt)}
-              </span>
+              <span className="text-sm text-muted-foreground">{joinedDate(user.createdAt)}</span>
             ),
           },
           {
@@ -201,11 +194,7 @@ export default function StaffUsers() {
           },
         ]}
         emptyMessage="No staff users match these filters."
-        headerActions={(
-          <Button onClick={() => setCreateOpen(true)}>
-            Create staff user
-          </Button>
-        )}
+        headerActions={<Button onClick={() => setCreateOpen(true)}>Create staff user</Button>}
         isLoading={isLoading}
         page={page}
         pageSize={20}
@@ -227,7 +216,9 @@ export default function StaffUsers() {
 
           <form
             id="staff-create-form"
-            onSubmit={form.handleSubmit(handleCreate, errors => toast.error(Object.values(errors)[0]?.message ?? 'Check the staff fields.'))}
+            onSubmit={form.handleSubmit(handleCreate, errors =>
+              toast.error(Object.values(errors)[0]?.message ?? 'Check the staff fields.'),
+            )}
             className="
               grid gap-4
               sm:grid-cols-2
@@ -235,32 +226,56 @@ export default function StaffUsers() {
           >
             <div className="space-y-2">
               <Label htmlFor="staff-first-name">First name</Label>
-              <Controller name="firstName" control={form.control} render={({ field }) => <Input {...field} id="staff-first-name" />} />
+              <Controller
+                name="firstName"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="staff-first-name" />}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-last-name">Last name</Label>
-              <Controller name="lastName" control={form.control} render={({ field }) => <Input {...field} id="staff-last-name" />} />
+              <Controller
+                name="lastName"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="staff-last-name" />}
+              />
             </div>
-            <div className="
-              space-y-2
-              sm:col-span-2
-            "
+            <div
+              className="
+                space-y-2
+                sm:col-span-2
+              "
             >
               <Label htmlFor="staff-email">Email</Label>
-              <Controller name="email" control={form.control} render={({ field }) => <Input {...field} id="staff-email" type="email" />} />
+              <Controller
+                name="email"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="staff-email" type="email" />}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-phone">Phone</Label>
-              <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="staff-phone" placeholder="+92 300 1234567" type="tel" />} />
+              <Controller
+                name="phone"
+                control={form.control}
+                render={({ field }) => (
+                  <Input {...field} id="staff-phone" placeholder="+92 300 1234567" type="tel" />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staff-password">Temporary password</Label>
-              <Controller name="password" control={form.control} render={({ field }) => <Input {...field} id="staff-password" type="password" />} />
+              <Controller
+                name="password"
+                control={form.control}
+                render={({ field }) => <Input {...field} id="staff-password" type="password" />}
+              />
             </div>
-            <div className="
-              space-y-2
-              sm:col-span-2
-            "
+            <div
+              className="
+                space-y-2
+                sm:col-span-2
+              "
             >
               <Label>Role</Label>
               <Controller
@@ -296,7 +311,7 @@ export default function StaffUsers() {
       </Dialog>
 
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (open) {
             return;
           }
@@ -310,8 +325,7 @@ export default function StaffUsers() {
           <DialogHeader>
             <DialogTitle>Reassign staff role</DialogTitle>
             <DialogDescription>
-              Confirm a new role for
-              {' '}
+              Confirm a new role for{' '}
               {reassignUser
                 ? `${reassignUser.firstName} ${reassignUser.lastName}`.trim() || reassignUser.email
                 : 'this staff user'}
@@ -319,7 +333,13 @@ export default function StaffUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          <form id="staff-role-form" onSubmit={roleForm.handleSubmit(handleRoleReassign, errors => toast.error(Object.values(errors)[0]?.message ?? 'Select a target role.'))} className="space-y-4">
+          <form
+            id="staff-role-form"
+            onSubmit={roleForm.handleSubmit(handleRoleReassign, errors =>
+              toast.error(Object.values(errors)[0]?.message ?? 'Select a target role.'),
+            )}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label>Current role</Label>
               <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">

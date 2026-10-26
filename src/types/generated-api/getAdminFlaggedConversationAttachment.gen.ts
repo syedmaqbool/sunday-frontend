@@ -43,7 +43,8 @@ export interface GetAdminFlaggedConversationAttachmentErrors {
   };
 }
 
-export type GetAdminFlaggedConversationAttachmentError = GetAdminFlaggedConversationAttachmentErrors[keyof GetAdminFlaggedConversationAttachmentErrors];
+export type GetAdminFlaggedConversationAttachmentError =
+  GetAdminFlaggedConversationAttachmentErrors[keyof GetAdminFlaggedConversationAttachmentErrors];
 
 export interface GetAdminFlaggedConversationAttachmentResponses {
   /**
@@ -52,4 +53,5 @@ export interface GetAdminFlaggedConversationAttachmentResponses {
   200: Blob | File;
 }
 
-export type GetAdminFlaggedConversationAttachmentResponse = GetAdminFlaggedConversationAttachmentResponses[keyof GetAdminFlaggedConversationAttachmentResponses];
+export type GetAdminFlaggedConversationAttachmentResponse =
+  GetAdminFlaggedConversationAttachmentResponses[keyof GetAdminFlaggedConversationAttachmentResponses];

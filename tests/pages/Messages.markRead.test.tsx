@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const activeConversation = {
@@ -36,14 +36,16 @@ vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }));
 vi.mock('@/hooks/useConverstion', () => ({
-  getConversationMessagesOptions: (conversationId?: string) => queryOptions({
-    queryFn: async () => ({ data: conversationId ? testState.messages : [] }),
-    queryKey: ['test-messages', conversationId],
-  }),
-  getConversationsOptions: () => queryOptions({
-    queryFn: async () => ({ data: [activeConversation] }),
-    queryKey: ['test-conversations'],
-  }),
+  getConversationMessagesOptions: (conversationId?: string) =>
+    queryOptions({
+      queryFn: async () => ({ data: conversationId ? testState.messages : [] }),
+      queryKey: ['test-messages', conversationId],
+    }),
+  getConversationsOptions: () =>
+    queryOptions({
+      queryFn: async () => ({ data: [activeConversation] }),
+      queryKey: ['test-conversations'],
+    }),
   useMarkConversationReadMutation: () => ({ isPending: false, mutate: markConversationRead }),
   useSendMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
 }));
@@ -52,7 +54,10 @@ function renderMessages(initialEntry = '/messages') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={[initialEntry]}>
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={[initialEntry]}
+      >
         <Routes>
           <Route element={<Messages />} path="/messages" />
         </Routes>
@@ -119,7 +124,9 @@ describe('messages mark-read behavior', () => {
     const { queryClient } = renderMessages(`/messages?conversation=${activeConversation.id}`);
 
     expect(await screen.findByText('Start conversation')).toBeInTheDocument();
-    queryClient.setQueryData(['test-messages', activeConversation.id], { data: [unreadIncomingMessage] });
+    queryClient.setQueryData(['test-messages', activeConversation.id], {
+      data: [unreadIncomingMessage],
+    });
 
     await waitFor(() => expect(markConversationRead).toHaveBeenCalled());
     queryClient.setQueryData(['test-messages', activeConversation.id], {

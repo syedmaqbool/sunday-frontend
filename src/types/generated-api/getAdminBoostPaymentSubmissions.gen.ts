@@ -75,7 +75,8 @@ export interface GetAdminBoostPaymentSubmissionsErrors {
   };
 }
 
-export type GetAdminBoostPaymentSubmissionsError = GetAdminBoostPaymentSubmissionsErrors[keyof GetAdminBoostPaymentSubmissionsErrors];
+export type GetAdminBoostPaymentSubmissionsError =
+  GetAdminBoostPaymentSubmissionsErrors[keyof GetAdminBoostPaymentSubmissionsErrors];
 
 export interface GetAdminBoostPaymentSubmissionsResponses {
   /**
@@ -91,7 +92,13 @@ export interface GetAdminBoostPaymentSubmissionsResponses {
         listingId: string;
         sellerId: string;
         amount: number;
-        status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+        status:
+          | 'APPROVED'
+          | 'PENDING_REVIEW'
+          | 'REFUND_REQUIRED'
+          | 'REFUNDED'
+          | 'REJECTED'
+          | 'RESUBMISSION_REQUESTED';
       };
       boosts: Array<{
         id: string;
@@ -171,4 +178,5 @@ export interface GetAdminBoostPaymentSubmissionsResponses {
   };
 }
 
-export type GetAdminBoostPaymentSubmissionsResponse = GetAdminBoostPaymentSubmissionsResponses[keyof GetAdminBoostPaymentSubmissionsResponses];
+export type GetAdminBoostPaymentSubmissionsResponse =
+  GetAdminBoostPaymentSubmissionsResponses[keyof GetAdminBoostPaymentSubmissionsResponses];

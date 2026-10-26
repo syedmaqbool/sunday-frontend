@@ -70,7 +70,13 @@ export function MakeOfferButton({
     mode: 'all',
     resolver: zodResolver(offerSchema),
   });
-  const { control, formState: { errors }, handleSubmit, reset, watch } = form;
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+    watch,
+  } = form;
   const amount = watch('amount');
 
   const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
@@ -109,16 +115,12 @@ export function MakeOfferButton({
           sm:w-auto
         "
       >
-        <MessageSquare className="h-4 w-4" />
-        {' '}
-        Make Offer
+        <MessageSquare className="h-4 w-4" /> Make Offer
       </Button>
     );
   }
 
-  const activeOffer = existingOffers.find(
-    o => o.status === 'PENDING' || o.status === 'COUNTERED',
-  );
+  const activeOffer = existingOffers.find(o => o.status === 'PENDING' || o.status === 'COUNTERED');
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -131,9 +133,7 @@ export function MakeOfferButton({
             sm:w-auto
           "
         >
-          <MessageSquare className="h-4 w-4" />
-          {' '}
-          Make Offer
+          <MessageSquare className="h-4 w-4" /> Make Offer
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -142,9 +142,7 @@ export function MakeOfferButton({
             {activeOffer ? 'Your Offer' : 'Make an Offer'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {listingTitle}
-            {' '}
-            · Listed at Rs
+            {listingTitle} · Listed at Rs
             {listingPrice.toLocaleString()}
           </p>
         </DialogHeader>
@@ -157,11 +155,11 @@ export function MakeOfferButton({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
-                      Rs
-                      {' '}
-                      {offer.amount.toLocaleString()}
+                      Rs {offer.amount.toLocaleString()}
                     </span>
-                    <Badge variant={statusBadge(offer.status)}>{formatEnumLabel(offer.status)}</Badge>
+                    <Badge variant={statusBadge(offer.status)}>
+                      {formatEnumLabel(offer.status)}
+                    </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(offer.createdAt), 'MMM d')}
@@ -171,35 +169,37 @@ export function MakeOfferButton({
                 {offer.status === 'COUNTERED' && offer.counterAmount && (
                   <div className="mt-2 rounded-md border border-border/60 bg-muted p-2">
                     <p className="text-xs font-semibold text-foreground">
-                      Counter: Rs
-                      {' '}
-                      {offer.counterAmount.toLocaleString()}
+                      Counter: Rs {offer.counterAmount.toLocaleString()}
                     </p>
                     <div className="mt-2 flex gap-2">
                       <Button
                         onClick={() =>
                           acceptCounter.mutate(offer.id, {
-                            onError: (error: any) => showErrorToast(error, 'Failed to accept counter-offer'),
+                            onError: (error: any) =>
+                              showErrorToast(error, 'Failed to accept counter-offer'),
                             onSuccess: () => {
-                              toast.success('Counter-offer accepted! Check your Messages to chat with the seller.');
+                              toast.success(
+                                'Counter-offer accepted! Check your Messages to chat with the seller.',
+                              );
                             },
-                          })}
+                          })
+                        }
                         disabled={acceptCounter.isPending}
                         size="sm"
                         className="h-8 text-xs"
                       >
-                        Accept Rs
-                        {' '}
-                        {offer.counterAmount.toLocaleString()}
+                        Accept Rs {offer.counterAmount.toLocaleString()}
                       </Button>
                       <Button
                         onClick={() =>
                           withdrawOffer.mutate(offer.id, {
-                            onError: (error: any) => showErrorToast(error, 'Failed to withdraw offer'),
+                            onError: (error: any) =>
+                              showErrorToast(error, 'Failed to withdraw offer'),
                             onSuccess: () => {
                               toast.success('Offer withdrawn');
                             },
-                          })}
+                          })
+                        }
                         disabled={withdrawOffer.isPending}
                         size="sm"
                         variant="outline"
@@ -218,7 +218,8 @@ export function MakeOfferButton({
                         onSuccess: () => {
                           toast.success('Offer withdrawn');
                         },
-                      })}
+                      })
+                    }
                     disabled={withdrawOffer.isPending}
                     size="sm"
                     variant="ghost"
@@ -253,9 +254,7 @@ export function MakeOfferButton({
                   />
                 )}
               />
-              {errors.amount && (
-                <p className="text-xs text-destructive">{errors.amount.message}</p>
-              )}
+              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
             </div>
 
             {/* ← Message field */}
@@ -276,19 +275,17 @@ export function MakeOfferButton({
               />
             </div>
 
-            
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                  <div className="flex items-start gap-2">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <p className="text-xs leading-relaxed text-foreground">
-                      <span className="font-semibold">Important: </span>
-                      All offers are binding. Once a seller accepts your offer, you will
-                      have 24 hours to make the payment. Failure to do so will result in
-                      an administrative review of your account.
-                    </p>
-                  </div>
-                </div>
-
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <div className="flex items-start gap-2">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <p className="text-xs leading-relaxed text-foreground">
+                  <span className="font-semibold">Important: </span>
+                  All offers are binding. Once a seller accepts your offer, you will have 24 hours
+                  to make the payment. Failure to do so will result in an administrative review of
+                  your account.
+                </p>
+              </div>
+            </div>
 
             <Button
               onClick={handleSubmit(onSubmit)}

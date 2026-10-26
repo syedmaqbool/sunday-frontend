@@ -104,7 +104,8 @@ export interface CreateAdminQuickBooksHistoricalBackfillErrors {
   };
 }
 
-export type CreateAdminQuickBooksHistoricalBackfillError = CreateAdminQuickBooksHistoricalBackfillErrors[keyof CreateAdminQuickBooksHistoricalBackfillErrors];
+export type CreateAdminQuickBooksHistoricalBackfillError =
+  CreateAdminQuickBooksHistoricalBackfillErrors[keyof CreateAdminQuickBooksHistoricalBackfillErrors];
 
 export interface CreateAdminQuickBooksHistoricalBackfillResponses {
   /**
@@ -150,4 +151,5 @@ export interface CreateAdminQuickBooksHistoricalBackfillResponses {
   };
 }
 
-export type CreateAdminQuickBooksHistoricalBackfillResponse = CreateAdminQuickBooksHistoricalBackfillResponses[keyof CreateAdminQuickBooksHistoricalBackfillResponses];
+export type CreateAdminQuickBooksHistoricalBackfillResponse =
+  CreateAdminQuickBooksHistoricalBackfillResponses[keyof CreateAdminQuickBooksHistoricalBackfillResponses];

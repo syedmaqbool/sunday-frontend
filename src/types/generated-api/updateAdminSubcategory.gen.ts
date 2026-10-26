@@ -130,7 +130,8 @@ export interface UpdateAdminSubcategoryErrors {
   };
 }
 
-export type UpdateAdminSubcategoryError = UpdateAdminSubcategoryErrors[keyof UpdateAdminSubcategoryErrors];
+export type UpdateAdminSubcategoryError =
+  UpdateAdminSubcategoryErrors[keyof UpdateAdminSubcategoryErrors];
 
 export interface UpdateAdminSubcategoryResponses {
   /**
@@ -154,4 +155,5 @@ export interface UpdateAdminSubcategoryResponses {
   };
 }
 
-export type UpdateAdminSubcategoryResponse = UpdateAdminSubcategoryResponses[keyof UpdateAdminSubcategoryResponses];
+export type UpdateAdminSubcategoryResponse =
+  UpdateAdminSubcategoryResponses[keyof UpdateAdminSubcategoryResponses];

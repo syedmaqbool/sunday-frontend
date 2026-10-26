@@ -1,4 +1,8 @@
-import type { AdminUserAuditEvent, UpdateAdminUserProfileInput, UpdateAdminUserStatusInput } from '@/types/adminUser.type';
+import type {
+  AdminUserAuditEvent,
+  UpdateAdminUserProfileInput,
+  UpdateAdminUserStatusInput,
+} from '@/types/adminUser.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -80,18 +84,25 @@ export default function AdminUserDetailsDialog({
   });
   const updateProfile = useUpdateAdminUserProfileMutation();
   const updateStatus = useUpdateAdminUserStatusMutation();
-  const { data: detailResponse, isError, isLoading } = useQuery(getAdminUserByIdQueryOptions(userId));
+  const {
+    data: detailResponse,
+    isError,
+    isLoading,
+  } = useQuery(getAdminUserByIdQueryOptions(userId));
   const {
     data: auditHistoryResponse,
     isError: isAuditHistoryError,
     isLoading: isAuditHistoryLoading,
-  } = useQuery(getAdminUserAuditHistoryQueryOptions(userId, { page: auditPage, size: AUDIT_PAGE_SIZE }));
+  } = useQuery(
+    getAdminUserAuditHistoryQueryOptions(userId, { page: auditPage, size: AUDIT_PAGE_SIZE }),
+  );
   const user = detailResponse?.data;
   const auditHistory = auditHistoryResponse?.data ?? [];
   const auditPagination = auditHistoryResponse?.pagination;
   const name = user ? joinFirstAndLastName(user.firstName, user.lastName) : '';
   const statusActionLabel = user?.status === 'ACTIVE' ? 'Suspend user' : 'Reactivate user';
-  const statusConfirmLabel = user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
+  const statusConfirmLabel =
+    user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
 
   const profileFormUserIdReference = useRef<string | null>(null);
 
@@ -106,25 +117,24 @@ export default function AdminUserDetailsDialog({
     }
 
     // Refetches of the same open user (for example after a status change) keep unsaved edits.
-    form.reset({
-      address: user.address,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    }, { keepDirtyValues: profileFormUserIdReference.current === userId });
+    form.reset(
+      {
+        address: user.address,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      { keepDirtyValues: profileFormUserIdReference.current === userId },
+    );
     profileFormUserIdReference.current = userId;
   }, [form, user, userId]);
 
   const handleProfileSave = async (values: ProfileEditFormValues) => {
-    if (!canUpdateUsers || !user || !userId)
-      return;
+    if (!canUpdateUsers || !user || !userId) return;
 
     const payload: UpdateAdminUserProfileInput = {};
-    if (values.address !== user.address)
-      payload.address = values.address;
-    if (values.firstName !== user.firstName)
-      payload.firstName = values.firstName;
-    if (values.lastName !== user.lastName)
-      payload.lastName = values.lastName;
+    if (values.address !== user.address) payload.address = values.address;
+    if (values.firstName !== user.firstName) payload.firstName = values.firstName;
+    if (values.lastName !== user.lastName) payload.lastName = values.lastName;
 
     if (Object.keys(payload).length === 0) {
       form.setError('root', {
@@ -139,15 +149,13 @@ export default function AdminUserDetailsDialog({
       await updateProfile.mutateAsync({ userId, payload });
       form.reset(values);
       toast.success('User profile updated.');
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Failed to update user profile.');
     }
   };
 
   const handleStatusChange = async (values: StatusChangeFormValues) => {
-    if (!canUpdateUsers || !user || !userId)
-      return;
+    if (!canUpdateUsers || !user || !userId) return;
 
     const payload: UpdateAdminUserStatusInput = {
       reason: values.reason.trim(),
@@ -159,17 +167,18 @@ export default function AdminUserDetailsDialog({
       setStatusDialogOpen(false);
       statusForm.reset({ reason: '' });
       toast.success(payload.status === 'INACTIVE' ? 'User suspended.' : 'User reactivated.');
-    }
-    catch (error) {
-      showErrorToast(error, payload.status === 'INACTIVE' ? 'Failed to suspend user.' : 'Failed to reactivate user.');
+    } catch (error) {
+      showErrorToast(
+        error,
+        payload.status === 'INACTIVE' ? 'Failed to suspend user.' : 'Failed to reactivate user.',
+      );
     }
   };
 
   return (
     <Dialog
-      onOpenChange={(isOpen) => {
-        if (!isOpen)
-          onClose();
+      onOpenChange={isOpen => {
+        if (!isOpen) onClose();
       }}
       open={open}
     >
@@ -184,7 +193,10 @@ export default function AdminUserDetailsDialog({
         </DialogHeader>
 
         {isLoading && (
-          <div role="status" className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+          <div
+            role="status"
+            className="flex items-center justify-center gap-2 py-10 text-muted-foreground"
+          >
             <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
             Loading user details…
           </div>
@@ -213,10 +225,11 @@ export default function AdminUserDetailsDialog({
               onSubmit={form.handleSubmit(handleProfileSave)}
               className="space-y-5"
             >
-              <dl className="
-                grid gap-4
-                sm:grid-cols-2
-              "
+              <dl
+                className="
+                  grid gap-4
+                  sm:grid-cols-2
+                "
               >
                 <EditableDetailField
                   id="admin-user-first-name"
@@ -281,14 +294,24 @@ export default function AdminUserDetailsDialog({
               )}
             </form>
 
-            <section aria-labelledby="profile-edit-history-heading" className="space-y-3 border-t border-border pt-5">
+            <section
+              aria-labelledby="profile-edit-history-heading"
+              className="space-y-3 border-t border-border pt-5"
+            >
               <div>
-                <h3 id="profile-edit-history-heading" className="font-semibold text-foreground">Profile and status history</h3>
-                <p className="text-sm text-muted-foreground">Profile edits and status changes show the admin, time, and event details.</p>
+                <h3 id="profile-edit-history-heading" className="font-semibold text-foreground">
+                  Profile and status history
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Profile edits and status changes show the admin, time, and event details.
+                </p>
               </div>
 
               {isAuditHistoryLoading && (
-                <div role="status" className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                <div
+                  role="status"
+                  className="flex items-center gap-2 py-3 text-sm text-muted-foreground"
+                >
                   <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   Loading user history…
                 </div>
@@ -301,7 +324,9 @@ export default function AdminUserDetailsDialog({
               )}
 
               {!isAuditHistoryLoading && !isAuditHistoryError && auditHistory.length === 0 && (
-                <p className="text-sm text-muted-foreground">No profile edits or status changes have been recorded.</p>
+                <p className="text-sm text-muted-foreground">
+                  No profile edits or status changes have been recorded.
+                </p>
               )}
 
               {!isAuditHistoryLoading && !isAuditHistoryError && auditHistory.length > 0 && (
@@ -309,36 +334,28 @@ export default function AdminUserDetailsDialog({
                   {auditHistory.map(event => (
                     <li key={event.id} className="rounded-md border border-border p-3">
                       <p className="text-sm font-medium text-foreground">
-                        {event.eventType === 'STATUS_CHANGED' ? 'Status changed by' : 'Edited by'}
-                        {' '}
+                        {event.eventType === 'STATUS_CHANGED' ? 'Status changed by' : 'Edited by'}{' '}
                         {formatActorName(event)}
                         {' · '}
                         {formatAuditTimestamp(event.createdAt)}
                       </p>
-                      {event.eventType === 'STATUS_CHANGED'
-                        ? (
-                            <>
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Resulting status:
-                                {' '}
-                                {formatResultingStatus(event.resultingStatus)}
-                              </p>
-                              {event.reason && (
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                  Reason:
-                                  {' '}
-                                  {event.reason}
-                                </p>
-                              )}
-                            </>
-                          )
-                        : (
+                      {event.eventType === 'STATUS_CHANGED' ? (
+                        <>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Resulting status: {formatResultingStatus(event.resultingStatus)}
+                          </p>
+                          {event.reason && (
                             <p className="mt-1 text-sm text-muted-foreground">
-                              Changed fields:
-                              {' '}
-                              {event.changedFields.map(field => AUDIT_FIELD_LABELS[field]).join(', ')}
+                              Reason: {event.reason}
                             </p>
                           )}
+                        </>
+                      ) : (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Changed fields:{' '}
+                          {event.changedFields.map(field => AUDIT_FIELD_LABELS[field]).join(', ')}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ol>
@@ -356,9 +373,7 @@ export default function AdminUserDetailsDialog({
                     Previous page
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    Page
-                    {' '}
-                    {auditPagination.currentPage}
+                    Page {auditPagination.currentPage}
                     {' of '}
                     {auditPagination.lastPage}
                   </span>
@@ -390,10 +405,9 @@ export default function AdminUserDetailsDialog({
       </DialogContent>
       {canUpdateUsers && (
         <Dialog
-          onOpenChange={(isOpen) => {
+          onOpenChange={isOpen => {
             setStatusDialogOpen(isOpen);
-            if (!isOpen)
-              statusForm.reset({ reason: '' });
+            if (!isOpen) statusForm.reset({ reason: '' });
           }}
           open={statusDialogOpen}
         >
@@ -405,7 +419,11 @@ export default function AdminUserDetailsDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <form id="admin-user-status-form" onSubmit={statusForm.handleSubmit(handleStatusChange)} className="space-y-4">
+            <form
+              id="admin-user-status-form"
+              onSubmit={statusForm.handleSubmit(handleStatusChange)}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="admin-user-status-reason">Reason</Label>
                 <Controller
@@ -473,7 +491,11 @@ function EditableDetailField({
           control={control}
           render={({ field }) => <Input {...field} id={id} readOnly={readOnly} />}
         />
-        {error && <p role="alert" className="mt-1 text-sm text-destructive">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-1 text-sm text-destructive">
+            {error}
+          </p>
+        )}
       </dd>
     </div>
   );
@@ -489,8 +511,7 @@ function DetailField({ label, value }: { label: string; value: string }) {
 }
 
 function formatOptionalDate(value: string | null | undefined) {
-  if (!value)
-    return '—';
+  if (!value) return '—';
 
   return formatDateOrValue(value, 'MMM d, yyyy');
 }
@@ -504,9 +525,7 @@ function formatAuditTimestamp(value: string) {
 }
 
 function formatResultingStatus(value: AdminUserAuditEvent['resultingStatus']) {
-  if (value === 'ACTIVE')
-    return 'Active';
-  if (value === 'INACTIVE')
-    return 'Inactive';
+  if (value === 'ACTIVE') return 'Active';
+  if (value === 'INACTIVE') return 'Inactive';
   return '—';
 }

@@ -68,7 +68,8 @@ export interface DeleteAdminTaxSettingErrors {
   };
 }
 
-export type DeleteAdminTaxSettingError = DeleteAdminTaxSettingErrors[keyof DeleteAdminTaxSettingErrors];
+export type DeleteAdminTaxSettingError =
+  DeleteAdminTaxSettingErrors[keyof DeleteAdminTaxSettingErrors];
 
 export interface DeleteAdminTaxSettingResponses {
   /**
@@ -80,4 +81,5 @@ export interface DeleteAdminTaxSettingResponses {
   };
 }
 
-export type DeleteAdminTaxSettingResponse = DeleteAdminTaxSettingResponses[keyof DeleteAdminTaxSettingResponses];
+export type DeleteAdminTaxSettingResponse =
+  DeleteAdminTaxSettingResponses[keyof DeleteAdminTaxSettingResponses];

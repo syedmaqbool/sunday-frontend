@@ -2,7 +2,7 @@ import type { EligibleSellerPayoutItemsResponse } from '@/types/payout.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Payouts from '@/pages/admin/Payouts';
 
 const payoutService = vi.hoisted(() => ({
@@ -44,16 +44,18 @@ function createEligibleResponse(
 
 const eligibleResponse = createEligibleResponse({
   aggregates: { totalAmount: 2450 },
-  data: [{
-    orderId: 'order-12345678',
-    orderItemId: 'order-item-1',
-    sellerId: 'seller-1',
-    amount: 2450,
-    payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
-    sellerFullName: 'Seller One',
-    title: 'Vintage jacket',
-    receivedAt: '2026-09-18T10:30:00.000Z',
-  }],
+  data: [
+    {
+      orderId: 'order-12345678',
+      orderItemId: 'order-item-1',
+      sellerId: 'seller-1',
+      amount: 2450,
+      payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
+      sellerFullName: 'Seller One',
+      title: 'Vintage jacket',
+      receivedAt: '2026-09-18T10:30:00.000Z',
+    },
+  ],
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 1 },
 });
 
@@ -171,7 +173,9 @@ describe('admin payout eligibility page', () => {
   it('waits for a selected period and sends full calendar-day boundaries', async () => {
     renderPage();
 
-    expect(await screen.findByText('Select a period to load payout-eligible items.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Select a period to load payout-eligible items.'),
+    ).toBeInTheDocument();
     expect(payoutService.listEligibleSellerPayoutItems).not.toHaveBeenCalled();
 
     await selectPeriod();
@@ -208,18 +212,26 @@ describe('admin payout eligibility page', () => {
 
     const periodStart = new Date('2026-09-01T00:00:00').toISOString();
     const periodEnd = new Date('2026-09-30T23:59:59.999').toISOString();
-    await waitFor(() => expect(payoutService.createPayoutRun).toHaveBeenCalledWith({
-      periodEnd,
-      periodStart,
-    }));
-    await waitFor(() => expect(payoutService.listEligibleSellerPayoutItems.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(payoutService.createPayoutRun).toHaveBeenCalledWith({
+        periodEnd,
+        periodStart,
+      }),
+    );
+    await waitFor(() =>
+      expect(payoutService.listEligibleSellerPayoutItems.mock.calls.length).toBeGreaterThan(1),
+    );
     await waitFor(() => expect(payoutService.listPayoutRuns.mock.calls.length).toBeGreaterThan(1));
   });
 
   it('shows a loading state while the payout run is being generated', async () => {
-    let resolveRun!: (response: { data: { id: string }; message: string; statusCode: number }) => void;
+    let resolveRun!: (response: {
+      data: { id: string };
+      message: string;
+      statusCode: number;
+    }) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    const pendingRun = new Promise((resolve) => {
+    const pendingRun = new Promise(resolve => {
       resolveRun = resolve;
     });
     payoutService.createPayoutRun.mockReturnValue(pendingRun);
@@ -238,12 +250,18 @@ describe('admin payout eligibility page', () => {
     renderPage();
     await selectPeriod(/No items are eligible for this period/);
 
-    expect(screen.getByText(/buyer receipt confirmation and a posted local accounting snapshot are required/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /buyer receipt confirmation and a posted local accounting snapshot are required/i,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate payout run' })).toBeDisabled();
   });
 
   it('keeps loading and API errors visible', async () => {
-    payoutService.listEligibleSellerPayoutItems.mockRejectedValue(new Error('Eligibility unavailable'));
+    payoutService.listEligibleSellerPayoutItems.mockRejectedValue(
+      new Error('Eligibility unavailable'),
+    );
     renderPage();
     fireEvent.change(await screen.findByLabelText('Period start'), {
       target: { value: '2026-09-01' },
@@ -268,13 +286,16 @@ describe('admin payout eligibility page', () => {
   it('lets an admin record an unpaid seller payout as paid after an external transfer', async () => {
     await openRunDetails();
 
-    expect(screen.getByText(/Record payment only after the external transfer/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Record payment only after the external transfer/i),
+    ).toBeInTheDocument();
     fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
 
-    await waitFor(() => expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledWith(
-      'run-item-1',
-      { status: 'PAID' },
-    ));
+    await waitFor(() =>
+      expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledWith('run-item-1', {
+        status: 'PAID',
+      }),
+    );
   });
 
   it('refreshes the run item to PAID and shows its paid timestamp after recording payment', async () => {
@@ -282,11 +303,13 @@ describe('admin payout eligibility page', () => {
       const isPaid = payoutService.updatePayoutRunItemStatus.mock.calls.length > 0;
       return {
         ...emptyPage,
-        data: [{
-          ...sellerPayoutRunItem,
-          status: isPaid ? 'PAID' : 'UNPAID',
-          paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
-        }],
+        data: [
+          {
+            ...sellerPayoutRunItem,
+            status: isPaid ? 'PAID' : 'UNPAID',
+            paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
+          },
+        ],
       };
     });
     payoutService.updatePayoutRunItemStatus.mockResolvedValue({
@@ -298,17 +321,23 @@ describe('admin payout eligibility page', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
 
-    await waitFor(() => expect(payoutService.listPayoutRunItems.mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() =>
+      expect(payoutService.listPayoutRunItems.mock.calls.length).toBeGreaterThan(1),
+    );
     expect(screen.getByText('Paid')).toBeInTheDocument();
-    expect(screen.getByText('Paid').parentElement).toHaveTextContent(/Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/);
+    expect(screen.getByText('Paid').parentElement).toHaveTextContent(
+      /Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/,
+    );
   });
 
   it('disables repeat payment submission while the request is pending', async () => {
     let resolvePayment!: (response: { data: unknown; message: string; statusCode: number }) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    payoutService.updatePayoutRunItemStatus.mockReturnValue(new Promise((resolve) => {
-      resolvePayment = resolve;
-    }));
+    payoutService.updatePayoutRunItemStatus.mockReturnValue(
+      new Promise(resolve => {
+        resolvePayment = resolve;
+      }),
+    );
     await openRunDetails();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
@@ -349,22 +378,29 @@ describe('admin payout eligibility page', () => {
   it('keeps historical manual payout records and refund reporting available without manual creation', async () => {
     payoutService.listSellerPayouts.mockResolvedValue({
       ...emptyPage,
-      data: [{
-        id: 'payout-1',
-        sellerId: 'seller-history',
-        amount: 1250,
-        method: 'bank_transfer',
-        periodEnd: '2026-08-10',
-        periodStart: '2026-08-01',
-        reference: 'REF-1',
-        sellerFullName: 'Historical Seller',
-        paidAt: '2026-08-12T09:00:00.000Z',
-      }],
+      data: [
+        {
+          id: 'payout-1',
+          sellerId: 'seller-history',
+          amount: 1250,
+          method: 'bank_transfer',
+          periodEnd: '2026-08-10',
+          periodStart: '2026-08-01',
+          reference: 'REF-1',
+          sellerFullName: 'Historical Seller',
+          paidAt: '2026-08-12T09:00:00.000Z',
+        },
+      ],
     });
     renderPage();
 
     fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Payout history' })).toHaveAttribute('aria-selected', 'true'));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Payout history' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
     await waitFor(() => expect(payoutService.listSellerPayouts).toHaveBeenCalled());
     expect(await screen.findByText('Historical Seller')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Record payout' })).not.toBeInTheDocument();

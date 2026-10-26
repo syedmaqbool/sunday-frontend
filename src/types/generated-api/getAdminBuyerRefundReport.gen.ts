@@ -106,7 +106,8 @@ export interface GetAdminBuyerRefundReportErrors {
   };
 }
 
-export type GetAdminBuyerRefundReportError = GetAdminBuyerRefundReportErrors[keyof GetAdminBuyerRefundReportErrors];
+export type GetAdminBuyerRefundReportError =
+  GetAdminBuyerRefundReportErrors[keyof GetAdminBuyerRefundReportErrors];
 
 export interface GetAdminBuyerRefundReportResponses {
   /**
@@ -173,4 +174,5 @@ export interface GetAdminBuyerRefundReportResponses {
   };
 }
 
-export type GetAdminBuyerRefundReportResponse = GetAdminBuyerRefundReportResponses[keyof GetAdminBuyerRefundReportResponses];
+export type GetAdminBuyerRefundReportResponse =
+  GetAdminBuyerRefundReportResponses[keyof GetAdminBuyerRefundReportResponses];

@@ -146,7 +146,8 @@ export interface ReceiveWhatsAppWebhookErrors {
   };
 }
 
-export type ReceiveWhatsAppWebhookError = ReceiveWhatsAppWebhookErrors[keyof ReceiveWhatsAppWebhookErrors];
+export type ReceiveWhatsAppWebhookError =
+  ReceiveWhatsAppWebhookErrors[keyof ReceiveWhatsAppWebhookErrors];
 
 export interface ReceiveWhatsAppWebhookResponses {
   /**
@@ -158,4 +159,5 @@ export interface ReceiveWhatsAppWebhookResponses {
   };
 }
 
-export type ReceiveWhatsAppWebhookResponse = ReceiveWhatsAppWebhookResponses[keyof ReceiveWhatsAppWebhookResponses];
+export type ReceiveWhatsAppWebhookResponse =
+  ReceiveWhatsAppWebhookResponses[keyof ReceiveWhatsAppWebhookResponses];

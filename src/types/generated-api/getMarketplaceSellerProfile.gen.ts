@@ -40,7 +40,8 @@ export interface GetMarketplaceSellerProfileErrors {
   };
 }
 
-export type GetMarketplaceSellerProfileError = GetMarketplaceSellerProfileErrors[keyof GetMarketplaceSellerProfileErrors];
+export type GetMarketplaceSellerProfileError =
+  GetMarketplaceSellerProfileErrors[keyof GetMarketplaceSellerProfileErrors];
 
 export interface GetMarketplaceSellerProfileResponses {
   /**
@@ -82,4 +83,5 @@ export interface GetMarketplaceSellerProfileResponses {
   };
 }
 
-export type GetMarketplaceSellerProfileResponse = GetMarketplaceSellerProfileResponses[keyof GetMarketplaceSellerProfileResponses];
+export type GetMarketplaceSellerProfileResponse =
+  GetMarketplaceSellerProfileResponses[keyof GetMarketplaceSellerProfileResponses];

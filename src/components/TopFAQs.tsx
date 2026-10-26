@@ -24,22 +24,22 @@ function FaqItem({ faq }: { faq: Faq }) {
           )}
         >
           <span>{faq.question}</span>
-          <Plus className="
-            h-5 w-5 shrink-0 text-primary transition-transform duration-300
-            group-data-[state=open]:rotate-45
-          "
+          <Plus
+            className="
+              h-5 w-5 shrink-0 text-primary transition-transform duration-300
+              group-data-[state=open]:rotate-45
+            "
           />
         </AccordionPrimitive.Trigger>
       </AccordionPrimitive.Header>
-      <AccordionPrimitive.Content className="
-        overflow-hidden text-sm text-muted-foreground
-        data-[state=closed]:animate-accordion-up
-        data-[state=open]:animate-accordion-down
-      "
+      <AccordionPrimitive.Content
+        className="
+          overflow-hidden text-sm text-muted-foreground
+          data-[state=closed]:animate-accordion-up
+          data-[state=open]:animate-accordion-down
+        "
       >
-        <div className="whitespace-pre-line pb-5 pr-10 leading-relaxed">
-          {faq.answer}
-        </div>
+        <div className="whitespace-pre-line pb-5 pr-10 leading-relaxed">{faq.answer}</div>
       </AccordionPrimitive.Content>
     </AccordionPrimitive.Item>
   );
@@ -48,8 +48,7 @@ function FaqItem({ faq }: { faq: Faq }) {
 export default function TopFAQs() {
   const { data: faqs = [] } = useQuery(getHelpFaqsOptions());
 
-  if (faqs.length === 0)
-    return null;
+  if (faqs.length === 0) return null;
 
   const sortedFaqs = faqs.toSorted((a, b) => a.sortOrder - b.sortOrder);
 
@@ -59,26 +58,29 @@ export default function TopFAQs() {
   const rightFaqs = topFaqs.slice(5, 10);
 
   return (
-    <section className="
-      container max-w-6xl py-14
-      md:py-20
-    "
+    <section
+      className="
+        container max-w-6xl py-14
+        md:py-20
+      "
     >
       <div className="mb-8 text-center">
-        <h2 className="
-          font-heading text-3xl font-semibold tracking-tight text-foreground
-          md:text-4xl
-        "
+        <h2
+          className="
+            font-heading text-3xl font-semibold tracking-tight text-foreground
+            md:text-4xl
+          "
         >
           Frequently Asked Questions
         </h2>
       </div>
 
       {/* ← Old UI: 2 column grid */}
-      <div className="
-        grid gap-x-12
-        md:grid-cols-2
-      "
+      <div
+        className="
+          grid gap-x-12
+          md:grid-cols-2
+        "
       >
         <AccordionPrimitive.Root collapsible type="single" className="border-t border-border">
           {leftFaqs.map(faq => (
@@ -102,9 +104,7 @@ export default function TopFAQs() {
             hover:underline
           "
         >
-          View all FAQs
-          {' '}
-          <ArrowRight className="h-4 w-4" />
+          View all FAQs <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

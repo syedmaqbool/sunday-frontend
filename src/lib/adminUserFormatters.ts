@@ -1,6 +1,9 @@
 import { format, parseISO } from 'date-fns';
 
-export function joinFirstAndLastName(firstName: string | null | undefined, lastName: string | null | undefined) {
+export function joinFirstAndLastName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+) {
   return [firstName, lastName].filter(Boolean).join(' ').trim();
 }
 

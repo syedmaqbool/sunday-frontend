@@ -75,7 +75,8 @@ export interface ReplaceMyPreferencesErrors {
   };
 }
 
-export type ReplaceMyPreferencesError = ReplaceMyPreferencesErrors[keyof ReplaceMyPreferencesErrors];
+export type ReplaceMyPreferencesError =
+  ReplaceMyPreferencesErrors[keyof ReplaceMyPreferencesErrors];
 
 export interface ReplaceMyPreferencesResponses {
   /**
@@ -102,4 +103,5 @@ export interface ReplaceMyPreferencesResponses {
   };
 }
 
-export type ReplaceMyPreferencesResponse = ReplaceMyPreferencesResponses[keyof ReplaceMyPreferencesResponses];
+export type ReplaceMyPreferencesResponse =
+  ReplaceMyPreferencesResponses[keyof ReplaceMyPreferencesResponses];

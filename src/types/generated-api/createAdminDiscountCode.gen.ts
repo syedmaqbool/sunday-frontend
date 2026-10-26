@@ -103,7 +103,8 @@ export interface CreateAdminDiscountCodeErrors {
   };
 }
 
-export type CreateAdminDiscountCodeError = CreateAdminDiscountCodeErrors[keyof CreateAdminDiscountCodeErrors];
+export type CreateAdminDiscountCodeError =
+  CreateAdminDiscountCodeErrors[keyof CreateAdminDiscountCodeErrors];
 
 export interface CreateAdminDiscountCodeResponses {
   /**
@@ -128,4 +129,5 @@ export interface CreateAdminDiscountCodeResponses {
   };
 }
 
-export type CreateAdminDiscountCodeResponse = CreateAdminDiscountCodeResponses[keyof CreateAdminDiscountCodeResponses];
+export type CreateAdminDiscountCodeResponse =
+  CreateAdminDiscountCodeResponses[keyof CreateAdminDiscountCodeResponses];

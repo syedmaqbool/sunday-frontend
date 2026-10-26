@@ -41,22 +41,19 @@ function cartStorageKey(userId?: string) {
 function readStoredCart(key: string): CartItem[] {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw)
-      return [];
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed))
-      return [];
+    if (!Array.isArray(parsed)) return [];
 
     return parsed.flatMap((storedItem): CartItem[] => {
-      if (!storedItem || typeof storedItem !== 'object' || !('listing' in storedItem))
-        return [];
+      if (!storedItem || typeof storedItem !== 'object' || !('listing' in storedItem)) return [];
 
       const { listing } = storedItem;
       if (
-        !listing
-        || typeof listing !== 'object'
-        || !('id' in listing)
-        || typeof listing.id !== 'string'
+        !listing ||
+        typeof listing !== 'object' ||
+        !('id' in listing) ||
+        typeof listing.id !== 'string'
       ) {
         return [];
       }
@@ -64,8 +61,7 @@ function readStoredCart(key: string): CartItem[] {
       // Older carts stored quantities, but each marketplace listing is unique.
       return [{ listing: listing as MarketplaceListing }];
     });
-  }
-  catch {
+  } catch {
     return [];
   }
 }
@@ -73,8 +69,7 @@ function readStoredCart(key: string): CartItem[] {
 function writeStoredCart(key: string, items: CartItem[]) {
   try {
     localStorage.setItem(key, JSON.stringify(items));
-  }
-  catch {
+  } catch {
     // storage unavailable — cart stays in memory only
   }
 }
@@ -87,12 +82,9 @@ function mergeCarts(base: CartItem[], extra: CartItem[]): CartItem[] {
 // A listing is buyable right now only if it is APPROVED, or RESERVED for the
 // current user. SOLD, PENDING, REJECTED, NEEDS_REVISION and 404 are all pruned.
 function isBuyable(listing: MarketplaceListing | null): listing is MarketplaceListing {
-  if (!listing)
-    return false;
-  if (listing.status === 'APPROVED')
-    return true;
-  if (listing.status === 'RESERVED')
-    return listing.reservedForCurrentUser === true;
+  if (!listing) return false;
+  if (listing.status === 'APPROVED') return true;
+  if (listing.status === 'RESERVED') return listing.reservedForCurrentUser === true;
   return false;
 }
 
@@ -104,11 +96,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const activeKeyReference = useRef(cartStorageKey(userId));
 
   const validateStoredCart = useCallback(async (current: CartItem[], key: string) => {
-    if (current.length === 0)
-      return;
+    if (current.length === 0) return;
 
     const checked = await Promise.all(
-      current.map(async (item) => {
+      current.map(async item => {
         const fresh = await fetchMarketplaceListing(item.listing.id);
         return { fresh, item };
       }),
@@ -125,18 +116,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       // Preserve a negotiated (reserved-for-me) price; refresh everything else.
       const price = (fresh.reservedForCurrentUser ? item.listing : fresh).price;
-      if (price !== item.listing.price || fresh.title !== item.listing.title)
-        refreshed = true;
+      if (price !== item.listing.price || fresh.title !== item.listing.title) refreshed = true;
       next.push({ listing: { ...fresh, price } });
     }
 
-    if (removedCount === 0 && !refreshed)
-      return;
+    if (removedCount === 0 && !refreshed) return;
     // Bail if the user switched carts while the checks were in flight.
-    if (activeKeyReference.current !== key)
-      return;
+    if (activeKeyReference.current !== key) return;
 
-    setItems((live) => {
+    setItems(live => {
       const currentIds = new Set(current.map(item => item.listing.id));
       const addedDuringValidation = live.filter(item => !currentIds.has(item.listing.id));
       return [...next, ...addedDuringValidation];
@@ -148,8 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? '1 item in your cart is no longer available and was removed.'
           : `${removedCount} items in your cart are no longer available and were removed.`,
       );
-    }
-    else if (refreshed) {
+    } else if (refreshed) {
       toast.info('Your cart was updated with the latest prices.');
     }
   }, []);
@@ -177,8 +164,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Persist on every change to whichever key we hydrated from.
   useEffect(() => {
-    if (!isHydrated)
-      return;
+    if (!isHydrated) return;
     writeStoredCart(activeKeyReference.current, items);
   }, [items, isHydrated]);
 
@@ -187,18 +173,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       toast.error('This item is currently reserved for another buyer.');
       return;
     }
-    const effectivePrice
-      = typeof priceOverride === 'number' && priceOverride > 0
-        ? priceOverride
-        : listing.price;
-    const finalListing: MarketplaceListing
-      = effectivePrice === listing.price
-        ? listing
-        : { ...listing, price: effectivePrice };
-    setItems((previous) => {
+    const effectivePrice =
+      typeof priceOverride === 'number' && priceOverride > 0 ? priceOverride : listing.price;
+    const finalListing: MarketplaceListing =
+      effectivePrice === listing.price ? listing : { ...listing, price: effectivePrice };
+    setItems(previous => {
       const existing = previous.find(index => index.listing.id === listing.id);
-      if (existing)
-        return previous; // no duplicates for unique items
+      if (existing) return previous; // no duplicates for unique items
       trackEvent('add_to_cart', {
         currency: 'PKR',
         items: [

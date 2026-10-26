@@ -132,4 +132,5 @@ export interface ResolveAdminReportResponses {
   };
 }
 
-export type ResolveAdminReportResponse = ResolveAdminReportResponses[keyof ResolveAdminReportResponses];
+export type ResolveAdminReportResponse =
+  ResolveAdminReportResponses[keyof ResolveAdminReportResponses];

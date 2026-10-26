@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vite-plus/test';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const originalInnerWidth = innerWidth;

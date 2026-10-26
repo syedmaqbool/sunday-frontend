@@ -1,7 +1,4 @@
-import type {
-  UpdateBankDetailsPayload,
-  UpdateProfilePayload,
-} from '@/types/profile.type';
+import type { UpdateBankDetailsPayload, UpdateProfilePayload } from '@/types/profile.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userPreferencesQueryKey } from '@/queries/userPreferences.query';
 import {
@@ -42,10 +39,8 @@ export function useUpdateProfileMutation() {
 export function useUpdateBankDetailsMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: UpdateBankDetailsPayload) =>
-      updateMyBankDetails(payload),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: myProfileQueryKey.all() }),
+    mutationFn: (payload: UpdateBankDetailsPayload) => updateMyBankDetails(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: myProfileQueryKey.all() }),
   });
 }
 

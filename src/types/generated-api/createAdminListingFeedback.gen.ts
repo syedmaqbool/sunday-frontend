@@ -126,7 +126,8 @@ export interface CreateAdminListingFeedbackErrors {
   };
 }
 
-export type CreateAdminListingFeedbackError = CreateAdminListingFeedbackErrors[keyof CreateAdminListingFeedbackErrors];
+export type CreateAdminListingFeedbackError =
+  CreateAdminListingFeedbackErrors[keyof CreateAdminListingFeedbackErrors];
 
 export interface CreateAdminListingFeedbackResponses {
   /**
@@ -146,4 +147,5 @@ export interface CreateAdminListingFeedbackResponses {
   };
 }
 
-export type CreateAdminListingFeedbackResponse = CreateAdminListingFeedbackResponses[keyof CreateAdminListingFeedbackResponses];
+export type CreateAdminListingFeedbackResponse =
+  CreateAdminListingFeedbackResponses[keyof CreateAdminListingFeedbackResponses];

@@ -100,7 +100,8 @@ export interface UpdateAdminTaxSettingErrors {
   };
 }
 
-export type UpdateAdminTaxSettingError = UpdateAdminTaxSettingErrors[keyof UpdateAdminTaxSettingErrors];
+export type UpdateAdminTaxSettingError =
+  UpdateAdminTaxSettingErrors[keyof UpdateAdminTaxSettingErrors];
 
 export interface UpdateAdminTaxSettingResponses {
   /**
@@ -120,4 +121,5 @@ export interface UpdateAdminTaxSettingResponses {
   };
 }
 
-export type UpdateAdminTaxSettingResponse = UpdateAdminTaxSettingResponses[keyof UpdateAdminTaxSettingResponses];
+export type UpdateAdminTaxSettingResponse =
+  UpdateAdminTaxSettingResponses[keyof UpdateAdminTaxSettingResponses];

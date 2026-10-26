@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Messages from '@/pages/Messages';
 
 const requestState = vi.hoisted(() => ({
@@ -39,8 +39,13 @@ vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => null } }
 
 function renderMessages() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={['/messages?conversation=conversation-1']}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={['/messages?conversation=conversation-1']}
+      >
         <Routes>
           <Route element={<Messages />} path="/messages" />
         </Routes>
@@ -50,7 +55,14 @@ function renderMessages() {
 }
 
 function attachment(id: string, filename: string, type: 'IMAGE' | 'VIDEO', url: string) {
-  return { id, filename, mimetype: type === 'IMAGE' ? 'image/jpeg' : 'video/mp4', size: 1024, type, url };
+  return {
+    id,
+    filename,
+    mimetype: type === 'IMAGE' ? 'image/jpeg' : 'video/mp4',
+    size: 1024,
+    type,
+    url,
+  };
 }
 
 function message(id: string, content: string, attachments: ReturnType<typeof attachment>[]) {
@@ -72,9 +84,10 @@ describe('messages attachment history', () => {
   beforeEach(() => {
     requestState.messages = [];
     requestState.get.mockReset().mockImplementation((path: string) => ({
-      json: async () => successResponse(
-        path === '/api/v1/me/conversations' ? [activeConversation] : requestState.messages,
-      ),
+      json: async () =>
+        successResponse(
+          path === '/api/v1/me/conversations' ? [activeConversation] : requestState.messages,
+        ),
     }));
     requestState.post.mockReset().mockImplementation(() => ({
       json: async () => successResponse(null),
@@ -86,10 +99,22 @@ describe('messages attachment history', () => {
   it('renders ordered history media and refreshes expired private URLs', async () => {
     const originalPhotoUrl = 'https://private.example/photo-expired';
     const photo = attachment('attachment-photo', 'item-photo.jpg', 'IMAGE', originalPhotoUrl);
-    const video = attachment('attachment-video', 'item-video.mp4', 'VIDEO', 'https://private.example/video');
+    const video = attachment(
+      'attachment-video',
+      'item-video.mp4',
+      'VIDEO',
+      'https://private.example/video',
+    );
     requestState.messages = [
       message('message-captioned', 'Caption on image', [photo, video]),
-      message('message-media-only', '', [attachment('attachment-only', 'another-photo.jpg', 'IMAGE', 'https://private.example/another-photo')]),
+      message('message-media-only', '', [
+        attachment(
+          'attachment-only',
+          'another-photo.jpg',
+          'IMAGE',
+          'https://private.example/another-photo',
+        ),
+      ]),
     ];
 
     const { container } = renderMessages();
@@ -102,13 +127,19 @@ describe('messages attachment history', () => {
     const videoPlayer = screen.getByLabelText('item-video.mp4');
     expect(videoPlayer).toHaveAttribute('controls');
 
-    const captionedMessage = container.querySelector<HTMLDivElement>('#conversation-message-message-captioned');
+    const captionedMessage = container.querySelector<HTMLDivElement>(
+      '#conversation-message-message-captioned',
+    );
     expect(within(captionedMessage!).getByText('Caption on image')).toBeInTheDocument();
-    expect([...captionedMessage!.querySelectorAll('img[alt], video[aria-label]')].map(media => (
-      media.getAttribute('alt') ?? media.getAttribute('aria-label')
-    ))).toEqual(['item-photo.jpg', 'item-video.mp4']);
+    expect(
+      [...captionedMessage!.querySelectorAll('img[alt], video[aria-label]')].map(
+        media => media.getAttribute('alt') ?? media.getAttribute('aria-label'),
+      ),
+    ).toEqual(['item-photo.jpg', 'item-video.mp4']);
 
-    const mediaOnlyMessage = container.querySelector<HTMLDivElement>('#conversation-message-message-media-only');
+    const mediaOnlyMessage = container.querySelector<HTMLDivElement>(
+      '#conversation-message-message-media-only',
+    );
     expect(within(mediaOnlyMessage!).queryByText('', { selector: 'p' })).not.toBeInTheDocument();
 
     fireEvent.error(photoImage);
@@ -123,15 +154,28 @@ describe('messages attachment history', () => {
         attachment('attachment-video', 'item-video.mp4', 'VIDEO', refreshedVideoUrl),
       ]),
       message('message-media-only', '', [
-        attachment('attachment-only', 'another-photo.jpg', 'IMAGE', 'https://private.example/another-photo'),
+        attachment(
+          'attachment-only',
+          'another-photo.jpg',
+          'IMAGE',
+          'https://private.example/another-photo',
+        ),
       ]),
     ];
     fireEvent.click(screen.getAllByRole('button', { name: 'Reload conversation' })[0]);
 
-    expect(await screen.findByRole('img', { name: 'item-photo.jpg' })).toHaveAttribute('src', refreshedPhotoUrl);
-    expect(await screen.findByLabelText('item-video.mp4')).toHaveAttribute('src', refreshedVideoUrl);
-    await waitFor(() => expect(
-      requestState.get.mock.calls.filter(([path]) => path.endsWith('/messages')),
-    ).toHaveLength(2));
+    expect(await screen.findByRole('img', { name: 'item-photo.jpg' })).toHaveAttribute(
+      'src',
+      refreshedPhotoUrl,
+    );
+    expect(await screen.findByLabelText('item-video.mp4')).toHaveAttribute(
+      'src',
+      refreshedVideoUrl,
+    );
+    await waitFor(() =>
+      expect(
+        requestState.get.mock.calls.filter(([path]) => path.endsWith('/messages')),
+      ).toHaveLength(2),
+    );
   });
 });

@@ -43,7 +43,8 @@ export interface GetConversationAttachmentErrors {
   };
 }
 
-export type GetConversationAttachmentError = GetConversationAttachmentErrors[keyof GetConversationAttachmentErrors];
+export type GetConversationAttachmentError =
+  GetConversationAttachmentErrors[keyof GetConversationAttachmentErrors];
 
 export interface GetConversationAttachmentResponses {
   /**
@@ -52,4 +53,5 @@ export interface GetConversationAttachmentResponses {
   200: Blob | File;
 }
 
-export type GetConversationAttachmentResponse = GetConversationAttachmentResponses[keyof GetConversationAttachmentResponses];
+export type GetConversationAttachmentResponse =
+  GetConversationAttachmentResponses[keyof GetConversationAttachmentResponses];

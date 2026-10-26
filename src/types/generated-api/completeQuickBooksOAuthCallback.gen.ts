@@ -72,4 +72,5 @@ export interface CompleteQuickBooksOAuthCallbackErrors {
   };
 }
 
-export type CompleteQuickBooksOAuthCallbackError = CompleteQuickBooksOAuthCallbackErrors[keyof CompleteQuickBooksOAuthCallbackErrors];
+export type CompleteQuickBooksOAuthCallbackError =
+  CompleteQuickBooksOAuthCallbackErrors[keyof CompleteQuickBooksOAuthCallbackErrors];

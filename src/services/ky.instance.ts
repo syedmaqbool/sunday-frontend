@@ -36,15 +36,14 @@ async function runRefresh(): Promise<string | null> {
     const body = await refresh();
     tokenStorage.set(body.data.accessToken, body.data.refreshToken);
     return body.data.accessToken;
-  }
-  catch {
+  } catch {
     return null;
   }
 }
 
 async function attemptRefresh(): Promise<string | null> {
   if (refreshState.isRefreshing) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       refreshState.waitingQueue.push(resolve);
     });
   }

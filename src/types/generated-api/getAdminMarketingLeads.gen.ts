@@ -116,7 +116,8 @@ export interface GetAdminMarketingLeadsErrors {
   };
 }
 
-export type GetAdminMarketingLeadsError = GetAdminMarketingLeadsErrors[keyof GetAdminMarketingLeadsErrors];
+export type GetAdminMarketingLeadsError =
+  GetAdminMarketingLeadsErrors[keyof GetAdminMarketingLeadsErrors];
 
 export interface GetAdminMarketingLeadsResponses {
   /**
@@ -166,4 +167,5 @@ export interface GetAdminMarketingLeadsResponses {
   };
 }
 
-export type GetAdminMarketingLeadsResponse = GetAdminMarketingLeadsResponses[keyof GetAdminMarketingLeadsResponses];
+export type GetAdminMarketingLeadsResponse =
+  GetAdminMarketingLeadsResponses[keyof GetAdminMarketingLeadsResponses];

@@ -19,13 +19,9 @@ export function getHeroImageQueryOptions() {
       try {
         const response = await getHeroImage();
         return response.data.value;
-      }
-      catch (error: any) {
+      } catch (error: any) {
         // 404 = setting not created yet, treat as empty
-        if (
-          error.message?.includes('404')
-          || error.message?.toLowerCase().includes('not found')
-        ) {
+        if (error.message?.includes('404') || error.message?.toLowerCase().includes('not found')) {
           return null;
         }
         throw error;
@@ -41,8 +37,7 @@ export function getPublicHeroImageOptions() {
       try {
         const response = await getPublicHeroImage();
         return response.data.value;
-      }
-      catch {
+      } catch {
         return null;
       }
     },

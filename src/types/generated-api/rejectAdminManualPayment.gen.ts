@@ -154,7 +154,8 @@ export interface RejectAdminManualPaymentErrors {
   };
 }
 
-export type RejectAdminManualPaymentError = RejectAdminManualPaymentErrors[keyof RejectAdminManualPaymentErrors];
+export type RejectAdminManualPaymentError =
+  RejectAdminManualPaymentErrors[keyof RejectAdminManualPaymentErrors];
 
 export interface RejectAdminManualPaymentResponses {
   /**
@@ -179,4 +180,5 @@ export interface RejectAdminManualPaymentResponses {
   };
 }
 
-export type RejectAdminManualPaymentResponse = RejectAdminManualPaymentResponses[keyof RejectAdminManualPaymentResponses];
+export type RejectAdminManualPaymentResponse =
+  RejectAdminManualPaymentResponses[keyof RejectAdminManualPaymentResponses];

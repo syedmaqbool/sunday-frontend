@@ -124,7 +124,8 @@ export interface DeleteAdminClothingTypeErrors {
   };
 }
 
-export type DeleteAdminClothingTypeError = DeleteAdminClothingTypeErrors[keyof DeleteAdminClothingTypeErrors];
+export type DeleteAdminClothingTypeError =
+  DeleteAdminClothingTypeErrors[keyof DeleteAdminClothingTypeErrors];
 
 export interface DeleteAdminClothingTypeResponses {
   /**
@@ -136,4 +137,5 @@ export interface DeleteAdminClothingTypeResponses {
   };
 }
 
-export type DeleteAdminClothingTypeResponse = DeleteAdminClothingTypeResponses[keyof DeleteAdminClothingTypeResponses];
+export type DeleteAdminClothingTypeResponse =
+  DeleteAdminClothingTypeResponses[keyof DeleteAdminClothingTypeResponses];

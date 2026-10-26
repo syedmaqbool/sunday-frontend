@@ -126,7 +126,8 @@ export interface RequestAdminBoostPaymentResubmissionErrors {
   };
 }
 
-export type RequestAdminBoostPaymentResubmissionError = RequestAdminBoostPaymentResubmissionErrors[keyof RequestAdminBoostPaymentResubmissionErrors];
+export type RequestAdminBoostPaymentResubmissionError =
+  RequestAdminBoostPaymentResubmissionErrors[keyof RequestAdminBoostPaymentResubmissionErrors];
 
 export interface RequestAdminBoostPaymentResubmissionResponses {
   /**
@@ -152,7 +153,13 @@ export interface RequestAdminBoostPaymentResubmissionResponses {
         refundCompletedById: string | null;
         sellerId: string;
         amount: number;
-        status: 'APPROVED' | 'PENDING_REVIEW' | 'REFUND_REQUIRED' | 'REFUNDED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+        status:
+          | 'APPROVED'
+          | 'PENDING_REVIEW'
+          | 'REFUND_REQUIRED'
+          | 'REFUNDED'
+          | 'REJECTED'
+          | 'RESUBMISSION_REQUESTED';
         refundCompletedAt: string | null;
         createdAt: string;
         updatedAt: string;
@@ -164,4 +171,5 @@ export interface RequestAdminBoostPaymentResubmissionResponses {
   };
 }
 
-export type RequestAdminBoostPaymentResubmissionResponse = RequestAdminBoostPaymentResubmissionResponses[keyof RequestAdminBoostPaymentResubmissionResponses];
+export type RequestAdminBoostPaymentResubmissionResponse =
+  RequestAdminBoostPaymentResubmissionResponses[keyof RequestAdminBoostPaymentResubmissionResponses];

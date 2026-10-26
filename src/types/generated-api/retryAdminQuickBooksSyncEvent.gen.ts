@@ -124,7 +124,8 @@ export interface RetryAdminQuickBooksSyncEventErrors {
   };
 }
 
-export type RetryAdminQuickBooksSyncEventError = RetryAdminQuickBooksSyncEventErrors[keyof RetryAdminQuickBooksSyncEventErrors];
+export type RetryAdminQuickBooksSyncEventError =
+  RetryAdminQuickBooksSyncEventErrors[keyof RetryAdminQuickBooksSyncEventErrors];
 
 export interface RetryAdminQuickBooksSyncEventResponses {
   /**
@@ -136,4 +137,5 @@ export interface RetryAdminQuickBooksSyncEventResponses {
   };
 }
 
-export type RetryAdminQuickBooksSyncEventResponse = RetryAdminQuickBooksSyncEventResponses[keyof RetryAdminQuickBooksSyncEventResponses];
+export type RetryAdminQuickBooksSyncEventResponse =
+  RetryAdminQuickBooksSyncEventResponses[keyof RetryAdminQuickBooksSyncEventResponses];

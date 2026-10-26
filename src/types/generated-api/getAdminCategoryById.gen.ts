@@ -68,7 +68,8 @@ export interface GetAdminCategoryByIdErrors {
   };
 }
 
-export type GetAdminCategoryByIdError = GetAdminCategoryByIdErrors[keyof GetAdminCategoryByIdErrors];
+export type GetAdminCategoryByIdError =
+  GetAdminCategoryByIdErrors[keyof GetAdminCategoryByIdErrors];
 
 export interface GetAdminCategoryByIdResponses {
   /**
@@ -89,4 +90,5 @@ export interface GetAdminCategoryByIdResponses {
   };
 }
 
-export type GetAdminCategoryByIdResponse = GetAdminCategoryByIdResponses[keyof GetAdminCategoryByIdResponses];
+export type GetAdminCategoryByIdResponse =
+  GetAdminCategoryByIdResponses[keyof GetAdminCategoryByIdResponses];

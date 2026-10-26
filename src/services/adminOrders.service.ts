@@ -10,9 +10,7 @@ import type { CancelAdminOrderResponse } from '@/types/generated-api';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
-export function listAdminOrders(
-  parameters: AdminOrderListParameters = {},
-) {
+export function listAdminOrders(parameters: AdminOrderListParameters = {}) {
   return authInstance
     .get('/api/v1/admin/orders', {
       searchParams: parameters as Record<string, boolean | number | string | undefined>,
@@ -21,9 +19,7 @@ export function listAdminOrders(
 }
 
 export function getAdminOrder(orderId: string) {
-  return authInstance
-    .get(`/api/v1/admin/orders/${orderId}`)
-    .json<Response<AdminOrderDetail>>();
+  return authInstance.get(`/api/v1/admin/orders/${orderId}`).json<Response<AdminOrderDetail>>();
 }
 
 export function cancelAdminOrder(orderId: string) {
@@ -38,10 +34,7 @@ export function approveAdminManualPayment(orderId: string) {
     .json<Response<AdminOrder['manualPaymentSubmissions'][number]>>();
 }
 
-export function rejectAdminManualPayment(
-  orderId: string,
-  payload: ManualPaymentReviewPayload,
-) {
+export function rejectAdminManualPayment(orderId: string, payload: ManualPaymentReviewPayload) {
   return authInstance
     .post(`/api/v1/admin/orders/${orderId}/manual-payment/reject`, { json: payload })
     .json<Response<AdminOrder['manualPaymentSubmissions'][number]>>();
@@ -57,14 +50,10 @@ export function requestAdminManualPaymentResubmission(
 }
 
 export function getPaymentProofFile(fileId: string) {
-  return authInstance
-    .get(`/api/v1/payment-proof-files/${fileId}`)
-    .blob();
+  return authInstance.get(`/api/v1/payment-proof-files/${fileId}`).blob();
 }
 
-export function listReservedListings(
-  parameters: ReservedListingParameters = {},
-) {
+export function listReservedListings(parameters: ReservedListingParameters = {}) {
   return authInstance
     .get('/api/v1/admin/orders/reserved-listings', { searchParams: parameters })
     .json<PaginatedResponse<ReservedListing>>();

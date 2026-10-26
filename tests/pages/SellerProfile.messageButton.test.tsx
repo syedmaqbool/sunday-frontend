@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { HTTPError } from 'ky';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import SellerProfile from '@/pages/SellerProfile';
 
 const { profileState, startConversationMutation, toastMock, userState } = vi.hoisted(() => ({
@@ -18,28 +18,32 @@ vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/components/ListingCard', () => ({ default: () => null }));
 vi.mock('@/components/ReviewsList', () => ({ ReviewsList: () => null }));
 vi.mock('@/queries/marketplace.query', () => ({
-  getSellerListingsOptions: () => queryOptions({ queryFn: async () => [], queryKey: ['seller-listings'] }),
-  getSellerProfileOptions: () => queryOptions({
-    queryFn: async () => ({
-      id: 'seller-1',
-      userId: 'seller-1',
-      avatarUrl: null,
-      bio: '',
-      canReceiveMessages: profileState.canReceiveMessages,
-      fullName: 'Seller',
-      image: null,
-      location: '',
-      phone: '',
-      createdAt: '2026-01-01T00:00:00.000Z',
+  getSellerListingsOptions: () =>
+    queryOptions({ queryFn: async () => [], queryKey: ['seller-listings'] }),
+  getSellerProfileOptions: () =>
+    queryOptions({
+      queryFn: async () => ({
+        id: 'seller-1',
+        userId: 'seller-1',
+        avatarUrl: null,
+        bio: '',
+        canReceiveMessages: profileState.canReceiveMessages,
+        fullName: 'Seller',
+        image: null,
+        location: '',
+        phone: '',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+      queryKey: ['seller-profile'],
     }),
-    queryKey: ['seller-profile'],
-  }),
 }));
 vi.mock('@/hooks/useSellerRating', () => ({
-  getSellerRatingOptions: () => queryOptions({ queryFn: async () => null, queryKey: ['seller-rating'] }),
+  getSellerRatingOptions: () =>
+    queryOptions({ queryFn: async () => null, queryKey: ['seller-rating'] }),
 }));
 vi.mock('@/queries/review.query', () => ({
-  getUserReviewsOptions: () => queryOptions({ queryFn: async () => ({ data: [] }), queryKey: ['seller-reviews'] }),
+  getUserReviewsOptions: () =>
+    queryOptions({ queryFn: async () => ({ data: [] }), queryKey: ['seller-reviews'] }),
 }));
 vi.mock('@/queries/conversation.query', () => ({
   useStartConversationMutation: () => startConversationMutation,
@@ -53,7 +57,9 @@ function LocationObserver() {
 
 function renderSellerProfile(initialEntry = '/seller/seller-1') {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
       <MemoryRouter initialEntries={[initialEntry]}>
         <LocationObserver />
         <Routes>
@@ -102,7 +108,9 @@ describe('message a seller from their profile', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Message seller' }));
 
     expect(await screen.findByText('Sign in')).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveTextContent('/auth?returnTo=%2Fseller%2Fseller-1%3Ftab%3Dreviews');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/auth?returnTo=%2Fseller%2Fseller-1%3Ftab%3Dreviews',
+    );
   });
 
   it('sends a trimmed direct message and opens the returned conversation', async () => {
@@ -118,12 +126,16 @@ describe('message a seller from their profile', () => {
     await waitFor(() => expect(sendButton).toBeEnabled());
     fireEvent.click(sendButton);
 
-    await waitFor(() => expect(startConversationMutation.mutate).toHaveBeenCalledWith(
-      { recipientUserId: 'seller-1', content: 'Hello seller' },
-      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
-    ));
+    await waitFor(() =>
+      expect(startConversationMutation.mutate).toHaveBeenCalledWith(
+        { recipientUserId: 'seller-1', content: 'Hello seller' },
+        expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
+      ),
+    );
     expect(await screen.findByText('Messages')).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveTextContent('/messages?conversation=conversation-42');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/messages?conversation=conversation-42',
+    );
   });
 
   it('keeps the draft after the daily new-conversation limit is reached', async () => {
@@ -141,15 +153,21 @@ describe('message a seller from their profile', () => {
     renderSellerProfile();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Message seller' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Your message' }), { target: { value: 'I have a question' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your message' }), {
+      target: { value: 'I have a question' },
+    });
     const sendButton = screen.getByRole('button', { name: 'Send message' });
     await waitFor(() => expect(sendButton).toBeEnabled());
     fireEvent.click(sendButton);
 
-    expect(await screen.findByRole('textbox', { name: 'Your message' })).toHaveValue('I have a question');
+    expect(await screen.findByRole('textbox', { name: 'Your message' })).toHaveValue(
+      'I have a question',
+    );
     expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
     expect(toastMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'You\'ve reached today\'s limit for new conversations. Try again tomorrow.' }),
+      expect.objectContaining({
+        message: "You've reached today's limit for new conversations. Try again tomorrow.",
+      }),
       'Failed to send message',
     );
   });

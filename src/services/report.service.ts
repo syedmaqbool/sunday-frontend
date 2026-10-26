@@ -8,14 +8,10 @@ import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function createReport(payload: CreateReportPayload) {
-  return authInstance
-    .post('/api/v1/reports', { json: payload })
-    .json<Response<AdminReport>>();
+  return authInstance.post('/api/v1/reports', { json: payload }).json<Response<AdminReport>>();
 }
 
-export function listAdminReports(
-  parameters: AdminReportParameters = {},
-) {
+export function listAdminReports(parameters: AdminReportParameters = {}) {
   return authInstance
     .get('/api/v1/admin/reports', {
       searchParams: {

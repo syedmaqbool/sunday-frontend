@@ -76,7 +76,8 @@ export interface GetAdminQuickBooksSellerVendorMappingsErrors {
   };
 }
 
-export type GetAdminQuickBooksSellerVendorMappingsError = GetAdminQuickBooksSellerVendorMappingsErrors[keyof GetAdminQuickBooksSellerVendorMappingsErrors];
+export type GetAdminQuickBooksSellerVendorMappingsError =
+  GetAdminQuickBooksSellerVendorMappingsErrors[keyof GetAdminQuickBooksSellerVendorMappingsErrors];
 
 export interface GetAdminQuickBooksSellerVendorMappingsResponses {
   /**
@@ -132,4 +133,5 @@ export interface GetAdminQuickBooksSellerVendorMappingsResponses {
   };
 }
 
-export type GetAdminQuickBooksSellerVendorMappingsResponse = GetAdminQuickBooksSellerVendorMappingsResponses[keyof GetAdminQuickBooksSellerVendorMappingsResponses];
+export type GetAdminQuickBooksSellerVendorMappingsResponse =
+  GetAdminQuickBooksSellerVendorMappingsResponses[keyof GetAdminQuickBooksSellerVendorMappingsResponses];

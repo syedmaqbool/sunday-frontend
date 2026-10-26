@@ -126,7 +126,8 @@ export interface WarnAdminFlaggedBuyerErrors {
   };
 }
 
-export type WarnAdminFlaggedBuyerError = WarnAdminFlaggedBuyerErrors[keyof WarnAdminFlaggedBuyerErrors];
+export type WarnAdminFlaggedBuyerError =
+  WarnAdminFlaggedBuyerErrors[keyof WarnAdminFlaggedBuyerErrors];
 
 export interface WarnAdminFlaggedBuyerResponses {
   /**
@@ -138,4 +139,5 @@ export interface WarnAdminFlaggedBuyerResponses {
   };
 }
 
-export type WarnAdminFlaggedBuyerResponse = WarnAdminFlaggedBuyerResponses[keyof WarnAdminFlaggedBuyerResponses];
+export type WarnAdminFlaggedBuyerResponse =
+  WarnAdminFlaggedBuyerResponses[keyof WarnAdminFlaggedBuyerResponses];

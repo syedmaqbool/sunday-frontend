@@ -105,7 +105,8 @@ export interface GetAdminSellerCouponRedemptionsErrors {
   };
 }
 
-export type GetAdminSellerCouponRedemptionsError = GetAdminSellerCouponRedemptionsErrors[keyof GetAdminSellerCouponRedemptionsErrors];
+export type GetAdminSellerCouponRedemptionsError =
+  GetAdminSellerCouponRedemptionsErrors[keyof GetAdminSellerCouponRedemptionsErrors];
 
 export interface GetAdminSellerCouponRedemptionsResponses {
   /**
@@ -157,4 +158,5 @@ export interface GetAdminSellerCouponRedemptionsResponses {
   };
 }
 
-export type GetAdminSellerCouponRedemptionsResponse = GetAdminSellerCouponRedemptionsResponses[keyof GetAdminSellerCouponRedemptionsResponses];
+export type GetAdminSellerCouponRedemptionsResponse =
+  GetAdminSellerCouponRedemptionsResponses[keyof GetAdminSellerCouponRedemptionsResponses];

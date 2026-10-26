@@ -18,7 +18,8 @@ import {
 export const sellerCouponsQueryKey = {
   adminUsers: () => ['admin-users-list'] as const,
   all: () => ['seller-coupons'] as const,
-  list: (query: GetAdminSellerCouponsData['query']) => [...sellerCouponsQueryKey.all(), 'list', query] as const,
+  list: (query: GetAdminSellerCouponsData['query']) =>
+    [...sellerCouponsQueryKey.all(), 'list', query] as const,
   sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
 };
 
@@ -38,10 +39,7 @@ export function getAdminUsersListOptions() {
   });
 }
 
-export function getAdminSellerListingsOptions(
-  sellerId?: string,
-  enabled = false,
-) {
+export function getAdminSellerListingsOptions(sellerId?: string, enabled = false) {
   return queryOptions({
     enabled,
     queryFn: () => {
@@ -64,8 +62,7 @@ export function useCreateSellerCouponMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateSellerCouponPayload) =>
-      createSellerCoupon(payload),
+    mutationFn: (payload: CreateSellerCouponPayload) => createSellerCoupon(payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -79,13 +76,8 @@ export function useUpdateSellerCouponMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateSellerCouponPayload;
-    }) => updateSellerCoupon(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateSellerCouponPayload }) =>
+      updateSellerCoupon(id, payload),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

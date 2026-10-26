@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import QuickBooksMappings from '@/components/admin/quickbooks/QuickBooksMappings';
 
 const quickBooksService = vi.hoisted(() => ({
@@ -8,7 +8,7 @@ const quickBooksService = vi.hoisted(() => ({
   getAdminQuickBooksSellerVendorMappings: vi.fn(),
 }));
 
-vi.mock('@/services/adminQuickBooks.service', async (importOriginal) => {
+vi.mock('@/services/adminQuickBooks.service', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/adminQuickBooks.service')>();
   return { ...actual, ...quickBooksService };
 });
@@ -34,7 +34,9 @@ describe('quickbooks account mappings', () => {
 
   it('allows mapping the seller incentive marketing cost category', async () => {
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
         <QuickBooksMappings
           canManageMappings
           canReadMappings
@@ -48,6 +50,10 @@ describe('quickbooks account mappings', () => {
 
     expect(await screen.findByText('Seller incentive marketing cost')).toBeInTheDocument();
     expect(screen.getByText('SELLER_INCENTIVE_MARKETING_COGS')).toBeInTheDocument();
-    expect(screen.getByLabelText('QuickBooks account ID', { selector: '#quickbooks-account-id-SELLER_INCENTIVE_MARKETING_COGS' })).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('QuickBooks account ID', {
+        selector: '#quickbooks-account-id-SELLER_INCENTIVE_MARKETING_COGS',
+      }),
+    ).toBeInTheDocument();
   });
 });

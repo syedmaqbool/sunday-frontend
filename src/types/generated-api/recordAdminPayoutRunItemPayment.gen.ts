@@ -128,7 +128,8 @@ export interface RecordAdminPayoutRunItemPaymentErrors {
   };
 }
 
-export type RecordAdminPayoutRunItemPaymentError = RecordAdminPayoutRunItemPaymentErrors[keyof RecordAdminPayoutRunItemPaymentErrors];
+export type RecordAdminPayoutRunItemPaymentError =
+  RecordAdminPayoutRunItemPaymentErrors[keyof RecordAdminPayoutRunItemPaymentErrors];
 
 export interface RecordAdminPayoutRunItemPaymentResponses {
   /**
@@ -169,4 +170,5 @@ export interface RecordAdminPayoutRunItemPaymentResponses {
   };
 }
 
-export type RecordAdminPayoutRunItemPaymentResponse = RecordAdminPayoutRunItemPaymentResponses[keyof RecordAdminPayoutRunItemPaymentResponses];
+export type RecordAdminPayoutRunItemPaymentResponse =
+  RecordAdminPayoutRunItemPaymentResponses[keyof RecordAdminPayoutRunItemPaymentResponses];

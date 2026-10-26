@@ -124,7 +124,8 @@ export interface StartAdminQuickBooksConnectionErrors {
   };
 }
 
-export type StartAdminQuickBooksConnectionError = StartAdminQuickBooksConnectionErrors[keyof StartAdminQuickBooksConnectionErrors];
+export type StartAdminQuickBooksConnectionError =
+  StartAdminQuickBooksConnectionErrors[keyof StartAdminQuickBooksConnectionErrors];
 
 export interface StartAdminQuickBooksConnectionResponses {
   /**
@@ -140,4 +141,5 @@ export interface StartAdminQuickBooksConnectionResponses {
   };
 }
 
-export type StartAdminQuickBooksConnectionResponse = StartAdminQuickBooksConnectionResponses[keyof StartAdminQuickBooksConnectionResponses];
+export type StartAdminQuickBooksConnectionResponse =
+  StartAdminQuickBooksConnectionResponses[keyof StartAdminQuickBooksConnectionResponses];

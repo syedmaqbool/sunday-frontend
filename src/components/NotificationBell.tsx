@@ -38,8 +38,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
   const markAllMutation = useMarkAllNotificationsReadMutation();
 
   const items: Notification[] = (data?.data ?? []).filter(
-    notification =>
-      !audience || notification.audience === audience.toUpperCase(),
+    notification => !audience || notification.audience === audience.toUpperCase(),
   );
 
   const unread = items.length;
@@ -47,8 +46,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
   const markRead = async (id: string) => {
     try {
       await markReadMutation.mutateAsync(id);
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to mark notification as read', error);
     }
   };
@@ -56,8 +54,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
   const markAllRead = async () => {
     try {
       await markAllMutation.mutateAsync();
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to mark all notifications as read', error);
     }
   };
@@ -68,8 +65,7 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
     }
 
     const path = getNotificationDestinationPath(n);
-    if (path)
-      navigate(path);
+    if (path) navigate(path);
 
     setOpen(false);
   };
@@ -114,76 +110,64 @@ function NotificationBell({ audience, className }: NotificationBellProps) {
               variant="ghost"
               className="h-7 gap-1 text-xs"
             >
-              {markAllMutation.isPending
-                ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  )
-                : (
-                    <>
-                      <CheckCheck className="h-3.5 w-3.5" />
-                      Mark all read
-                    </>
-                  )}
+              {markAllMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Mark all read
+                </>
+              )}
             </Button>
           )}
         </div>
 
         <ScrollArea className="max-h-96">
-          {isLoading
-            ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              )
-            : (items.length === 0
-                ? (
-                    <p className="p-8 text-center text-sm text-muted-foreground">
-                      No new notifications.
-                    </p>
-                  )
-                : (
-                    <ul className="divide-y divide-border">
-                      {items.map(n => (
-                        <li key={n.id}>
-                          <button
-                            onClick={() => onClickItem(n)}
-                            type="button"
-                            className={cn(
-                              `
-                                flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors
-                                hover:bg-muted/60
-                              `,
-                              !n.readAt && 'bg-primary/5',
-                            )}
-                          >
-                            <div className="flex w-full items-start gap-2">
-                              {!n.readAt && (
-                                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                              )}
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : items.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">No new notifications.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {items.map(n => (
+                <li key={n.id}>
+                  <button
+                    onClick={() => onClickItem(n)}
+                    type="button"
+                    className={cn(
+                      `
+                        flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors
+                        hover:bg-muted/60
+                      `,
+                      !n.readAt && 'bg-primary/5',
+                    )}
+                  >
+                    <div className="flex w-full items-start gap-2">
+                      {!n.readAt && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                      )}
 
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-foreground">
-                                  {n.title}
-                                </p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{n.title}</p>
 
-                                {n.body && (
-                                  <p className="line-clamp-2 text-xs text-muted-foreground">
-                                    {n.body}
-                                  </p>
-                                )}
+                        {n.body && (
+                          <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+                        )}
 
-                                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                                  {formatDistanceToNow(new Date(n.createdAt), {
-                                    addSuffix: true,
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ))}
+                        <p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {formatDistanceToNow(new Date(n.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -102,10 +102,10 @@ export function ReviewForm({
                   className={`
                     h-6 w-6 transition-colors
                     ${
-              star <= displayRating
-                ? 'fill-primary text-primary'
-                : 'text-muted-foreground/30'
-              }
+                      star <= displayRating
+                        ? 'fill-primary text-primary'
+                        : 'text-muted-foreground/30'
+                    }
                   `}
                 />
               </button>
@@ -139,9 +139,7 @@ export function ReviewForm({
           type="button"
           className="gap-1.5"
         >
-          {submitReview.isPending && (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          )}
+          {submitReview.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Submit Review
         </Button>
         {onCancel && (

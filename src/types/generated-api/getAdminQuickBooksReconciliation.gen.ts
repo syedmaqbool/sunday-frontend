@@ -16,7 +16,21 @@ export interface GetAdminQuickBooksReconciliationData {
     sellerId?: string;
     dateEnd: string;
     dateStart: string;
-    reconciliationStatus?: 'ACCOUNT_MISMATCH' | 'AMOUNT_MISMATCH' | 'DUPLICATE' | 'FAILED_SYNC' | 'LINK_MISMATCH' | 'MATCHED' | 'MISSING_QUICKBOOKS' | 'MISSING_SUNDAY_EVENTS' | 'PENDING_SYNC' | 'POSTING_DATE_MISMATCH' | 'POSTING_SIDE_MISMATCH' | 'UNMATCHED_QUICKBOOKS' | 'UNVERIFIED_MAPPING' | 'UNVERIFIED_SOURCE';
+    reconciliationStatus?:
+      | 'ACCOUNT_MISMATCH'
+      | 'AMOUNT_MISMATCH'
+      | 'DUPLICATE'
+      | 'FAILED_SYNC'
+      | 'LINK_MISMATCH'
+      | 'MATCHED'
+      | 'MISSING_QUICKBOOKS'
+      | 'MISSING_SUNDAY_EVENTS'
+      | 'PENDING_SYNC'
+      | 'POSTING_DATE_MISMATCH'
+      | 'POSTING_SIDE_MISMATCH'
+      | 'UNMATCHED_QUICKBOOKS'
+      | 'UNVERIFIED_MAPPING'
+      | 'UNVERIFIED_SOURCE';
     size: number;
     syncStatus?: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED';
   };
@@ -138,7 +152,8 @@ export interface GetAdminQuickBooksReconciliationErrors {
   };
 }
 
-export type GetAdminQuickBooksReconciliationError = GetAdminQuickBooksReconciliationErrors[keyof GetAdminQuickBooksReconciliationErrors];
+export type GetAdminQuickBooksReconciliationError =
+  GetAdminQuickBooksReconciliationErrors[keyof GetAdminQuickBooksReconciliationErrors];
 
 export interface GetAdminQuickBooksReconciliationResponses {
   /**
@@ -164,8 +179,29 @@ export interface GetAdminQuickBooksReconciliationResponses {
         id: string;
         type: string;
       }>;
-      status: 'ACCOUNT_MISMATCH' | 'AMOUNT_MISMATCH' | 'DUPLICATE' | 'FAILED_SYNC' | 'LINK_MISMATCH' | 'MATCHED' | 'MISSING_QUICKBOOKS' | 'MISSING_SUNDAY_EVENTS' | 'PENDING_SYNC' | 'POSTING_DATE_MISMATCH' | 'POSTING_SIDE_MISMATCH' | 'UNMATCHED_QUICKBOOKS' | 'UNVERIFIED_MAPPING' | 'UNVERIFIED_SOURCE';
-      syncStatus: 'AWAITING_CORRECTION' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'RETRY' | 'SYNCED' | null;
+      status:
+        | 'ACCOUNT_MISMATCH'
+        | 'AMOUNT_MISMATCH'
+        | 'DUPLICATE'
+        | 'FAILED_SYNC'
+        | 'LINK_MISMATCH'
+        | 'MATCHED'
+        | 'MISSING_QUICKBOOKS'
+        | 'MISSING_SUNDAY_EVENTS'
+        | 'PENDING_SYNC'
+        | 'POSTING_DATE_MISMATCH'
+        | 'POSTING_SIDE_MISMATCH'
+        | 'UNMATCHED_QUICKBOOKS'
+        | 'UNVERIFIED_MAPPING'
+        | 'UNVERIFIED_SOURCE';
+      syncStatus:
+        | 'AWAITING_CORRECTION'
+        | 'FAILED'
+        | 'PENDING'
+        | 'PROCESSING'
+        | 'RETRY'
+        | 'SYNCED'
+        | null;
     }>;
     message: string;
     pagination: {
@@ -198,4 +234,5 @@ export interface GetAdminQuickBooksReconciliationResponses {
   };
 }
 
-export type GetAdminQuickBooksReconciliationResponse = GetAdminQuickBooksReconciliationResponses[keyof GetAdminQuickBooksReconciliationResponses];
+export type GetAdminQuickBooksReconciliationResponse =
+  GetAdminQuickBooksReconciliationResponses[keyof GetAdminQuickBooksReconciliationResponses];

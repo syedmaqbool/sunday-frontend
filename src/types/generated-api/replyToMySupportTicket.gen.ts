@@ -126,7 +126,8 @@ export interface ReplyToMySupportTicketErrors {
   };
 }
 
-export type ReplyToMySupportTicketError = ReplyToMySupportTicketErrors[keyof ReplyToMySupportTicketErrors];
+export type ReplyToMySupportTicketError =
+  ReplyToMySupportTicketErrors[keyof ReplyToMySupportTicketErrors];
 
 export interface ReplyToMySupportTicketResponses {
   /**
@@ -147,4 +148,5 @@ export interface ReplyToMySupportTicketResponses {
   };
 }
 
-export type ReplyToMySupportTicketResponse = ReplyToMySupportTicketResponses[keyof ReplyToMySupportTicketResponses];
+export type ReplyToMySupportTicketResponse =
+  ReplyToMySupportTicketResponses[keyof ReplyToMySupportTicketResponses];

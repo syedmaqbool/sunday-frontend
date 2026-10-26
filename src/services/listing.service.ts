@@ -30,12 +30,13 @@ import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
 export function createListing(payload: CreateListingPayload): Promise<Response<CreatedListing>> {
-  return authInstance
-    .post('/api/v1/listings', { json: payload })
-    .json<Response<CreatedListing>>();
+  return authInstance.post('/api/v1/listings', { json: payload }).json<Response<CreatedListing>>();
 }
 
-export function updateMyListing(listingId: string, payload: UpdateListingPayload): Promise<Response<UpdatedMyListing>> {
+export function updateMyListing(
+  listingId: string,
+  payload: UpdateListingPayload,
+): Promise<Response<UpdatedMyListing>> {
   return authInstance
     .patch(`/api/v1/me/listings/${listingId}`, { json: payload })
     .json<Response<UpdatedMyListing>>();
@@ -68,9 +69,7 @@ export function removeAdminListing(
 export function restoreAdminListing(
   listingId: RestoreAdminListingData['path']['listingId'],
 ): Promise<Response> {
-  return authInstance
-    .post(`/api/v1/admin/listings/${listingId}/restore`)
-    .json<Response>();
+  return authInstance.post(`/api/v1/admin/listings/${listingId}/restore`).json<Response>();
 }
 
 export function updateAdminListingTitle(
@@ -114,12 +113,12 @@ export function listMyListings(
 }
 
 export function deleteMyListing(listingId: string): Promise<Response> {
-  return authInstance
-    .delete(`/api/v1/me/listings/${listingId}`)
-    .json<Response>();
+  return authInstance.delete(`/api/v1/me/listings/${listingId}`).json<Response>();
 }
 
-export function cancelMyListingReservation(listingId: string): Promise<Response<CancelledListingReservation>> {
+export function cancelMyListingReservation(
+  listingId: string,
+): Promise<Response<CancelledListingReservation>> {
   return authInstance
     .post(`/api/v1/me/listings/${listingId}/cancel-reservation`)
     .json<Response<CancelledListingReservation>>();

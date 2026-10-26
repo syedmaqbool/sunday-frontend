@@ -39,10 +39,7 @@ export function getComplaintsAgainstMeOptions() {
   });
 }
 
-export function getComplaintDetailsOptions(
-  orderId: string,
-  orderItemId: string,
-) {
+export function getComplaintDetailsOptions(orderId: string, orderItemId: string) {
   return queryOptions({
     queryFn: async () => {
       const response = await getOrderItemComplaint(orderId, orderItemId);

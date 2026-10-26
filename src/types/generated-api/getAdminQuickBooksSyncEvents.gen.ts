@@ -76,7 +76,8 @@ export interface GetAdminQuickBooksSyncEventsErrors {
   };
 }
 
-export type GetAdminQuickBooksSyncEventsError = GetAdminQuickBooksSyncEventsErrors[keyof GetAdminQuickBooksSyncEventsErrors];
+export type GetAdminQuickBooksSyncEventsError =
+  GetAdminQuickBooksSyncEventsErrors[keyof GetAdminQuickBooksSyncEventsErrors];
 
 export interface GetAdminQuickBooksSyncEventsResponses {
   /**
@@ -144,4 +145,5 @@ export interface GetAdminQuickBooksSyncEventsResponses {
   };
 }
 
-export type GetAdminQuickBooksSyncEventsResponse = GetAdminQuickBooksSyncEventsResponses[keyof GetAdminQuickBooksSyncEventsResponses];
+export type GetAdminQuickBooksSyncEventsResponse =
+  GetAdminQuickBooksSyncEventsResponses[keyof GetAdminQuickBooksSyncEventsResponses];

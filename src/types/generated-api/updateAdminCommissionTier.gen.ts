@@ -104,7 +104,8 @@ export interface UpdateAdminCommissionTierErrors {
   };
 }
 
-export type UpdateAdminCommissionTierError = UpdateAdminCommissionTierErrors[keyof UpdateAdminCommissionTierErrors];
+export type UpdateAdminCommissionTierError =
+  UpdateAdminCommissionTierErrors[keyof UpdateAdminCommissionTierErrors];
 
 export interface UpdateAdminCommissionTierResponses {
   /**
@@ -128,4 +129,5 @@ export interface UpdateAdminCommissionTierResponses {
   };
 }
 
-export type UpdateAdminCommissionTierResponse = UpdateAdminCommissionTierResponses[keyof UpdateAdminCommissionTierResponses];
+export type UpdateAdminCommissionTierResponse =
+  UpdateAdminCommissionTierResponses[keyof UpdateAdminCommissionTierResponses];

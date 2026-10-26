@@ -38,7 +38,8 @@ export interface GetPaymentInstructionsErrors {
   };
 }
 
-export type GetPaymentInstructionsError = GetPaymentInstructionsErrors[keyof GetPaymentInstructionsErrors];
+export type GetPaymentInstructionsError =
+  GetPaymentInstructionsErrors[keyof GetPaymentInstructionsErrors];
 
 export interface GetPaymentInstructionsResponses {
   /**
@@ -56,4 +57,5 @@ export interface GetPaymentInstructionsResponses {
   };
 }
 
-export type GetPaymentInstructionsResponse = GetPaymentInstructionsResponses[keyof GetPaymentInstructionsResponses];
+export type GetPaymentInstructionsResponse =
+  GetPaymentInstructionsResponses[keyof GetPaymentInstructionsResponses];

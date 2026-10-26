@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
 
 const { uploadPaymentProofMock } = vi.hoisted(() => ({
@@ -38,12 +38,7 @@ function renderDialog(
     onSubmit,
     ...render(
       <QueryClientProvider client={queryClient}>
-        <ManualPaymentDialog
-          onOpenChange={onOpenChange}
-          onSubmit={onSubmit}
-          mode={mode}
-          open
-        />
+        <ManualPaymentDialog onOpenChange={onOpenChange} onSubmit={onSubmit} mode={mode} open />
       </QueryClientProvider>,
     ),
   };
@@ -134,11 +129,13 @@ describe('manual payment dialog', () => {
     fireEvent.click(submit);
     fireEvent.click(submit);
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
-      proofFileId: 'proof-file-id',
-      senderAccountNumber: '123456789',
-      senderAccountTitle: 'Jane Doe',
-    }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({
+        proofFileId: 'proof-file-id',
+        senderAccountNumber: '123456789',
+        senderAccountTitle: 'Jane Doe',
+      }),
+    );
     expect(uploadPaymentProofMock).toHaveBeenCalledOnce();
   });
 
@@ -146,17 +143,21 @@ describe('manual payment dialog', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderDialog(onSubmit, 'resubmit');
 
-    expect(await screen.findByRole('heading', { name: 'Resubmit payment proof' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Resubmit payment proof' }),
+    ).toBeInTheDocument();
     expect(await screen.findByText('Sunday Store')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Resubmit payment proof' })).toBeInTheDocument();
     fillValidForm();
     fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
-      proofFileId: 'proof-file-id',
-      senderAccountNumber: '123456789',
-      senderAccountTitle: 'Jane Doe',
-    }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({
+        proofFileId: 'proof-file-id',
+        senderAccountNumber: '123456789',
+        senderAccountTitle: 'Jane Doe',
+      }),
+    );
   });
 
   it('shows the order error without closing or clearing the form', async () => {

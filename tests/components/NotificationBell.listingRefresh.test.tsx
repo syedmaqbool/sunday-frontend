@@ -1,19 +1,24 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import NotificationBell from '@/components/NotificationBell';
 import { getMyListingsOptions } from '@/queries/myListings.query';
 
-const { listMyListings, listNotifications, markAllNotificationsRead, markNotificationRead } = vi.hoisted(() => ({
-  listMyListings: vi.fn(),
-  listNotifications: vi.fn(),
-  markAllNotificationsRead: vi.fn(),
-  markNotificationRead: vi.fn(),
-}));
+const { listMyListings, listNotifications, markAllNotificationsRead, markNotificationRead } =
+  vi.hoisted(() => ({
+    listMyListings: vi.fn(),
+    listNotifications: vi.fn(),
+    markAllNotificationsRead: vi.fn(),
+    markNotificationRead: vi.fn(),
+  }));
 
 vi.mock('@/services/listing.service', () => ({ listMyListings }));
-vi.mock('@/services/notification.service', () => ({ listNotifications, markAllNotificationsRead, markNotificationRead }));
+vi.mock('@/services/notification.service', () => ({
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+}));
 vi.mock('@/lib/tokenStorage', () => ({ tokenStorage: { getAccess: () => 'seller-token' } }));
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -45,7 +50,7 @@ describe('listing notification refresh', () => {
 
   it.each(['LISTING_REMOVED', 'LISTING_RESTORED'])(
     'refreshes seller listings after reading a %s notice',
-    async (type) => {
+    async type => {
       const notification = {
         id: 'notification-1',
         entityId: 'listing-1',
@@ -82,21 +87,23 @@ describe('listing notification refresh', () => {
 
   it('refreshes seller listings after marking all notifications read when a listing notice is present', async () => {
     listNotifications.mockResolvedValue({
-      data: [{
-        id: 'notification-1',
-        entityId: 'listing-1',
-        userId: 'seller-1',
-        audience: 'USER',
-        body: 'Listing removed',
-        destination: { recipient: 'SELLER', resource: 'listing', section: 'list' },
-        entityType: 'listing',
-        metadata: {},
-        title: 'Listing removed',
-        type: 'LISTING_REMOVED',
-        readAt: null,
-        createdAt: '2026-10-14T00:00:00.000Z',
-        updatedAt: '2026-10-14T00:00:00.000Z',
-      }],
+      data: [
+        {
+          id: 'notification-1',
+          entityId: 'listing-1',
+          userId: 'seller-1',
+          audience: 'USER',
+          body: 'Listing removed',
+          destination: { recipient: 'SELLER', resource: 'listing', section: 'list' },
+          entityType: 'listing',
+          metadata: {},
+          title: 'Listing removed',
+          type: 'LISTING_REMOVED',
+          readAt: null,
+          createdAt: '2026-10-14T00:00:00.000Z',
+          updatedAt: '2026-10-14T00:00:00.000Z',
+        },
+      ],
     });
     markAllNotificationsRead.mockResolvedValue({});
     listMyListings

@@ -1,10 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import CreateListing from '@/pages/CreateListing';
 
-const { createListingMock, getMyProfileMock, listingState, toastMock, updateMyListingMock, uploadFileMock, userState } = vi.hoisted(() => ({
+const {
+  createListingMock,
+  getMyProfileMock,
+  listingState,
+  toastMock,
+  updateMyListingMock,
+  uploadFileMock,
+  userState,
+} = vi.hoisted(() => ({
   createListingMock: vi.fn(),
   getMyProfileMock: vi.fn(),
   listingState: { listing: null as any, responseStatus: 'PENDING' },
@@ -24,24 +32,40 @@ vi.mock('@/hooks/use-toast', () => ({
 
 vi.mock('@/hooks/useCategories', () => ({
   getCategoriesOptions: () => ({
-    queryFn: async () => [{ id: 'category-1', icon: '👗', label: 'Women', sortOrder: 0, value: 'women' }],
+    queryFn: async () => [
+      { id: 'category-1', icon: '👗', label: 'Women', sortOrder: 0, value: 'women' },
+    ],
     queryKey: ['categories'],
   }),
   getSubcategoriesOptions: () => ({
-    queryFn: async () => [{ data: [
-      { id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' },
-      { id: 'subcategory-clothes', icon: '👚', label: 'Clothes', sortOrder: 1, value: 'clothes' },
-    ] }],
+    queryFn: async () => [
+      {
+        data: [
+          { id: 'subcategory-1', icon: '👔', label: 'Jackets', sortOrder: 0, value: 'jackets' },
+          {
+            id: 'subcategory-clothes',
+            icon: '👚',
+            label: 'Clothes',
+            sortOrder: 1,
+            value: 'clothes',
+          },
+        ],
+      },
+    ],
     queryKey: ['subcategories'],
   }),
 }));
 
 vi.mock('@/queries/clothing-types.query', () => ({
   getClothingTypesOptions: () => ({
-    queryFn: async () => [{ data: [
-      { id: 'type-tops', label: 'Tops', sortOrder: 0, value: 'tops' },
-      { id: 'type-bottoms', label: 'Bottoms', sortOrder: 1, value: 'bottoms' },
-    ] }],
+    queryFn: async () => [
+      {
+        data: [
+          { id: 'type-tops', label: 'Tops', sortOrder: 0, value: 'tops' },
+          { id: 'type-bottoms', label: 'Bottoms', sortOrder: 1, value: 'bottoms' },
+        ],
+      },
+    ],
     queryKey: ['clothing-types', 'list'],
   }),
 }));
@@ -130,12 +154,14 @@ describe('edit listing moderation rules', () => {
     userState.user = { id: 'seller-1' };
     toastMock.mockReset();
     updateMyListingMock.mockReset();
-    updateMyListingMock.mockImplementation(async () => ({ data: { status: listingState.responseStatus } }));
+    updateMyListingMock.mockImplementation(async () => ({
+      data: { status: listingState.responseStatus },
+    }));
   });
 
   it.each(['APPROVED', 'RESERVED', 'SOLD'])(
     'redirects a direct edit URL for a %s listing',
-    async (status) => {
+    async status => {
       listingState.listing = editableListing(status);
 
       renderEditListing();
@@ -165,7 +191,7 @@ describe('edit listing moderation rules', () => {
 
   it.each(['REJECTED', 'NEEDS_REVISION'])(
     'confirms a %s edit was submitted for moderation when it returns pending',
-    async (status) => {
+    async status => {
       listingState.listing = editableListing(status);
       listingState.responseStatus = 'PENDING';
 
@@ -173,10 +199,12 @@ describe('edit listing moderation rules', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Save Changes' }));
       await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
 
-      await waitFor(() => expect(toastMock).toHaveBeenCalledWith({
-        description: 'Your listing was submitted for moderation.',
-        title: 'Listing submitted for review!',
-      }));
+      await waitFor(() =>
+        expect(toastMock).toHaveBeenCalledWith({
+          description: 'Your listing was submitted for moderation.',
+          title: 'Listing submitted for review!',
+        }),
+      );
     },
   );
 
@@ -187,10 +215,12 @@ describe('edit listing moderation rules', () => {
     renderEditListing();
     fireEvent.click(await screen.findByRole('button', { name: 'Save Changes' }));
 
-    await waitFor(() => expect(toastMock).toHaveBeenCalledWith({
-      description: 'Your changes have been saved.',
-      title: 'Listing updated!',
-    }));
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith({
+        description: 'Your changes have been saved.',
+        title: 'Listing updated!',
+      }),
+    );
   });
 
   it('prepopulates saved styles when editing a listing', async () => {
@@ -198,13 +228,24 @@ describe('edit listing moderation rules', () => {
 
     renderEditListing();
 
-    expect(await screen.findByRole('button', { name: 'Eastern' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Semi Formal' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Western' })).toHaveAttribute('aria-pressed', 'false');
+    expect(await screen.findByRole('button', { name: 'Eastern' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Semi Formal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Western' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
-    expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({ styles: ['eastern', 'semi_formal'] });
+    expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({
+      styles: ['eastern', 'semi_formal'],
+    });
   });
 
   it('allows a legacy listing with no styles to save without adding one', async () => {
@@ -289,11 +330,17 @@ describe('create listing styles', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Semi Formal' }));
 
     expect(screen.getByRole('button', { name: 'Eastern' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Semi Formal' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Semi Formal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('submits selected styles with their supported identifiers', async () => {
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:listing-media') }));
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:listing-media') }),
+    );
     getMyProfileMock.mockResolvedValue({
       data: { bankAccountHolder: 'Seller', bankAccountNumber: '123456', bankName: 'Bank' },
     });
@@ -305,7 +352,9 @@ describe('create listing styles', () => {
 
     fireEvent.change(container.querySelector('#title'), { target: { value: 'Vintage jacket' } });
     fireEvent.change(container.querySelector('#brand'), { target: { value: 'Vintage' } });
-    fireEvent.change(container.querySelector('#description'), { target: { value: 'A vintage jacket.' } });
+    fireEvent.change(container.querySelector('#description'), {
+      target: { value: 'A vintage jacket.' },
+    });
     fireEvent.change(container.querySelector('#price'), { target: { value: '150' } });
 
     fireEvent.click(screen.getAllByRole('combobox')[0]);
@@ -328,12 +377,17 @@ describe('create listing styles', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit Listing' }));
 
     await waitFor(() => expect(createListingMock).toHaveBeenCalled());
-    expect(createListingMock.mock.calls[0][0]).toMatchObject({ styles: ['eastern', 'semi_formal'] });
+    expect(createListingMock.mock.calls[0][0]).toMatchObject({
+      styles: ['eastern', 'semi_formal'],
+    });
     expect(createListingMock.mock.calls[0][0]).toMatchObject({ clothingTypeId: null });
   });
 
   it('submits a selected clothing type when creating a Clothes listing', async () => {
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:clothes-listing-media') }));
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:clothes-listing-media') }),
+    );
     getMyProfileMock.mockResolvedValue({
       data: { bankAccountHolder: 'Seller', bankAccountNumber: '123456', bankName: 'Bank' },
     });
@@ -345,7 +399,9 @@ describe('create listing styles', () => {
 
     fireEvent.change(container.querySelector('#title'), { target: { value: 'Linen top' } });
     fireEvent.change(container.querySelector('#brand'), { target: { value: 'Vintage' } });
-    fireEvent.change(container.querySelector('#description'), { target: { value: 'A linen top.' } });
+    fireEvent.change(container.querySelector('#description'), {
+      target: { value: 'A linen top.' },
+    });
     fireEvent.change(container.querySelector('#price'), { target: { value: '150' } });
     fireEvent.click(screen.getAllByRole('combobox')[0]);
     fireEvent.click(await screen.findByRole('option', { name: 'Women' }));

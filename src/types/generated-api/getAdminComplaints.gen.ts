@@ -16,7 +16,15 @@ export interface GetAdminComplaintsData {
      * Repeat this query parameter once per UUID, up to 100 values.
      */
     orderIds?: Array<string>;
-    status?: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+    status?:
+      | 'RAISED'
+      | 'REFUNDED'
+      | 'REJECTED'
+      | 'RETURN_ADDRESS_PROVIDED'
+      | 'RETURN_APPROVED'
+      | 'RETURN_IN_TRANSIT'
+      | 'RETURN_RECEIVED'
+      | 'UNDER_REVIEW';
   };
   url: '/api/v1/admin/complaints';
 }
@@ -142,7 +150,15 @@ export interface GetAdminComplaintsResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -179,4 +195,5 @@ export interface GetAdminComplaintsResponses {
   };
 }
 
-export type GetAdminComplaintsResponse = GetAdminComplaintsResponses[keyof GetAdminComplaintsResponses];
+export type GetAdminComplaintsResponse =
+  GetAdminComplaintsResponses[keyof GetAdminComplaintsResponses];

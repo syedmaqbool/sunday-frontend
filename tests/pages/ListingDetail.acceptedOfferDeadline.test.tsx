@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingDetail from '@/pages/ListingDetail';
 
 const { addItemMock, listingState, userState } = vi.hoisted(() => ({
@@ -89,7 +89,7 @@ beforeEach(() => {
 describe('accepted offer deadline on listing detail', () => {
   it.each(['PENDING', 'REJECTED', 'NEEDS_REVISION'])(
     'shows the owner edit action for %s listings',
-    async (status) => {
+    async status => {
       userState.user = { id: 'seller-1' };
       listingState.listing.status = status;
       listingState.listing.reservedOfferId = null;
@@ -104,7 +104,7 @@ describe('accepted offer deadline on listing detail', () => {
 
   it.each(['APPROVED', 'RESERVED', 'SOLD'])(
     'hides the owner edit action for %s listings',
-    async (status) => {
+    async status => {
       userState.user = { id: 'seller-1' };
       listingState.listing.status = status;
       listingState.listing.reservedUntil = null;
@@ -169,7 +169,9 @@ describe('accepted offer deadline on listing detail', () => {
 
     renderListingDetail();
 
-    expect(await screen.findByText(/your payment proof is awaiting admin review/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/your payment proof is awaiting admin review/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/payment deadline has passed/i)).not.toBeInTheDocument();
   });
 
@@ -180,7 +182,9 @@ describe('accepted offer deadline on listing detail', () => {
 
     renderListingDetail();
 
-    expect(await screen.findByText(/the buyer's payment proof is awaiting admin review/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/the buyer's payment proof is awaiting admin review/i),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel reservation' })).not.toBeInTheDocument();
   });
 

@@ -68,7 +68,8 @@ export interface DismissAdminFlaggedMessageErrors {
   };
 }
 
-export type DismissAdminFlaggedMessageError = DismissAdminFlaggedMessageErrors[keyof DismissAdminFlaggedMessageErrors];
+export type DismissAdminFlaggedMessageError =
+  DismissAdminFlaggedMessageErrors[keyof DismissAdminFlaggedMessageErrors];
 
 export interface DismissAdminFlaggedMessageResponses {
   /**
@@ -105,4 +106,5 @@ export interface DismissAdminFlaggedMessageResponses {
   };
 }
 
-export type DismissAdminFlaggedMessageResponse = DismissAdminFlaggedMessageResponses[keyof DismissAdminFlaggedMessageResponses];
+export type DismissAdminFlaggedMessageResponse =
+  DismissAdminFlaggedMessageResponses[keyof DismissAdminFlaggedMessageResponses];

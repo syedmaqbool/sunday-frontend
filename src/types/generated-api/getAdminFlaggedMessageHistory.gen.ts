@@ -75,7 +75,8 @@ export interface GetAdminFlaggedMessageHistoryErrors {
   };
 }
 
-export type GetAdminFlaggedMessageHistoryError = GetAdminFlaggedMessageHistoryErrors[keyof GetAdminFlaggedMessageHistoryErrors];
+export type GetAdminFlaggedMessageHistoryError =
+  GetAdminFlaggedMessageHistoryErrors[keyof GetAdminFlaggedMessageHistoryErrors];
 
 export interface GetAdminFlaggedMessageHistoryResponses {
   /**
@@ -126,4 +127,5 @@ export interface GetAdminFlaggedMessageHistoryResponses {
   };
 }
 
-export type GetAdminFlaggedMessageHistoryResponse = GetAdminFlaggedMessageHistoryResponses[keyof GetAdminFlaggedMessageHistoryResponses];
+export type GetAdminFlaggedMessageHistoryResponse =
+  GetAdminFlaggedMessageHistoryResponses[keyof GetAdminFlaggedMessageHistoryResponses];

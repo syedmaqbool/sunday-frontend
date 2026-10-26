@@ -96,7 +96,8 @@ export interface MarkConversationMessagesReadErrors {
   };
 }
 
-export type MarkConversationMessagesReadError = MarkConversationMessagesReadErrors[keyof MarkConversationMessagesReadErrors];
+export type MarkConversationMessagesReadError =
+  MarkConversationMessagesReadErrors[keyof MarkConversationMessagesReadErrors];
 
 export interface MarkConversationMessagesReadResponses {
   /**
@@ -108,4 +109,5 @@ export interface MarkConversationMessagesReadResponses {
   };
 }
 
-export type MarkConversationMessagesReadResponse = MarkConversationMessagesReadResponses[keyof MarkConversationMessagesReadResponses];
+export type MarkConversationMessagesReadResponse =
+  MarkConversationMessagesReadResponses[keyof MarkConversationMessagesReadResponses];

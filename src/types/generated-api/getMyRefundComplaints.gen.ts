@@ -47,7 +47,8 @@ export interface GetMyRefundComplaintsErrors {
   };
 }
 
-export type GetMyRefundComplaintsError = GetMyRefundComplaintsErrors[keyof GetMyRefundComplaintsErrors];
+export type GetMyRefundComplaintsError =
+  GetMyRefundComplaintsErrors[keyof GetMyRefundComplaintsErrors];
 
 export interface GetMyRefundComplaintsResponses {
   /**
@@ -81,7 +82,15 @@ export interface GetMyRefundComplaintsResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -118,4 +127,5 @@ export interface GetMyRefundComplaintsResponses {
   };
 }
 
-export type GetMyRefundComplaintsResponse = GetMyRefundComplaintsResponses[keyof GetMyRefundComplaintsResponses];
+export type GetMyRefundComplaintsResponse =
+  GetMyRefundComplaintsResponses[keyof GetMyRefundComplaintsResponses];

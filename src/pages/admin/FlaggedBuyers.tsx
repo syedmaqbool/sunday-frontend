@@ -1,4 +1,7 @@
-import type { AdminFlaggedBuyer, AdminFlaggedBuyerComplaintHistory } from '@/types/adminFlaggedBuyer.type';
+import type {
+  AdminFlaggedBuyer,
+  AdminFlaggedBuyerComplaintHistory,
+} from '@/types/adminFlaggedBuyer.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -10,7 +13,14 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -38,8 +48,14 @@ const THRESHOLD_ERROR = 'Threshold must be a positive whole number.';
 const WINDOW_DAYS_ERROR = 'Lookback window must be a positive whole number.';
 
 const flaggedBuyerRuleSchema = z.object({
-  threshold: z.number({ invalid_type_error: THRESHOLD_ERROR }).int(THRESHOLD_ERROR).min(1, THRESHOLD_ERROR),
-  windowDays: z.number({ invalid_type_error: WINDOW_DAYS_ERROR }).int(WINDOW_DAYS_ERROR).min(1, WINDOW_DAYS_ERROR),
+  threshold: z
+    .number({ invalid_type_error: THRESHOLD_ERROR })
+    .int(THRESHOLD_ERROR)
+    .min(1, THRESHOLD_ERROR),
+  windowDays: z
+    .number({ invalid_type_error: WINDOW_DAYS_ERROR })
+    .int(WINDOW_DAYS_ERROR)
+    .min(1, WINDOW_DAYS_ERROR),
 });
 
 const HISTORY_STATUS_LABEL: Record<AdminFlaggedBuyerComplaintHistory['status'], string> = {
@@ -66,10 +82,14 @@ export default function FlaggedBuyers() {
     placeholderData: keepPreviousData,
   });
   const history = useQuery({
-    ...getAdminFlaggedBuyerComplaintHistoryOptions(historyBuyer?.buyerId ?? '', { page: historyPage, size: FLAGGED_BUYERS_PAGE_SIZE }),
+    ...getAdminFlaggedBuyerComplaintHistoryOptions(historyBuyer?.buyerId ?? '', {
+      page: historyPage,
+      size: FLAGGED_BUYERS_PAGE_SIZE,
+    }),
     enabled: canReadRules && historyBuyer !== null,
     // Keep the previous page only while paging the same buyer; never show another buyer's history.
-    placeholderData: (previousData, previousQuery) => previousQuery?.queryKey[2] === historyBuyer?.buyerId ? previousData : undefined,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[2] === historyBuyer?.buyerId ? previousData : undefined,
   });
   useEffect(() => {
     const pagination = buyers.data?.pagination;
@@ -106,8 +126,7 @@ export default function FlaggedBuyers() {
       await updateRules.mutateAsync(values);
       setPage(1);
       toast.success('Flagged buyer rule saved');
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Failed to save flagged buyer rule');
     }
   }
@@ -117,8 +136,7 @@ export default function FlaggedBuyers() {
   }
 
   async function sendWarning(values: FlaggedBuyerWarningForm) {
-    if (warningBuyer === null)
-      return;
+    if (warningBuyer === null) return;
 
     const message = values.message.trim();
     try {
@@ -129,8 +147,7 @@ export default function FlaggedBuyers() {
       toast.success('Buyer warning sent');
       setWarningBuyer(null);
       resetWarningForm();
-    }
-    catch (error) {
+    } catch (error) {
       showErrorToast(error, 'Failed to send buyer warning');
     }
   }
@@ -155,289 +172,306 @@ export default function FlaggedBuyers() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {canReadRules
-            ? rules.isLoading
-              ? <div className="flex justify-center p-8"><Loader2 aria-label="Loading rule" className="h-5 w-5 animate-spin" /></div>
-              : rules.isError
-                ? <p role="alert" className="text-sm text-destructive">Unable to load the flagged buyer rule.</p>
-                : (
-                    <form onSubmit={form.handleSubmit(saveRule)} className="space-y-5">
-                      <div className="
-                        grid gap-4
-                        sm:grid-cols-2
-                      "
-                      >
-                        <div className="space-y-2">
-                          <Label htmlFor="threshold">Complaint threshold</Label>
-                          <Input
-                            id="threshold"
-                            aria-invalid={!!form.formState.errors.threshold}
-                            disabled={!canEditRules || updateRules.isPending}
-                            inputMode="numeric"
-                            type="text"
-                            {...form.register('threshold', { setValueAs: Number })}
-                          />
-                          {form.formState.errors.threshold && <p className="text-sm text-destructive">{form.formState.errors.threshold.message}</p>}
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="windowDays">Lookback window (days)</Label>
-                          <Input
-                            id="windowDays"
-                            aria-invalid={!!form.formState.errors.windowDays}
-                            disabled={!canEditRules || updateRules.isPending}
-                            inputMode="numeric"
-                            type="text"
-                            {...form.register('windowDays', { setValueAs: Number })}
-                          />
-                          {form.formState.errors.windowDays && <p className="text-sm text-destructive">{form.formState.errors.windowDays.message}</p>}
-                        </div>
-                      </div>
-                      {canEditRules && (
-                        <Button disabled={updateRules.isPending || rules.isLoading} type="submit">
-                          {updateRules.isPending && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
-                          {updateRules.isPending ? 'Saving…' : 'Save rule'}
-                        </Button>
-                      )}
-                    </form>
-                  )
-            : <p className="text-sm text-muted-foreground">You do not have permission to view flagged buyer rules.</p>}
+          {canReadRules ? (
+            rules.isLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader2 aria-label="Loading rule" className="h-5 w-5 animate-spin" />
+              </div>
+            ) : rules.isError ? (
+              <p role="alert" className="text-sm text-destructive">
+                Unable to load the flagged buyer rule.
+              </p>
+            ) : (
+              <form onSubmit={form.handleSubmit(saveRule)} className="space-y-5">
+                <div
+                  className="
+                    grid gap-4
+                    sm:grid-cols-2
+                  "
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="threshold">Complaint threshold</Label>
+                    <Input
+                      id="threshold"
+                      aria-invalid={!!form.formState.errors.threshold}
+                      disabled={!canEditRules || updateRules.isPending}
+                      inputMode="numeric"
+                      type="text"
+                      {...form.register('threshold', { setValueAs: Number })}
+                    />
+                    {form.formState.errors.threshold && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.threshold.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="windowDays">Lookback window (days)</Label>
+                    <Input
+                      id="windowDays"
+                      aria-invalid={!!form.formState.errors.windowDays}
+                      disabled={!canEditRules || updateRules.isPending}
+                      inputMode="numeric"
+                      type="text"
+                      {...form.register('windowDays', { setValueAs: Number })}
+                    />
+                    {form.formState.errors.windowDays && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.windowDays.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {canEditRules && (
+                  <Button disabled={updateRules.isPending || rules.isLoading} type="submit">
+                    {updateRules.isPending && (
+                      <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {updateRules.isPending ? 'Saving…' : 'Save rule'}
+                  </Button>
+                )}
+              </form>
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              You do not have permission to view flagged buyer rules.
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {canReadRules
-        ? (
-            <section aria-label="Flagged buyer results" className="space-y-4">
-              <div className="
-                grid gap-3
-                sm:grid-cols-2
-              "
-              >
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-xs uppercase text-muted-foreground">Qualifying buyers</p>
-                    <p className="font-heading text-2xl font-semibold">
-                      {buyers.data?.aggregates?.qualifyingBuyerCount ?? '—'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-xs uppercase text-muted-foreground">Counted complaint rows</p>
-                    <p className="font-heading text-2xl font-semibold">
-                      {buyers.data?.aggregates?.countedComplaintRowCount ?? '—'}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+      {canReadRules ? (
+        <section aria-label="Flagged buyer results" className="space-y-4">
+          <div
+            className="
+              grid gap-3
+              sm:grid-cols-2
+            "
+          >
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs uppercase text-muted-foreground">Qualifying buyers</p>
+                <p className="font-heading text-2xl font-semibold">
+                  {buyers.data?.aggregates?.qualifyingBuyerCount ?? '—'}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs uppercase text-muted-foreground">Counted complaint rows</p>
+                <p className="font-heading text-2xl font-semibold">
+                  {buyers.data?.aggregates?.countedComplaintRowCount ?? '—'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-heading">Buyers meeting the rule</CardTitle>
-                  <CardDescription>
-                    Buyers and complaint totals are shown in the order returned by the API.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {buyers.isLoading
-                    ? <div className="flex items-center justify-center p-12"><Loader2 aria-label="Loading flagged buyers" className="h-5 w-5 animate-spin" /></div>
-                    : buyers.isError
-                      ? <p role="alert" className="p-8 text-center text-sm text-destructive">Unable to load flagged buyers.</p>
-                      : buyers.data.data.length === 0
-                        ? <p className="p-8 text-center text-sm text-muted-foreground">No buyers meet the current rule.</p>
-                        : (
-                            <>
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Buyer</TableHead>
-                                    <TableHead>Profile</TableHead>
-                                    <TableHead>Qualifying complaints</TableHead>
-                                    <TableHead>Latest qualifying complaint</TableHead>
-                                    <TableHead><span className="sr-only">Actions</span></TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {buyers.data.data.map(buyer => (
-                                    <TableRow key={buyer.buyerId}>
-                                      <TableCell className="font-medium">{buyer.displayName}</TableCell>
-                                      <TableCell className="text-sm">
-                                        <Link
-                                          to={`/seller/${buyer.buyerId}`}
-                                          className="
-                                            text-primary
-                                            hover:underline
-                                          "
-                                        >
-                                          Profile
-                                        </Link>
-                                      </TableCell>
-                                      <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
-                                      <TableCell>{format(new Date(buyer.latestQualifyingComplaintCreatedAt), 'dd MMM yyyy')}</TableCell>
-                                      <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                          {canEditRules && (
-                                            <Button
-                                              onClick={() => {
-                                                resetWarningForm();
-                                                setWarningBuyer(buyer);
-                                              }}
-                                              size="sm"
-                                              type="button"
-                                              variant="outline"
-                                            >
-                                              Warn
-                                            </Button>
-                                          )}
-                                          <Button
-                                            onClick={() => {
-                                              setHistoryPage(1);
-                                              setHistoryBuyer(buyer);
-                                            }}
-                                            size="sm"
-                                            type="button"
-                                            variant="outline"
-                                          >
-                                            History
-                                          </Button>
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                              {buyers.data.pagination.total > 0 && (
-                                <div className="flex items-center justify-between gap-4 border-t p-4 text-sm">
-                                  <p className="text-muted-foreground">
-                                    Page
-                                    {' '}
-                                    {buyers.data.pagination.currentPage}
-                                    {' '}
-                                    of
-                                    {' '}
-                                    {buyers.data.pagination.lastPage}
-                                    {' '}
-                                    ·
-                                    {' '}
-                                    {buyers.data.pagination.total}
-                                    {' '}
-                                    buyers
-                                  </p>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      onClick={() => setPage(buyers.data.pagination.prevPage ?? 1)}
-                                      aria-label="Previous page"
-                                      disabled={buyers.data.pagination.prevPage === null || buyers.isFetching}
-                                      type="button"
-                                      variant="outline"
-                                    >
-                                      Previous
-                                    </Button>
-                                    <Button
-                                      onClick={() => setPage(buyers.data.pagination.nextPage ?? page)}
-                                      aria-label="Next page"
-                                      disabled={buyers.data.pagination.nextPage === null || buyers.isFetching}
-                                      type="button"
-                                      variant="outline"
-                                    >
-                                      Next
-                                    </Button>
-                                  </div>
-                                </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Buyers meeting the rule</CardTitle>
+              <CardDescription>
+                Buyers and complaint totals are shown in the order returned by the API.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {buyers.isLoading ? (
+                <div className="flex items-center justify-center p-12">
+                  <Loader2 aria-label="Loading flagged buyers" className="h-5 w-5 animate-spin" />
+                </div>
+              ) : buyers.isError ? (
+                <p role="alert" className="p-8 text-center text-sm text-destructive">
+                  Unable to load flagged buyers.
+                </p>
+              ) : buyers.data.data.length === 0 ? (
+                <p className="p-8 text-center text-sm text-muted-foreground">
+                  No buyers meet the current rule.
+                </p>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Buyer</TableHead>
+                        <TableHead>Profile</TableHead>
+                        <TableHead>Qualifying complaints</TableHead>
+                        <TableHead>Latest qualifying complaint</TableHead>
+                        <TableHead>
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {buyers.data.data.map(buyer => (
+                        <TableRow key={buyer.buyerId}>
+                          <TableCell className="font-medium">{buyer.displayName}</TableCell>
+                          <TableCell className="text-sm">
+                            <Link
+                              to={`/seller/${buyer.buyerId}`}
+                              className="
+                                text-primary
+                                hover:underline
+                              "
+                            >
+                              Profile
+                            </Link>
+                          </TableCell>
+                          <TableCell>{buyer.qualifyingComplaintCount}</TableCell>
+                          <TableCell>
+                            {format(
+                              new Date(buyer.latestQualifyingComplaintCreatedAt),
+                              'dd MMM yyyy',
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {canEditRules && (
+                                <Button
+                                  onClick={() => {
+                                    resetWarningForm();
+                                    setWarningBuyer(buyer);
+                                  }}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Warn
+                                </Button>
                               )}
-                            </>
-                          )}
-                </CardContent>
-              </Card>
-            </section>
-          )
-        : null}
+                              <Button
+                                onClick={() => {
+                                  setHistoryPage(1);
+                                  setHistoryBuyer(buyer);
+                                }}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                History
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {buyers.data.pagination.total > 0 && (
+                    <div className="flex items-center justify-between gap-4 border-t p-4 text-sm">
+                      <p className="text-muted-foreground">
+                        Page {buyers.data.pagination.currentPage} of{' '}
+                        {buyers.data.pagination.lastPage} · {buyers.data.pagination.total} buyers
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => setPage(buyers.data.pagination.prevPage ?? 1)}
+                          aria-label="Previous page"
+                          disabled={buyers.data.pagination.prevPage === null || buyers.isFetching}
+                          type="button"
+                          variant="outline"
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          onClick={() => setPage(buyers.data.pagination.nextPage ?? page)}
+                          aria-label="Next page"
+                          disabled={buyers.data.pagination.nextPage === null || buyers.isFetching}
+                          type="button"
+                          variant="outline"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <Dialog onOpenChange={open => !open && setHistoryBuyer(null)} open={historyBuyer !== null}>
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">Complaint history</DialogTitle>
             <DialogDescription>
-              Qualifying complaints for
-              {' '}
-              {historyBuyer?.displayName}
-              .
+              Qualifying complaints for {historyBuyer?.displayName}.
             </DialogDescription>
           </DialogHeader>
 
-          {historyBuyer === null
-            ? null
-            : history.isLoading
-              ? <div className="flex items-center justify-center p-12"><Loader2 aria-label="Loading complaint history" className="h-5 w-5 animate-spin" /></div>
-              : history.isError
-                ? <p role="alert" className="p-8 text-center text-sm text-destructive">Unable to load complaint history.</p>
-                : history.data.data.length === 0
-                  ? <p className="p-8 text-center text-sm text-muted-foreground">No qualifying complaint history.</p>
-                  : (
-                      <>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Reason</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {history.data.data.map(complaint => (
-                              <TableRow key={complaint.id}>
-                                <TableCell className="whitespace-nowrap">{format(new Date(complaint.createdAt), 'dd MMM yyyy')}</TableCell>
-                                <TableCell>{HISTORY_STATUS_LABEL[complaint.status]}</TableCell>
-                                <TableCell>{complaint.reason}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        {history.data.pagination.total > 0 && (
-                          <div className="flex items-center justify-between gap-4 border-t pt-4 text-sm">
-                            <p className="text-muted-foreground">
-                              Page
-                              {' '}
-                              {history.data.pagination.currentPage}
-                              {' '}
-                              of
-                              {' '}
-                              {history.data.pagination.lastPage}
-                              {' · '}
-                              {history.data.pagination.total}
-                              {' '}
-                              complaints
-                            </p>
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => setHistoryPage(history.data.pagination.prevPage ?? 1)}
-                                aria-label="Previous history page"
-                                disabled={history.data.pagination.prevPage === null || history.isFetching}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                Previous
-                              </Button>
-                              <Button
-                                onClick={() => setHistoryPage(history.data.pagination.nextPage ?? historyPage)}
-                                aria-label="Next history page"
-                                disabled={history.data.pagination.nextPage === null || history.isFetching}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                Next
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+          {historyBuyer === null ? null : history.isLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <Loader2 aria-label="Loading complaint history" className="h-5 w-5 animate-spin" />
+            </div>
+          ) : history.isError ? (
+            <p role="alert" className="p-8 text-center text-sm text-destructive">
+              Unable to load complaint history.
+            </p>
+          ) : history.data.data.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No qualifying complaint history.
+            </p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Reason</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.data.data.map(complaint => (
+                    <TableRow key={complaint.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(complaint.createdAt), 'dd MMM yyyy')}
+                      </TableCell>
+                      <TableCell>{HISTORY_STATUS_LABEL[complaint.status]}</TableCell>
+                      <TableCell>{complaint.reason}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {history.data.pagination.total > 0 && (
+                <div className="flex items-center justify-between gap-4 border-t pt-4 text-sm">
+                  <p className="text-muted-foreground">
+                    Page {history.data.pagination.currentPage} of {history.data.pagination.lastPage}
+                    {' · '}
+                    {history.data.pagination.total} complaints
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setHistoryPage(history.data.pagination.prevPage ?? 1)}
+                      aria-label="Previous history page"
+                      disabled={history.data.pagination.prevPage === null || history.isFetching}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        setHistoryPage(history.data.pagination.nextPage ?? historyPage)
+                      }
+                      aria-label="Next history page"
+                      disabled={history.data.pagination.nextPage === null || history.isFetching}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
       <Dialog
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (open || warnBuyer.isPending) {
             return;
           }
@@ -451,11 +485,8 @@ export default function FlaggedBuyers() {
           <DialogHeader>
             <DialogTitle className="font-heading">Warn buyer</DialogTitle>
             <DialogDescription>
-              Send a warning to
-              {' '}
-              {warningBuyer?.displayName}
-              {' '}
-              about their refund activity. Leave the message blank to use the default warning.
+              Send a warning to {warningBuyer?.displayName} about their refund activity. Leave the
+              message blank to use the default warning.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={warningForm.handleSubmit(sendWarning)} className="space-y-4">
@@ -469,7 +500,9 @@ export default function FlaggedBuyers() {
             </div>
             <DialogFooter>
               <Button disabled={warnBuyer.isPending} type="submit">
-                {warnBuyer.isPending && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
+                {warnBuyer.isPending && (
+                  <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {warnBuyer.isPending ? 'Sending…' : 'Send warning'}
               </Button>
             </DialogFooter>

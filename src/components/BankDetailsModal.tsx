@@ -20,11 +20,7 @@ import { showErrorToast } from '@/lib/errorToast';
 import { useUpdateBankDetailsMutation } from '@/queries/myProfile.query';
 
 const bankSchema = z.object({
-  bank_account_holder: z
-    .string()
-    .trim()
-    .min(2, 'Account holder name is required')
-    .max(100),
+  bank_account_holder: z.string().trim().min(2, 'Account holder name is required').max(100),
 
   bank_account_number: z
     .string()
@@ -51,14 +47,7 @@ const bankSchema = z.object({
     .string()
     .trim()
     .transform(v => v.replaceAll(/\s+/g, '').toUpperCase())
-    .pipe(
-      z
-        .string()
-        .regex(
-          /^([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)?$/,
-          'Invalid SWIFT/BIC format',
-        ),
-    )
+    .pipe(z.string().regex(/^([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)?$/, 'Invalid SWIFT/BIC format'))
     .optional(),
 });
 
@@ -80,17 +69,12 @@ const empty: BankFormValues = {
   bank_swift: '',
 };
 
-function BankDetailsModal({
-  initialValues,
-  onCancel,
-  onSaved,
-  open,
-}: BankDetailsModalProps) {
+function BankDetailsModal({ initialValues, onCancel, onSaved, open }: BankDetailsModalProps) {
   const updateBankDetails = useUpdateBankDetailsMutation();
 
   const isEditing = !!(
-    initialValues
-    && (initialValues.bank_iban || initialValues.bank_account_number)
+    initialValues &&
+    (initialValues.bank_iban || initialValues.bank_account_number)
   );
 
   const form = useForm<BankFormValues>({
@@ -101,7 +85,12 @@ function BankDetailsModal({
     mode: 'all',
     resolver: zodResolver(bankSchema),
   });
-  const { control, formState: { errors }, handleSubmit, reset } = form;
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+  } = form;
 
   useEffect(() => {
     if (!open) {
@@ -111,7 +100,7 @@ function BankDetailsModal({
     reset({ ...empty, ...initialValues });
   }, [open, initialValues, reset]);
 
-  const handleSave: SubmitHandler<BankFormValues> = (values) => {
+  const handleSave: SubmitHandler<BankFormValues> = values => {
     const parsedValues = values as ParsedBankFormValues;
     updateBankDetails.mutate(
       {
@@ -125,9 +114,7 @@ function BankDetailsModal({
         onError: (error: any) => showErrorToast(error, 'Failed to save bank details'),
 
         onSuccess: () => {
-          toast.success(
-            isEditing ? 'Payout details updated' : 'Payout details saved',
-          );
+          toast.success(isEditing ? 'Payout details updated' : 'Payout details saved');
           onSaved();
         },
       },
@@ -136,19 +123,18 @@ function BankDetailsModal({
 
   return (
     <Dialog onOpenChange={o => !o && onCancel()} open={open}>
-      <DialogContent className="
-        max-h-[90vh] overflow-y-auto
-        sm:max-w-md
-      "
+      <DialogContent
+        className="
+          max-h-[90vh] overflow-y-auto
+          sm:max-w-md
+        "
       >
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <Landmark className="h-5 w-5 text-primary" />
           </div>
 
-          <DialogTitle>
-            {isEditing ? 'Edit payout details' : 'Add your payout details'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit payout details' : 'Add your payout details'}</DialogTitle>
 
           <DialogDescription>
             {isEditing
@@ -159,10 +145,7 @@ function BankDetailsModal({
 
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <p>
-            Add correct bank details for smooth payout. Incorrect details may
-            delay payments.
-          </p>
+          <p>Add correct bank details for smooth payout. Incorrect details may delay payments.</p>
         </div>
 
         <div className="space-y-4 py-2">
@@ -174,9 +157,7 @@ function BankDetailsModal({
               render={({ field }) => <Input {...field} />}
             />
             {errors.bank_account_holder && (
-              <p className="text-xs text-destructive">
-                {errors.bank_account_holder.message}
-              </p>
+              <p className="text-xs text-destructive">{errors.bank_account_holder.message}</p>
             )}
           </div>
 
@@ -209,9 +190,7 @@ function BankDetailsModal({
               )}
             />
             {errors.bank_account_number && (
-              <p className="text-xs text-destructive">
-                {errors.bank_account_number.message}
-              </p>
+              <p className="text-xs text-destructive">{errors.bank_account_number.message}</p>
             )}
           </div>
 
@@ -257,18 +236,12 @@ function BankDetailsModal({
         </div>
 
         <DialogFooter>
-          <Button
-            onClick={onCancel}
-            disabled={updateBankDetails.isPending}
-            variant="ghost"
-          >
+          <Button onClick={onCancel} disabled={updateBankDetails.isPending} variant="ghost">
             Cancel
           </Button>
 
           <Button onClick={handleSubmit(handleSave)} disabled={updateBankDetails.isPending}>
-            {updateBankDetails.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {updateBankDetails.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 
             {isEditing ? 'Save changes' : 'Save & continue'}
           </Button>

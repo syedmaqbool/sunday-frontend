@@ -127,7 +127,8 @@ export interface UpdateAdminComplaintStatusErrors {
   };
 }
 
-export type UpdateAdminComplaintStatusError = UpdateAdminComplaintStatusErrors[keyof UpdateAdminComplaintStatusErrors];
+export type UpdateAdminComplaintStatusError =
+  UpdateAdminComplaintStatusErrors[keyof UpdateAdminComplaintStatusErrors];
 
 export interface UpdateAdminComplaintStatusResponses {
   /**
@@ -158,7 +159,15 @@ export interface UpdateAdminComplaintStatusResponses {
       returnProofUrls: Array<string>;
       returnTracking: string | null;
       sellerFullName: string;
-      status: 'RAISED' | 'REFUNDED' | 'REJECTED' | 'RETURN_ADDRESS_PROVIDED' | 'RETURN_APPROVED' | 'RETURN_IN_TRANSIT' | 'RETURN_RECEIVED' | 'UNDER_REVIEW';
+      status:
+        | 'RAISED'
+        | 'REFUNDED'
+        | 'REJECTED'
+        | 'RETURN_ADDRESS_PROVIDED'
+        | 'RETURN_APPROVED'
+        | 'RETURN_IN_TRANSIT'
+        | 'RETURN_RECEIVED'
+        | 'UNDER_REVIEW';
       resolvedAt: string | null;
       resolvedBy: string | null;
       createdAt: string;
@@ -169,4 +178,5 @@ export interface UpdateAdminComplaintStatusResponses {
   };
 }
 
-export type UpdateAdminComplaintStatusResponse = UpdateAdminComplaintStatusResponses[keyof UpdateAdminComplaintStatusResponses];
+export type UpdateAdminComplaintStatusResponse =
+  UpdateAdminComplaintStatusResponses[keyof UpdateAdminComplaintStatusResponses];

@@ -127,7 +127,8 @@ export interface UpdateAdminClothingTypeErrors {
   };
 }
 
-export type UpdateAdminClothingTypeError = UpdateAdminClothingTypeErrors[keyof UpdateAdminClothingTypeErrors];
+export type UpdateAdminClothingTypeError =
+  UpdateAdminClothingTypeErrors[keyof UpdateAdminClothingTypeErrors];
 
 export interface UpdateAdminClothingTypeResponses {
   /**
@@ -148,4 +149,5 @@ export interface UpdateAdminClothingTypeResponses {
   };
 }
 
-export type UpdateAdminClothingTypeResponse = UpdateAdminClothingTypeResponses[keyof UpdateAdminClothingTypeResponses];
+export type UpdateAdminClothingTypeResponse =
+  UpdateAdminClothingTypeResponses[keyof UpdateAdminClothingTypeResponses];

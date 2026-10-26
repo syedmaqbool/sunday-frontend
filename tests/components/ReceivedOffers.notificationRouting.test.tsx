@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { ReceivedOffers } from '@/components/ReceivedOffers';
 
 const { respondToOfferMock, useQueryMock } = vi.hoisted(() => ({
@@ -10,7 +10,7 @@ const { respondToOfferMock, useQueryMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
 }));
 
-vi.mock('@tanstack/react-query', async (importOriginal) => {
+vi.mock('@tanstack/react-query', async importOriginal => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return { ...actual, useQuery: useQueryMock };
 });
@@ -63,21 +63,21 @@ function ReceivedOffersRoute() {
   );
 }
 
-function renderOffers(initialEntry: string, offers: typeof receivedOffer[]) {
-  useQueryMock.mockImplementation((options: any) => ({
-    data: options.queryKey.includes('received') ? { data: offers } : { data: [] },
-    isLoading: false,
-  }) as any);
+function renderOffers(initialEntry: string, offers: (typeof receivedOffer)[]) {
+  useQueryMock.mockImplementation(
+    (options: any) =>
+      ({
+        data: options.queryKey.includes('received') ? { data: offers } : { data: [] },
+        isLoading: false,
+      }) as any,
+  );
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
-          <Route
-            element={<ReceivedOffersRoute />}
-            path="/my-listings"
-          />
+          <Route element={<ReceivedOffersRoute />} path="/my-listings" />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -89,13 +89,17 @@ describe('received offer notification selection', () => {
     renderOffers('/my-listings?tab=offers&offer=offer-1', [receivedOffer]);
 
     expect(await screen.findByTestId('selected-offer')).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveTextContent('/my-listings?tab=offers&offer=offer-1');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/my-listings?tab=offers&offer=offer-1',
+    );
   });
 
   it('falls back to the received offers list when the offer no longer exists', async () => {
     renderOffers('/my-listings?tab=offers&offer=missing-offer', []);
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/my-listings?tab=offers'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/my-listings?tab=offers'),
+    );
     expect(screen.queryByTestId('selected-offer')).not.toBeInTheDocument();
     expect(await screen.findByText('No offers received yet')).toBeInTheDocument();
   });

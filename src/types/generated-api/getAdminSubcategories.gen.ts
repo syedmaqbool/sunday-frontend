@@ -75,7 +75,8 @@ export interface GetAdminSubcategoriesErrors {
   };
 }
 
-export type GetAdminSubcategoriesError = GetAdminSubcategoriesErrors[keyof GetAdminSubcategoriesErrors];
+export type GetAdminSubcategoriesError =
+  GetAdminSubcategoriesErrors[keyof GetAdminSubcategoriesErrors];
 
 export interface GetAdminSubcategoriesResponses {
   /**
@@ -128,4 +129,5 @@ export interface GetAdminSubcategoriesResponses {
   };
 }
 
-export type GetAdminSubcategoriesResponse = GetAdminSubcategoriesResponses[keyof GetAdminSubcategoriesResponses];
+export type GetAdminSubcategoriesResponse =
+  GetAdminSubcategoriesResponses[keyof GetAdminSubcategoriesResponses];

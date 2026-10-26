@@ -97,7 +97,8 @@ export interface GetAdminReservedListingsErrors {
   };
 }
 
-export type GetAdminReservedListingsError = GetAdminReservedListingsErrors[keyof GetAdminReservedListingsErrors];
+export type GetAdminReservedListingsError =
+  GetAdminReservedListingsErrors[keyof GetAdminReservedListingsErrors];
 
 export interface GetAdminReservedListingsResponses {
   /**
@@ -155,4 +156,5 @@ export interface GetAdminReservedListingsResponses {
   };
 }
 
-export type GetAdminReservedListingsResponse = GetAdminReservedListingsResponses[keyof GetAdminReservedListingsResponses];
+export type GetAdminReservedListingsResponse =
+  GetAdminReservedListingsResponses[keyof GetAdminReservedListingsResponses];

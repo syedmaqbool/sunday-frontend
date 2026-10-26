@@ -30,7 +30,7 @@ type EditClothingTypeForm = z.infer<typeof editClothingTypeSchema>;
 async function getDeleteErrorToastOptions(error: unknown) {
   if (error instanceof HTTPError) {
     try {
-      const body = await error.response.clone().json() as { message?: unknown };
+      const body = (await error.response.clone().json()) as { message?: unknown };
       if (typeof body.message === 'string' && body.message.trim()) {
         return {
           description: body.message,
@@ -38,8 +38,7 @@ async function getDeleteErrorToastOptions(error: unknown) {
           variant: 'destructive' as const,
         };
       }
-    }
-    catch {
+    } catch {
       // Fall through to the standard error message when the response is not JSON.
     }
   }
@@ -68,12 +67,11 @@ function ClothingTypeRow({
     resolver: zodResolver(editClothingTypeSchema),
   });
 
-  const save = form.handleSubmit(async (values) => {
+  const save = form.handleSubmit(async values => {
     try {
       await onSave(clothingType.id, values);
       form.reset(values);
-    }
-    catch {
+    } catch {
       // Keep the row draft available for retry or cancel after an API error.
     }
   });
@@ -151,8 +149,7 @@ export default function ClothingTypesManager() {
       await createClothingType.mutateAsync({ label });
       createForm.reset({ label: '' });
       toast({ title: 'Clothing type created' });
-    }
-    catch (error) {
+    } catch (error) {
       toast(getErrorToastOptions(error));
     }
   });
@@ -164,8 +161,7 @@ export default function ClothingTypesManager() {
         payload: { label: values.label.trim(), sortOrder: values.sortOrder },
       });
       toast({ title: 'Clothing type updated' });
-    }
-    catch (error) {
+    } catch (error) {
       toast(getErrorToastOptions(error));
       throw error;
     }
@@ -175,8 +171,7 @@ export default function ClothingTypesManager() {
     try {
       await deleteClothingType.mutateAsync(id);
       toast({ title: 'Clothing type deleted' });
-    }
-    catch (error) {
+    } catch (error) {
       toast(await getDeleteErrorToastOptions(error));
     }
   };
@@ -205,9 +200,7 @@ export default function ClothingTypesManager() {
             type="submit"
             className="gap-1"
           >
-            <Plus className="h-4 w-4" />
-            {' '}
-            Add
+            <Plus className="h-4 w-4" /> Add
           </Button>
         </form>
         {clothingTypes.map(clothingType => (

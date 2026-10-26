@@ -1,6 +1,6 @@
 import type { MarketplaceListing } from '@/queries/marketplace.query';
 import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { CartProvider, useCart } from '@/contexts/CartContext';
 
 const { fetchMarketplaceListingMock } = vi.hoisted(() => ({
@@ -38,9 +38,7 @@ describe('cart provider', () => {
   });
 
   it('normalizes legacy quantities to one per unique listing', async () => {
-    localStorage.setItem('cart:guest', JSON.stringify([
-      { listing, quantity: 4 },
-    ]));
+    localStorage.setItem('cart:guest', JSON.stringify([{ listing, quantity: 4 }]));
 
     render(
       <CartProvider>

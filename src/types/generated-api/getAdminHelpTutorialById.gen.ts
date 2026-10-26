@@ -68,7 +68,8 @@ export interface GetAdminHelpTutorialByIdErrors {
   };
 }
 
-export type GetAdminHelpTutorialByIdError = GetAdminHelpTutorialByIdErrors[keyof GetAdminHelpTutorialByIdErrors];
+export type GetAdminHelpTutorialByIdError =
+  GetAdminHelpTutorialByIdErrors[keyof GetAdminHelpTutorialByIdErrors];
 
 export interface GetAdminHelpTutorialByIdResponses {
   /**
@@ -92,4 +93,5 @@ export interface GetAdminHelpTutorialByIdResponses {
   };
 }
 
-export type GetAdminHelpTutorialByIdResponse = GetAdminHelpTutorialByIdResponses[keyof GetAdminHelpTutorialByIdResponses];
+export type GetAdminHelpTutorialByIdResponse =
+  GetAdminHelpTutorialByIdResponses[keyof GetAdminHelpTutorialByIdResponses];

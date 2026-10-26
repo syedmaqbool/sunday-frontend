@@ -12,9 +12,7 @@ export function getMyProfile() {
 }
 
 export function updateMyProfile(payload: UpdateProfilePayload) {
-  return authInstance
-    .patch('/api/v1/profiles/me', { json: payload })
-    .json<Response<Profile>>();
+  return authInstance.patch('/api/v1/profiles/me', { json: payload }).json<Response<Profile>>();
 }
 
 export function updateMyBankDetails(payload: UpdateBankDetailsPayload) {
@@ -26,7 +24,5 @@ export function updateMyBankDetails(payload: UpdateBankDetailsPayload) {
 export function uploadProfileFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
-  return authInstance
-    .post('/api/upload-file', { body: formData })
-    .json<Response<UploadedFile>>();
+  return authInstance.post('/api/upload-file', { body: formData }).json<Response<UploadedFile>>();
 }

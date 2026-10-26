@@ -175,4 +175,5 @@ export interface UpdateAdminSettingsResponses {
   };
 }
 
-export type UpdateAdminSettingsResponse = UpdateAdminSettingsResponses[keyof UpdateAdminSettingsResponses];
+export type UpdateAdminSettingsResponse =
+  UpdateAdminSettingsResponses[keyof UpdateAdminSettingsResponses];

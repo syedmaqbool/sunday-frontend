@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Analytics from '@/pages/admin/Analytics';
 
 const getAdminAnalyticsMock = vi.hoisted(() => vi.fn());
@@ -67,27 +67,35 @@ const analyticsResponse = {
 };
 
 const leadsResponse = {
-  data: [{
-    userId: 'lead-id',
-    leadStatus: 'NEW',
-    location: 'Lahore',
-    name: 'Ali Khan',
-    offerCount: 2,
-    orderCount: 1,
-    phone: '03001234567',
-  }],
+  data: [
+    {
+      userId: 'lead-id',
+      leadStatus: 'NEW',
+      location: 'Lahore',
+      name: 'Ali Khan',
+      offerCount: 2,
+      orderCount: 1,
+      phone: '03001234567',
+    },
+  ],
   pagination: { page: 1, size: 50, total: 1, totalPages: 1 },
 };
 
 function renderAnalytics() {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
       <Analytics />
     </QueryClientProvider>,
   );
 }
 
 describe('admin analytics marketing-leads export', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     getAdminAnalyticsMock.mockReset().mockResolvedValue(analyticsResponse);
     listAdminMarketingLeadsMock.mockReset().mockResolvedValue(leadsResponse);
@@ -107,11 +115,13 @@ describe('admin analytics marketing-leads export', () => {
   });
 
   it('downloads the successful backend CSV using active filters and its filename', async () => {
-    exportAdminMarketingLeadsMock.mockResolvedValue(new Response('email,name\nali@example.com,Ali', {
-      headers: {
-        'content-disposition': 'attachment; filename="marketing-leads-export.csv"',
-      },
-    }));
+    exportAdminMarketingLeadsMock.mockResolvedValue(
+      new Response('email,name\nali@example.com,Ali', {
+        headers: {
+          'content-disposition': 'attachment; filename="marketing-leads-export.csv"',
+        },
+      }),
+    );
     renderAnalytics();
 
     await screen.findByText('Ali Khan');
@@ -121,7 +131,9 @@ describe('admin analytics marketing-leads export', () => {
     const createElementMock = vi.spyOn(document, 'createElement');
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
 
-    await waitFor(() => expect(exportAdminMarketingLeadsMock).toHaveBeenCalledWith({ search: 'ali' }));
+    await waitFor(() =>
+      expect(exportAdminMarketingLeadsMock).toHaveBeenCalledWith({ search: 'ali' }),
+    );
 
     expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
@@ -135,7 +147,7 @@ describe('admin analytics marketing-leads export', () => {
   it('shows a loading state, disables the button, and ignores duplicate clicks', async () => {
     let resolveExport!: (response: Response) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    const exportPromise = new Promise<Response>((resolve) => {
+    const exportPromise = new Promise<Response>(resolve => {
       resolveExport = resolve;
     });
     exportAdminMarketingLeadsMock.mockReturnValue(exportPromise);
@@ -147,7 +159,11 @@ describe('admin analytics marketing-leads export', () => {
     fireEvent.click(button);
 
     expect(screen.getAllByRole('button', { name: /downloading/i })).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: /downloading/i }).every(control => control.hasAttribute('disabled'))).toBe(true);
+    expect(
+      screen
+        .getAllByRole('button', { name: /downloading/i })
+        .every(control => control.hasAttribute('disabled')),
+    ).toBe(true);
     expect(exportAdminMarketingLeadsMock).toHaveBeenCalledTimes(1);
 
     resolveExport(new Response('email,name\n'));
@@ -176,9 +192,11 @@ describe('admin analytics marketing-leads export', () => {
     const button = await screen.findByRole('button', { name: 'Download' });
     fireEvent.click(button);
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith('Error', {
-      description: 'Export failed',
-    }));
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith('Error', {
+        description: 'Export failed',
+      }),
+    );
 
     expect(URL.createObjectURL).not.toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
@@ -192,23 +210,29 @@ describe('admin analytics marketing-leads export', () => {
     fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Last 7 days' }), { button: 0 });
 
     await waitFor(() => {
-      expect(getAdminAnalyticsMock).toHaveBeenLastCalledWith(expect.objectContaining({
-        endTime: expect.any(String),
-        startTime: expect.any(String),
-      }));
-      expect(listAdminMarketingLeadsMock).toHaveBeenLastCalledWith(expect.objectContaining({
-        endTime: expect.any(String),
-        startTime: expect.any(String),
-      }));
+      expect(getAdminAnalyticsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          endTime: expect.any(String),
+          startTime: expect.any(String),
+        }),
+      );
+      expect(listAdminMarketingLeadsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          endTime: expect.any(String),
+          startTime: expect.any(String),
+        }),
+      );
     });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
 
     await waitFor(() => {
-      expect(exportAdminMarketingLeadsMock).toHaveBeenLastCalledWith(expect.objectContaining({
-        endTime: expect.any(String),
-        startTime: expect.any(String),
-      }));
+      expect(exportAdminMarketingLeadsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          endTime: expect.any(String),
+          startTime: expect.any(String),
+        }),
+      );
     });
   });
 });

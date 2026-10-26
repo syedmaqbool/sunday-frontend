@@ -2,11 +2,7 @@ import type { AdminPermissionName } from '@/types/adminRole.type';
 import type { AuthUser } from '@/types/auth.type';
 
 export type { AdminPermissionName } from '@/types/adminRole.type';
-export type PermissionRequirement
-  = AdminPermissionName
-    | AdminPermissionName[]
-    | null
-    | undefined;
+export type PermissionRequirement = AdminPermissionName | AdminPermissionName[] | null | undefined;
 
 export const ADMIN_SHELL_PERMISSIONS = [
   'ANALYTICS_READ',
@@ -32,10 +28,7 @@ export function isAdminUser(user: AuthUser | null | undefined) {
   return user?.roleName === 'ADMIN';
 }
 
-export function hasPermission(
-  user: AuthUser | null | undefined,
-  permission: AdminPermissionName,
-) {
+export function hasPermission(user: AuthUser | null | undefined, permission: AdminPermissionName) {
   return user?.permissions?.some(item => item.name === permission) ?? false;
 }
 
@@ -46,10 +39,7 @@ export function hasPermissions(
   return permissions.every(permission => hasPermission(user, permission));
 }
 
-export function canUser(
-  user: AuthUser | null | undefined,
-  requirement: PermissionRequirement,
-) {
+export function canUser(user: AuthUser | null | undefined, requirement: PermissionRequirement) {
   if (!user) {
     return false;
   }
@@ -66,9 +56,7 @@ export function canUser(
 }
 
 export function canAccessAdminPortal(user: AuthUser | null | undefined) {
-  if (!user)
-    return false;
-  if (isAdminUser(user))
-    return true;
+  if (!user) return false;
+  if (isAdminUser(user)) return true;
   return ADMIN_SHELL_PERMISSIONS.some(permission => hasPermission(user, permission));
 }

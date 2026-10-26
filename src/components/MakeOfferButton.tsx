@@ -2,7 +2,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Info, Loader2, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -275,6 +275,20 @@ export function MakeOfferButton({
                 )}
               />
             </div>
+
+            
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <p className="text-xs leading-relaxed text-foreground">
+                      <span className="font-semibold">Important: </span>
+                      All offers are binding. Once a seller accepts your offer, you will
+                      have 24 hours to make the payment. Failure to do so will result in
+                      an administrative review of your account.
+                    </p>
+                  </div>
+                </div>
+
 
             <Button
               onClick={handleSubmit(onSubmit)}

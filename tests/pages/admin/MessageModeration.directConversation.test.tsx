@@ -53,9 +53,23 @@ vi.mock('@/queries/adminMessageModeration.query', () => ({
     queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
     queryKey: ['test-flagged-conversation'],
   }),
+  getFlaggedMessageHistoryOptions: () => infiniteQueryOptions({
+    enabled: false,
+    getNextPageParam: () => null,
+    initialPageParam: 1,
+    queryFn: async () => ({ data: [], pagination: { nextPage: null } }),
+    queryKey: ['test-flagged-message-history'],
+  }),
   getFlaggedMessagesOptions: () => queryOptions({
     queryFn: async () => ({ data: flaggedMessages }),
     queryKey: ['test-flagged-messages'],
+  }),
+  getResolvedFlaggedConversationOptions: () => infiniteQueryOptions({
+    enabled: false,
+    getNextPageParam: () => null,
+    initialPageParam: 1,
+    queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
+    queryKey: ['test-resolved-flagged-conversation'],
   }),
   useDeleteMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
   useDismissFlagMutation: () => ({ isPending: false, mutate: vi.fn() }),

@@ -2,7 +2,11 @@ import type {
   FlaggedConversationParameters,
   FlaggedConversationResponse,
   FlaggedMessage,
+  FlaggedMessageHistory,
+  FlaggedMessageHistoryParameters,
   FlaggedMessagesParameters,
+  ResolvedFlaggedConversationParameters,
+  ResolvedFlaggedConversationResponse,
 } from '@/types/adminMessageModeration.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -13,6 +17,23 @@ export function listFlaggedMessages(
   return authInstance
     .get('/api/v1/admin/messages/flagged', { searchParams: parameters })
     .json<PaginatedResponse<FlaggedMessage>>();
+}
+
+export function listFlaggedMessageHistory(
+  parameters: FlaggedMessageHistoryParameters,
+) {
+  return authInstance
+    .get('/api/v1/admin/messages/history', { searchParams: parameters })
+    .json<PaginatedResponse<FlaggedMessageHistory>>();
+}
+
+export function getResolvedFlaggedConversation(
+  historyId: string,
+  parameters: ResolvedFlaggedConversationParameters,
+): Promise<ResolvedFlaggedConversationResponse> {
+  return authInstance
+    .get(`/api/v1/admin/messages/history/${historyId}/conversation`, { searchParams: parameters })
+    .json<ResolvedFlaggedConversationResponse>();
 }
 
 export function getFlaggedConversation(

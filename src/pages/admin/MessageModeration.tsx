@@ -1,4 +1,4 @@
-import type { FlaggedMessage } from '@/types/adminMessageModeration.type';
+import type { FlaggedMessage, FlaggedMessageHistory } from '@/types/adminMessageModeration.type';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
@@ -26,7 +26,9 @@ import { getConversationContextLabel } from '@/lib/conversationContext';
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getFlaggedConversationOptions,
+  getFlaggedMessageHistoryOptions,
   getFlaggedMessagesOptions,
+  getResolvedFlaggedConversationOptions,
   messageModerationQueryKey,
   useDeleteMessageMutation,
   useDismissFlagMutation,
@@ -34,22 +36,43 @@ import {
 
 function MessageModeration() {
   const [selected, setSelected] = useState<FlaggedMessage | null>(null);
+  const [selectedHistory, setSelectedHistory] = useState<FlaggedMessageHistory | null>(null);
+  const [activeView, setActiveView] = useState<'active' | 'history'>('active');
   const queryClient = useQueryClient();
 
   const { data: flaggedMessagesResponse, isLoading } = useQuery(getFlaggedMessagesOptions());
   const flaggedMessages = flaggedMessagesResponse?.data ?? [];
   const flaggedConversationQuery = useInfiniteQuery(getFlaggedConversationOptions(selected?.id));
-  const conversation = flaggedConversationQuery.data?.pages[0]?.data;
-  const conversationMessages = flaggedConversationQuery.data?.pages.flatMap(page => page.data.messages) ?? [];
+  const historyQuery = useInfiniteQuery(getFlaggedMessageHistoryOptions(activeView === 'history'));
+  const historyConversationQuery = useInfiniteQuery(getResolvedFlaggedConversationOptions(selectedHistory?.id));
+  const reviewQuery = selectedHistory ? historyConversationQuery : flaggedConversationQuery;
+  const conversation = reviewQuery.data?.pages[0]?.data;
+  const conversationMessages = reviewQuery.data?.pages.flatMap(page => page.data.messages) ?? [];
+  const historyItems = historyQuery.data?.pages.flatMap(page => page.data) ?? [];
   const dismissFlag = useDismissFlagMutation();
   const deleteMessage = useDeleteMessageMutation();
 
   const reloadConversation = () => {
-    if (selected) {
+    if (selectedHistory) {
+      void queryClient.invalidateQueries({
+        queryKey: messageModerationQueryKey.historyConversation(selectedHistory.id),
+      });
+    }
+    else if (selected) {
       void queryClient.invalidateQueries({
         queryKey: messageModerationQueryKey.conversation(selected.id),
       });
     }
+  };
+
+  const openHistoryConversation = (item: FlaggedMessageHistory) => {
+    setSelected(null);
+    setSelectedHistory(item);
+  };
+
+  const closeConversation = () => {
+    setSelected(null);
+    setSelectedHistory(null);
   };
 
   const handleDismiss = (messageId: string) => {
@@ -83,13 +106,31 @@ function MessageModeration() {
         </p>
       </div>
 
-      {isLoading
-        ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          )
-        : (flaggedMessages.length === 0
+      <div aria-label="Message moderation views" className="mt-6 flex gap-2 border-b border-border">
+        <Button
+          onClick={() => setActiveView('active')}
+          aria-pressed={activeView === 'active'}
+          variant={activeView === 'active' ? 'default' : 'ghost'}
+        >
+          Active
+        </Button>
+        <Button
+          onClick={() => setActiveView('history')}
+          aria-pressed={activeView === 'history'}
+          variant={activeView === 'history' ? 'default' : 'ghost'}
+        >
+          History
+        </Button>
+      </div>
+
+      {activeView === 'active' && (
+        isLoading
+          ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )
+          : flaggedMessages.length === 0
             ? (
                 <div className="mt-8 flex flex-col items-center gap-2 text-center text-muted-foreground">
                   <CheckCircle className="h-12 w-12" />
@@ -174,15 +215,100 @@ function MessageModeration() {
                     </Card>
                   ))}
                 </div>
-              ))}
+              )
+      )}
+
+      {activeView === 'history' && (
+        historyQuery.isLoading
+          ? (
+              <div role="status" className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <span className="sr-only">Loading resolved flag history</span>
+              </div>
+            )
+          : historyQuery.isError
+            ? (
+                <div className="mt-8 flex flex-col items-center gap-3 text-center text-muted-foreground">
+                  <p role="alert" className="text-sm">Resolved flag history could not be loaded.</p>
+                  <Button onClick={() => void historyQuery.refetch()} variant="outline">Retry history</Button>
+                </div>
+              )
+            : historyItems.length === 0
+              ? (
+                  <div className="mt-8 flex flex-col items-center gap-2 text-center text-muted-foreground">
+                    <CheckCircle className="h-12 w-12" />
+                    <p className="text-lg font-medium">No recent resolved flags</p>
+                    <p className="text-sm">Resolved flags are kept here for three months.</p>
+                  </div>
+                )
+              : (
+                  <div className="mt-6 space-y-3">
+                    {historyItems.map(item => (
+                      <Card key={item.id}>
+                        <CardContent className="
+                          flex flex-col gap-3 p-4
+                          sm:flex-row sm:items-center
+                        "
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">
+                                Sender:
+                                {' '}
+                                {item.senderId}
+                              </span>
+                              <Badge variant="destructive" className="text-[10px]">{item.flagReasons.join(', ')}</Badge>
+                              <Badge variant="secondary" className="text-[10px]">
+                                {item.resolutionAction === 'REMOVED' ? 'Removed' : 'Dismissed'}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Resolved
+                              {' '}
+                              {format(new Date(item.resolvedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                              {' · Flagged '}
+                              {format(new Date(item.flaggedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => openHistoryConversation(item)}
+                            aria-label={`Open conversation for ${item.flagReasons.join(', ')} from ${item.senderId}`}
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            {' '}
+                            Review
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {historyQuery.hasNextPage && (
+                      <div className="flex justify-center">
+                        <Button
+                          onClick={() => void historyQuery.fetchNextPage()}
+                          disabled={historyQuery.isFetchingNextPage}
+                          variant="outline"
+                        >
+                          {historyQuery.isFetchingNextPage ? 'Loading history…' : 'Load more history'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )
+      )}
 
       {/* Review dialog */}
       <Dialog
-        onOpenChange={open => !open && setSelected(null)}
-        open={!!selected}
+        onOpenChange={open => !open && closeConversation()}
+        open={!!selected || !!selectedHistory}
       >
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-          {selected && (
+          {(selected || selectedHistory) && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2">
@@ -192,20 +318,39 @@ function MessageModeration() {
                   </DialogTitle>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Conversation:
+                  {selectedHistory ? 'Resolved conversation:' : 'Conversation:'}
                   {' '}
-                  {getConversationContextLabel(selected.type, selected.listingTitle)}
+                  {conversation
+                    ? getConversationContextLabel(conversation.type, conversation.listingTitle)
+                    : (selected
+                        ? getConversationContextLabel(selected.type, selected.listingTitle)
+                        : 'Loading conversation')}
                 </p>
               </DialogHeader>
 
-              {flaggedConversationQuery.isLoading
+              {selectedHistory && (
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+                  <Badge variant="destructive">{selectedHistory.flagReasons.join(', ')}</Badge>
+                  <span>
+                    Flag
+                    {' '}
+                    {selectedHistory.resolutionAction === 'REMOVED'
+                      ? 'removed by moderation'
+                      : 'dismissed'}
+                    {' · Resolved '}
+                    {format(new Date(selectedHistory.resolvedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                  </span>
+                </div>
+              )}
+
+              {reviewQuery.isLoading
                 ? (
                     <div role="status" className="flex items-center justify-center py-8">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                       <span className="sr-only">Loading conversation</span>
                     </div>
                   )
-                : flaggedConversationQuery.isError
+                : reviewQuery.isError
                   ? (
                       <div className="flex flex-col items-center gap-3 py-8 text-center">
                         <p role="alert" className="text-sm text-muted-foreground">
@@ -245,51 +390,66 @@ function MessageModeration() {
                         role="log"
                         className="max-h-[45vh] space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3"
                       >
-                        {conversationMessages.map(message => (
-                          <div
-                            key={message.id}
-                            className={`
-                              rounded-md border p-3 text-sm
-                              ${message.isFlagged
-                            ? 'border-destructive/40 bg-destructive/10'
-                            : 'border-transparent bg-background'}
-                            `}
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {message.senderRole === 'BUYER'
-                                  ? `Buyer · ${conversation.buyerFullName}`
-                                  : `Seller · ${conversation.sellerFullName}`}
-                              </span>
-                              <time
-                                dateTime={message.createdAt}
-                                className="text-[10px] text-muted-foreground"
-                              >
-                                {format(new Date(message.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
-                              </time>
-                              {message.isFlagged && message.flagReasons.map(reason => (
-                                <Badge key={reason} variant="destructive" className="text-[10px]">
-                                  {reason}
-                                </Badge>
-                              ))}
-                            </div>
-                            <ConversationMessageAttachments
-                              onReload={reloadConversation}
-                              attachments={message.attachments}
-                            />
-                            {message.content && <p className="mt-1 whitespace-pre-wrap text-foreground">{message.content}</p>}
+                        {selectedHistory?.resolutionAction === 'REMOVED' && (
+                          <div className="mb-2 rounded-md border border-muted-foreground/30 bg-background p-3 text-sm text-muted-foreground">
+                            Message removed by moderation
                           </div>
-                        ))}
+                        )}
+                        {conversationMessages.map((message) => {
+                          const isMessageFlagged = message.isFlagged
+                            || message.id === selected?.id
+                            || message.id === selectedHistory?.messageId;
+                          const displayedFlagReasons = [...new Set([
+                            ...message.flagReasons,
+                            ...((selectedHistory?.messageId === message.id && selectedHistory.flagReasons) || []),
+                          ])];
+
+                          return (
+                            <div
+                              key={message.id}
+                              className={`
+                                rounded-md border p-3 text-sm
+                                ${isMessageFlagged
+                              ? 'border-destructive/40 bg-destructive/10'
+                              : 'border-transparent bg-background'}
+                              `}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  {message.senderRole === 'BUYER'
+                                    ? `Buyer · ${conversation.buyerFullName}`
+                                    : `Seller · ${conversation.sellerFullName}`}
+                                </span>
+                                <time
+                                  dateTime={message.createdAt}
+                                  className="text-[10px] text-muted-foreground"
+                                >
+                                  {format(new Date(message.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
+                                </time>
+                                {isMessageFlagged && displayedFlagReasons.map(reason => (
+                                  <Badge key={reason} variant="destructive" className="text-[10px]">
+                                    {reason}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <ConversationMessageAttachments
+                                onReload={reloadConversation}
+                                attachments={message.attachments}
+                              />
+                              {message.content && <p className="mt-1 whitespace-pre-wrap text-foreground">{message.content}</p>}
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      {flaggedConversationQuery.hasNextPage && (
+                      {reviewQuery.hasNextPage && (
                         <div className="flex justify-center">
                           <Button
-                            onClick={() => void flaggedConversationQuery.fetchNextPage()}
-                            disabled={flaggedConversationQuery.isFetchingNextPage}
+                            onClick={() => void reviewQuery.fetchNextPage()}
+                            disabled={reviewQuery.isFetchingNextPage}
                             variant="outline"
                           >
-                            {flaggedConversationQuery.isFetchingNextPage ? 'Loading messages…' : 'Load more messages'}
+                            {reviewQuery.isFetchingNextPage ? 'Loading messages…' : 'Load more messages'}
                           </Button>
                         </div>
                       )}
@@ -297,28 +457,30 @@ function MessageModeration() {
                   )}
 
               {/* Actions */}
-              <div className="flex gap-3 border-t border-border pt-4">
-                <Button
-                  onClick={() => handleDismiss(selected.id)}
-                  disabled={dismissFlag.isPending || deleteMessage.isPending}
-                  variant="outline"
-                  className="flex-1 gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  {' '}
-                  Dismiss Flag
-                </Button>
-                <Button
-                  onClick={() => handleDelete(selected.id)}
-                  disabled={dismissFlag.isPending || deleteMessage.isPending}
-                  variant="destructive"
-                  className="flex-1 gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {' '}
-                  Remove Message
-                </Button>
-              </div>
+              {!selectedHistory && selected && (
+                <div className="flex gap-3 border-t border-border pt-4">
+                  <Button
+                    onClick={() => handleDismiss(selected.id)}
+                    disabled={dismissFlag.isPending || deleteMessage.isPending}
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {' '}
+                    Dismiss Flag
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(selected.id)}
+                    disabled={dismissFlag.isPending || deleteMessage.isPending}
+                    variant="destructive"
+                    className="flex-1 gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {' '}
+                    Remove Message
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </DialogContent>

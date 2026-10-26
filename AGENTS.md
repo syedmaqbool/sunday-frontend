@@ -54,6 +54,10 @@ All TanStack Query cache keys in this repo must follow these rules:
 
 When creating or following work tickets, use `.scratch/<feature-slug>/issues/`. See `docs/agents/issue-tracker.md` for ticket and dependency conventions.
 
+### Multi-ticket feature work
+
+When executing a feature split into numbered tickets, read `docs/agents/feature-workflow.md` for baseline checks, worktree setup, subagent handoffs, and reference UI mapping.
+
 ### Triage labels
 
 Use the labels listed in `docs/agents/triage-labels.md` when setting ticket status.

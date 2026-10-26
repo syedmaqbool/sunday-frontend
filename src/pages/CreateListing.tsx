@@ -55,6 +55,8 @@ import {
 import { getMyProfile } from '@/services/profile.service';
 
 const MAX_PHOTOS = 20;
+const MAX_IMAGE_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 const LISTING_SIZE_OPTIONS = [...SIZES, ...SHOE_SIZES] as const;
 const LISTING_STYLE_VALUES = ['eastern', 'western', 'casual', 'formal', 'semi_formal'] as const;
 const LISTING_STYLE_LABELS: Record<typeof LISTING_STYLE_VALUES[number], string> = {
@@ -272,24 +274,50 @@ function CreateListing() {
   }, [existingListing, isEditing, loadingListing, navigate]);
 
   const handleAddImages = (event_: React.ChangeEvent<HTMLInputElement>, currentFiles: File[], onChange: (files: File[]) => void) => {
-    const files = [...event_.target.files || []];
+    const selectedFiles = [...(event_.target.files || [])];
+    // Reset the input even when validation fails so the same file can be selected again.
+    event_.target.value = '';
+
+    if (!selectedFiles.length)
+      return;
+
+    const oversizedFiles = selectedFiles.filter(file => file.size > MAX_IMAGE_SIZE_BYTES);
+    const files = selectedFiles.filter(file => file.size <= MAX_IMAGE_SIZE_BYTES);
+
+    if (oversizedFiles.length > 0) {
+      toast({
+        description: `${oversizedFiles.map(file => file.name).join(', ')}. Please choose image files that are 50 MB or smaller.`,
+        title: 'Image exceeds the 50 MB limit',
+        variant: 'destructive',
+      });
+    }
+
+    if (!files.length)
+      return;
+
     const total = currentFiles.length + existingImages.length + files.length;
     if (total > MAX_PHOTOS) {
       toast({ title: `Max ${MAX_PHOTOS} photos allowed`, variant: 'destructive' });
       return;
     }
+
     onChange([...currentFiles, ...files]);
-    event_.target.value = '';
   };
 
   const handleAddVideo = (event_: React.ChangeEvent<HTMLInputElement>, onChange: (file: File) => void) => {
     const file = event_.target.files?.[0];
     if (!file)
       return;
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: 'Video must be under 50MB', variant: 'destructive' });
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      toast({
+        description: 'Please choose a video that is 50 MB or smaller.',
+        title: 'Video exceeds the 50 MB limit',
+        variant: 'destructive',
+      });
+      event_.target.value = '';
       return;
     }
+
     onChange(file);
     setValue('existingVideo', null, { shouldDirty: true, shouldValidate: true });
     event_.target.value = '';
@@ -534,6 +562,9 @@ function CreateListing() {
               </span>
               <FieldTip tip="Upload clear, well-lit photos from multiple angles. The first image is your cover — tap the star on any photo to make it the cover. Show any flaws or details up close. Up to 20 images." />
             </Label>
+            <p className="mt-1 text-sm text-muted-foreground" role="note">
+              Disclaimer: Each photo must be 50 MB or smaller. Images larger than 50 MB cannot be uploaded. Please resize or compress oversized images before uploading.
+            </p>
             <div className="mt-2 flex flex-wrap gap-3">
               {allPreviews.map((preview, index) => (
                 <div
@@ -632,8 +663,11 @@ function CreateListing() {
               <span className="font-normal text-muted-foreground">
                 — 1 short video required (max 50MB)
               </span>
-              <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Max 50MB." />
+              <FieldTip tip="A short 360° video helps buyers trust your listing. Show the item from all sides, zoom in on labels, fabric, and any flaws. Maximum file size: 50 MB." />
             </Label>
+            <p className="mt-1 text-sm text-muted-foreground" role="note">
+              Disclaimer: Video files must be 50 MB or smaller. Files over this limit cannot be uploaded. Use a short, compressed video if needed.
+            </p>
             <div className="mt-2 flex flex-wrap gap-3">
               {videoPreviewUrl
                 ? (

@@ -1,5 +1,5 @@
 import type { FlaggedMessage } from '@/types/adminMessageModeration.type';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { format } from 'date-fns';
 import {
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import ConversationMessageAttachments from '@/components/ConversationMessageAttachments';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,17 +25,32 @@ import {
 import { getConversationContextLabel } from '@/lib/conversationContext';
 import { showErrorToast } from '@/lib/errorToast';
 import {
+  getFlaggedConversationOptions,
   getFlaggedMessagesOptions,
+  messageModerationQueryKey,
   useDeleteMessageMutation,
   useDismissFlagMutation,
 } from '@/queries/adminMessageModeration.query';
 
 function MessageModeration() {
   const [selected, setSelected] = useState<FlaggedMessage | null>(null);
+  const queryClient = useQueryClient();
 
-  const { data: flaggedMessages = [], isLoading } = useQuery(getFlaggedMessagesOptions());
+  const { data: flaggedMessagesResponse, isLoading } = useQuery(getFlaggedMessagesOptions());
+  const flaggedMessages = flaggedMessagesResponse?.data ?? [];
+  const flaggedConversationQuery = useInfiniteQuery(getFlaggedConversationOptions(selected?.id));
+  const conversation = flaggedConversationQuery.data?.pages[0]?.data;
+  const conversationMessages = flaggedConversationQuery.data?.pages.flatMap(page => page.data.messages) ?? [];
   const dismissFlag = useDismissFlagMutation();
   const deleteMessage = useDeleteMessageMutation();
+
+  const reloadConversation = () => {
+    if (selected) {
+      void queryClient.invalidateQueries({
+        queryKey: messageModerationQueryKey.conversation(selected.id),
+      });
+    }
+  };
 
   const handleDismiss = (messageId: string) => {
     dismissFlag.mutate(messageId, {
@@ -165,87 +181,120 @@ function MessageModeration() {
         onOpenChange={open => !open && setSelected(null)}
         open={!!selected}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
           {selected && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
                   <DialogTitle className="font-heading text-xl">
-                    Message Review
+                    Conversation Review
                   </DialogTitle>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Listing:
+                  Conversation:
                   {' '}
                   {getConversationContextLabel(selected.type, selected.listingTitle)}
                 </p>
               </DialogHeader>
 
-              {/* Flagged message */}
-              <div className="rounded-lg border-2 border-destructive/30 bg-destructive/5 p-4">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  {selected.flagReasons.map(reason => (
-                    <span
-                      key={reason}
-                      className="text-sm font-semibold text-destructive"
-                    >
-                      {reason}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm text-foreground">{selected.content}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Sent by
-                  {' '}
-                  {selected.senderId === selected.buyerId
-                    ? selected.buyerFullName
-                    : selected.sellerFullName}
-                  {' · '}
-                  {format(new Date(selected.createdAt), 'MMM d \'at\' h:mm a')}
-                </p>
-              </div>
+              {flaggedConversationQuery.isLoading
+                ? (
+                    <div role="status" className="flex items-center justify-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="sr-only">Loading conversation</span>
+                    </div>
+                  )
+                : flaggedConversationQuery.isError
+                  ? (
+                      <div className="flex flex-col items-center gap-3 py-8 text-center">
+                        <p role="alert" className="text-sm text-muted-foreground">
+                          Conversation could not be loaded.
+                        </p>
+                        <Button onClick={reloadConversation} variant="outline">
+                          Retry conversation
+                        </Button>
+                      </div>
+                    )
+                  : conversation && (
+                    <>
+                      <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-sm">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Conversation Context
+                        </p>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Buyer</span>
+                          <span className="font-medium">{conversation.buyerFullName}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Seller</span>
+                          <span className="font-medium">{conversation.sellerFullName}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">{conversation.type === 'DIRECT' ? 'Conversation type' : 'Listing'}</span>
+                          <span className="font-medium">
+                            {conversation.type === 'DIRECT'
+                              ? 'Direct conversation'
+                              : (conversation.listingTitle ?? 'Listing unavailable')}
+                          </span>
+                        </div>
+                      </div>
 
-              {/* Context info */}
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-sm">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Conversation Context
-                </p>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Buyer</span>
-                  <span className="font-medium">{selected.buyerFullName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Seller</span>
-                  <span className="font-medium">{selected.sellerFullName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Listing</span>
-                  <span className="font-medium">
-                    {getConversationContextLabel(selected.type, selected.listingTitle)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Conversation started
-                  </span>
-                  <span>
-                    {format(
-                      new Date(selected.conversationCreatedAt),
-                      'MMM d, yyyy',
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Sender role</span>
-                  <span>
-                    {selected.senderId === selected.buyerId
-                      ? 'Buyer'
-                      : 'Seller'}
-                  </span>
-                </div>
-              </div>
+                      <div
+                        aria-label="Conversation messages"
+                        role="log"
+                        className="max-h-[45vh] space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3"
+                      >
+                        {conversationMessages.map(message => (
+                          <div
+                            key={message.id}
+                            className={`
+                              rounded-md border p-3 text-sm
+                              ${message.isFlagged
+                            ? 'border-destructive/40 bg-destructive/10'
+                            : 'border-transparent bg-background'}
+                            `}
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {message.senderRole === 'BUYER'
+                                  ? `Buyer · ${conversation.buyerFullName}`
+                                  : `Seller · ${conversation.sellerFullName}`}
+                              </span>
+                              <time
+                                dateTime={message.createdAt}
+                                className="text-[10px] text-muted-foreground"
+                              >
+                                {format(new Date(message.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
+                              </time>
+                              {message.isFlagged && message.flagReasons.map(reason => (
+                                <Badge key={reason} variant="destructive" className="text-[10px]">
+                                  {reason}
+                                </Badge>
+                              ))}
+                            </div>
+                            <ConversationMessageAttachments
+                              onReload={reloadConversation}
+                              attachments={message.attachments}
+                            />
+                            {message.content && <p className="mt-1 whitespace-pre-wrap text-foreground">{message.content}</p>}
+                          </div>
+                        ))}
+                      </div>
+
+                      {flaggedConversationQuery.hasNextPage && (
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={() => void flaggedConversationQuery.fetchNextPage()}
+                            disabled={flaggedConversationQuery.isFetchingNextPage}
+                            variant="outline"
+                          >
+                            {flaggedConversationQuery.isFetchingNextPage ? 'Loading messages…' : 'Load more messages'}
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
 
               {/* Actions */}
               <div className="flex gap-3 border-t border-border pt-4">

@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -46,8 +46,15 @@ const flaggedMessages = [
 ];
 
 vi.mock('@/queries/adminMessageModeration.query', () => ({
+  getFlaggedConversationOptions: () => infiniteQueryOptions({
+    enabled: false,
+    getNextPageParam: () => 1,
+    initialPageParam: 1,
+    queryFn: async () => ({ data: { messages: [] }, pagination: { nextPage: null } }),
+    queryKey: ['test-flagged-conversation'],
+  }),
   getFlaggedMessagesOptions: () => queryOptions({
-    queryFn: async () => flaggedMessages,
+    queryFn: async () => ({ data: flaggedMessages }),
     queryKey: ['test-flagged-messages'],
   }),
   useDeleteMessageMutation: () => ({ isPending: false, mutate: vi.fn() }),
@@ -70,8 +77,8 @@ describe('admin direct conversation moderation', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /Review/ })[0]);
 
-    expect(await screen.findByRole('heading', { name: 'Message Review' })).toBeInTheDocument();
-    expect(screen.getByText(/Listing: General enquiry/)).toBeInTheDocument();
-    expect(screen.getAllByText('General enquiry')).toHaveLength(2);
+    expect(await screen.findByRole('heading', { name: 'Conversation Review' })).toBeInTheDocument();
+    expect(screen.getByText(/Conversation: General enquiry/)).toBeInTheDocument();
+    expect(screen.getByText('General enquiry')).toBeInTheDocument();
   });
 });

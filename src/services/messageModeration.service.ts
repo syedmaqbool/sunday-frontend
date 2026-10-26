@@ -1,4 +1,9 @@
-import type { FlaggedMessage, FlaggedMessagesParameters } from '@/types/adminMessageModeration.type';
+import type {
+  FlaggedConversationParameters,
+  FlaggedConversationResponse,
+  FlaggedMessage,
+  FlaggedMessagesParameters,
+} from '@/types/adminMessageModeration.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
 
@@ -8,6 +13,15 @@ export function listFlaggedMessages(
   return authInstance
     .get('/api/v1/admin/messages/flagged', { searchParams: parameters })
     .json<PaginatedResponse<FlaggedMessage>>();
+}
+
+export function getFlaggedConversation(
+  messageId: string,
+  parameters: FlaggedConversationParameters,
+): Promise<FlaggedConversationResponse> {
+  return authInstance
+    .get(`/api/v1/admin/messages/${messageId}/conversation`, { searchParams: parameters })
+    .json<FlaggedConversationResponse>();
 }
 
 export function dismissFlaggedMessage(messageId: string) {

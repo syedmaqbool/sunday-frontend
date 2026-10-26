@@ -542,7 +542,7 @@ import type { Conversation, Message } from '@/types/conversation.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, MessageSquare, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare, Paperclip, Send, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -562,9 +562,15 @@ import {
   useMarkConversationReadMutation,
   useSendMessageMutation,
 } from '@/hooks/useConverstion';
+import { CHAT_MEDIA_ACCEPT, CHAT_MEDIA_MAX_ATTACHMENTS, getChatMediaValidationError } from '@/lib/chatMedia';
 import { getConversationContextLabel } from '@/lib/conversationContext';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { conversationsQueryKey } from '@/queries/conversation.query';
+
+interface SelectedChatMedia {
+  id: number;
+  file: File;
+}
 
 const messageSchema = z.object({
   content: z.string().trim().min(1).max(2000),
@@ -584,8 +590,12 @@ function Messages() {
   const [documentVisible, setDocumentVisible] = useState(
     () => document.visibilityState === 'visible',
   );
+  const [selectedChatMedia, setSelectedChatMedia] = useState<SelectedChatMedia[]>([]);
+  const [chatMediaSelectionError, setChatMediaSelectionError] = useState('');
 
   const markReadInFlight = useRef(new Set<string>());
+  const chatMediaPickerReference = useRef<HTMLInputElement>(null);
+  const nextChatMediaId = useRef(0);
   const messagesEndReference = useRef<HTMLDivElement>(null);
   const focusedMessageId = searchParameters.get('message');
 
@@ -754,6 +764,39 @@ function Messages() {
         onSuccess: () => messageForm.reset(),
       },
     );
+  };
+
+  const addChatMedia = (incomingFiles: File[]) => {
+    const validFiles: File[] = [];
+    const selectionErrors: string[] = [];
+
+    for (const file of incomingFiles) {
+      const validationError = getChatMediaValidationError(file);
+      if (validationError) {
+        selectionErrors.push(validationError);
+      }
+      else {
+        validFiles.push(file);
+      }
+    }
+
+    const availableAttachmentCount = CHAT_MEDIA_MAX_ATTACHMENTS - selectedChatMedia.length;
+    if (validFiles.length > availableAttachmentCount) {
+      selectionErrors.push(`Up to ${CHAT_MEDIA_MAX_ATTACHMENTS} attachments can be selected per message.`);
+    }
+
+    setSelectedChatMedia([
+      ...selectedChatMedia,
+      ...validFiles.slice(0, availableAttachmentCount).map(file => ({
+        id: nextChatMediaId.current++,
+        file,
+      })),
+    ]);
+    setChatMediaSelectionError(selectionErrors.join(' '));
+  };
+
+  const removeChatMedia = (attachmentId: number) => {
+    setSelectedChatMedia(selectedChatMedia.filter(({ id }) => id !== attachmentId));
   };
 
   // WEBSOCKET
@@ -1010,10 +1053,48 @@ function Messages() {
 
                     {/* INPUT stays pinned to the bottom */}
                     <div className="shrink-0 border-t bg-background p-3">
+                      {selectedChatMedia.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {selectedChatMedia.map(({ id, file }) => (
+                            <ChatAttachmentPreview
+                              key={id}
+                              onRemove={() => removeChatMedia(id)}
+                              file={file}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {chatMediaSelectionError && (
+                        <p role="alert" className="mb-2 text-xs text-destructive">
+                          {chatMediaSelectionError}
+                        </p>
+                      )}
                       <form
                         onSubmit={messageForm.handleSubmit(handleSendMessage)}
                         className="flex min-w-0 gap-2"
                       >
+                        <input
+                          onChange={(event) => {
+                            addChatMedia([...(event.target.files ?? [])]);
+                            event.target.value = '';
+                          }}
+                          ref={chatMediaPickerReference}
+                          accept={CHAT_MEDIA_ACCEPT}
+                          aria-label="Select photos and videos"
+                          multiple
+                          type="file"
+                          className="hidden"
+                        />
+                        <Button
+                          onClick={() => chatMediaPickerReference.current?.click()}
+                          aria-label="Attach photo or video"
+                          disabled={selectedChatMedia.length >= CHAT_MEDIA_MAX_ATTACHMENTS || sendMessage.isPending}
+                          size="icon"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
                         <Controller
                           name="content"
                           control={messageForm.control}
@@ -1047,6 +1128,34 @@ function Messages() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function ChatAttachmentPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return (
+    <div className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-muted">
+      {previewUrl && (file.type.startsWith('video/')
+        ? <video src={previewUrl} aria-label={`Preview ${file.name}`} className="h-full w-full object-cover" />
+        : <img src={previewUrl} alt={`Preview ${file.name}`} className="h-full w-full object-cover" />)}
+      <Button
+        onClick={onRemove}
+        aria-label={`Remove ${file.name}`}
+        size="icon"
+        type="button"
+        variant="ghost"
+        className="absolute right-0.5 top-0.5 h-6 w-6 rounded-full bg-background/90 p-1"
+      >
+        <X className="h-3 w-3" />
+      </Button>
     </div>
   );
 }

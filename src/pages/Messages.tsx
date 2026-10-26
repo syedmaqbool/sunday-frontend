@@ -573,7 +573,7 @@ interface SelectedChatMedia {
 }
 
 const messageSchema = z.object({
-  content: z.string().trim().min(1).max(2000),
+  content: z.string().trim().max(2000),
 });
 
 type MessageFormValues = z.infer<typeof messageSchema>;
@@ -592,6 +592,7 @@ function Messages() {
   );
   const [selectedChatMedia, setSelectedChatMedia] = useState<SelectedChatMedia[]>([]);
   const [chatMediaSelectionError, setChatMediaSelectionError] = useState('');
+  const [chatMediaSendError, setChatMediaSendError] = useState('');
 
   const markReadInFlight = useRef(new Set<string>());
   const chatMediaPickerReference = useRef<HTMLInputElement>(null);
@@ -752,16 +753,25 @@ function Messages() {
   const sendMessage = useSendMessageMutation();
 
   const handleSendMessage: SubmitHandler<MessageFormValues> = (values) => {
-    if (!activeConvo)
+    if (!activeConvo || sendMessage.isPending || (!values.content && selectedChatMedia.length === 0))
       return;
 
     sendMessage.mutate(
       {
         conversationId: activeConvo,
         content: values.content,
+        ...(selectedChatMedia.length > 0 && {
+          attachments: selectedChatMedia.map(({ file }) => file),
+        }),
       },
       {
-        onSuccess: () => messageForm.reset(),
+        onError: () => setChatMediaSendError('Message could not be sent. Please try again.'),
+        onSuccess: () => {
+          messageForm.reset();
+          setSelectedChatMedia([]);
+          setChatMediaSelectionError('');
+          setChatMediaSendError('');
+        },
       },
     );
   };
@@ -1030,7 +1040,10 @@ function Messages() {
                                           ${isMine ? 'bg-primary text-primary-foreground' : 'bg-muted'}
                                         `}
                                         >
-                                          <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                                          <ConversationMessageAttachments attachments={message.attachments} />
+                                          {message.content && (
+                                            <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                                          )}
                                           <p className={`
                                             mt-1 text-[10px]
                                             ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}
@@ -1067,6 +1080,11 @@ function Messages() {
                       {chatMediaSelectionError && (
                         <p role="alert" className="mb-2 text-xs text-destructive">
                           {chatMediaSelectionError}
+                        </p>
+                      )}
+                      {chatMediaSendError && (
+                        <p role="alert" className="mb-2 text-xs text-destructive">
+                          {chatMediaSendError}
                         </p>
                       )}
                       <form
@@ -1107,11 +1125,14 @@ function Messages() {
                           )}
                         />
                         <Button
-                          disabled={!messageContent.trim() || sendMessage.isPending}
+                          aria-label={sendMessage.isPending ? 'Sending message' : 'Send message'}
+                          disabled={(!messageContent.trim() && selectedChatMedia.length === 0) || sendMessage.isPending}
                           size="icon"
                           type="submit"
                         >
-                          <Send className="h-4 w-4" />
+                          {sendMessage.isPending
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Send className="h-4 w-4" />}
                         </Button>
                       </form>
                     </div>
@@ -1156,6 +1177,38 @@ function ChatAttachmentPreview({ file, onRemove }: { file: File; onRemove: () =>
       >
         <X className="h-3 w-3" />
       </Button>
+    </div>
+  );
+}
+
+function ConversationMessageAttachments({ attachments = [] }: { attachments?: Message['attachments'] }) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-1 grid grid-cols-2 gap-1.5">
+      {attachments.map(attachment => (
+        attachment.type === 'VIDEO'
+          ? (
+              <video
+                key={attachment.id}
+                src={attachment.url}
+                aria-label={attachment.filename}
+                controls
+                className="h-40 w-full rounded-lg bg-muted object-cover"
+              />
+            )
+          : (
+              <a key={attachment.id} href={attachment.url} rel="noreferrer" target="_blank">
+                <img
+                  src={attachment.url}
+                  alt={attachment.filename}
+                  className="h-28 w-full rounded-lg object-cover"
+                />
+              </a>
+            )
+      ))}
     </div>
   );
 }

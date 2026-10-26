@@ -28,11 +28,27 @@ export function listConversationMessages(conversationId: string): Promise<Respon
 
 export function sendConversationMessage(
   conversationId: string,
-  content: SendConversationMessagePayload['content'],
+  payload: SendConversationMessagePayload,
 ): Promise<Response<Message>> {
+  const endpoint = `/api/v1/me/conversations/${conversationId}/messages`;
+
+  if (payload.attachments?.length) {
+    const formData = new FormData();
+    if (payload.content?.trim()) {
+      formData.append('content', payload.content);
+    }
+    for (const attachment of payload.attachments) {
+      formData.append('attachments', attachment);
+    }
+
+    return authInstance
+      .post(endpoint, { body: formData })
+      .json<Response<Message>>();
+  }
+
   return authInstance
-    .post(`/api/v1/me/conversations/${conversationId}/messages`, {
-      json: { content } satisfies SendConversationMessagePayload,
+    .post(endpoint, {
+      json: { content: payload.content ?? '' } satisfies SendConversationMessagePayload,
     })
     .json<Response<Message>>();
 }

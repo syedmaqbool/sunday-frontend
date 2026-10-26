@@ -1,4 +1,4 @@
-import type { StartConversationPayload } from '@/types/conversation.type';
+import type { SendConversationMessagePayload, StartConversationPayload } from '@/types/conversation.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   listConversationMessages,
@@ -36,11 +36,9 @@ export function useSendMessageMutation() {
   return useMutation({
     mutationFn: ({
       conversationId,
-      content,
-    }: {
-      conversationId: string;
-      content: string;
-    }) => sendConversationMessage(conversationId, content),
+      ...payload
+    }: { conversationId: string } & SendConversationMessagePayload) =>
+      sendConversationMessage(conversationId, payload),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({
         queryKey: conversationsQueryKey.messages(variables.conversationId),

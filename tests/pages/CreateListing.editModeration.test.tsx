@@ -7,6 +7,7 @@ import CreateListing from '@/pages/CreateListing';
 const {
   createListingMock,
   getMyProfileMock,
+  listCommissionTiersMock,
   listingState,
   toastMock,
   updateMyListingMock,
@@ -15,6 +16,7 @@ const {
 } = vi.hoisted(() => ({
   createListingMock: vi.fn(),
   getMyProfileMock: vi.fn(),
+  listCommissionTiersMock: vi.fn(),
   listingState: { listing: null as any, responseStatus: 'PENDING' },
   toastMock: vi.fn(),
   updateMyListingMock: vi.fn(),
@@ -34,6 +36,7 @@ vi.mock('@/hooks/useCategories', () => ({
   getCategoriesOptions: () => ({
     queryFn: async () => [
       { id: 'category-1', icon: '👗', label: 'Women', sortOrder: 0, value: 'women' },
+      { id: 'category-2', icon: '👔', label: 'Men', sortOrder: 1, value: 'men' },
     ],
     queryKey: ['categories'],
   }),
@@ -84,6 +87,9 @@ vi.mock('@/services/listing.service', () => ({
 }));
 
 vi.mock('@/services/profile.service', () => ({ getMyProfile: getMyProfileMock }));
+vi.mock('@/services/commission.service', () => ({
+  listPublicCommissionTiers: listCommissionTiersMock,
+}));
 vi.mock('@/lib/uploadFile', () => ({ uploadFile: uploadFileMock }));
 
 vi.mock('@/components/BankDetailsModal', () => ({ default: () => null }));
@@ -309,6 +315,89 @@ describe('edit listing moderation rules', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
     expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({ clothingTypeId: 'type-bottoms' });
+  });
+});
+
+describe('seller listing price summary', () => {
+  beforeEach(() => {
+    listCommissionTiersMock.mockResolvedValue({
+      data: [
+        { active: true, categories: ['women'], maxPrice: null, minPrice: 0, rate: 20, sortOrder: 0 },
+        { active: true, categories: [], maxPrice: null, minPrice: 0, rate: 5, sortOrder: 0 },
+      ],
+    });
+  });
+
+  it('shows the fee-inclusive buyer total while creating a listing', async () => {
+    renderCreateListing();
+
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4000' } });
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Women' }));
+
+    expect(await screen.findByText('Your price')).toBeInTheDocument();
+    expect(screen.getByText('Platform fee (20%)')).toBeInTheDocument();
+    expect(screen.getByText('Buyer pays')).toBeInTheDocument();
+    expect(screen.getByText('Rs 4,000')).toBeInTheDocument();
+    expect(screen.getByText('Rs 800')).toBeInTheDocument();
+    expect(screen.getByText('Rs 4,800')).toBeInTheDocument();
+  });
+
+  it('updates the fee immediately when the selected category changes', async () => {
+    renderCreateListing();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4000' } });
+
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Women' }));
+    expect(await screen.findByText('Platform fee (20%)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Men' }));
+
+    expect(await screen.findByText('Platform fee (5%)')).toBeInTheDocument();
+    expect(screen.getByText('Rs 200')).toBeInTheDocument();
+    expect(screen.getByText('Rs 4,200')).toBeInTheDocument();
+  });
+
+  it('shows no fee when the active tiers do not match the listing price', async () => {
+    listCommissionTiersMock.mockResolvedValue({
+      data: [
+        { active: true, categories: ['women'], maxPrice: 3000, minPrice: 0, rate: 20, sortOrder: 0 },
+      ],
+    });
+    renderCreateListing();
+
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4000' } });
+
+    expect(await screen.findByText('Platform fee (0%)')).toBeInTheDocument();
+    expect(screen.getByText('Rs 0')).toBeInTheDocument();
+    expect(screen.getAllByText('Rs 4,000')).toHaveLength(2);
+  });
+
+  it('hides the fee summary until the seller enters a positive price', () => {
+    renderCreateListing();
+
+    expect(screen.queryByText('Your price')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '0' } });
+    expect(screen.queryByText('Your price')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '-1' } });
+    expect(screen.queryByText('Your price')).not.toBeInTheDocument();
+  });
+
+  it('shows the existing asking price summary when editing and submits only that price', async () => {
+    listingState.listing = { ...editableListing('PENDING'), price: 4000 };
+    renderEditListing();
+
+    expect(await screen.findByText('Platform fee (20%)')).toBeInTheDocument();
+    expect(screen.getByText('Rs 4,800')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '5000' } });
+    expect(await screen.findByText('Rs 6,000')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(updateMyListingMock).toHaveBeenCalled());
+    expect(updateMyListingMock.mock.calls[0][1]).toMatchObject({ price: 5000 });
+    expect(updateMyListingMock.mock.calls[0][1]).not.toHaveProperty('platformFeeAmount');
+    expect(updateMyListingMock.mock.calls[0][1]).not.toHaveProperty('buyerTotal');
   });
 });
 

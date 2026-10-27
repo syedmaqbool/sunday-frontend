@@ -30,8 +30,10 @@ import { trackEvent } from '@/lib/analytics';
 import { CONDITIONS, SHOE_SIZES, SIZES, WEIGHT_OPTIONS } from '@/lib/constants';
 import { getErrorToastOptions } from '@/lib/errorToast';
 import { isSellerEditableListingStatus } from '@/lib/listingStatus';
+import { calculatePriceWithFee } from '@/lib/priceWithFee';
 import { uploadFile } from '@/lib/uploadFile';
 import { getClothingTypesOptions } from '@/queries/clothing-types.query';
+import { getCommissionTiersOptions } from '@/queries/commissionTiers.query';
 import { getEditListingOptions } from '@/queries/marketplace.query';
 import { createListing, updateMyListing } from '@/services/listing.service';
 import { getMyProfile } from '@/services/profile.service';
@@ -179,6 +181,19 @@ function CreateListing() {
   const subCategories = subCategoryPages.flatMap(page => page.data);
   const { data: clothingTypePages = [] } = useQuery(getClothingTypesOptions());
   const clothingTypes = clothingTypePages.flatMap(page => page.data);
+  const { data: commissionTiersResponse } = useQuery(
+    getCommissionTiersOptions({ onlyActive: true }),
+  );
+  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(tier => tier.active);
+  const listingPrice = Number(formValues.price);
+  const priceSummary =
+    listingPrice > 0
+      ? calculatePriceWithFee(
+          commissionTiers,
+          `${formValues.parentCategory}-${formValues.subCategory}`,
+          listingPrice,
+        )
+      : null;
   const [submitting, setSubmitting] = useState(false);
 
   const imageFiles = formValues.imageFiles;
@@ -967,6 +982,25 @@ function CreateListing() {
                 )}
               />
               {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+              {priceSummary && (
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span>Your price</span>
+                    <span>Rs {listingPrice.toLocaleString('en-US')}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 text-muted-foreground">
+                    <span>Platform fee ({priceSummary.rate}%)</span>
+                    <span>Rs {priceSummary.amount.toLocaleString('en-US')}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 border-t pt-2 font-semibold">
+                    <span>Buyer pays</span>
+                    <span>Rs {priceSummary.total.toLocaleString('en-US')}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You receive your asking price. The platform fee is added for the buyer.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>

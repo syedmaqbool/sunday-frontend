@@ -5,8 +5,8 @@ Use this workflow when a feature has numbered tickets with dependencies.
 ## Before dispatch
 
 1. Fix the feature branch's starting commit and read the feature spec, remaining tickets, and dependency state.
-2. Run `npm run test` at that commit before implementation. Record the commit, command, and failing test names and files. Compare later full-suite failures with this baseline and follow the user's stop or continue rule; report baseline failures instead of treating them as passing.
-3. In each new worktree, install dependencies with `npm ci`, which runs the package `prepare` script. If dependencies already exist, run `npm run prepare`. Confirm the worktree has the Husky hook before committing. The local pre-commit hook lints staged files, runs tests related to staged files, and runs typecheck.
+2. Run `npm run test` at that commit before implementation. Record the commit, command, and failing test names and files. Compare later full-suite failures with this baseline and follow the user's stop or continue rule; report baseline failures instead of treating them as passing. Wait for the baseline run to finish before dispatching workers or starting worktree dependency installation.
+3. In each new worktree, install dependencies with `npm ci`, which runs the package `prepare` script. If dependencies already exist, run `npm run prepare`. After `npm ci` or `npm run prepare`, confirm `.vite-hooks/pre-commit` exists and `git config core.hooksPath` points to `.vite-hooks/_` before committing. The local pre-commit hook lints staged files, runs tests related to staged files, and runs typecheck.
 4. For a UI port, record the reference repository and commit, exact source paths, Sunday target paths, and adaptations for Sunday routes, API responses, or access control. Include this map in worker prompts and the completion report.
 
 ## Delegating tickets and reviews
@@ -18,4 +18,11 @@ Use this workflow when a feature has numbered tickets with dependencies.
 
 ## Commit scope
 
-Each ticket commit contains that ticket's implementation and tests, plus the package version bump performed by the local pre-commit hook. The hook lints staged files, runs tests related to staged files, runs typecheck, bumps the patch version, and stages `package.json` and `package-lock.json`.
+Each ticket's initial implementation commit contains its implementation and tests
+plus one package patch-version bump. The Vite+ pre-commit hook runs staged lint
+and related tests, typecheck, then `bump:patch`, and stages `package.json` and
+`package-lock.json`.
+
+For review amendments, set `SKIP_PACKAGE_VERSION_BUMP=1` for the
+`git commit --amend` command. The hook still runs lint, related tests, and
+typecheck while retaining the existing version bump.

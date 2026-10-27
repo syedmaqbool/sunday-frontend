@@ -40,7 +40,9 @@ import { trackEvent } from '@/lib/analytics';
 import { getWeightLabel } from '@/lib/constants';
 import { showErrorToast } from '@/lib/errorToast';
 import { isSellerEditableListingStatus } from '@/lib/listingStatus';
+import { calculatePriceWithFee } from '@/lib/priceWithFee';
 import { formatEnumLabel } from '@/lib/utilities';
+import { getCommissionTiersOptions } from '@/queries/commissionTiers.query';
 import {
   getListingMediaUrls,
   getMarketplaceListingOptions,
@@ -253,6 +255,10 @@ function ListingDetail() {
   const inCart = items.some(index => index.listing.id === id);
 
   const { data: listing, isLoading } = useQuery(getMarketplaceListingOptions(id));
+  const { data: commissionTiersResponse, isSuccess: commissionTiersLoaded } = useQuery(
+    getCommissionTiersOptions({ onlyActive: true }),
+  );
+  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(tier => tier.active);
 
   useEffect(() => {
     if (listing) {
@@ -293,6 +299,11 @@ function ListingDetail() {
 
   const effectivePrice =
     isReservedForMe && reservedOfferAmount ? reservedOfferAmount : (listing?.price ?? 0);
+  const priceSummary = listing
+    ? commissionTiersLoaded
+      ? calculatePriceWithFee(commissionTiers, listing.categoryValue, listing.price)
+      : null
+    : null;
 
   const cancelReservation = useCancelMyListingReservationMutation();
   const deleteMutation = useDeleteMyListingMutation();
@@ -351,7 +362,7 @@ function ListingDetail() {
             >
               {listing.title}
             </h1>
-            {isReservedForMe && reservedOfferAmount && reservedOfferAmount !== listing.price ? (
+            {isReservedForMe && listing.reservedOfferId && reservedOfferAmount != null ? (
               <div className="mt-4 flex items-baseline gap-3">
                 <p className="text-3xl font-bold text-foreground">
                   Rs {reservedOfferAmount.toLocaleString()}
@@ -364,9 +375,28 @@ function ListingDetail() {
                 </span>
               </div>
             ) : (
-              <p className="mt-4 text-3xl font-bold text-foreground">
-                Rs {listing.price.toLocaleString()}
-              </p>
+              priceSummary ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-3xl font-bold text-foreground">
+                    Rs {priceSummary.total.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Including platform fee</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between gap-4">
+                      <span>Item price</span>
+                      <span>Rs {listing.price.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 text-muted-foreground">
+                      <span>Platform fee ({priceSummary.rate}%)</span>
+                      <span>Rs {priceSummary.amount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-3xl font-bold text-foreground">
+                  Rs {listing.price.toLocaleString()}
+                </p>
+              )
             )}
 
             <div className="mt-6 flex flex-wrap gap-3">

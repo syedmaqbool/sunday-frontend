@@ -1,4 +1,4 @@
-import type { MyListing } from '@/queries/myListings.query';
+import type { MyListing, MyListingStatuses } from '@/types/listing.type';
 import { useQuery } from '@tanstack/react-query';
 import { Inbox, Loader2, Package, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -42,6 +42,15 @@ import {
 } from '@/queries/myListings.query';
 
 const MY_LISTING_TAB_VALUES = ['approved', 'pending', 'sold', 'offers'] as const;
+const MY_LISTING_STATUSES_BY_TAB: Record<
+  (typeof MY_LISTING_TAB_VALUES)[number],
+  MyListingStatuses | undefined
+> = {
+  approved: ['APPROVED', 'RESERVED'],
+  pending: ['PENDING', 'REJECTED', 'NEEDS_REVISION'],
+  sold: ['SOLD'],
+  offers: undefined,
+};
 
 function getStatusColor(status: MyListing['status']) {
   if (status === 'APPROVED' || status === 'RESERVED') return 'default';
@@ -59,7 +68,9 @@ function MyListings() {
   const tabParameter = searchParams.get('tab');
   const selectedTab = MY_LISTING_TAB_VALUES.find(tab => tab === tabParameter) ?? 'approved';
 
-  const { data: listingsResponse, isLoading } = useQuery(getMyListingsOptions(!!user));
+  const { data: listingsResponse, isLoading } = useQuery(
+    getMyListingsOptions(!!user, MY_LISTING_STATUSES_BY_TAB[selectedTab]),
+  );
   const listings = listingsResponse?.data ?? [];
   const deleteMutation = useDeleteMyListingMutation();
   const cancelReservationMutation = useCancelMyListingReservationMutation();
@@ -71,11 +82,9 @@ function MyListings() {
   if (authLoading) return null;
   if (!user) return null;
 
-  const approvedListings = listings.filter(l => l.status === 'APPROVED' || l.status === 'RESERVED');
-  const soldListings = listings.filter(l => l.status === 'SOLD');
-  const pendingListings = listings.filter(
-    l => !['APPROVED', 'RESERVED', 'SOLD'].includes(l.status),
-  );
+  const approvedListings = selectedTab === 'approved' ? listings : [];
+  const soldListings = selectedTab === 'sold' ? listings : [];
+  const pendingListings = selectedTab === 'pending' ? listings : [];
 
   const renderListingCard = (listing: MyListing) => (
     <Card key={listing.id}>
@@ -247,19 +256,6 @@ function MyListings() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : listings.length === 0 ? (
-          <div className="mt-12 flex flex-col items-center text-center">
-            <Package className="h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 font-heading text-xl font-semibold text-foreground">
-              No listings yet
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Start selling by creating your first listing
-            </p>
-            <Button onClick={() => navigate('/create-listing')} className="mt-4 gap-1">
-              <Plus className="h-4 w-4" /> Create Listing
-            </Button>
-          </div>
         ) : (
           <Tabs
             onValueChange={value => {
@@ -272,9 +268,15 @@ function MyListings() {
             className="mt-6"
           >
             <TabsList>
-              <TabsTrigger value="approved">Approved ({approvedListings.length})</TabsTrigger>
-              <TabsTrigger value="pending">Pending ({pendingListings.length})</TabsTrigger>
-              <TabsTrigger value="sold">Sold ({soldListings.length})</TabsTrigger>
+              <TabsTrigger value="approved">
+                Approved{selectedTab === 'approved' && ` (${listings.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                Pending{selectedTab === 'pending' && ` (${listings.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="sold">
+                Sold{selectedTab === 'sold' && ` (${listings.length})`}
+              </TabsTrigger>
               <TabsTrigger value="offers" className="gap-1.5">
                 <Inbox className="h-4 w-4" /> Offers Received
               </TabsTrigger>

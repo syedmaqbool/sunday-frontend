@@ -30,6 +30,7 @@ export type CancelledListingReservation = ApiResponseData<CancelMyListingReserva
 
 export type AdminListingParameters = Partial<ApiRequestQuery<GetAdminListingsData>>;
 export type MyListingParameters = Partial<ApiRequestQuery<GetMyListingsData>>;
+export type MyListingStatuses = NonNullable<MyListingParameters['status']>;
 export type AdminListingFeedbackParameters = Partial<ApiRequestQuery<GetAdminListingFeedbackData>>;
 export type MyListingFeedbackParameters = Partial<ApiRequestQuery<GetMyListingFeedbackData>>;
 

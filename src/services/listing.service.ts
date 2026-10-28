@@ -102,13 +102,14 @@ export function moderateListing(
 export function listMyListings(
   parameters: MyListingParameters = {},
 ): Promise<PaginatedResponse<MyListing>> {
+  const searchParams = new URLSearchParams({
+    page: String(parameters.page ?? 1),
+    size: String(parameters.size ?? 100),
+  });
+  for (const status of parameters.status ?? []) searchParams.append('status', status);
+
   return authInstance
-    .get('/api/v1/me/listings', {
-      searchParams: {
-        page: parameters.page ?? 1,
-        size: parameters.size ?? 100,
-      },
-    })
+    .get('/api/v1/me/listings', { searchParams })
     .json<PaginatedResponse<MyListing>>();
 }
 

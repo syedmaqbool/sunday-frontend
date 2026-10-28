@@ -5,19 +5,19 @@ import {
   deleteMyListing,
   listMyListings,
 } from '@/services/listing.service';
-
-export type MyListing = Awaited<ReturnType<typeof listMyListings>>['data'][number];
+import type { MyListingStatuses } from '@/types/listing.type';
 
 export const myListingsQueryKey = {
   all: () => ['my-listings'] as const,
-  list: () => [...myListingsQueryKey.all(), 'list'] as const,
+  list: (statuses?: MyListingStatuses) =>
+    [...myListingsQueryKey.all(), 'list', statuses ?? null] as const,
 };
 
-export function getMyListingsOptions(enabled = true) {
+export function getMyListingsOptions(enabled = true, statuses?: MyListingStatuses) {
   return queryOptions({
     enabled,
-    queryFn: async () => await listMyListings({ page: 1, size: 100 }),
-    queryKey: myListingsQueryKey.list(),
+    queryFn: async () => await listMyListings({ page: 1, size: 100, status: statuses }),
+    queryKey: myListingsQueryKey.list(statuses),
   });
 }
 

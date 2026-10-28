@@ -89,6 +89,7 @@ describe('received offers by listing', () => {
       page: 1,
       size: 100,
       listingId: 'listing-1',
+      sort: 'newest',
     });
   });
 
@@ -97,6 +98,6 @@ describe('received offers by listing', () => {
 
     expect(await screen.findByText('Vintage Lamp')).toBeInTheDocument();
     expect(screen.getByText('Desk Chair')).toBeInTheDocument();
-    expect(listReceivedOffersMock).toHaveBeenCalledWith({ page: 1, size: 100 });
+    expect(listReceivedOffersMock).toHaveBeenCalledWith({ page: 1, size: 100, sort: 'newest' });
   });
 });

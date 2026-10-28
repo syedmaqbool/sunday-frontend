@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
+import type { ReceivedOffersSort } from '@/types/offer.type';
 import {
   getMyReviewedOfferIdsOptions,
   getReceivedOfferSelectionOptions,
@@ -46,8 +47,6 @@ interface ReceivedOffersProps {
   selectedOfferId?: string | null;
 }
 
-type SortOption = 'newest' | 'price_desc';
-
 const counterOfferSchema = z.object({
   counterAmount: z
     .string()
@@ -64,7 +63,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
   const [searchParams, setSearchParams] = useSearchParams();
   const [counterDialog, setCounterDialog] = useState<any | null>(null);
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortBy, setSortBy] = useState<ReceivedOffersSort>('newest');
   const form = useForm<CounterOfferFormValues>({
     defaultValues: { counterAmount: '' },
     resolver: zodResolver(counterOfferSchema),
@@ -76,7 +75,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
   };
 
   const { data: receivedResponse, isLoading } = useQuery(
-    getReceivedOffersOptions(user?.id, listingId),
+    getReceivedOffersOptions(user?.id, listingId, sortBy),
   );
   const received = receivedResponse?.data ?? [];
   const { data: selectedOfferResponse, isLoading: loadingSelectedOffer } = useQuery(
@@ -141,12 +140,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
     return <div className="py-12 text-center text-muted-foreground">No offers received yet</div>;
   }
 
-  const sortedOffers = offersToDisplay.toSorted((a, b) => {
-    if (sortBy === 'price_desc') return b.amount - a.amount;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-  const sortLabel: Record<SortOption, string> = {
+  const sortLabel: Record<ReceivedOffersSort, string> = {
     newest: 'Newest First',
     price_desc: 'Highest to Lowest Price',
   };
@@ -170,7 +164,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
         </DropdownMenu>
       </div>
       <div className="space-y-3">
-        {sortedOffers.map(offer => (
+        {offersToDisplay.map(offer => (
           <Card
             key={offer.id}
             data-testid={offer.id === selectedOfferId ? 'selected-offer' : undefined}

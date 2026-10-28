@@ -30,6 +30,7 @@ export type CreateOfferPayload = ApiRequestBody<CreateOfferData>;
 export type CounterOfferPayload = ApiRequestBody<CounterOfferData>;
 export type MyOffersParameters = Partial<ApiRequestQuery<GetMyOffersData>>;
 export type ReceivedOffersParameters = Partial<ApiRequestQuery<GetReceivedOffersData>>;
+export type ReceivedOffersSort = NonNullable<ReceivedOffersParameters['sort']>;
 
 export type Review = ApiResponseItem<GetMyReviewsResponses> | ApiResponseItem<GetReviewsResponses>;
 export type ReviewMedia = NonNullable<Review['imageUrls']>[number];

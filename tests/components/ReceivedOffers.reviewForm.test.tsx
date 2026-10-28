@@ -229,7 +229,7 @@ describe('received paused offers', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Counter' }));
     fireEvent.change(screen.getByPlaceholderText('e.g. 150'), { target: { value: '125' } });
     queryClient.setQueryData(
-      offersQueryKey.received('seller-1'),
+      offersQueryKey.received('seller-1', undefined, 'newest'),
       page([
         {
           ...firstAcceptedOffer,

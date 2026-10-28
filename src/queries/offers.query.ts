@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { marketplaceQueryKey } from '@/queries/marketplace.query';
 import { myListingsQueryKey } from '@/queries/myListings.query';
+import type { ReceivedOffersSort } from '@/types/offer.type';
 import {
   acceptCounterOffer,
   acceptOffer,
@@ -20,8 +21,15 @@ export const offersQueryKey = {
   buyerListing: (listingId: string, userId?: string) =>
     [...offersQueryKey.all(), 'buyer-listing', 'list', listingId, userId ?? null] as const,
   mine: (userId?: string) => [...offersQueryKey.all(), 'mine', 'list', userId ?? null] as const,
-  received: (userId?: string, listingId?: string) =>
-    [...offersQueryKey.all(), 'received', 'list', userId ?? null, listingId ?? 'all'] as const,
+  received: (userId?: string, listingId?: string, sort?: ReceivedOffersSort) =>
+    [
+      ...offersQueryKey.all(),
+      'received',
+      'list',
+      userId ?? null,
+      listingId ?? 'all',
+      ...(sort ? [sort] : []),
+    ] as const,
   reviewedIds: {
     all: () => [...offersQueryKey.all(), 'reviewed-ids'] as const,
     list: (userId?: string) =>
@@ -84,7 +92,11 @@ export function getSentOffersOptions(userId?: string) {
   });
 }
 
-export function getReceivedOffersOptions(userId?: string, listingId?: string) {
+export function getReceivedOffersOptions(
+  userId?: string,
+  listingId?: string,
+  sort: ReceivedOffersSort = 'newest',
+) {
   return queryOptions({
     enabled: !!userId,
     queryFn: async () =>
@@ -92,8 +104,9 @@ export function getReceivedOffersOptions(userId?: string, listingId?: string) {
         page: 1,
         size: 100,
         ...(listingId ? { listingId } : {}),
+        sort,
       }),
-    queryKey: offersQueryKey.received(userId, listingId),
+    queryKey: offersQueryKey.received(userId, listingId, sort),
   });
 }
 

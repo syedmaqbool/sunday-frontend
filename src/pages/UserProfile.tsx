@@ -998,6 +998,34 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
               </div>
             </>
           )}
+
+        {(item.shippingFirstName || item.shippingLastName || item.shippingAddress) && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <MapPin className="h-4 w-4" /> Ship to
+              </h4>
+              <div className="space-y-0.5 text-sm text-muted-foreground">
+                {(item.shippingFirstName || item.shippingLastName) && (
+                  <p className="font-medium text-foreground">
+                    {[item.shippingFirstName, item.shippingLastName].filter(Boolean).join(' ')}
+                  </p>
+                )}
+                {item.shippingAddress && <p>{item.shippingAddress}</p>}
+                {(item.shippingCity || item.shippingPostal) && (
+                  <p>{[item.shippingCity, item.shippingPostal].filter(Boolean).join(', ')}</p>
+                )}
+                {item.shippingPhone && (
+                  <p className="flex items-center gap-1.5 pt-1">
+                    <Phone className="h-3.5 w-3.5" />
+                    {item.shippingPhone}
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
 
       {/* Mark as Shipped dialog */}

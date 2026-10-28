@@ -166,7 +166,13 @@ function createSale(overrides: Partial<Sale> = {}): Sale {
     sellerFullName: 'Current User',
     sellerIncentiveBonus: 100,
     sellerIncentivePercentage: 10,
+    shippingAddress: '123 Market Street',
+    shippingCity: 'Lahore',
+    shippingFirstName: 'Jane',
+    shippingLastName: 'Buyer',
     shippingMethod: null,
+    shippingPhone: '03001234567',
+    shippingPostal: '54000',
     size: 'M',
     status: 'CONFIRMED',
     subcategory: 'Jackets',
@@ -354,6 +360,64 @@ describe('seller sales incentives', () => {
     expect(
       within(pendingSale as HTMLElement).getByText(/Pending seller incentive bonus/),
     ).toBeInTheDocument();
+  });
+});
+
+describe('seller sales shipping destinations', () => {
+  it('shows the destination for confirmed, shipped, and delivered sales', async () => {
+    sellerSales.value = [
+      createSale({ id: 'confirmed-sale', title: 'Confirmed jacket' }),
+      createSale({
+        id: 'shipped-sale',
+        status: 'SHIPPED',
+        title: 'Shipped jacket',
+        shippingMethod: 'Courier',
+        trackingNumber: 'TRACK-123',
+      }),
+      createSale({ id: 'delivered-sale', status: 'DELIVERED', title: 'Delivered jacket' }),
+    ];
+    renderUserProfile('/profile?tab=sold');
+
+    expect(await screen.findByText('Confirmed jacket')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Ship to' })).toHaveLength(3);
+    expect(screen.getAllByText('Jane Buyer')).toHaveLength(3);
+    expect(screen.getAllByText('123 Market Street')).toHaveLength(3);
+    expect(screen.getAllByText('Lahore, 54000')).toHaveLength(3);
+    expect(screen.getAllByText('03001234567')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Mark as Shipped' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Shipment details' })).toBeInTheDocument();
+  });
+
+  it('omits missing destination values and hides the section when recipient and street are absent', async () => {
+    sellerSales.value = [
+      createSale({
+        id: 'partial-destination-sale',
+        title: 'Partial destination jacket',
+        shippingFirstName: 'Jane',
+        shippingLastName: '',
+        shippingAddress: '',
+        shippingCity: 'Lahore',
+        shippingPostal: '',
+        shippingPhone: '',
+      }),
+      createSale({
+        id: 'no-destination-sale',
+        title: 'No destination jacket',
+        shippingFirstName: '',
+        shippingLastName: '',
+        shippingAddress: '',
+        shippingCity: 'Lahore',
+        shippingPostal: '',
+        shippingPhone: '03001234567',
+      }),
+    ];
+    renderUserProfile('/profile?tab=sold');
+
+    expect(await screen.findByText('Partial destination jacket')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Ship to' })).toHaveLength(1);
+    expect(screen.getByText('Jane')).toBeInTheDocument();
+    expect(screen.getByText('Lahore')).toBeInTheDocument();
+    expect(screen.queryByText('03001234567')).not.toBeInTheDocument();
   });
 });
 

@@ -78,9 +78,7 @@ export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersPro
   const { data: receivedResponse, isLoading } = useQuery(
     getReceivedOffersOptions(user?.id, listingId),
   );
-  const received = (receivedResponse?.data ?? []).filter(
-    offer => !listingId || offer.listingId === listingId,
-  );
+  const received = receivedResponse?.data ?? [];
   const { data: selectedOfferResponse, isLoading: loadingSelectedOffer } = useQuery(
     getReceivedOfferSelectionOptions(selectedOfferId ?? null, user?.id),
   );

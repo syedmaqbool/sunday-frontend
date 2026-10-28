@@ -87,7 +87,12 @@ export function getSentOffersOptions(userId?: string) {
 export function getReceivedOffersOptions(userId?: string, listingId?: string) {
   return queryOptions({
     enabled: !!userId,
-    queryFn: async () => await listReceivedOffers({ page: 1, size: 100 }),
+    queryFn: async () =>
+      await listReceivedOffers({
+        page: 1,
+        size: 100,
+        ...(listingId ? { listingId } : {}),
+      }),
     queryKey: offersQueryKey.received(userId, listingId),
   });
 }

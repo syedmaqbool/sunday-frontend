@@ -47,6 +47,7 @@ export function listReceivedOffers(
       searchParams: {
         page: parameters.page ?? 1,
         size: parameters.size ?? 100,
+        ...(parameters.listingId ? { listingId: parameters.listingId } : {}),
       },
     })
     .json<PaginatedResponse<Offer>>();

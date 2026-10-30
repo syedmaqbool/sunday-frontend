@@ -152,6 +152,20 @@ export type GetForYouListingsResponses = {
       weight: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
       createdAt: string;
       updatedAt: string;
+      buyerProtectionFee: {
+        /**
+         * PKR amount as a number.
+         */
+        amount: number;
+        /**
+         * Commission tier percentage applied to the item price.
+         */
+        rate: number;
+      };
+      /**
+       * PKR amount as a number.
+       */
+      buyerTotalPrice: number;
       coverImageUrl: string | null;
       images: Array<{
         sortOrder: number;

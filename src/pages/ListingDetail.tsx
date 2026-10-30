@@ -374,29 +374,27 @@ function ListingDetail() {
                   Your accepted offer
                 </span>
               </div>
-            ) : (
-              priceSummary ? (
-                <div className="mt-4 space-y-2">
-                  <p className="text-3xl font-bold text-foreground">
-                    Rs {priceSummary.total.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Including platform fee</p>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between gap-4">
-                      <span>Item price</span>
-                      <span>Rs {listing.price.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between gap-4 text-muted-foreground">
-                      <span>Platform fee ({priceSummary.rate}%)</span>
-                      <span>Rs {priceSummary.amount.toLocaleString()}</span>
-                    </div>
+            ) : priceSummary ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-3xl font-bold text-foreground">
+                  Rs {priceSummary.total.toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground">Including platform fee</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span>Item price</span>
+                    <span>Rs {listing.price.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 text-muted-foreground">
+                    <span>Platform fee ({priceSummary.rate}%)</span>
+                    <span>Rs {priceSummary.amount.toLocaleString()}</span>
                   </div>
                 </div>
-              ) : (
-                <p className="mt-4 text-3xl font-bold text-foreground">
-                  Rs {listing.price.toLocaleString()}
-                </p>
-              )
+              </div>
+            ) : (
+              <p className="mt-4 text-3xl font-bold text-foreground">
+                Rs {listing.price.toLocaleString()}
+              </p>
             )}
 
             <div className="mt-6 flex flex-wrap gap-3">

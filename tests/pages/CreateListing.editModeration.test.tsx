@@ -322,7 +322,14 @@ describe('seller listing price summary', () => {
   beforeEach(() => {
     listCommissionTiersMock.mockResolvedValue({
       data: [
-        { active: true, categories: ['women'], maxPrice: null, minPrice: 0, rate: 20, sortOrder: 0 },
+        {
+          active: true,
+          categories: ['women'],
+          maxPrice: null,
+          minPrice: 0,
+          rate: 20,
+          sortOrder: 0,
+        },
         { active: true, categories: [], maxPrice: null, minPrice: 0, rate: 5, sortOrder: 0 },
       ],
     });
@@ -362,7 +369,14 @@ describe('seller listing price summary', () => {
   it('shows no fee when the active tiers do not match the listing price', async () => {
     listCommissionTiersMock.mockResolvedValue({
       data: [
-        { active: true, categories: ['women'], maxPrice: 3000, minPrice: 0, rate: 20, sortOrder: 0 },
+        {
+          active: true,
+          categories: ['women'],
+          maxPrice: 3000,
+          minPrice: 0,
+          rate: 20,
+          sortOrder: 0,
+        },
       ],
     });
     renderCreateListing();

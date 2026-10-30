@@ -100,6 +100,10 @@ export type GetAdminSellerCouponsResponses = {
       startsAt: string | null;
       createdAt: string;
       updatedAt: string;
+      seller: null | {
+        id: string;
+        fullName: string;
+      };
       sellerIncentiveBonusAmount: number;
     }>;
     pagination: {

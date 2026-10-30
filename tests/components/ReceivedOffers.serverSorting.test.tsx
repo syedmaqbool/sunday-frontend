@@ -91,10 +91,9 @@ describe('received offers server sorting', () => {
     renderReceivedOffers();
 
     expect(await screen.findByText('Earlier listing')).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 3 }).map(heading => heading.textContent)).toEqual([
-      'Earlier listing',
-      'Later listing',
-    ]);
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map(heading => heading.textContent),
+    ).toEqual(['Earlier listing', 'Later listing']);
     expect(listReceivedOffersMock).toHaveBeenCalledWith({
       page: 1,
       size: 100,
@@ -118,10 +117,9 @@ describe('received offers server sorting', () => {
       });
     });
     expect(await screen.findByText('Earlier listing')).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 3 }).map(heading => heading.textContent)).toEqual([
-      'Earlier listing',
-      'Later listing',
-    ]);
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map(heading => heading.textContent),
+    ).toEqual(['Earlier listing', 'Later listing']);
   });
 
   it('loads a URL-selected offer outside the first page', async () => {
@@ -141,6 +139,8 @@ describe('received offers server sorting', () => {
     renderReceivedOffers(undefined, '/my-listings?tab=offers&offer=offer-outside-first-page');
 
     expect(await screen.findByTestId('selected-offer')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Offer outside the first page' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Offer outside the first page' }),
+    ).toBeInTheDocument();
   });
 });

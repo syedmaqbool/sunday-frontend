@@ -23,12 +23,21 @@ export type GetPublicListingsData = {
     brand?: string;
     categoryValue?: string;
     condition?: string;
+    /**
+     * Maximum buyer total price in PKR, inclusive.
+     */
     maxPrice?: number;
+    /**
+     * Minimum buyer total price in PKR, inclusive.
+     */
     minPrice?: number;
     sizeValue?: string;
     sortOrder?: 'asc' | 'desc';
     status?: 'APPROVED' | 'RESERVED';
     subcategoryValue?: string;
+    /**
+     * When set to price, sorts by the buyer total including the buyer protection fee.
+     */
     sortBy?: 'createdAt' | 'price';
   };
   url: '/api/v1/listings';
@@ -142,6 +151,20 @@ export type GetPublicListingsResponses = {
       weight: 0.25 | 0.75 | 1.5 | 2.5 | 4 | 6 | null;
       createdAt: string;
       updatedAt: string;
+      buyerProtectionFee: {
+        /**
+         * PKR amount as a number.
+         */
+        amount: number;
+        /**
+         * Commission tier percentage applied to the item price.
+         */
+        rate: number;
+      };
+      /**
+       * PKR amount as a number.
+       */
+      buyerTotalPrice: number;
       coverImageUrl: string | null;
       images: Array<{
         sortOrder: number;

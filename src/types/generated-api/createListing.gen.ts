@@ -7,7 +7,7 @@ export type CreateListingData = {
     description: string;
     brand: string;
     condition: string;
-    price: number  ;
+    price: number;
     size:
       | 'XXS'
       | 'XS'
@@ -31,8 +31,7 @@ export type CreateListingData = {
       | '46'
       | '47'
       | '48';
-    styles: Array<'eastern' | 'western' | 'casual' | 'formal' | 'semi_formal'>
-      ;
+    styles: Array<'eastern' | 'western' | 'casual' | 'formal' | 'semi_formal'>;
     title: string;
     clothingTypeId?: null | string;
     media: Array<{

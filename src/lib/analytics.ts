@@ -67,7 +67,7 @@ export function updateAnalyticsConsent(accepted: boolean) {
     ad_user_data: 'denied',
     ad_personalization: 'denied',
   });
-  window.gtag('set', { user_id: accepted ? currentUserId ?? undefined : undefined });
+  window.gtag('set', { user_id: accepted ? (currentUserId ?? undefined) : undefined });
 }
 
 export function trackPageView(path: string, title?: string) {

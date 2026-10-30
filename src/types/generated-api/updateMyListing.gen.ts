@@ -7,7 +7,7 @@ export type UpdateMyListingData = {
     description?: string;
     brand?: string;
     condition?: string;
-    price?: number  ;
+    price?: number;
     size?:
       | 'XXS'
       | 'XS'

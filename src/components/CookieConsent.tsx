@@ -31,7 +31,7 @@ function CookieConsent() {
         JSON.stringify({
           date: new Date().toISOString(),
           value,
-        })
+        }),
       );
     } catch {
       // Continue with this page's consent choice if storage is unavailable.

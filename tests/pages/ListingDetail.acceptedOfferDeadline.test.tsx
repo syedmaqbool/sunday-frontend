@@ -4,19 +4,14 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingDetail from '@/pages/ListingDetail';
 
-const {
-  addItemMock,
-  listCommissionTiersMock,
-  listingState,
-  reservedOfferState,
-  userState,
-} = vi.hoisted(() => ({
-  addItemMock: vi.fn(),
-  listCommissionTiersMock: vi.fn(),
-  listingState: { listing: undefined as any },
-  reservedOfferState: { amount: 100 },
-  userState: { user: { id: 'buyer-1' } as { id: string } | null },
-}));
+const { addItemMock, listCommissionTiersMock, listingState, reservedOfferState, userState } =
+  vi.hoisted(() => ({
+    addItemMock: vi.fn(),
+    listCommissionTiersMock: vi.fn(),
+    listingState: { listing: undefined as any },
+    reservedOfferState: { amount: 100 },
+    userState: { user: { id: 'buyer-1' } as { id: string } | null },
+  }));
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: userState.user }),
@@ -272,8 +267,9 @@ describe('accepted offer deadline on listing detail', () => {
     renderListingDetail();
 
     expect(await screen.findByText('Your accepted offer')).toBeInTheDocument();
-    expect(screen.getAllByText('Rs 150').some(element => element.classList.contains('line-through')))
-      .toBe(true);
+    expect(
+      screen.getAllByText('Rs 150').some(element => element.classList.contains('line-through')),
+    ).toBe(true);
     expect(screen.queryByText(/including platform fee/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Platform fee (20%)')).not.toBeInTheDocument();
   });

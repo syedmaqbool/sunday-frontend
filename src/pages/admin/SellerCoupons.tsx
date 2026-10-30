@@ -174,11 +174,6 @@ function SellerCoupons() {
       })),
     [sellersRaw],
   );
-  const sellerMap = useMemo(
-    () => new Map(sellers.map(seller => [seller.id, seller.full_name])),
-    [sellers],
-  );
-
   const { data: listingsRaw } = useQuery(
     getAdminSellerListingsOptions(
       formValues.seller_id,
@@ -295,7 +290,7 @@ function SellerCoupons() {
               {incentives.map(incentive => (
                 <TableRow key={incentive.id}>
                   <TableCell className="text-sm text-muted-foreground">
-                    {sellerMap.get(incentive.sellerId) ?? '—'}
+                    {incentive.seller?.fullName ?? '—'}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{incentive.percentage}%</Badge>

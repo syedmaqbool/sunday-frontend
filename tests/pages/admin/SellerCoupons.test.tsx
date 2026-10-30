@@ -5,12 +5,15 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import SellerCoupons from '@/pages/admin/SellerCoupons';
 
-const { couponState, createCouponMock, toastMock, updateCouponMock } = vi.hoisted(() => ({
-  couponState: { coupons: [] as SellerCoupon[] },
-  createCouponMock: vi.fn(),
-  toastMock: vi.fn(),
-  updateCouponMock: vi.fn(),
-}));
+const { couponState, createCouponMock, toastMock, updateCouponMock, usersState } = vi.hoisted(
+  () => ({
+    couponState: { coupons: [] as SellerCoupon[] },
+    createCouponMock: vi.fn(),
+    toastMock: vi.fn(),
+    updateCouponMock: vi.fn(),
+    usersState: { shouldFail: false },
+  }),
+);
 
 vi.mock('@/hooks/use-toast', () => ({ toast: toastMock }));
 vi.mock('@/queries/adminSellerCoupons.query', () => ({
@@ -20,7 +23,10 @@ vi.mock('@/queries/adminSellerCoupons.query', () => ({
     queryKey: ['seller-listings', sellerId],
   }),
   getAdminUsersListOptions: () => ({
-    queryFn: async () => ({ data: [{ id: 'seller-1', firstName: 'Jamie', lastName: 'Seller' }] }),
+    queryFn: async () => {
+      if (usersState.shouldFail) throw new Error('Users unavailable');
+      return { data: [{ id: 'seller-1', firstName: 'Jamie', lastName: 'Seller' }] };
+    },
     queryKey: ['admin-users-list'],
   }),
   getSellerCouponsOptions: (query: { page: number; size: number }) => ({
@@ -82,6 +88,10 @@ function buildCoupon(overrides: Partial<SellerCoupon> = {}): SellerCoupon {
     createdAt: '2026-10-01T00:00:00.000Z',
     updatedAt: '2026-10-01T00:00:00.000Z',
     ...overrides,
+    seller:
+      overrides.seller === undefined
+        ? { id: 'seller-1', fullName: 'Coupon Response Seller' }
+        : overrides.seller,
   };
 }
 
@@ -110,6 +120,7 @@ async function openCreateForm() {
 
 describe('seller incentives', () => {
   beforeEach(() => {
+    usersState.shouldFail = false;
     couponState.coupons = [
       buildCoupon(),
       buildCoupon({
@@ -127,6 +138,28 @@ describe('seller incentives', () => {
   });
 
   afterEach(cleanup);
+
+  it('shows the seller name from the coupon response when the users request fails', async () => {
+    usersState.shouldFail = true;
+    couponState.coupons = [
+      buildCoupon({
+        sellerId: 'seller-outside-first-page',
+        seller: { id: 'seller-outside-first-page', fullName: 'Coupon Response Seller' },
+      }),
+    ];
+    renderPage();
+
+    const row = (await screen.findByText('10%')).closest('tr')!;
+    expect(row).toHaveTextContent('Coupon Response Seller');
+  });
+
+  it('shows a placeholder when the coupon has no seller', async () => {
+    couponState.coupons = [buildCoupon({ seller: null })];
+    renderPage();
+
+    const row = (await screen.findByText('10%')).closest('tr')!;
+    expect(row.cells[0]).toHaveTextContent('—');
+  });
 
   it('labels assignments and usage in seller incentive units without code values', async () => {
     renderPage();

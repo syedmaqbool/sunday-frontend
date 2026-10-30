@@ -8,18 +8,7 @@ import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 interface ListingCardProps {
   index?: number;
-  listing:
-    | MarketplaceListing
-    | {
-        id: string;
-        brand: string;
-        condition: string;
-        images?: string[];
-        price: number;
-        size: string;
-        status: string;
-        title: string;
-      };
+  listing: MarketplaceListing;
   sellerRating?: { avgRating: number; totalReviews: number } | null;
   showSellerByline?: boolean;
 }
@@ -30,10 +19,7 @@ function ListingCard({
   sellerRating,
   showSellerByline = false,
 }: ListingCardProps) {
-  const image =
-    'categoryId' in listing
-      ? getListingMediaUrls(listing)[0]
-      : listing.images?.find((value): value is string => typeof value === 'string');
+  const image = getListingMediaUrls(listing)[0];
   const status = listing.status.toLowerCase();
   const previewImage = image || '/placeholder.svg';
   const seller = 'seller' in listing ? listing.seller : undefined;
@@ -100,8 +86,9 @@ function ListingCard({
               {listing.title}
             </h3>
             <p className="text-sm font-semibold text-foreground">
-              Rs {listing.price.toLocaleString()}
+              Rs {listing.buyerTotalPrice.toLocaleString()}
             </p>
+            <p className="text-xs text-muted-foreground">incl. Buyer Protection</p>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 Size

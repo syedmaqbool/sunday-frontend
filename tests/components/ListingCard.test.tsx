@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vite-plus/test';
 import ListingCard from '@/components/ListingCard';
+import type { MarketplaceListing } from '@/queries/marketplace.query';
 
 const listing = {
   id: 'listing-1',
@@ -12,7 +13,9 @@ const listing = {
   size: 'M',
   status: 'APPROVED',
   title: 'Vintage Jacket',
-};
+  buyerProtectionFee: { amount: 250, rate: 10 },
+  buyerTotalPrice: 2750,
+} as MarketplaceListing;
 
 function renderListingCard(cardListing: Parameters<typeof ListingCard>[0]['listing']) {
   return render(
@@ -23,32 +26,33 @@ function renderListingCard(cardListing: Parameters<typeof ListingCard>[0]['listi
 }
 
 describe('listing card pricing', () => {
-  it('shows the listing price without seller incentive savings', () => {
+  it('shows the buyer total with a Buyer Protection note', () => {
     renderListingCard({
       ...listing,
     });
 
-    expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
-    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
-    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Rs 2,750')).toBeInTheDocument();
+    expect(screen.getByText('incl. Buyer Protection')).toBeInTheDocument();
   });
 
-  it('shows only the regular price when the listing has no estimate', () => {
-    renderListingCard(listing);
+  it('shows the item price as the buyer total when the fee is zero', () => {
+    renderListingCard({
+      ...listing,
+      buyerProtectionFee: { amount: 0, rate: 0 },
+      buyerTotalPrice: 2500,
+    });
 
     expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
-    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
-    expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
+    expect(screen.getByText('incl. Buyer Protection')).toBeInTheDocument();
   });
 
-  it('does not promise a seller coupon on a reserved listing', () => {
+  it('shows the buyer total on a reserved listing', () => {
     renderListingCard({
       ...listing,
       status: 'RESERVED',
     });
 
     expect(screen.getByText('Reserved')).toBeInTheDocument();
-    expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
-    expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
+    expect(screen.getByText('Rs 2,750')).toBeInTheDocument();
   });
 });

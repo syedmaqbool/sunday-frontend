@@ -1,120 +1,95 @@
-// Google Analytics 4 helper
 export const GA_MEASUREMENT_ID = 'G-7RBJ8C6PD9';
+export const ANALYTICS_CONSENT_STORAGE_KEY = 'sunday_cookie_consent';
 
 declare global {
   interface Window {
     dataLayer: any[];
-    gtag: (...arguments_: any[]) => void;
+    gtag: (...args: any[]) => void;
   }
 }
 
-const analyticsState = {
-  initialized: false,
-  scriptRequested: false,
-};
+let initialized = false;
+let analyticsConsentGranted = false;
+let currentUserId: string | null = null;
 
-function getAnalyticsTarget() {
-  return globalThis as Window & typeof globalThis;
+function hasStoredAnalyticsConsent() {
+  try {
+    const storedConsent = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+    if (!storedConsent) return false;
+
+    const consent = JSON.parse(storedConsent) as { value?: unknown };
+    return consent.value === 'accepted';
+  } catch {
+    return false;
+  }
 }
 
 export function initGA() {
-  if (analyticsState.initialized || typeof window === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined' || initialized) return;
 
-  const analyticsTarget = getAnalyticsTarget();
+  analyticsConsentGranted = hasStoredAnalyticsConsent();
 
-  analyticsTarget.dataLayer = analyticsTarget.dataLayer || [];
-  analyticsTarget.gtag =
-    analyticsTarget.gtag ||
-    function (...arguments_: any[]) {
-      analyticsTarget.dataLayer.push(arguments_);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag =
+    window.gtag ||
+    function (...args: any[]) {
+      window.dataLayer.push(args);
     };
 
-  // Avoid loading an invalid placeholder ID.
-  if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.includes('XXXX')) {
-    analyticsState.initialized = true;
-    console.warn('[analytics] Replace GA_MEASUREMENT_ID with your real GA4 ID.');
-    return;
-  }
-
-  // Queue configuration before the external script loads.
-  analyticsTarget.gtag('js', new Date());
-  analyticsTarget.gtag('config', GA_MEASUREMENT_ID, {
-    send_page_view: false,
+  window.gtag('consent', 'default', {
+    analytics_storage: analyticsConsentGranted ? 'granted' : 'denied',
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
   });
 
-  analyticsState.initialized = true;
+  window.gtag('js', new Date());
+  window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
 
-  const loadScript = () => {
-    if (analyticsState.scriptRequested) {
-      return;
-    }
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  script.onerror = () => console.error('[GA4] Script loading failed');
+  document.head.appendChild(script);
 
-    analyticsState.scriptRequested = true;
+  initialized = true;
+}
 
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+export function updateAnalyticsConsent(accepted: boolean) {
+  if (typeof window === 'undefined') return;
 
-    document.head.append(script);
-  };
+  initGA();
+  analyticsConsentGranted = accepted;
 
-  // Let the page's initial resources finish before requesting GA.
-  if (document.readyState === 'complete') {
-    setTimeout(loadScript, 2000);
-  } else {
-    window.addEventListener('load', () => setTimeout(loadScript, 2000), { once: true });
-  }
+  window.gtag('consent', 'update', {
+    analytics_storage: accepted ? 'granted' : 'denied',
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+  });
+  window.gtag('set', { user_id: accepted ? currentUserId ?? undefined : undefined });
 }
 
 export function trackPageView(path: string, title?: string) {
-  if (typeof document === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined' || !window.gtag || !analyticsConsentGranted) return;
 
-  const browserWindow = document.defaultView;
-  if (!browserWindow?.gtag) {
-    return;
-  }
-
-  browserWindow.gtag('event', 'page_view', {
-    page_location: location.href,
+  window.gtag('event', 'page_view', {
+    page_location: window.location.origin + path,
     page_path: path,
     page_title: title ?? document.title,
   });
 }
 
 export function trackEvent(name: string, parameters: Record<string, any> = {}) {
-  if (typeof document === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined' || !window.gtag || !analyticsConsentGranted) return;
 
-  const browserWindow = document.defaultView;
-  if (!browserWindow?.gtag) {
-    return;
-  }
-
-  browserWindow.gtag('event', name, parameters);
+  window.gtag('event', name, parameters);
 }
 
 export function setUser(userId: string | null) {
-  if (typeof document === 'undefined') {
-    return;
-  }
+  currentUserId = userId;
 
-  const browserWindow = document.defaultView;
-  if (!browserWindow?.gtag) {
-    return;
-  }
+  if (typeof window === 'undefined' || !window.gtag || !analyticsConsentGranted) return;
 
-  browserWindow.gtag('set', {
-    user_id: userId ?? undefined,
-  });
-
-  if (GA_MEASUREMENT_ID && !GA_MEASUREMENT_ID.includes('XXXX')) {
-    browserWindow.gtag('config', GA_MEASUREMENT_ID, {
-      user_id: userId ?? undefined,
-    });
-  }
+  window.gtag('set', { user_id: userId ?? undefined });
 }

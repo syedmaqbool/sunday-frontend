@@ -1,21 +1,24 @@
 import { Cookie, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-
-const STORAGE_KEY = 'sunday_cookie_consent';
+import {
+  ANALYTICS_CONSENT_STORAGE_KEY,
+  trackPageView,
+  updateAnalyticsConsent,
+} from '@/lib/analytics';
 
 function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        // slight delay so it doesn't flash before the page renders
-        const t = setTimeout(setVisible, 400, true);
-        return () => clearTimeout(t);
-      }
+      const stored = localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+      if (stored) return;
+
+      const timeout = setTimeout(() => setVisible(true), 400);
+      return () => clearTimeout(timeout);
     } catch {
       setVisible(true);
     }
@@ -23,10 +26,24 @@ function CookieConsent() {
 
   const setConsent = (value: 'accepted' | 'rejected') => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: new Date().toISOString(), value }));
+      localStorage.setItem(
+        ANALYTICS_CONSENT_STORAGE_KEY,
+        JSON.stringify({
+          date: new Date().toISOString(),
+          value,
+        })
+      );
     } catch {
-      /* ignore */
+      // Continue with this page's consent choice if storage is unavailable.
     }
+
+    const accepted = value === 'accepted';
+    updateAnalyticsConsent(accepted);
+
+    if (accepted) {
+      trackPageView(location.pathname + location.search);
+    }
+
     setVisible(false);
   };
 

@@ -125,6 +125,7 @@ describe('messages chat media sending', () => {
             const formData = options.body instanceof FormData ? options.body : null;
             const files = formData?.getAll('attachments') as File[] | undefined;
             const jsonBody = options.json as { content?: string } | undefined;
+            const formContent = formData?.get('content');
             const message = {
               id: `message-${requestState.messages.length + 1}`,
               conversationId: activeConversation.id,
@@ -138,7 +139,7 @@ describe('messages chat media sending', () => {
                   type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
                   url: `https://private.example/attachment-${index + 1}`,
                 })) ?? [],
-              content: formData ? String(formData.get('content') ?? '') : (jsonBody?.content ?? ''),
+              content: typeof formContent === 'string' ? formContent : (jsonBody?.content ?? ''),
               flagReasons: [],
               isFlagged: false,
               readAt: null,

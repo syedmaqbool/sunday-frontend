@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Camera, Info, Loader2, Star, Upload, Video as VideoIcon, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import BankDetailsModal from '@/components/BankDetailsModal';
@@ -172,9 +172,8 @@ function CreateListing() {
     handleSubmit,
     reset,
     setValue,
-    watch,
   } = listingForm;
-  const formValues = watch();
+  const formValues = useWatch({ control });
   const sizeFieldError = errors.size;
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const { data: subCategoryPages = [] } = useQuery(getSubcategoriesOptions(formValues.categoryId));

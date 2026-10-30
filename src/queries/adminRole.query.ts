@@ -44,7 +44,7 @@ export function useCreateAdminRoleMutation() {
   return useMutation({
     mutationFn: createAdminRole,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
+      void queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
     },
   });
 }
@@ -55,7 +55,7 @@ export function useDeleteAdminRoleMutation() {
   return useMutation({
     mutationFn: deleteAdminRole,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
+      void queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
     },
   });
 }
@@ -67,7 +67,7 @@ export function useUpdateAdminRoleMutation() {
     mutationFn: ({ roleId, payload }: { roleId: string; payload: UpdateAdminRolePayload }) =>
       updateAdminRole(roleId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
+      void queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
     },
   });
 }
@@ -84,7 +84,7 @@ export function useUpdateAdminRolePermissionsMutation() {
       payload: UpdateAdminRolePermissionsPayload;
     }) => updateAdminRolePermissions(roleId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
+      void queryClient.invalidateQueries({ queryKey: adminRoleQueryKey.roles() });
     },
   });
 }

@@ -56,7 +56,7 @@ export function useCreateSellerCouponMutation() {
     mutationFn: (payload: CreateSellerCouponPayload) => createSellerCoupon(payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: sellerCouponsQueryKey.all(),
       });
     },
@@ -71,7 +71,7 @@ export function useUpdateSellerCouponMutation() {
       updateSellerCoupon(id, payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: sellerCouponsQueryKey.all(),
       });
     },
@@ -85,7 +85,7 @@ export function useDeleteSellerCouponMutation() {
     mutationFn: (id: string) => deleteSellerCoupon(id),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: sellerCouponsQueryKey.all(),
       });
     },

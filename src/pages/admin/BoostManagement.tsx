@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Loader2, Pencil, Plus, Search, Sparkles, Trash2, TrendingUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { AdminBoostPaymentReviewQueue } from '@/components/admin/AdminBoostPaymentReviewQueue';
@@ -105,7 +105,7 @@ function PackageDialog({
     defaultValues: initial ?? emptyPackage,
     resolver: zodResolver(packageFormSchema),
   });
-  const formValues = form.watch();
+  const formValues = useWatch({ control: form.control });
 
   const handleSave = (values: PackageFormState) => {
     const package_: BoostPackage = {
@@ -277,7 +277,7 @@ function BoostManagement() {
     toast.success('Package deleted');
   };
 
-  const now = useMemo(() => Date.now(), []);
+  const [now] = useState(() => Date.now());
   const activeCount = boosts.filter(b => isBoostPaidAndWithinActiveWindow(b, now)).length;
   const totalRevenue = boosts.reduce((s, b) => s + Number(b.pricePaid ?? 0), 0);
 

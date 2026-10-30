@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Mail, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,7 +61,7 @@ function EmailTemplates() {
     setInitialized(true);
   }, [initialized, reset, settings?.emailTemplates]);
 
-  const templates = form.watch('templates');
+  const templates = useWatch({ control: form.control, name: 'templates' });
 
   const save = (tpl: EmailTemplateAPI, allTemplates: EmailTemplateAPI[]) => {
     setSavingId(tpl.id);

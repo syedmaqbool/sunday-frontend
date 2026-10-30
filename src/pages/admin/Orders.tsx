@@ -137,6 +137,7 @@ function isActiveComplaint(status: AdminComplaint['status']) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 function AdminOrders() {
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -146,6 +147,11 @@ function AdminOrders() {
   const { can } = useAccessControl();
   const canReviewPayments = can('ORDERS_UPDATE');
   const canReadComplaints = can('COMPLAINTS_READ');
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: ordersResponse, isLoading } = useQuery({
     ...getAdminOrdersOptions({
@@ -498,7 +504,7 @@ function AdminOrders() {
                     const expiresAt = l.reservationExpiresAt
                       ? new Date(l.reservationExpiresAt)
                       : null;
-                    const isExpired = expiresAt !== null && expiresAt.getTime() < Date.now();
+                    const isExpired = expiresAt !== null && expiresAt.getTime() < currentTime;
                     return (
                       <TableRow key={l.reservationId}>
                         <TableCell className="font-medium">

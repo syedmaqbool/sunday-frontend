@@ -3,7 +3,7 @@ import type { Profile, UpdateProfilePayload } from '@/types/profile.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Pencil, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -67,11 +67,10 @@ export function EditProfileDialog({ profile }: Props) {
     formState: { errors },
     handleSubmit,
     reset,
-    watch,
   } = form;
-  const fullName = watch('fullName') ?? '';
-  const bio = watch('bio') ?? '';
-  const avatarUrl = watch('avatarUrl');
+  const fullName = useWatch({ control, name: 'fullName' }) ?? '';
+  const bio = useWatch({ control, name: 'bio' }) ?? '';
+  const avatarUrl = useWatch({ control, name: 'avatarUrl' });
 
   const updateProfile = useUpdateProfileMutation();
   useEffect(() => {

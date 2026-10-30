@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { ManualPaymentDialog } from '@/components/ManualPaymentDialog';
@@ -169,12 +169,10 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     },
     resolver: zodResolver(campaignSchema),
   });
-  const [placement, startDate, endDate, goal] = campaignForm.watch([
-    'placement',
-    'startDate',
-    'endDate',
-    'goal',
-  ]);
+  const [placement, startDate, endDate, goal] = useWatch({
+    control: campaignForm.control,
+    name: ['placement', 'startDate', 'endDate', 'goal'],
+  });
   const quoteParameters: BoostCampaignQuoteParameters = {
     placement,
     endsAt: endDate.toISOString(),
@@ -188,7 +186,7 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     ...getListingBoostCampaignQuoteOptions(listingId, quoteParameters),
     enabled: open && activeTab === 'campaign' && endDate > startDate,
   });
-  const selected = packageForm.watch('packageIds');
+  const selected = useWatch({ control: packageForm.control, name: 'packageIds' });
   const dailyRate = SUGGESTED_DAILY_RATE[placement] ?? 200;
 
   const days = Math.max(1, differenceInCalendarDays(endDate, startDate) + 1);

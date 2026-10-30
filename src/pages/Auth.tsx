@@ -67,6 +67,7 @@ function parseRetryAfterSeconds(value: string | null): number {
 }
 
 function Auth() {
+  const [maximumDateOfBirth] = useState(() => new Date().toISOString().split('T', 1)[0]);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -295,7 +296,10 @@ function Auth() {
               {mode === 'login' ? 'Sign in to your account' : 'Join the fashion marketplace'}
             </p>
 
-            <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-6 space-y-4">
+            <form
+              onSubmit={async event => handleSubmit(onSubmit, onInvalid)(event)}
+              className="mt-6 space-y-4"
+            >
               {mode === 'register' && (
                 <>
                   <div className="space-y-2">
@@ -334,12 +338,7 @@ function Auth() {
                       name="dob"
                       control={control}
                       render={({ field }) => (
-                        <Input
-                          id="dob"
-                          max={new Date().toISOString().split('T', 1)[0]}
-                          type="date"
-                          {...field}
-                        />
+                        <Input id="dob" max={maximumDateOfBirth} type="date" {...field} />
                       )}
                     />
                     {errors.dob && <p className="text-sm text-destructive">{errors.dob.message}</p>}

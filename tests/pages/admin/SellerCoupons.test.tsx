@@ -43,7 +43,8 @@ vi.mock('@/queries/adminUsers.query', () => ({
               : `seller${sellerNumber}@example.com`,
         };
       });
-      const search = String(parameters.search ?? '').toLocaleLowerCase();
+      const searchParameter = parameters.search;
+      const search = typeof searchParameter === 'string' ? searchParameter.toLocaleLowerCase() : '';
       const matchedSellers =
         search === 'nobody'
           ? []

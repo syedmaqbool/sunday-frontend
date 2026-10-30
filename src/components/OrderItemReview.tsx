@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ImagePlus, Loader2, Star, Video, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -72,10 +72,10 @@ export function OrderItemReview({
     mode: 'all',
     resolver: zodResolver(orderReviewSchema),
   });
-  const { control, handleSubmit, reset, setValue, watch } = form;
-  const rating = watch('rating');
-  const images = watch('images');
-  const video = watch('video');
+  const { control, handleSubmit, reset, setValue } = form;
+  const rating = useWatch({ control, name: 'rating' });
+  const images = useWatch({ control, name: 'images' });
+  const video = useWatch({ control, name: 'video' });
 
   const { data: existingResponse, isLoading } = useQuery(
     getOrderItemReviewOptions(orderId, listingId, user?.id, sellerId),

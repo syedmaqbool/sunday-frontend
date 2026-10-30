@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Check, ChevronsUpDown, Loader2, Plus, Save } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -277,7 +277,7 @@ export default function QuickBooksMappings({
     resolver: zodResolver(sellerVendorMappingFormSchema),
   });
   const { setValue: setSellerVendorValue } = sellerVendorForm;
-  const selectedSellerId = sellerVendorForm.watch('sellerId');
+  const selectedSellerId = useWatch({ control: sellerVendorForm.control, name: 'sellerId' });
   const sellerOptionsQuery = useQuery({
     ...getAdminQuickBooksSellersQueryOptions({
       page: 1,
@@ -302,7 +302,10 @@ export default function QuickBooksMappings({
     resetAccountMappingForm(createAccountMappingDefaults(latestAccountMapping));
   }, [latestAccountMapping, resetAccountMappingForm]);
 
-  const vendorEffectiveDate = sellerVendorForm.watch('effectiveDate');
+  const vendorEffectiveDate = useWatch({
+    control: sellerVendorForm.control,
+    name: 'effectiveDate',
+  });
   const payableMappingVersion = accountMappingQuery.data?.data
     .filter(version => version.effectiveDate <= vendorEffectiveDate)
     .toSorted(

@@ -75,7 +75,7 @@ export function useCreateAdminUserMutation() {
   return useMutation({
     mutationFn: (payload: CreateAdminUserInput) => createAdminUser(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
     },
   });
 }
@@ -86,7 +86,7 @@ export function useUpdateUserRoleMutation() {
     mutationFn: ({ roleId, userId }: { roleId: string; userId: string }) =>
       updateUserRole(userId, roleId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminUsersQueryKey.all() });
     },
   });
 }

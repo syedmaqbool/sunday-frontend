@@ -3,7 +3,7 @@ import type { CheckoutQuote, CheckoutQuoteConflictResponse } from '@/types/check
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2, ShoppingBag, Tag, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import Footer from '@/components/Footer';
@@ -103,7 +103,7 @@ function Checkout() {
     mode: 'all',
     resolver: zodResolver(discountSchema),
   });
-  const discountCode = discountForm.watch('code');
+  const discountCode = useWatch({ control: discountForm.control, name: 'code' });
   const listingIds = items.map(index => index.listing.id);
   const acceptedOfferItem = items.find(
     ({ listing }) => listing.status === 'RESERVED' && listing.reservedForCurrentUser === true,
@@ -111,8 +111,6 @@ function Checkout() {
   const hasMixedAcceptedOfferCart = Boolean(acceptedOfferItem) && items.length > 1;
   const listingIdsKey = JSON.stringify(listingIds);
   const quoteRequestKey = JSON.stringify([listingIdsKey, marketplaceDiscountCode]);
-  currentQuoteRequestKey.current = quoteRequestKey;
-  currentListingIdsKey.current = listingIdsKey;
   const currentQuote = quoteForKey === quoteRequestKey ? checkoutQuote : null;
   const hasAcceptedOfferReservation = items.some(
     ({ listing }) => listing.reservedForCurrentUser && listing.reservedOfferId,
@@ -136,6 +134,11 @@ function Checkout() {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [hasAcceptedOfferReservation]);
+
+  useEffect(() => {
+    currentQuoteRequestKey.current = quoteRequestKey;
+    currentListingIdsKey.current = listingIdsKey;
+  }, [listingIdsKey, quoteRequestKey]);
 
   useEffect(() => {
     if (items.length > 0) {
@@ -640,7 +643,7 @@ function Checkout() {
                   </div>
                 ) : (
                   <form
-                    onSubmit={discountForm.handleSubmit(handleApplyDiscount)}
+                    onSubmit={async event => discountForm.handleSubmit(handleApplyDiscount)(event)}
                     className="flex gap-2"
                   >
                     <Controller

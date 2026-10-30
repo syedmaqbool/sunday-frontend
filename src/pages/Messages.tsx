@@ -544,7 +544,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MessageSquare, Paperclip, Send, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -610,7 +610,7 @@ function Messages() {
     mode: 'all',
     resolver: zodResolver(messageSchema),
   });
-  const messageContent = messageForm.watch('content');
+  const messageContent = useWatch({ control: messageForm.control, name: 'content' });
 
   // AUTH
   useEffect(() => {
@@ -803,12 +803,12 @@ function Messages() {
 
     const handleOpen = () => console.warn('websocket connected');
     const handleMessage = () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationsQueryKey.all(),
       });
 
       if (activeConvo) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: conversationsQueryKey.messages(activeConvo),
         });
       }

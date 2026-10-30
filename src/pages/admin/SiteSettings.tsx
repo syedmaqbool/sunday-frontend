@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Palette, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import heroFallback from '@/assets/hero-fashion.webp';
@@ -172,7 +172,7 @@ function SiteSettings() {
     resolver: zodResolver(heroImageFormSchema),
   });
   const [isFormReady, setIsFormReady] = useState(() => data !== undefined);
-  const formValues = form.watch();
+  const formValues = useWatch({ control: form.control });
   const isDirty = form.formState.isDirty;
   const resetForm = form.reset;
 

@@ -43,10 +43,10 @@ export function useSendMessageMutation() {
     }: { conversationId: string } & SendConversationMessagePayload) =>
       sendConversationMessage(conversationId, payload),
     onSuccess: (_, variables) => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: conversationsQueryKey.messages(variables.conversationId),
       });
-      qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
+      void qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
     },
   });
 }
@@ -57,7 +57,7 @@ export function useStartConversationMutation() {
   return useMutation({
     mutationFn: (payload: StartConversationPayload) => startConversation(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
+      void qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
     },
   });
 }
@@ -68,10 +68,10 @@ export function useMarkConversationReadMutation() {
   return useMutation({
     mutationFn: (conversationId: string) => markConversationRead(conversationId),
     onSuccess: (_, conversationId) => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: conversationsQueryKey.messages(conversationId),
       });
-      qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
+      void qc.invalidateQueries({ queryKey: conversationsQueryKey.list() });
     },
   });
 }

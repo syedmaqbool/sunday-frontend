@@ -112,7 +112,7 @@ function TaxSettings() {
       }
 
       setOpen(false);
-      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     } catch (error: any) {
       toast(getErrorToastOptions(error));
     } finally {
@@ -125,7 +125,7 @@ function TaxSettings() {
     try {
       await deleteTax.mutateAsync(id);
       toast({ title: 'Tax deleted' });
-      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     } catch (error: any) {
       toast(getErrorToastOptions(error));
     }
@@ -139,7 +139,7 @@ function TaxSettings() {
         resourceId: t.id,
         payload: { active: !t.active },
       });
-      qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     } catch (error: any) {
       toast(getErrorToastOptions(error));
     }

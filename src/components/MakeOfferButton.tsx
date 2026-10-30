@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Info, Loader2, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -75,9 +75,8 @@ export function MakeOfferButton({
     formState: { errors },
     handleSubmit,
     reset,
-    watch,
   } = form;
-  const amount = watch('amount');
+  const amount = useWatch({ control, name: 'amount' });
 
   const { data: existingOffers = [] } = useQuery(getBuyerListingOffersOptions(listingId, user?.id));
 

@@ -241,7 +241,7 @@ export default function Navbar() {
                 )}
                 <DropdownMenuItem
                   onClick={() => {
-                    signOut();
+                    void signOut();
                     navigate('/');
                   }}
                 >

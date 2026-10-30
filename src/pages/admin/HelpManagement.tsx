@@ -6,7 +6,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import { BookOpen, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { createElement, useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import {
@@ -183,6 +183,10 @@ const tutorialFormSchema = tutorialFieldsSchema
 
 type TutorialFormValues = z.infer<typeof tutorialFormSchema>;
 
+function createFaqId() {
+  return `faq-${Date.now()}`;
+}
+
 const emptyTutorialForm = {
   ctaLabel: '',
   ctaTo: '',
@@ -348,7 +352,7 @@ function HelpManagement() {
       next = faqs.map(f => (f.id === faqEdit.id ? { ...f, ...values } : f));
     } else {
       const newFaq: Faq = {
-        id: `faq-${Date.now()}`,
+        id: createFaqId(),
         answer: values.answer,
         category_key: values.category_key,
         published: true,
@@ -387,6 +391,8 @@ function HelpManagement() {
     defaultValues: emptyTutorialForm,
     resolver: zodResolver(tutorialFormSchema),
   });
+  const tutorialCtaLabel = useWatch({ control: tutForm.control, name: 'ctaLabel' });
+  const tutorialCtaTo = useWatch({ control: tutForm.control, name: 'ctaTo' });
   const tutorialSteps = useFieldArray({ control: tutForm.control, name: 'steps' });
 
   if (isLoading) {
@@ -460,7 +466,7 @@ function HelpManagement() {
       onError: (error: unknown) => {
         if (getApiErrorCode(error) === 'APP_HELP_TUTORIAL_NOT_FOUND') {
           showErrorToast(error, 'Tutorial was already removed');
-          refetchTutorials();
+          void refetchTutorials();
           return;
         }
         showErrorToast(error, 'Failed to remove tutorial');
@@ -1005,7 +1011,7 @@ function HelpManagement() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label>CTA (optional — set both, or leave both blank)</Label>
-                {(tutForm.watch('ctaLabel') || tutForm.watch('ctaTo')) && (
+                {(tutorialCtaLabel || tutorialCtaTo) && (
                   <Button
                     onClick={() => {
                       tutForm.setValue('ctaLabel', '');

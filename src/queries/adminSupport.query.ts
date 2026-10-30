@@ -43,10 +43,10 @@ export function useReplyToSupportTicketMutation() {
     mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
       replyToSupportTicket(ticketId, content),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: adminSupportQueryKey.messages(variables.ticketId),
       });
-      qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
+      void qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
     },
   });
 }
@@ -57,7 +57,7 @@ export function useUpdateSupportTicketStatusMutation() {
     mutationFn: ({ ticketId, status }: { ticketId: string; status: SupportTicketStatus }) =>
       updateSupportTicketStatus(ticketId, status),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
+      void qc.invalidateQueries({ queryKey: adminSupportQueryKey.tickets() });
     },
   });
 }

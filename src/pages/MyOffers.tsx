@@ -44,12 +44,18 @@ function statusBadge(s: string) {
 }
 
 function MyOffers() {
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedOfferId = searchParams.get('offer');
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [offerToCancel, setOfferToCancel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth', { replace: true });
@@ -276,7 +282,7 @@ function MyOffers() {
                       )}
                       {offer.status === 'ACCEPTED' &&
                         offer.reservedUntil &&
-                        new Date(offer.reservedUntil).getTime() > Date.now() &&
+                        new Date(offer.reservedUntil).getTime() > currentTime &&
                         !activeCheckoutOfferIds.has(offer.id) &&
                         !loadingOrders &&
                         !refreshingOrders &&

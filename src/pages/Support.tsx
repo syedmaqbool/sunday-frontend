@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, LifeBuoy, Loader2, Mail, MessageSquare, Plus, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -110,7 +110,7 @@ function Support() {
     mode: 'all',
     resolver: zodResolver(replySchema),
   });
-  const replyContent = replyForm.watch('content');
+  const replyContent = useWatch({ control: replyForm.control, name: 'content' });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -208,7 +208,7 @@ function Support() {
             ticket: response.data.id,
           });
 
-          queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: supportQueryKey.tickets(),
           });
         },
@@ -231,7 +231,7 @@ function Support() {
         onSuccess: () => {
           replyForm.reset();
 
-          queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: supportQueryKey.messages(activeTicket),
           });
         },

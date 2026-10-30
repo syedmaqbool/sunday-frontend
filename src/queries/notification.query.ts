@@ -32,11 +32,11 @@ export function useMarkNotificationReadMutation() {
     mutationFn: (id: string) => markNotificationRead(id),
 
     onSuccess: response => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notificationsQueryKey.all(),
       });
       if (response.data.type === 'LISTING_REMOVED' || response.data.type === 'LISTING_RESTORED') {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: myListingsQueryKey.all(),
         });
       }
@@ -51,10 +51,10 @@ export function useMarkAllNotificationsReadMutation() {
     mutationFn: () => markAllNotificationsRead(),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notificationsQueryKey.all(),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: myListingsQueryKey.all(),
       });
     },

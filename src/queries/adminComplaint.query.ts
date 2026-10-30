@@ -68,10 +68,10 @@ export function useUpdateComplaintStatusMutation() {
       status: AdminComplaintStatus;
     }) => updateComplaintStatus(complaintId, { adminNotes, status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminComplaintsQueryKey.all(),
       });
-      queryClient.invalidateQueries({ queryKey: adminAnalyticsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminAnalyticsQueryKey.all() });
     },
   });
 }

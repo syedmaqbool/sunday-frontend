@@ -13,7 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -152,7 +152,7 @@ function SellerCoupons() {
     defaultValues: emptyForm,
     resolver: zodResolver(sellerIncentiveFormSchema),
   });
-  const formValues = form.watch();
+  const formValues = useWatch({ control: form.control });
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);

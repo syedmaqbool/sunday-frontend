@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { HTTPError } from 'ky';
 import { Plus, Save, Trash2 } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -140,6 +140,7 @@ export default function ClothingTypesManager() {
     defaultValues: { label: '' },
     resolver: zodResolver(createClothingTypeSchema),
   });
+  const createFormLabel = useWatch({ control: createForm.control, name: 'label' });
   const clothingTypes = clothingTypePages
     .flatMap(page => page.data)
     .toSorted((first, second) => first.sortOrder - second.sortOrder);
@@ -196,7 +197,7 @@ export default function ClothingTypesManager() {
             )}
           />
           <Button
-            disabled={!createForm.watch('label').trim() || createClothingType.isPending}
+            disabled={!createFormLabel?.trim() || createClothingType.isPending}
             type="submit"
             className="gap-1"
           >

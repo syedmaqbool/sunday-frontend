@@ -99,6 +99,7 @@ export function ManualPaymentDialog({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploaded' | 'uploading'>('idle');
+  const [isUploading, setIsUploading] = useState(false);
   const uploadInFlight = useRef(false);
   const uploadPaymentProof = useUploadPaymentProofMutation();
   const {
@@ -124,12 +125,13 @@ export function ManualPaymentDialog({
     formState: { errors },
     handleSubmit,
   } = form;
-  const busy = submitting || uploadInFlight.current || uploadPaymentProof.isPending;
+  const busy = submitting || isUploading || uploadPaymentProof.isPending;
 
   const handlePaymentSubmit: SubmitHandler<ManualPaymentFormValues> = async values => {
     if (uploadInFlight.current || submitting) return;
 
     uploadInFlight.current = true;
+    setIsUploading(true);
     setUploadError(null);
     setUploadProgress(15);
     setUploadStatus('uploading');
@@ -153,6 +155,7 @@ export function ManualPaymentDialog({
       setUploadError(errorMessage(submissionError, 'Payment could not be submitted.'));
     } finally {
       uploadInFlight.current = false;
+      setIsUploading(false);
     }
   };
 
@@ -356,7 +359,7 @@ export function ManualPaymentDialog({
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit(handlePaymentSubmit)}
+            onClick={async () => handleSubmit(handlePaymentSubmit)()}
             disabled={busy || loadingInstructions || !!instructionsError || !instructions}
             type="button"
           >

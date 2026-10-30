@@ -14,7 +14,7 @@ describe('seller analytics service', () => {
     getMock.mockReset();
   });
 
-  it('passes the requested date range to seller analytics', () => {
+  it('passes the requested date range to seller analytics', async () => {
     const response = { json: vi.fn() };
     getMock.mockReturnValue(response);
     const dateRange = {
@@ -22,7 +22,7 @@ describe('seller analytics service', () => {
       startTime: '2026-04-01T00:00:00.000Z',
     };
 
-    getSellerAnalytics(dateRange);
+    await getSellerAnalytics(dateRange);
 
     expect(getMock).toHaveBeenCalledWith('/api/v1/me/seller-analytics', {
       searchParams: dateRange,

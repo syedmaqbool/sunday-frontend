@@ -580,7 +580,7 @@ function UserProfile() {
         onCancel={() => setBankModalOpen(false)}
         onSaved={() => {
           setBankModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: myProfileQueryKey.all() });
+          void queryClient.invalidateQueries({ queryKey: myProfileQueryKey.all() });
         }}
         initialValues={{
           bank_account_holder: profile?.bankAccountHolder ?? '',
@@ -887,7 +887,7 @@ function SoldOrderCard({ item, selected }: { item: OrderItem; selected: boolean 
       toast.success('Marked as shipped');
       setDialogOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     } catch (error: any) {
       showErrorToast(error, 'Failed to update status');
     } finally {

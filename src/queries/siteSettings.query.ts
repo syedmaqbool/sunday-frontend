@@ -51,7 +51,7 @@ export function useUpdateHeroImageMutation() {
   return useMutation({
     mutationFn: (value: Partial<HeroImageValue>) => updateHeroImage(value),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: siteSettingsQueryKey.adminHeroImage(),
       });
     },

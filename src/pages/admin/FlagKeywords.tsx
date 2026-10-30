@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Eye, Loader2, Lock, Plus, ShieldAlert, Tag, Trash2 } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +55,7 @@ function FlagKeywords() {
     defaultValues: { draft: '' },
     resolver: zodResolver(keywordSchema),
   });
-  const draft = form.watch('draft');
+  const draft = useWatch({ control: form.control, name: 'draft' });
 
   const { data: keywords = [], isLoading } = useQuery(getFlagKeywordsOptions());
   const updateKeywords = useUpdateFlagKeywordsMutation();

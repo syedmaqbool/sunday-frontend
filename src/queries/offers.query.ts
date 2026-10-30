@@ -50,12 +50,12 @@ function getOfferSelectionOptions(
     enabled: !!userId && !!offerId,
     queryFn: async () => {
       let page = 1;
-      do {
-        const response = await listOffers({ page, size: 100 });
-        if (response.data.some(offer => offer.id === offerId) || !response.pagination.nextPage)
-          return response;
+      let response = await listOffers({ page, size: 100 });
+      while (!response.data.some(offer => offer.id === offerId) && response.pagination.nextPage) {
         page = response.pagination.nextPage;
-      } while (true);
+        response = await listOffers({ page, size: 100 });
+      }
+      return response;
     },
     queryKey: offersQueryKey.selection(offerId ?? '', recipient, userId),
   });
@@ -125,7 +125,7 @@ export function useCreateOfferMutation(listingId: string, userId?: string) {
     mutationFn: (variables: { amount: number; message?: string }) =>
       createOffer(listingId, variables),
     onSuccess: () => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: offersQueryKey.buyerListing(listingId, userId),
       });
     },
@@ -138,7 +138,7 @@ export function useAcceptCounterOfferMutation(listingId: string, userId?: string
   return useMutation({
     mutationFn: (offerId: string) => acceptCounterOffer(offerId),
     onSuccess: () => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: offersQueryKey.buyerListing(listingId, userId),
       });
     },
@@ -151,11 +151,11 @@ export function useWithdrawOfferMutation(listingId?: string, userId?: string) {
   return useMutation({
     mutationFn: (offerId: string) => withdrawOffer(offerId),
     onSuccess: () => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: listingId ? offersQueryKey.buyerListing(listingId, userId) : offersQueryKey.all(),
       });
-      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
-      qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }
@@ -178,9 +178,9 @@ export function useRespondToOfferMutation(userId?: string, listingId?: string) {
       return counterOffer(id, { counterAmount: counterAmount! });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: offersQueryKey.received(userId, listingId) });
-      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
-      qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: offersQueryKey.received(userId, listingId) });
+      void qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }

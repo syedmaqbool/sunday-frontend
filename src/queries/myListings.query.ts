@@ -27,8 +27,8 @@ export function useDeleteMyListingMutation() {
   return useMutation({
     mutationFn: (listingId: string) => deleteMyListing(listingId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
-      qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }
@@ -39,8 +39,8 @@ export function useCancelMyListingReservationMutation() {
   return useMutation({
     mutationFn: (listingId: string) => cancelMyListingReservation(listingId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
-      qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: myListingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }

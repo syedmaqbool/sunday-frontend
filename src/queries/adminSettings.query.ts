@@ -29,7 +29,7 @@ export function useUpdateBoostPackagesMutation() {
   return useMutation({
     mutationFn: (boostPackages: BoostPackageAPI[]) => updateAdminBoostPackages(boostPackages),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: adminSettingsQueryKey.all() });
     },
   });
 }

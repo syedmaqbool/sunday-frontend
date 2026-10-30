@@ -14,7 +14,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import BoostDialog from '@/components/BoostDialog';
@@ -96,7 +96,7 @@ function Boost() {
     setResubmissionPurchaseId(null);
   };
 
-  const now = useMemo(() => Date.now(), []);
+  const [now] = useState(() => Date.now());
   const activeBoosts = allBoosts.filter(b => isBoostPaidAndWithinActiveWindow(b, now));
   const expiredBoosts = allBoosts.filter(
     b => b.paymentStatus === 'PAID' && new Date(b.endsAt).getTime() < now,

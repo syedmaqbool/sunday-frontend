@@ -92,7 +92,7 @@ export function SellerComplaintBadge({
       toast.success('Return address shared with the buyer.');
       setAddressOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     } catch (error: any) {
       showErrorToast(error, 'Failed to save return address');
     } finally {
@@ -106,7 +106,7 @@ export function SellerComplaintBadge({
       await markComplaintReturnReceived(complaint.id);
       toast.success('Marked return as received. Admin will finalize the refund.');
       await refetch();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     } catch (error: any) {
       showErrorToast(error, 'Failed to update status');
     } finally {

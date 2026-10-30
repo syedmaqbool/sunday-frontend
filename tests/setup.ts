@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom/vitest';
 
-Element.prototype.scrollIntoView ??= () => {};
+if (!Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')) {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: () => {},
+  });
+}
 
 Object.defineProperties(globalThis, {
   matchMedia: {

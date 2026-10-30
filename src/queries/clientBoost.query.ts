@@ -90,8 +90,8 @@ export function useBoostWithPackageMutation() {
     mutationFn: ({ listingId, ...payload }: { listingId: string } & BoostWithPackagePayload) =>
       boostWithPackage(listingId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
   });
 }
@@ -102,8 +102,8 @@ export function useBoostWithCampaignMutation() {
     mutationFn: ({ listingId, ...payload }: { listingId: string } & BoostWithCampaignPayload) =>
       boostWithCampaign(listingId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
   });
 }
@@ -114,8 +114,8 @@ export function useResubmitBoostPaymentProofMutation() {
     mutationFn: ({ listingId, purchaseId, ...payload }: ResubmitBoostPaymentProofVariables) =>
       resubmitBoostPaymentProof(listingId, purchaseId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
   });
 }

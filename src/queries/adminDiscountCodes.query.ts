@@ -33,7 +33,7 @@ export function useCreateDiscountCodeMutation() {
     mutationFn: (payload: CreateDiscountCodePayload) => createDiscountCode(payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: discountCodesQueryKey.all(),
       });
     },
@@ -53,7 +53,7 @@ export function useUpdateDiscountCodeMutation() {
     }) => updateDiscountCode(discountCodeId, payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: discountCodesQueryKey.all(),
       });
     },
@@ -67,7 +67,7 @@ export function useDeleteDiscountCodeMutation() {
     mutationFn: (discountCodeId: string) => deleteDiscountCode(discountCodeId),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: discountCodesQueryKey.all(),
       });
     },

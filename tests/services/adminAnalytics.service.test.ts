@@ -40,7 +40,7 @@ describe('admin analytics service', () => {
     });
   });
 
-  it('passes the date range to analytics and lead list requests', () => {
+  it('passes the date range to analytics and lead list requests', async () => {
     const response = { json: vi.fn() };
     getMock.mockReturnValue(response);
     const dateRange = {
@@ -48,19 +48,19 @@ describe('admin analytics service', () => {
       startTime: '2026-04-01T00:00:00.000Z',
     };
 
-    getAdminAnalytics(dateRange);
+    await getAdminAnalytics(dateRange);
     expect(getMock).toHaveBeenNthCalledWith(1, '/api/v1/admin/analytics', {
       searchParams: dateRange,
     });
 
-    listAdminMarketingLeads({ ...dateRange, page: 1, size: 50 });
+    await listAdminMarketingLeads({ ...dateRange, page: 1, size: 50 });
     expect(getMock).toHaveBeenNthCalledWith(2, '/api/v1/admin/analytics/marketing-leads', {
       searchParams: { ...dateRange, page: 1, size: 50 },
     });
   });
 
-  it('omits unset filters from the export request', () => {
-    exportAdminMarketingLeads({ leadStatus: '', search: '' });
+  it('omits unset filters from the export request', async () => {
+    await exportAdminMarketingLeads({ leadStatus: '', search: '' });
 
     expect(getMock).toHaveBeenCalledWith('/api/v1/admin/analytics/marketing-leads/export', {
       searchParams: {},

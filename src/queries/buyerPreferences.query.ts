@@ -87,10 +87,10 @@ export function useSavePreferencesMutation() {
         title: 'Preferences saved!',
       });
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: buyerPreferencesQueryKey.current(),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: userPreferencesQueryKey.current(user?.id), // ← yeh add karo
       });
 

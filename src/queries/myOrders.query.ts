@@ -75,8 +75,8 @@ export function useUpdateOrderItemStatusMutation() {
       payload: UpdateOrderItemStatusPayload;
     }) => updateItemStatus(orderId, orderItemId, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      qc.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
+      void qc.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: myOrdersQueryKey.sales() });
     },
   });
 }

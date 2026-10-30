@@ -65,12 +65,12 @@ export function useCreateOrderItemReviewMutation(userId?: string, sellerId?: str
       ...payload
     }: CreateReviewPayload & { listingId: string }) => createReview(payload),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: reviewQueryKey.orderItem(variables.orderId, variables.listingId, userId),
       });
-      qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
       if (sellerId) {
-        qc.invalidateQueries({
+        void qc.invalidateQueries({
           queryKey: sellerRatingQueryKey.detail(sellerId),
         });
       }
@@ -84,8 +84,8 @@ export function useCreateOfferReviewMutation() {
   return useMutation({
     mutationFn: (payload: CreateOfferReviewPayload) => createOfferReview(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
-      qc.invalidateQueries({ queryKey: offersQueryKey.reviewedIds.all() });
+      void qc.invalidateQueries({ queryKey: reviewQueryKey.all() });
+      void qc.invalidateQueries({ queryKey: offersQueryKey.reviewedIds.all() });
     },
   });
 }

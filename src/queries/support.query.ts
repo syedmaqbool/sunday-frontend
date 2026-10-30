@@ -35,7 +35,7 @@ export function useCreateSupportTicketMutation() {
   return useMutation({
     mutationFn: (payload: CreateTicketPayload) => createSupportTicket(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: supportQueryKey.tickets() });
+      void qc.invalidateQueries({ queryKey: supportQueryKey.tickets() });
     },
   });
 }
@@ -47,10 +47,10 @@ export function useSendSupportMessageMutation() {
     mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
       sendSupportMessage(ticketId, { content }),
     onSuccess: (_, variables) => {
-      qc.invalidateQueries({
+      void qc.invalidateQueries({
         queryKey: supportQueryKey.messages(variables.ticketId),
       });
-      qc.invalidateQueries({ queryKey: supportQueryKey.tickets() });
+      void qc.invalidateQueries({ queryKey: supportQueryKey.tickets() });
     },
   });
 }

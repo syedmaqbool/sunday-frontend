@@ -45,11 +45,11 @@ export function useModerateListingMutation() {
     mutationFn: ({ listingId, ...payload }: { listingId: string } & ModerateListingPayload) =>
       moderateListing(listingId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      void queryClient.invalidateQueries({
         queryKey: adminListingFeedbackQueryKey.list(),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: myListingFeedbackQueryKey.list(),
       });
     },
@@ -62,7 +62,7 @@ export function useRemoveAdminListingMutation() {
     mutationFn: ({ listingId, reason }: RemoveAdminListingVariables) =>
       removeAdminListing(listingId, { reason }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
     },
   });
 }
@@ -72,7 +72,7 @@ export function useRestoreAdminListingMutation() {
   return useMutation({
     mutationFn: ({ listingId }: RestoreAdminListingVariables) => restoreAdminListing(listingId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
     },
   });
 }
@@ -83,7 +83,7 @@ export function useUpdateAdminListingTitleMutation() {
     mutationFn: ({ listingId, title }: UpdateAdminListingTitleVariables) =>
       updateAdminListingTitle(listingId, { title }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
     },
   });
 }
@@ -103,11 +103,11 @@ export function useCreateAdminListingFeedbackMutation() {
     mutationFn: ({ listingId, feedback }: { listingId: string; feedback: string }) =>
       createAdminListingFeedback(listingId, { feedback }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: adminListingsQueryKey.all() });
+      void queryClient.invalidateQueries({
         queryKey: adminListingFeedbackQueryKey.list(),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: myListingFeedbackQueryKey.list(),
       });
     },

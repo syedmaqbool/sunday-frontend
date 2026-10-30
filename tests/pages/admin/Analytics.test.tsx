@@ -7,6 +7,8 @@ const getAdminAnalyticsMock = vi.hoisted(() => vi.fn());
 const listAdminMarketingLeadsMock = vi.hoisted(() => vi.fn());
 const exportAdminMarketingLeadsMock = vi.hoisted(() => vi.fn());
 const toastErrorMock = vi.hoisted(() => vi.fn());
+let createObjectURLMock: ReturnType<typeof vi.fn>;
+let anchorClickMock: ReturnType<typeof vi.fn>;
 
 vi.mock('@/services/adminAnalytics.service', () => ({
   exportAdminMarketingLeads: exportAdminMarketingLeadsMock,
@@ -101,17 +103,18 @@ describe('admin analytics marketing-leads export', () => {
     listAdminMarketingLeadsMock.mockReset().mockResolvedValue(leadsResponse);
     exportAdminMarketingLeadsMock.mockReset();
     toastErrorMock.mockReset();
+    createObjectURLMock = vi.fn().mockReturnValue('blob:marketing-leads');
     Object.defineProperties(URL, {
       createObjectURL: {
         configurable: true,
-        value: vi.fn().mockReturnValue('blob:marketing-leads'),
+        value: createObjectURLMock,
       },
       revokeObjectURL: {
         configurable: true,
         value: vi.fn(),
       },
     });
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    anchorClickMock = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
   });
 
   it('downloads the successful backend CSV using active filters and its filename', async () => {
@@ -135,8 +138,8 @@ describe('admin analytics marketing-leads export', () => {
       expect(exportAdminMarketingLeadsMock).toHaveBeenCalledWith({ search: 'ali' }),
     );
 
-    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+    expect(createObjectURLMock).toHaveBeenCalledWith(expect.any(Blob));
+    expect(anchorClickMock).toHaveBeenCalledTimes(1);
     const createdLinks = createElementMock.mock.results
       .map(result => result.value)
       .filter((value): value is HTMLAnchorElement => value instanceof HTMLAnchorElement);
@@ -177,8 +180,8 @@ describe('admin analytics marketing-leads export', () => {
     const createElementMock = vi.spyOn(document, 'createElement');
     fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
 
-    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1));
-    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    await waitFor(() => expect(anchorClickMock).toHaveBeenCalledTimes(1));
+    expect(createObjectURLMock).toHaveBeenCalledWith(expect.any(Blob));
     const createdLinks = createElementMock.mock.results
       .map(result => result.value)
       .filter((value): value is HTMLAnchorElement => value instanceof HTMLAnchorElement);
@@ -198,8 +201,8 @@ describe('admin analytics marketing-leads export', () => {
       }),
     );
 
-    expect(URL.createObjectURL).not.toHaveBeenCalled();
-    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+    expect(createObjectURLMock).not.toHaveBeenCalled();
+    expect(anchorClickMock).not.toHaveBeenCalled();
     expect(button).not.toBeDisabled();
   });
 

@@ -1258,7 +1258,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -1680,7 +1680,7 @@ function ListingModeration() {
     mode: 'onChange',
     resolver: zodResolver(listingTitleSchema),
   });
-  const titleDraft = titleForm.watch('title');
+  const titleDraft = useWatch({ control: titleForm.control, name: 'title' });
   const apiStatus = filter === 'all' || filter === 'DELETED' ? undefined : filter;
   const isDeleted = filter === 'DELETED' ? true : undefined;
   const {

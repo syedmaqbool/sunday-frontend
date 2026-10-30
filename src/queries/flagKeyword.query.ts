@@ -20,7 +20,7 @@ export function useUpdateFlagKeywordsMutation() {
   return useMutation({
     mutationFn: (keywords: string[]) => updateFlagKeywords(keywords),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: flagKeywordsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: flagKeywordsQueryKey.all() });
     },
   });
 }

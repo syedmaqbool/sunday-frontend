@@ -139,10 +139,10 @@ export function useCreateSellerPayoutMutation() {
     mutationFn: (payload: CreateSellerPayoutPayload) => createSellerPayout(payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: payoutQueryKey.sellerPayouts(),
       });
-      queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
+      void queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() });
     },
   });
 }

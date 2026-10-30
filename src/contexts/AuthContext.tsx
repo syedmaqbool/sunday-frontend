@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    restore();
+    void restore();
   }, []);
 
   // ── signIn ────────────────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ export function useCreateBrandMutation() {
     mutationFn: (payload: CreateBrandPayload) => createBrand(payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 }
@@ -38,7 +38,7 @@ export function useUpdateBrandMutation() {
       updateBrand(brandId, payload),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 }
@@ -50,7 +50,7 @@ export function useDeleteBrandMutation() {
     mutationFn: (brandId: string) => deleteBrand(brandId),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: brandsQueryKey.all() });
     },
   });
 }

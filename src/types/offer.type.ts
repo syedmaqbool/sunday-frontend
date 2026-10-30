@@ -20,6 +20,7 @@ import type {
   WithdrawOfferResponses,
 } from '@/types/generated-api';
 
+export type ReceivedOffer = ApiResponseItem<GetReceivedOffersResponses>;
 export type Offer =
   | ApiResponseItem<GetMyOffersResponses>
   | ApiResponseItem<GetReceivedOffersResponses>;

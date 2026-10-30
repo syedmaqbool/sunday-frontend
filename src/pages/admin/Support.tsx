@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, LifeBuoy, Loader2, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ function AdminSupport() {
     mode: 'all',
     resolver: zodResolver(replySchema),
   });
-  const replyContent = replyForm.watch('content');
+  const replyContent = useWatch({ control: replyForm.control, name: 'content' });
 
   const { data: allTickets = [], isLoading: ticketsLoading } = useQuery(
     getAdminSupportTicketsOptions(),

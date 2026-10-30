@@ -28,7 +28,7 @@ export function useCreateTaxSettingMutation() {
   return useMutation({
     mutationFn: (payload: CreateTaxSettingPayload) => createTaxSetting(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
 }
@@ -44,7 +44,7 @@ export function useUpdateTaxSettingMutation() {
       payload: UpdateTaxSettingPayload;
     }) => updateTaxSetting(resourceId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
 }
@@ -54,7 +54,7 @@ export function useDeleteTaxSettingMutation() {
   return useMutation({
     mutationFn: (resourceId: string) => deleteTaxSetting(resourceId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: taxSettingsQueryKey.all() });
     },
   });
 }

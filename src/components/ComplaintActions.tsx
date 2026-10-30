@@ -102,7 +102,7 @@ export function ComplaintActions({ orderId, orderItemId }: ComplaintActionsProps
       toast.success('Return request submitted for admin review.');
       setRaiseOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     } catch (error: any) {
       showErrorToast(error, 'Failed to raise complaint');
     } finally {
@@ -124,7 +124,7 @@ export function ComplaintActions({ orderId, orderItemId }: ComplaintActionsProps
       toast.success('Return proof uploaded. Seller has been notified.');
       setReturnOpen(false);
       await refetch();
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     } catch (error: any) {
       showErrorToast(error, 'Failed to upload return proof');
     } finally {

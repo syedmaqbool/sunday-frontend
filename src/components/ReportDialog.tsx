@@ -2,7 +2,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Flag, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -93,10 +93,9 @@ export function ReportDialog({
     formState: { errors },
     handleSubmit,
     reset,
-    watch,
   } = form;
-  const reason = watch('reason');
-  const details = watch('details');
+  const reason = useWatch({ control, name: 'reason' });
+  const details = useWatch({ control, name: 'details' });
 
   const onSubmit: SubmitHandler<ReportFormValues> = async values => {
     if (!user) {

@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { showErrorToast } from '@/lib/errorToast';
 import { formatEnumLabel } from '@/lib/utilities';
-import type { ReceivedOffersSort } from '@/types/offer.type';
+import type { ReceivedOffer, ReceivedOffersSort } from '@/types/offer.type';
 import {
   getMyReviewedOfferIdsOptions,
   getReceivedOfferSelectionOptions,
@@ -61,7 +61,7 @@ type CounterOfferFormValues = z.infer<typeof counterOfferSchema>;
 export function ReceivedOffers({ listingId, selectedOfferId }: ReceivedOffersProps = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [counterDialog, setCounterDialog] = useState<any | null>(null);
+  const [counterDialog, setCounterDialog] = useState<ReceivedOffer | null>(null);
   const [reviewingOffer, setReviewingOffer] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<ReceivedOffersSort>('newest');
   const form = useForm<CounterOfferFormValues>({

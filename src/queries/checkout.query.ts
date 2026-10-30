@@ -39,8 +39,8 @@ export function useCreateCheckoutMutation() {
   return useMutation({
     mutationFn: (payload: CreateOrderPayload) => createOrder(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }
@@ -57,9 +57,9 @@ export function useCancelOrderMutation() {
   return useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
     onSuccess: (_response, orderId) => {
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
-      queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
+      void queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
     },
   });
 }
@@ -76,8 +76,8 @@ export function useResubmitManualPaymentMutation() {
       payload: ResubmitManualPaymentPayload;
     }) => resubmitManualPayment(orderId, payload),
     onSuccess: (_response, { orderId }) => {
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
-      queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.detail(orderId) });
     },
   });
 }

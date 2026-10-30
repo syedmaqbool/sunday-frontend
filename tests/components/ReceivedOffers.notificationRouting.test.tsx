@@ -109,7 +109,7 @@ describe('received offer notification selection', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Accept' }));
     const onSuccess = respondToOfferMock.mock.calls[0][1].onSuccess;
-    act(() => onSuccess({ data: { ...receivedOffer, status: 'ACCEPTED' } }));
+    await act(async () => onSuccess({ data: { ...receivedOffer, status: 'ACCEPTED' } }));
 
     expect(toast.info).toHaveBeenCalledWith('The buyer has 24 hours to submit payment proof.');
     expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('6 hours'));

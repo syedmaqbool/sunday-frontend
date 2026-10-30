@@ -33,7 +33,7 @@ export function useResolveReportMutation() {
       status: 'DISMISSED' | 'RESOLVED';
     }) => resolveReport(reportId, { adminNotes, status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminReportsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: adminReportsQueryKey.all() });
     },
   });
 }

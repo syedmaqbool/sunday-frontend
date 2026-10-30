@@ -28,7 +28,7 @@ function Unsubscribe() {
       setState({ kind: 'invalid', message: 'Missing unsubscribe token.' });
       return;
     }
-    (async () => {
+    void (async () => {
       try {
         const { data } = await authInstance
           .get('api/v1/emails/unsubscribe', { searchParams: { token } })

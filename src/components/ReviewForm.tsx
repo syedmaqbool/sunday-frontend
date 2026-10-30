@@ -2,7 +2,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Star } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -44,8 +44,8 @@ export function ReviewForm({
     mode: 'all',
     resolver: zodResolver(reviewSchema),
   });
-  const { control, handleSubmit, reset, watch } = form;
-  const rating = watch('rating');
+  const { control, handleSubmit, reset } = form;
+  const rating = useWatch({ control, name: 'rating' });
 
   const submitReview = useCreateOfferReviewMutation();
 

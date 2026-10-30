@@ -16,7 +16,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -111,7 +111,7 @@ function Preferences() {
     defaultValues: emptyPreferencesForm,
     resolver: zodResolver(preferencesFormSchema),
   });
-  const formValues = form.watch();
+  const formValues = useWatch({ control: form.control });
 
   const navigate = useNavigate();
   const { user } = useAuth();

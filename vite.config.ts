@@ -392,6 +392,12 @@ export default defineConfig(({ mode }) => ({
     },
     overrides: [
       {
+        files: ['src/types/generated-api/**/*.ts'],
+        rules: {
+          'typescript/no-redundant-type-constituents': 'off',
+        },
+      },
+      {
         files: ['**/*.?([cm])[jt]s?(x)'],
         rules: {
           'node/handle-callback-err': ['error', '^(err|error)$'],

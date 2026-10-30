@@ -60,10 +60,10 @@ export function useUpdateBoostPackagesMutation() {
   return useMutation({
     mutationFn: (packages: BoostPackage[]) => updateBoostPackages(packages),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminBoostQueryKey.packages(),
       });
-      queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
+      void queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
   });
 }

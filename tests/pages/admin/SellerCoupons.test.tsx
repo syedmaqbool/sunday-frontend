@@ -5,30 +5,60 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import SellerCoupons from '@/pages/admin/SellerCoupons';
 
-const { couponState, createCouponMock, toastMock, updateCouponMock, usersState } = vi.hoisted(
-  () => ({
-    couponState: { coupons: [] as SellerCoupon[] },
-    createCouponMock: vi.fn(),
-    toastMock: vi.fn(),
-    updateCouponMock: vi.fn(),
-    usersState: { shouldFail: false },
-  }),
-);
+const {
+  couponState,
+  createCouponMock,
+  searchRequests,
+  sellerListingsCalls,
+  toastMock,
+  updateCouponMock,
+} = vi.hoisted(() => ({
+  couponState: { coupons: [] as SellerCoupon[] },
+  createCouponMock: vi.fn(),
+  searchRequests: [] as Array<Record<string, unknown>>,
+  sellerListingsCalls: [] as Array<[string | undefined, boolean]>,
+  toastMock: vi.fn(),
+  updateCouponMock: vi.fn(),
+}));
 
 vi.mock('@/hooks/use-toast', () => ({ toast: toastMock }));
-vi.mock('@/queries/adminSellerCoupons.query', () => ({
-  getAdminSellerListingsOptions: (sellerId?: string, isEnabled = false) => ({
-    enabled: isEnabled,
-    queryFn: async () => ({ data: [{ id: 'listing-1', title: 'Desk' }] }),
-    queryKey: ['seller-listings', sellerId],
-  }),
-  getAdminUsersListOptions: () => ({
+vi.mock('@/queries/adminUsers.query', () => ({
+  getAdminUsersQueryOptions: (parameters: Record<string, unknown>, enabled = true) => ({
+    enabled,
     queryFn: async () => {
-      if (usersState.shouldFail) throw new Error('Users unavailable');
-      return { data: [{ id: 'seller-1', firstName: 'Jamie', lastName: 'Seller' }] };
+      searchRequests.push(parameters);
+      return {
+        data:
+          parameters.search === 'nobody'
+            ? []
+            : [
+                {
+                  id: 'seller-1',
+                  firstName: 'Jamie',
+                  lastName: 'Seller',
+                  email: 'jamie@example.com',
+                },
+                {
+                  id: 'seller-outside-first-page',
+                  firstName: 'Faraway',
+                  lastName: 'Seller',
+                  email: 'faraway@example.com',
+                },
+              ],
+      };
     },
-    queryKey: ['admin-users-list'],
+    queryKey: ['admin-users', 'list', parameters],
   }),
+}));
+vi.mock('@/queries/adminSellerCoupons.query', () => ({
+  getAdminSellerListingsOptions: (sellerId?: string, isEnabled = false) => {
+    sellerListingsCalls.push([sellerId, isEnabled]);
+    return {
+      enabled: isEnabled,
+      queryFn: async () => ({ data: [{ id: 'listing-1', title: 'Desk' }] }),
+      queryKey: ['seller-listings', sellerId],
+    };
+  },
   getSellerCouponsOptions: (query: { page: number; size: number }) => ({
     queryFn: async () => ({
       data: couponState.coupons,
@@ -109,18 +139,15 @@ async function openCreateForm() {
   renderPage();
   fireEvent.click(await screen.findByRole('button', { name: /New Seller Incentive/ }));
   await screen.findByRole('heading', { name: 'Create Seller Incentive' });
-  await waitFor(() =>
-    expect(screen.getByRole('option', { name: 'Jamie Seller' })).toBeInTheDocument(),
-  );
   fireEvent.change(screen.getByRole('spinbutton', { name: 'Percentage' }), {
     target: { value: '10' },
   });
-  fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'seller-1' } });
 }
 
 describe('seller incentives', () => {
   beforeEach(() => {
-    usersState.shouldFail = false;
+    searchRequests.length = 0;
+    sellerListingsCalls.length = 0;
     couponState.coupons = [
       buildCoupon(),
       buildCoupon({
@@ -139,8 +166,7 @@ describe('seller incentives', () => {
 
   afterEach(cleanup);
 
-  it('shows the seller name from the coupon response when the users request fails', async () => {
-    usersState.shouldFail = true;
+  it('shows the seller name from the coupon response in the edit picker', async () => {
     couponState.coupons = [
       buildCoupon({
         sellerId: 'seller-outside-first-page',
@@ -151,6 +177,11 @@ describe('seller incentives', () => {
 
     const row = (await screen.findByText('10%')).closest('tr')!;
     expect(row).toHaveTextContent('Coupon Response Seller');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seller incentive' }));
+    expect(await screen.findByRole('combobox', { name: 'Assign to seller' })).toHaveTextContent(
+      'Coupon Response Seller',
+    );
+    expect(searchRequests).toHaveLength(0);
   });
 
   it('shows a placeholder when the coupon has no seller', async () => {
@@ -175,6 +206,19 @@ describe('seller incentives', () => {
 
   it('creates a percentage-only seller incentive with existing assignment settings', async () => {
     await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+    fireEvent.change(screen.getByPlaceholderText('Search seller name or email…'), {
+      target: { value: 'Jamie' },
+    });
+    expect(await screen.findByText('Jamie Seller')).toBeInTheDocument();
+    expect(screen.getByText('jamie@example.com')).toBeInTheDocument();
+    expect(searchRequests).toContainEqual({
+      search: 'Jamie',
+      roleType: 'USER',
+      status: 'ACTIVE',
+      size: 20,
+    });
+    fireEvent.click(screen.getByRole('option', { name: /Jamie Seller/ }));
     fireEvent.change(screen.getByLabelText('Minimum order (Rs)'), { target: { value: '500' } });
     fireEvent.change(screen.getByLabelText('Eligible unit cap'), { target: { value: '25' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create Seller Incentive' }));
@@ -192,6 +236,63 @@ describe('seller incentives', () => {
     expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('code');
     expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('discountType');
     expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('discountValue');
+  });
+
+  it('debounces seller search and can select a seller beyond the first 100', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+    const searchInput = screen.getByPlaceholderText('Search seller name or email…');
+    fireEvent.change(searchInput, { target: { value: 'Fa' } });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    fireEvent.change(searchInput, { target: { value: 'Faraway' } });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(searchRequests).toHaveLength(0);
+    expect(
+      await screen.findByText('faraway@example.com', {}, { timeout: 1000 }),
+    ).toBeInTheDocument();
+    expect(searchRequests).toEqual([
+      { search: 'Faraway', roleType: 'USER', status: 'ACTIVE', size: 20 },
+    ]);
+    fireEvent.click(screen.getByRole('option', { name: /Faraway Seller/ }));
+    expect(screen.getByRole('combobox', { name: 'Assign to seller' })).toHaveTextContent(
+      'Faraway Seller',
+    );
+    expect(screen.queryByText('Choose seller')).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when the seller search has no matches', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+    fireEvent.change(screen.getByPlaceholderText('Search seller name or email…'), {
+      target: { value: 'nobody' },
+    });
+    expect(await screen.findByText('No sellers found.')).toBeInTheDocument();
+  });
+
+  it('requires a seller assignment', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Create Seller Incentive' }));
+
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'Choose a seller.' }),
+      ),
+    );
+    expect(createCouponMock).not.toHaveBeenCalled();
+  });
+
+  it('loads approved seller listings after selecting a seller for an item-based coupon', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+    fireEvent.change(screen.getByPlaceholderText('Search seller name or email…'), {
+      target: { value: 'Jamie' },
+    });
+    fireEvent.click(await screen.findByRole('option', { name: /Jamie Seller/ }));
+    fireEvent.change(screen.getAllByRole('combobox')[1], {
+      target: { value: 'item_based' },
+    });
+    expect(await screen.findByText('Desk')).toBeInTheDocument();
+    expect(sellerListingsCalls).toContainEqual(['seller-1', true]);
   });
 
   it.each(['0', '-1', '1.5', '101'])('rejects invalid percentage %s', async percentage => {

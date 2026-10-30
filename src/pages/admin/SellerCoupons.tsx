@@ -1,9 +1,9 @@
-import type { AdminUser } from '@/types/adminUser.type';
 import type { CreateSellerCouponPayload, SellerCoupon } from '@/types/sellerCoupon.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
+  Check,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -17,9 +17,17 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -38,9 +46,9 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { getErrorToastOptions } from '@/lib/errorToast';
+import { getAdminUsersQueryOptions } from '@/queries/adminUsers.query';
 import {
   getAdminSellerListingsOptions,
-  getAdminUsersListOptions,
   getSellerCouponsOptions,
   useCreateSellerCouponMutation,
   useDeleteSellerCouponMutation,
@@ -48,11 +56,6 @@ import {
 } from '@/queries/adminSellerCoupons.query';
 
 type Scope = 'item_based' | 'seller_wide';
-
-interface SellerOption {
-  id: string;
-  full_name: string | null;
-}
 
 interface ListingOption {
   id: string;
@@ -138,6 +141,10 @@ function formToPayload(form: SellerIncentiveFormValues): CreateSellerCouponPaylo
 function SellerCoupons() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sellerPickerOpen, setSellerPickerOpen] = useState(false);
+  const [sellerSearch, setSellerSearch] = useState('');
+  const [debouncedSellerSearch, setDebouncedSellerSearch] = useState('');
+  const [selectedSellerLabel, setSelectedSellerLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [usageFor, setUsageFor] = useState<SellerCoupon | null>(null);
   const form = useForm<SellerIncentiveFormValues>({
@@ -165,14 +172,24 @@ function SellerCoupons() {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
-  const { data: sellersRaw } = useQuery(getAdminUsersListOptions());
-  const sellers: SellerOption[] = useMemo(
-    () =>
-      (sellersRaw?.data ?? []).map((user: AdminUser) => ({
-        id: user.id,
-        full_name: `${user.firstName} ${user.lastName}`.trim() || null,
-      })),
-    [sellersRaw],
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSellerSearch(sellerSearch.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [sellerSearch]);
+  const sellerSearchParameters = {
+    search: debouncedSellerSearch,
+    roleType: 'USER' as const,
+    status: 'ACTIVE' as const,
+    size: 20,
+  };
+  const sellersQuery = useQuery(
+    getAdminUsersQueryOptions(
+      sellerSearchParameters,
+      sellerPickerOpen && debouncedSellerSearch.length > 0,
+    ),
   );
   const { data: listingsRaw } = useQuery(
     getAdminSellerListingsOptions(
@@ -192,6 +209,10 @@ function SellerCoupons() {
   const resetForm = () => {
     form.reset(emptyForm);
     setEditingId(null);
+    setSelectedSellerLabel('');
+    setSellerPickerOpen(false);
+    setSellerSearch('');
+    setDebouncedSellerSearch('');
   };
 
   const openCreate = () => {
@@ -201,6 +222,7 @@ function SellerCoupons() {
 
   const openEdit = (incentive: SellerCoupon) => {
     setEditingId(incentive.id);
+    setSelectedSellerLabel(incentive.seller?.fullName ?? '—');
     form.reset({
       expires_at: incentive.expiresAt ? incentive.expiresAt.slice(0, 16) : '',
       listing_id: incentive.listingId ?? '',
@@ -485,29 +507,89 @@ function SellerCoupons() {
           >
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Assign to seller</Label>
+                <Label htmlFor="seller-coupon-seller-picker">Assign to seller</Label>
                 <Controller
                   name="seller_id"
                   control={form.control}
                   render={({ field }) => (
-                    <Select
-                      onValueChange={value => {
-                        field.onChange(value);
-                        form.setValue('listing_id', '');
+                    <Popover
+                      onOpenChange={open => {
+                        setSellerPickerOpen(open);
+                        if (!open) {
+                          setSellerSearch('');
+                          setDebouncedSellerSearch('');
+                        }
                       }}
-                      value={field.value}
+                      open={sellerPickerOpen}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose seller" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sellers.map(seller => (
-                          <SelectItem key={seller.id} value={seller.id}>
-                            {seller.full_name || seller.id.slice(0, 8)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="seller-coupon-seller-picker"
+                          aria-expanded={sellerPickerOpen}
+                          className="w-full justify-between"
+                          role="combobox"
+                          variant="outline"
+                        >
+                          {selectedSellerLabel || 'Choose a seller.'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        className="w-[var(--radix-popover-trigger-width)] p-0"
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            onValueChange={setSellerSearch}
+                            placeholder="Search seller name or email…"
+                            value={sellerSearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              {sellerSearch.trim() !== debouncedSellerSearch
+                                ? 'Searching sellers…'
+                                : sellersQuery.isFetching
+                                  ? 'Loading sellers…'
+                                  : sellersQuery.isError
+                                    ? 'Could not load sellers.'
+                                    : debouncedSellerSearch
+                                      ? 'No sellers found.'
+                                      : 'Type to search active sellers.'}
+                            </CommandEmpty>
+                            {sellerSearch.trim() === debouncedSellerSearch &&
+                              !sellersQuery.isFetching &&
+                              sellersQuery.data?.data.map(seller => (
+                                <CommandItem
+                                  key={seller.id}
+                                  onSelect={() => {
+                                    field.onChange(seller.id);
+                                    form.setValue('listing_id', '');
+                                    setSelectedSellerLabel(
+                                      `${seller.firstName} ${seller.lastName}`.trim(),
+                                    );
+                                    setSellerPickerOpen(false);
+                                    setSellerSearch('');
+                                    setDebouncedSellerSearch('');
+                                  }}
+                                  value={seller.id}
+                                >
+                                  <Check
+                                    className={`
+                                      mr-2 h-4 w-4
+                                      ${field.value === seller.id ? 'opacity-100' : 'opacity-0'}
+                                    `}
+                                  />
+                                  <span className="flex flex-col">
+                                    <span>{`${seller.firstName} ${seller.lastName}`.trim()}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {seller.email}
+                                    </span>
+                                  </span>
+                                </CommandItem>
+                              ))}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 />
               </div>

@@ -32,8 +32,9 @@ export const adminUserAuditHistoryQueryKey = {
 
 export type AdminUsersParams = Partial<ApiRequestQuery<GetAdminUsersData>>;
 
-export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}) {
+export function getAdminUsersQueryOptions(parameters: AdminUsersParams = {}, enabled = true) {
   return queryOptions({
+    enabled,
     queryFn: async () => {
       return listAdminUsers(parameters);
     },

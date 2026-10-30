@@ -1,4 +1,3 @@
-import type { AdminUser } from '@/types/adminUser.type';
 import type { GetAdminSellerCouponsData, GetPublicListingsData } from '@/types/generated-api';
 import type { MarketplaceListing } from '@/types/marketplace.type';
 import type { PaginatedResponse } from '@/types/response.type';
@@ -16,11 +15,11 @@ import {
 } from '@/services/sellerCoupon.service';
 
 export const sellerCouponsQueryKey = {
-  adminUsers: () => ['admin-users-list'] as const,
   all: () => ['seller-coupons'] as const,
   list: (query: GetAdminSellerCouponsData['query']) =>
     [...sellerCouponsQueryKey.all(), 'list', query] as const,
-  sellerListings: (sellerId?: string) => ['seller-listings', sellerId] as const,
+  sellerListings: (sellerId?: string) =>
+    [...sellerCouponsQueryKey.all(), 'seller-listings', 'list', sellerId] as const,
 };
 
 export function getSellerCouponsOptions(query: GetAdminSellerCouponsData['query']) {
@@ -28,14 +27,6 @@ export function getSellerCouponsOptions(query: GetAdminSellerCouponsData['query'
     queryFn: () => listSellerCoupons(query),
     queryKey: sellerCouponsQueryKey.list(query),
     staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function getAdminUsersListOptions() {
-  return queryOptions({
-    queryFn: () =>
-      authInstance.get('/api/v1/admin/users?size=100').json<PaginatedResponse<AdminUser>>(),
-    queryKey: sellerCouponsQueryKey.adminUsers(),
   });
 }
 

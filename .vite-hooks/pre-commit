@@ -1,8 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-vp staged
-vp run typecheck
+npm run staged
 if [ "${SKIP_PACKAGE_VERSION_BUMP:-0}" != "1" ]; then
   vp run bump:patch
   git add package.json package-lock.json

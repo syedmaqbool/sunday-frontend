@@ -805,7 +805,7 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   staged: {
-    '*.{js,jsx,ts,tsx}': ['vp lint --fix', 'vp test related --passWithNoTests'],
+    '*.{js,jsx,ts,tsx}': ['vp check --fix', 'npm run test:focused --'],
   },
   test: {
     // The CreateListing tests time out when Vitest clears mocks automatically.

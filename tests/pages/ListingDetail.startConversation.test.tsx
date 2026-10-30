@@ -84,6 +84,8 @@ beforeEach(() => {
     reservedOfferId: null,
     sellerId: 'seller-1',
     brand: 'Vintage',
+    buyerProtectionFee: { rate: 0, amount: 0 },
+    buyerTotalPrice: 150,
     categoryValue: 'clothing',
     condition: 'USED_GOOD',
     coverImageUrl: null,

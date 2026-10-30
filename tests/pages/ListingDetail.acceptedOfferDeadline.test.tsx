@@ -4,14 +4,12 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingDetail from '@/pages/ListingDetail';
 
-const { addItemMock, listCommissionTiersMock, listingState, reservedOfferState, userState } =
-  vi.hoisted(() => ({
-    addItemMock: vi.fn(),
-    listCommissionTiersMock: vi.fn(),
-    listingState: { listing: undefined as any },
-    reservedOfferState: { amount: 100 },
-    userState: { user: { id: 'buyer-1' } as { id: string } | null },
-  }));
+const { addItemMock, listingState, reservedOfferState, userState } = vi.hoisted(() => ({
+  addItemMock: vi.fn(),
+  listingState: { listing: undefined as any },
+  reservedOfferState: { amount: 100 },
+  userState: { user: { id: 'buyer-1' } as { id: string } | null },
+}));
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: userState.user }),
@@ -32,10 +30,6 @@ vi.mock('@/queries/marketplace.query', () => ({
     queryFn: async () => reservedOfferState.amount,
     queryKey: ['marketplace', 'reserved-offer-amount', 'detail', 'offer-1'],
   }),
-}));
-
-vi.mock('@/services/commission.service', () => ({
-  listPublicCommissionTiers: listCommissionTiersMock,
 }));
 
 vi.mock('@/queries/myListings.query', () => ({
@@ -70,19 +64,6 @@ function renderListingDetail() {
 
 beforeEach(() => {
   addItemMock.mockReset();
-  listCommissionTiersMock.mockResolvedValue({
-    data: [
-      {
-        active: true,
-        categories: ['clothing'],
-        maxPrice: null,
-        minPrice: 0,
-        name: 'Clothing fee',
-        rate: 20,
-        sortOrder: 0,
-      },
-    ],
-  });
   userState.user = { id: 'buyer-1' };
   reservedOfferState.amount = 100;
   listingState.listing = {
@@ -90,6 +71,8 @@ beforeEach(() => {
     reservedOfferId: 'offer-1',
     sellerId: 'seller-1',
     brand: 'Vintage',
+    buyerProtectionFee: { rate: 0, amount: 0 },
+    buyerTotalPrice: 150,
     categoryValue: 'clothing',
     condition: 'USED_GOOD',
     coverImageUrl: null,
@@ -146,69 +129,10 @@ describe('accepted offer deadline on listing detail', () => {
     renderListingDetail();
 
     expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
-    expect(screen.getByText('Rs 150')).toBeInTheDocument();
+    expect(screen.getAllByText('Rs 150')).toHaveLength(2);
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
     expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/coupon/i)).not.toBeInTheDocument();
-  });
-
-  it('shows the buyer total and platform fee breakdown for a normal listing', async () => {
-    listingState.listing.reservedOfferId = null;
-    listingState.listing.reservedForCurrentUser = false;
-    listingState.listing.reservedUntil = null;
-    listingState.listing.status = 'APPROVED';
-    listingState.listing.price = 4000;
-
-    renderListingDetail();
-
-    expect(await screen.findByText('Rs 4,800')).toBeInTheDocument();
-    expect(screen.getByText(/including platform fee/i)).toBeInTheDocument();
-    expect(screen.getByText('Item price')).toBeInTheDocument();
-    expect(screen.getByText('Platform fee (20%)')).toBeInTheDocument();
-    expect(screen.getByText('Rs 4,000')).toBeInTheDocument();
-    expect(screen.getByText('Rs 800')).toBeInTheDocument();
-  });
-
-  it('does not claim a zero fee while active commission tiers are still loading', async () => {
-    listingState.listing.reservedOfferId = null;
-    listingState.listing.reservedForCurrentUser = false;
-    listingState.listing.reservedUntil = null;
-    listingState.listing.status = 'APPROVED';
-    listCommissionTiersMock.mockImplementation(() => new Promise(() => {}));
-
-    renderListingDetail();
-
-    expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
-    expect(await screen.findByText('Rs 150')).toBeInTheDocument();
-    expect(screen.queryByText(/including platform fee/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/platform fee \(0%\)/i)).not.toBeInTheDocument();
-  });
-
-  it('shows the asking price as the buyer total when no active tier matches', async () => {
-    listingState.listing.reservedOfferId = null;
-    listingState.listing.reservedForCurrentUser = false;
-    listingState.listing.reservedUntil = null;
-    listingState.listing.status = 'APPROVED';
-    listingState.listing.price = 4000;
-    listCommissionTiersMock.mockResolvedValue({
-      data: [
-        {
-          active: true,
-          categories: ['clothing'],
-          maxPrice: 3000,
-          minPrice: 0,
-          name: 'Clothing fee',
-          rate: 20,
-          sortOrder: 0,
-        },
-      ],
-    });
-
-    renderListingDetail();
-
-    expect(await screen.findAllByText('Rs 4,000')).toHaveLength(2);
-    expect(screen.getByText('Platform fee (0%)')).toBeInTheDocument();
-    expect(screen.getByText('Rs 0')).toBeInTheDocument();
   });
 
   it('keeps adding a normal listing to the cart with its stored asking price', async () => {
@@ -231,7 +155,7 @@ describe('accepted offer deadline on listing detail', () => {
     listingState.listing.status = 'APPROVED';
     renderListingDetail();
 
-    expect(await screen.findByText('Rs 150')).toBeInTheDocument();
+    expect(await screen.findAllByText('Rs 150')).toHaveLength(2);
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
     expect(screen.queryByText(/seller coupon|save rs/i)).not.toBeInTheDocument();
   });
@@ -243,7 +167,7 @@ describe('accepted offer deadline on listing detail', () => {
 
     renderListingDetail();
 
-    expect(await screen.findByText('Rs 150')).toBeInTheDocument();
+    expect(await screen.findAllByText('Rs 150')).toHaveLength(2);
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
   });
 
@@ -255,8 +179,8 @@ describe('accepted offer deadline on listing detail', () => {
     expect(await screen.findByText('Your accepted offer')).toBeInTheDocument();
     expect(screen.getByText('Rs 100')).toBeInTheDocument();
     expect(screen.getByText('Rs 150')).toHaveClass('line-through');
-    expect(screen.queryByText(/including platform fee/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Platform fee (20%)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/including buyer protection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Buyer protection fee (20%)')).not.toBeInTheDocument();
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
   });
 
@@ -270,8 +194,8 @@ describe('accepted offer deadline on listing detail', () => {
     expect(
       screen.getAllByText('Rs 150').some(element => element.classList.contains('line-through')),
     ).toBe(true);
-    expect(screen.queryByText(/including platform fee/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Platform fee (20%)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/including buyer protection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Buyer protection fee (20%)')).not.toBeInTheDocument();
   });
 
   it('shows the buyer that submitted proof is awaiting review when there is no deadline', async () => {

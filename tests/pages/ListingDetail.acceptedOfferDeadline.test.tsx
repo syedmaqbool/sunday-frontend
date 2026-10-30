@@ -4,10 +4,17 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import ListingDetail from '@/pages/ListingDetail';
 
-const { addItemMock, listingState, reservedOfferState, userState } = vi.hoisted(() => ({
+const {
+  addItemMock,
+  getMarketplaceListingOptionsMock,
+  listingDetailRequestMock,
+  listingState,
+  userState,
+} = vi.hoisted(() => ({
   addItemMock: vi.fn(),
+  getMarketplaceListingOptionsMock: vi.fn(),
+  listingDetailRequestMock: vi.fn(),
   listingState: { listing: undefined as any },
-  reservedOfferState: { amount: 100 },
   userState: { user: { id: 'buyer-1' } as { id: string } | null },
 }));
 
@@ -21,15 +28,16 @@ vi.mock('@/contexts/CartContext', () => ({
 
 vi.mock('@/queries/marketplace.query', () => ({
   getListingMediaUrls: () => [],
-  getMarketplaceListingOptions: () => ({
-    queryFn: async () => listingState.listing,
-    queryKey: ['marketplace', 'listing', 'detail', 'listing-1', 'auth'],
-  }),
-  getReservedOfferAmountOptions: () => ({
-    enabled: true,
-    queryFn: async () => reservedOfferState.amount,
-    queryKey: ['marketplace', 'reserved-offer-amount', 'detail', 'offer-1'],
-  }),
+  getMarketplaceListingOptions: (...args: unknown[]) => {
+    getMarketplaceListingOptionsMock(...args);
+    return {
+      queryFn: async () => {
+        listingDetailRequestMock();
+        return listingState.listing;
+      },
+      queryKey: ['marketplace', 'listing', 'detail', 'listing-1', 'auth'],
+    };
+  },
 }));
 
 vi.mock('@/queries/myListings.query', () => ({
@@ -64,11 +72,17 @@ function renderListingDetail() {
 
 beforeEach(() => {
   addItemMock.mockReset();
+  getMarketplaceListingOptionsMock.mockReset();
+  listingDetailRequestMock.mockReset();
   userState.user = { id: 'buyer-1' };
-  reservedOfferState.amount = 100;
   listingState.listing = {
     id: 'listing-1',
     reservedOfferId: 'offer-1',
+    reservedOffer: {
+      amount: 100,
+      buyerProtectionFee: { rate: 20, amount: 20 },
+      buyerTotalPrice: 120,
+    },
     sellerId: 'seller-1',
     brand: 'Vintage',
     buyerProtectionFee: { rate: 0, amount: 0 },
@@ -124,6 +138,7 @@ describe('accepted offer deadline on listing detail', () => {
   it('shows the regular listing price without seller incentive savings', async () => {
     listingState.listing.reservedOfferId = null;
     listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedOffer = null;
     listingState.listing.reservedUntil = null;
     listingState.listing.status = 'APPROVED';
     renderListingDetail();
@@ -151,6 +166,7 @@ describe('accepted offer deadline on listing detail', () => {
   it('shows the regular price without a coupon message when there is no estimate', async () => {
     listingState.listing.reservedOfferId = null;
     listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedOffer = null;
     listingState.listing.reservedUntil = null;
     listingState.listing.status = 'APPROVED';
     renderListingDetail();
@@ -163,6 +179,7 @@ describe('accepted offer deadline on listing detail', () => {
   it('does not promise a seller coupon on a listing reserved for another buyer', async () => {
     listingState.listing.reservedOfferId = null;
     listingState.listing.reservedForCurrentUser = false;
+    listingState.listing.reservedOffer = null;
     listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
 
     renderListingDetail();
@@ -177,15 +194,20 @@ describe('accepted offer deadline on listing detail', () => {
     renderListingDetail();
 
     expect(await screen.findByText('Your accepted offer')).toBeInTheDocument();
-    expect(screen.getByText('Rs 100')).toBeInTheDocument();
+    expect(screen.getByText('Rs 120')).toBeInTheDocument();
     expect(screen.getByText('Rs 150')).toHaveClass('line-through');
-    expect(screen.queryByText(/including buyer protection/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Buyer protection fee (20%)')).not.toBeInTheDocument();
+    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('Buyer protection fee (20%)')).toBeInTheDocument();
+    expect(screen.getByText('Offer amount')).toBeInTheDocument();
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
   });
 
   it('keeps the accepted-offer display when the offer equals the asking price', async () => {
-    reservedOfferState.amount = listingState.listing.price;
+    listingState.listing.reservedOffer = {
+      amount: listingState.listing.price,
+      buyerProtectionFee: { rate: 20, amount: 30 },
+      buyerTotalPrice: 180,
+    };
     listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
 
     renderListingDetail();
@@ -194,8 +216,26 @@ describe('accepted offer deadline on listing detail', () => {
     expect(
       screen.getAllByText('Rs 150').some(element => element.classList.contains('line-through')),
     ).toBe(true);
-    expect(screen.queryByText(/including buyer protection/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Buyer protection fee (20%)')).not.toBeInTheDocument();
+    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('Buyer protection fee (20%)')).toBeInTheDocument();
+  });
+
+  it('uses the listing detail request without fetching the reserved offer separately', async () => {
+    listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
+
+    renderListingDetail();
+
+    await screen.findByText('Your accepted offer');
+    expect(listingDetailRequestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds the accepted offer amount to the cart as its negotiated price', async () => {
+    listingState.listing.reservedUntil = '2999-01-01T00:00:00.000Z';
+
+    renderListingDetail();
+    fireEvent.click(await screen.findByRole('button', { name: 'Complete Purchase' }));
+
+    expect(addItemMock).toHaveBeenCalledWith(listingState.listing, 100);
   });
 
   it('shows the buyer that submitted proof is awaiting review when there is no deadline', async () => {

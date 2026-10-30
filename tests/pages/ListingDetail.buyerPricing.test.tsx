@@ -13,15 +13,10 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 vi.mock('@/contexts/CartContext', () => ({ useCart: () => ({ addItem: vi.fn(), items: [] }) }));
 vi.mock('@/queries/marketplace.query', () => ({
   getListingMediaUrls: () => [],
-  getMarketplaceListingOptions: () => ({
+  getMarketplaceListingOptions: vi.fn(() => ({
     queryFn: async () => listingState.listing,
     queryKey: ['marketplace', 'listing', 'detail', 'listing-1', 'buyer-pricing'],
-  }),
-  getReservedOfferAmountOptions: () => ({
-    enabled: false,
-    queryFn: async () => null,
-    queryKey: ['reserved-offer-amount'],
-  }),
+  })),
 }));
 vi.mock('@/services/commission.service', () => ({
   listPublicCommissionTiers: listPublicCommissionTiersMock,
@@ -61,6 +56,7 @@ beforeEach(() => {
   listingState.listing = {
     id: 'listing-1',
     reservedOfferId: null,
+    reservedOffer: null,
     sellerId: 'seller-1',
     brand: 'Vintage',
     buyerProtectionFee: { rate: 12, amount: 480 },
@@ -83,17 +79,21 @@ beforeEach(() => {
 });
 
 describe('buyer pricing on listing detail', () => {
-  it('shows backend buyer pricing as soon as the listing loads', async () => {
-    renderListingDetail();
+  it.each([null, undefined])(
+    'shows backend buyer pricing as soon as the listing loads when reservedOffer is %s',
+    async reservedOffer => {
+      listingState.listing.reservedOffer = reservedOffer;
+      renderListingDetail();
 
-    expect(await screen.findByText('Rs 4,480')).toBeInTheDocument();
-    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
-    expect(screen.getByText('Item price')).toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee (12%)')).toBeInTheDocument();
-    expect(screen.getByText('Rs 4,000')).toBeInTheDocument();
-    expect(screen.getByText('Rs 480')).toBeInTheDocument();
-    expect(listPublicCommissionTiersMock).not.toHaveBeenCalled();
-  });
+      expect(await screen.findByText('Rs 4,480')).toBeInTheDocument();
+      expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+      expect(screen.getByText('Item price')).toBeInTheDocument();
+      expect(screen.getByText('Buyer protection fee (12%)')).toBeInTheDocument();
+      expect(screen.getByText('Rs 4,000')).toBeInTheDocument();
+      expect(screen.getByText('Rs 480')).toBeInTheDocument();
+      expect(listPublicCommissionTiersMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('shows the total and a zero-fee breakdown when buyer protection is zero', async () => {
     listingState.listing.buyerProtectionFee = { rate: 0, amount: 0 };
@@ -106,5 +106,27 @@ describe('buyer pricing on listing detail', () => {
     expect(screen.getByText('Buyer protection fee (0%)')).toBeInTheDocument();
     expect(screen.getByText('Rs 0')).toBeInTheDocument();
     expect(listPublicCommissionTiersMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the accepted offer total and its fee breakdown', async () => {
+    listingState.listing.reservedOfferId = 'offer-1';
+    listingState.listing.reservedForCurrentUser = true;
+    listingState.listing.status = 'RESERVED';
+    listingState.listing.reservedOffer = {
+      amount: 3500,
+      buyerProtectionFee: { rate: 12, amount: 420 },
+      buyerTotalPrice: 3920,
+    };
+
+    renderListingDetail();
+
+    expect(await screen.findByText('Rs 3,920')).toBeInTheDocument();
+    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('Offer amount')).toBeInTheDocument();
+    expect(screen.getByText('Buyer protection fee (12%)')).toBeInTheDocument();
+    expect(screen.getByText('Rs 3,500')).toBeInTheDocument();
+    expect(screen.getByText('Rs 420')).toBeInTheDocument();
+    expect(screen.getByText('Rs 4,480')).toHaveClass('line-through');
+    expect(screen.getByText('Your accepted offer')).toBeInTheDocument();
   });
 });

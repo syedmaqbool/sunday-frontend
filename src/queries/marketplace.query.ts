@@ -1,8 +1,6 @@
-import type { ApiResponseData } from '@/types/api.type';
 import type {
   GetFeaturedListingsResponses,
   GetForYouListingsResponses,
-  GetMyOfferAmountByIdResponses,
   GetPublicListingsData,
   GetTrendingListingsResponses,
 } from '@/types/generated-api';
@@ -81,8 +79,6 @@ export const marketplaceQueryKey = {
     clothingTypeId
       ? ([...marketplaceQueryKey.all(), 'listings', 'list', { clothingTypeId }] as const)
       : ([...marketplaceQueryKey.all(), 'listings', 'list'] as const),
-  reservedOfferAmount: (offerId?: string | null) =>
-    [...marketplaceQueryKey.all(), 'reserved-offer-amount', 'detail', offerId ?? null] as const,
   sellerListings: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-listings', 'list', sellerId ?? null] as const,
   sellerProfile: (sellerId?: string) =>
@@ -133,25 +129,6 @@ export function getMarketplaceListingOptions(listingId?: string) {
     enabled: !!listingId,
     queryFn: () => fetchMarketplaceListing(listingId!),
     queryKey: marketplaceQueryKey.listing(listingId, hasAccessToken),
-  });
-}
-
-export function getReservedOfferAmountOptions(offerId?: string | null, enabled = false) {
-  return queryOptions({
-    enabled,
-    queryFn: async () => {
-      if (!offerId) return null;
-
-      try {
-        const response = await authInstance
-          .get(`/api/v1/me/offers/${offerId}`)
-          .json<Response<ApiResponseData<GetMyOfferAmountByIdResponses>>>();
-        return Number(response.data.amount);
-      } catch {
-        return null;
-      }
-    },
-    queryKey: marketplaceQueryKey.reservedOfferAmount(offerId),
   });
 }
 

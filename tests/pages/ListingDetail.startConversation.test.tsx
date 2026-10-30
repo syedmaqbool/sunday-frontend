@@ -24,11 +24,6 @@ vi.mock('@/queries/marketplace.query', () => ({
     queryFn: async () => listingState.listing,
     queryKey: ['marketplace', 'listing', 'detail', 'listing-1', 'start-conversation'],
   }),
-  getReservedOfferAmountOptions: () => ({
-    enabled: false,
-    queryFn: async () => null,
-    queryKey: ['reserved-offer-amount'],
-  }),
 }));
 vi.mock('@/queries/myListings.query', () => ({
   useCancelMyListingReservationMutation: () => ({ isPending: false, mutate: vi.fn() }),

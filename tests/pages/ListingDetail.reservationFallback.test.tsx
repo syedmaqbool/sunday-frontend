@@ -19,11 +19,6 @@ vi.mock('@/contexts/CartContext', () => ({
 vi.mock('@/queries/marketplace.query', () => ({
   getListingMediaUrls: vi.fn(() => []),
   getMarketplaceListingOptions: getMarketplaceListingOptionsMock,
-  getReservedOfferAmountOptions: vi.fn(() => ({
-    enabled: false,
-    queryFn: async () => null,
-    queryKey: ['reserved-offer-amount'],
-  })),
 }));
 
 vi.mock('@/queries/myListings.query', () => ({

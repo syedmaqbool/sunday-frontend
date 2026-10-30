@@ -41,11 +41,7 @@ import { getWeightLabel } from '@/lib/constants';
 import { showErrorToast } from '@/lib/errorToast';
 import { isSellerEditableListingStatus } from '@/lib/listingStatus';
 import { formatEnumLabel } from '@/lib/utilities';
-import {
-  getListingMediaUrls,
-  getMarketplaceListingOptions,
-  getReservedOfferAmountOptions,
-} from '@/queries/marketplace.query';
+import { getListingMediaUrls, getMarketplaceListingOptions } from '@/queries/marketplace.query';
 import {
   useCancelMyListingReservationMutation,
   useDeleteMyListingMutation,
@@ -284,15 +280,7 @@ function ListingDetail() {
   const isAcceptedOfferPaymentWindowClosed =
     isReservedForMe && !!listing?.reservedOfferId && isReservationExpired;
 
-  const { data: reservedOfferAmount } = useQuery(
-    getReservedOfferAmountOptions(
-      listing?.reservedOfferId,
-      !!(isReservedForMe && listing?.reservedOfferId),
-    ),
-  );
-
-  const effectivePrice =
-    isReservedForMe && reservedOfferAmount ? reservedOfferAmount : (listing?.price ?? 0);
+  const effectivePrice = listing?.reservedOffer?.amount ?? listing?.price ?? 0;
 
   const cancelReservation = useCancelMyListingReservationMutation();
   const deleteMutation = useDeleteMyListingMutation();
@@ -351,17 +339,34 @@ function ListingDetail() {
             >
               {listing.title}
             </h1>
-            {isReservedForMe && listing.reservedOfferId && reservedOfferAmount != null ? (
-              <div className="mt-4 flex items-baseline gap-3">
-                <p className="text-3xl font-bold text-foreground">
-                  Rs {reservedOfferAmount.toLocaleString()}
-                </p>
-                <p className="text-lg text-muted-foreground line-through">
-                  Rs {listing.price.toLocaleString()}
-                </p>
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  Your accepted offer
-                </span>
+            {listing.reservedOffer ? (
+              <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <p className="text-3xl font-bold text-foreground">
+                    Rs {listing.reservedOffer.buyerTotalPrice.toLocaleString()}
+                  </p>
+                  <p className="text-lg text-muted-foreground line-through">
+                    Rs {listing.buyerTotalPrice.toLocaleString()}
+                  </p>
+                  <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    Your accepted offer
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">Including Buyer Protection</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span>Offer amount</span>
+                    <span>Rs {listing.reservedOffer.amount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 text-muted-foreground">
+                    <span>
+                      Buyer protection fee ({listing.reservedOffer.buyerProtectionFee.rate}%)
+                    </span>
+                    <span>
+                      Rs {listing.reservedOffer.buyerProtectionFee.amount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="mt-4 space-y-2">

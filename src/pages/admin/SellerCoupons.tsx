@@ -144,6 +144,7 @@ function SellerCoupons() {
   const [sellerPickerOpen, setSellerPickerOpen] = useState(false);
   const [sellerSearch, setSellerSearch] = useState('');
   const [debouncedSellerSearch, setDebouncedSellerSearch] = useState('');
+  const [sellerPage, setSellerPage] = useState(1);
   const [selectedSellerLabel, setSelectedSellerLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [usageFor, setUsageFor] = useState<SellerCoupon | null>(null);
@@ -183,14 +184,16 @@ function SellerCoupons() {
     search: debouncedSellerSearch,
     roleType: 'USER' as const,
     status: 'ACTIVE' as const,
-    size: 20,
+    page: sellerPage,
+    size: 10,
   };
   const sellersQuery = useQuery(
     getAdminUsersQueryOptions(
       sellerSearchParameters,
-      sellerPickerOpen && debouncedSellerSearch.length > 0,
+      sellerPickerOpen && sellerSearch.trim() === debouncedSellerSearch,
     ),
   );
+  const sellerPagination = sellersQuery.data?.pagination;
   const { data: listingsRaw } = useQuery(
     getAdminSellerListingsOptions(
       formValues.seller_id,
@@ -516,6 +519,7 @@ function SellerCoupons() {
                       onOpenChange={open => {
                         setSellerPickerOpen(open);
                         if (!open) {
+                          setSellerPage(1);
                           setSellerSearch('');
                           setDebouncedSellerSearch('');
                         }
@@ -539,11 +543,20 @@ function SellerCoupons() {
                       >
                         <Command shouldFilter={false}>
                           <CommandInput
-                            onValueChange={setSellerSearch}
+                            onValueChange={value => {
+                              setSellerSearch(value);
+                              setSellerPage(1);
+                            }}
                             placeholder="Search seller name or email…"
                             value={sellerSearch}
                           />
-                          <CommandList>
+                          <CommandList
+                            className={
+                              sellerPagination?.lastPage === 1
+                                ? 'max-h-[min(400px,calc(var(--radix-popover-content-available-height)_-_3rem))]'
+                                : 'max-h-[min(300px,calc(var(--radix-popover-content-available-height)_-_6rem))]'
+                            }
+                          >
                             <CommandEmpty>
                               {sellerSearch.trim() !== debouncedSellerSearch
                                 ? 'Searching sellers…'
@@ -566,6 +579,7 @@ function SellerCoupons() {
                                     setSelectedSellerLabel(
                                       `${seller.firstName} ${seller.lastName}`.trim(),
                                     );
+                                    setSellerPage(1);
                                     setSellerPickerOpen(false);
                                     setSellerSearch('');
                                     setDebouncedSellerSearch('');
@@ -587,6 +601,47 @@ function SellerCoupons() {
                                 </CommandItem>
                               ))}
                           </CommandList>
+                          {sellerSearch.trim() === debouncedSellerSearch &&
+                            sellerPagination &&
+                            sellerPagination.lastPage > 1 && (
+                              <div className="flex items-center justify-between border-t px-2 py-1">
+                                <Button
+                                  aria-label="Previous seller page"
+                                  disabled={
+                                    sellerPagination.prevPage === null || sellersQuery.isFetching
+                                  }
+                                  onClick={() => {
+                                    if (sellerPagination.prevPage !== null) {
+                                      setSellerPage(sellerPagination.prevPage);
+                                    }
+                                  }}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  Previous
+                                </Button>
+                                <span className="text-xs text-muted-foreground">
+                                  Page {sellerPagination.currentPage} of {sellerPagination.lastPage}
+                                </span>
+                                <Button
+                                  aria-label="Next seller page"
+                                  disabled={
+                                    sellerPagination.nextPage === null || sellersQuery.isFetching
+                                  }
+                                  onClick={() => {
+                                    if (sellerPagination.nextPage !== null) {
+                                      setSellerPage(sellerPagination.nextPage);
+                                    }
+                                  }}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  Next
+                                </Button>
+                              </div>
+                            )}
                         </Command>
                       </PopoverContent>
                     </Popover>

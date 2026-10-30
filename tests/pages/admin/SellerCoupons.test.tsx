@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { SellerCoupon } from '@/types/sellerCoupon.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import SellerCoupons from '@/pages/admin/SellerCoupons';
 
@@ -27,24 +27,45 @@ vi.mock('@/queries/adminUsers.query', () => ({
     enabled,
     queryFn: async () => {
       searchRequests.push(parameters);
+      const sellers = Array.from({ length: 12 }, (_, index) => {
+        const sellerNumber = index + 1;
+        const isJamie = sellerNumber === 1;
+        const isFaraway = sellerNumber === 11;
+
+        return {
+          id: isFaraway ? 'seller-outside-first-page' : `seller-${sellerNumber}`,
+          firstName: isJamie ? 'Jamie' : isFaraway ? 'Faraway' : `Seller ${sellerNumber}`,
+          lastName: isJamie || isFaraway ? 'Seller' : 'Example',
+          email: isJamie
+            ? 'jamie@example.com'
+            : isFaraway
+              ? 'faraway@example.com'
+              : `seller${sellerNumber}@example.com`,
+        };
+      });
+      const search = String(parameters.search ?? '').toLocaleLowerCase();
+      const matchedSellers =
+        search === 'nobody'
+          ? []
+          : sellers.filter(seller =>
+              `${seller.firstName} ${seller.lastName} ${seller.email}`
+                .toLocaleLowerCase()
+                .includes(search),
+            );
+      const page = Number(parameters.page ?? 1);
+      const size = Number(parameters.size ?? 10);
+      const lastPage = Math.max(1, Math.ceil(matchedSellers.length / size));
+
       return {
-        data:
-          parameters.search === 'nobody'
-            ? []
-            : [
-                {
-                  id: 'seller-1',
-                  firstName: 'Jamie',
-                  lastName: 'Seller',
-                  email: 'jamie@example.com',
-                },
-                {
-                  id: 'seller-outside-first-page',
-                  firstName: 'Faraway',
-                  lastName: 'Seller',
-                  email: 'faraway@example.com',
-                },
-              ],
+        data: matchedSellers.slice((page - 1) * size, page * size),
+        pagination: {
+          currentPage: page,
+          lastPage,
+          nextPage: page < lastPage ? page + 1 : null,
+          perPage: size,
+          prevPage: page > 1 ? page - 1 : null,
+          total: matchedSellers.length,
+        },
       };
     },
     queryKey: ['admin-users', 'list', parameters],
@@ -213,10 +234,11 @@ describe('seller incentives', () => {
     expect(await screen.findByText('Jamie Seller')).toBeInTheDocument();
     expect(screen.getByText('jamie@example.com')).toBeInTheDocument();
     expect(searchRequests).toContainEqual({
+      page: 1,
       search: 'Jamie',
       roleType: 'USER',
       status: 'ACTIVE',
-      size: 20,
+      size: 10,
     });
     fireEvent.click(screen.getByRole('option', { name: /Jamie Seller/ }));
     fireEvent.change(screen.getByLabelText('Minimum order (Rs)'), { target: { value: '500' } });
@@ -238,6 +260,68 @@ describe('seller incentives', () => {
     expect(createCouponMock.mock.calls[0][0]).not.toHaveProperty('discountValue');
   });
 
+  it('shows ten sellers when opened and supports paginated search', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+
+    expect(await screen.findByRole('option', { name: /Jamie Seller/ })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('listbox', { name: 'Suggestions' })).getAllByRole('option'),
+    ).toHaveLength(10);
+    expect(screen.getByRole('option', { name: /Seller 10 Example/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Faraway Seller/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous seller page' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next seller page' })).toBeEnabled();
+    expect(searchRequests).toContainEqual({
+      page: 1,
+      search: '',
+      roleType: 'USER',
+      status: 'ACTIVE',
+      size: 10,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next seller page' }));
+
+    expect(await screen.findByRole('option', { name: /Faraway Seller/ })).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous seller page' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Next seller page' })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText('Search seller name or email…'), {
+      target: { value: 'Jamie' },
+    });
+
+    expect(screen.queryByRole('button', { name: 'Previous seller page' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next seller page' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: /Jamie Seller/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Previous seller page' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next seller page' })).not.toBeInTheDocument();
+    expect(searchRequests).toContainEqual({
+      page: 1,
+      search: 'Jamie',
+      roleType: 'USER',
+      status: 'ACTIVE',
+      size: 10,
+    });
+  });
+
+  it('reopens on the first page after selecting a seller from a later page', async () => {
+    await openCreateForm();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+    expect(await screen.findByRole('option', { name: /Jamie Seller/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next seller page' }));
+    expect(await screen.findByRole('option', { name: /Faraway Seller/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: /Faraway Seller/ }));
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
+
+    expect(await screen.findByRole('option', { name: /Jamie Seller/ })).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Faraway Seller/ })).not.toBeInTheDocument();
+  });
+
   it('debounces seller search and can select a seller beyond the first 100', async () => {
     await openCreateForm();
     fireEvent.click(screen.getByRole('combobox', { name: 'Assign to seller' }));
@@ -246,12 +330,15 @@ describe('seller incentives', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     fireEvent.change(searchInput, { target: { value: 'Faraway' } });
     await new Promise(resolve => setTimeout(resolve, 100));
-    expect(searchRequests).toHaveLength(0);
+    expect(searchRequests).toEqual([
+      { page: 1, search: '', roleType: 'USER', status: 'ACTIVE', size: 10 },
+    ]);
     expect(
       await screen.findByText('faraway@example.com', {}, { timeout: 1000 }),
     ).toBeInTheDocument();
     expect(searchRequests).toEqual([
-      { search: 'Faraway', roleType: 'USER', status: 'ACTIVE', size: 20 },
+      { page: 1, search: '', roleType: 'USER', status: 'ACTIVE', size: 10 },
+      { page: 1, search: 'Faraway', roleType: 'USER', status: 'ACTIVE', size: 10 },
     ]);
     fireEvent.click(screen.getByRole('option', { name: /Faraway Seller/ }));
     expect(screen.getByRole('combobox', { name: 'Assign to seller' })).toHaveTextContent(

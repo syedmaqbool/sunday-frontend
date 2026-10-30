@@ -5,17 +5,24 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Listings from '@/pages/Listings';
 
-const { marketplaceListingsOptionsMock, subcategoriesOptionsMock } = vi.hoisted(() => ({
-  marketplaceListingsOptionsMock: vi.fn(),
-  subcategoriesOptionsMock: vi.fn(),
-}));
+const { boostScoreMap, marketplaceListingsOptionsMock, subcategoriesOptionsMock } = vi.hoisted(
+  () => ({
+    boostScoreMap: { current: new Map<string, number>() },
+    marketplaceListingsOptionsMock: vi.fn(),
+    subcategoriesOptionsMock: vi.fn(),
+  }),
+);
 
 vi.mock('framer-motion', () => ({ motion: { div: 'div' } }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/hooks/useBoosts', () => ({
-  applyBoostRanking: (listings: unknown[]) => listings,
-  useBoostScoreMap: () => new Map(),
+  applyBoostRanking: (listings: Array<{ id: string }>) =>
+    [...listings].sort(
+      (first, second) =>
+        (boostScoreMap.current.get(second.id) ?? 0) - (boostScoreMap.current.get(first.id) ?? 0),
+    ),
+  useBoostScoreMap: () => boostScoreMap.current,
 }));
 vi.mock('@/hooks/useCategories', () => ({
   getCategoriesOptions: () => ({
@@ -97,8 +104,8 @@ const listing: MarketplaceListing = {
   imageUrls: ['/listing-image.jpg'],
   media: [],
   price: 2500,
-  buyerProtectionFee: { amount: 250, rate: 10 },
-  buyerTotalPrice: 2750,
+  buyerProtectionFee: { amount: 500, rate: 20 },
+  buyerTotalPrice: 3000,
   reservedUntil: null,
   seller: {
     id: 'seller-1',
@@ -156,6 +163,7 @@ function renderListings({
 describe('listing seller navigation', () => {
   beforeEach(() => {
     marketplaceListingsOptionsMock.mockReset();
+    boostScoreMap.current = new Map();
   });
 
   it('links the seller byline and the rest of a grid card to their respective pages', async () => {
@@ -205,6 +213,115 @@ describe('listing seller navigation', () => {
       'text-xs',
       'text-muted-foreground',
     );
+  });
+});
+
+describe('listing price sorting', () => {
+  beforeEach(() => {
+    marketplaceListingsOptionsMock.mockReset();
+    boostScoreMap.current = new Map();
+  });
+
+  function createBuyerTotalSortListings(): MarketplaceListing[] {
+    return [
+      {
+        ...listing,
+        id: 'lower-item-price',
+        title: 'Lower Item Price',
+        price: 2500,
+        buyerTotalPrice: 4200,
+      },
+      {
+        ...listing,
+        id: 'higher-item-price',
+        title: 'Higher Item Price',
+        price: 4000,
+        buyerTotalPrice: 4100,
+      },
+    ];
+  }
+
+  it('orders results by buyer total when sorting low to high', async () => {
+    renderListings({ listings: createBuyerTotalSortListings() });
+
+    await screen.findByText('2 items');
+    fireEvent.click(screen.getAllByRole('combobox')[4]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Price: Low to High' }));
+
+    const results = screen.getByRole('main').textContent ?? '';
+    expect(results.indexOf('Higher Item Price')).toBeLessThan(results.indexOf('Lower Item Price'));
+  });
+
+  it('orders results by buyer total when sorting high to low', async () => {
+    renderListings({ listings: createBuyerTotalSortListings() });
+
+    await screen.findByText('2 items');
+    fireEvent.click(screen.getAllByRole('combobox')[4]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Price: High to Low' }));
+
+    const results = screen.getByRole('main').textContent ?? '';
+    expect(results.indexOf('Lower Item Price')).toBeLessThan(results.indexOf('Higher Item Price'));
+  });
+
+  it('keeps boosted listings first while sorting the remaining listings by buyer total', async () => {
+    const listings: MarketplaceListing[] = [
+      {
+        ...listing,
+        id: 'boosted-listing',
+        title: 'Boosted Listing',
+        price: 5000,
+        buyerTotalPrice: 6000,
+      },
+      {
+        ...listing,
+        id: 'lower-item-price',
+        title: 'Lower Item Price',
+        price: 2500,
+        buyerTotalPrice: 4200,
+      },
+      {
+        ...listing,
+        id: 'higher-item-price',
+        title: 'Higher Item Price',
+        price: 4000,
+        buyerTotalPrice: 4100,
+      },
+    ];
+    boostScoreMap.current = new Map([['boosted-listing', 1]]);
+    renderListings({ listings });
+
+    await screen.findByText('3 items');
+    fireEvent.click(screen.getAllByRole('combobox')[4]);
+    fireEvent.click(await screen.findByRole('option', { name: 'Price: Low to High' }));
+
+    const results = screen.getByRole('main').textContent ?? '';
+    expect(results.indexOf('Boosted Listing')).toBeLessThan(results.indexOf('Higher Item Price'));
+    expect(results.indexOf('Higher Item Price')).toBeLessThan(results.indexOf('Lower Item Price'));
+  });
+
+  it('keeps newest results ordered by creation date', async () => {
+    const listings: MarketplaceListing[] = [
+      {
+        ...listing,
+        id: 'older-listing',
+        title: 'Older Listing',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        buyerTotalPrice: 4200,
+      },
+      {
+        ...listing,
+        id: 'newer-listing',
+        title: 'Newer Listing',
+        createdAt: '2026-02-01T00:00:00.000Z',
+        buyerTotalPrice: 3100,
+      },
+    ];
+    renderListings({ listings });
+
+    await screen.findByText('2 items');
+
+    const results = screen.getByRole('main').textContent ?? '';
+    expect(results.indexOf('Newer Listing')).toBeLessThan(results.indexOf('Older Listing'));
   });
 });
 

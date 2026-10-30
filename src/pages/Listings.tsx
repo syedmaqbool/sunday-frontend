@@ -117,9 +117,9 @@ function Listings() {
     if (condition !== 'all') items = items.filter(index => index.condition === condition);
     if (size !== 'all') items = items.filter(index => index.size === size);
     if (sort === 'price_asc') {
-      items.sort((a, b) => a.price - b.price);
+      items.sort((a, b) => a.buyerTotalPrice - b.buyerTotalPrice);
     } else if (sort === 'price_desc') {
-      items.sort((a, b) => b.price - a.price);
+      items.sort((a, b) => b.buyerTotalPrice - a.buyerTotalPrice);
     } else {
       items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       items = personalizeListings(items, prefs, item => item.categoryValue);

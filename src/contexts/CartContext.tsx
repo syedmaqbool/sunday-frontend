@@ -116,7 +116,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       // Preserve a negotiated (reserved-for-me) price; refresh everything else.
       const price = (fresh.reservedForCurrentUser ? item.listing : fresh).price;
-      if (price !== item.listing.price || fresh.title !== item.listing.title) refreshed = true;
+      const buyerProtectionFeeChanged =
+        item.listing.buyerProtectionFee?.amount !== fresh.buyerProtectionFee?.amount ||
+        item.listing.buyerProtectionFee?.rate !== fresh.buyerProtectionFee?.rate;
+      const reservedOfferChanged =
+        item.listing.reservedOffer?.amount !== fresh.reservedOffer?.amount ||
+        item.listing.reservedOffer?.buyerProtectionFee.amount !==
+          fresh.reservedOffer?.buyerProtectionFee.amount ||
+        item.listing.reservedOffer?.buyerProtectionFee.rate !==
+          fresh.reservedOffer?.buyerProtectionFee.rate ||
+        item.listing.reservedOffer?.buyerTotalPrice !== fresh.reservedOffer?.buyerTotalPrice;
+      if (
+        price !== item.listing.price ||
+        fresh.title !== item.listing.title ||
+        item.listing.buyerTotalPrice !== fresh.buyerTotalPrice ||
+        buyerProtectionFeeChanged ||
+        reservedOfferChanged
+      ) {
+        refreshed = true;
+      }
       next.push({ listing: { ...fresh, price } });
     }
 

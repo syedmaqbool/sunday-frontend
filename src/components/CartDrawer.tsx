@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,28 +12,20 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
-import { getCommissionTiersOptions } from '@/hooks/useCommissionTiers';
-import { calcCommission } from '@/lib/commission';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 export default function CartDrawer() {
   const { items, removeItem, totalItems, totalPrice } = useCart();
   const navigate = useNavigate();
-  const { data: commissionTiersResponse } = useQuery(
-    getCommissionTiersOptions({ onlyActive: true }),
+  const cartItems = items.map(({ listing }) => ({
+    listing,
+    buyerProtectionFee: listing.reservedOffer?.buyerProtectionFee ?? listing.buyerProtectionFee,
+  }));
+  const buyerProtectionFee = cartItems.reduce(
+    (sum, { buyerProtectionFee: fee }) => sum + (fee?.amount ?? 0),
+    0,
   );
-  const commissionTiers = (commissionTiersResponse?.data ?? []).filter(tier => tier.active);
-
-  const itemFees = useMemo(
-    () =>
-      items.map(({ listing }) => {
-        const c = calcCommission(commissionTiers, listing.categoryValue, listing.price);
-        return { listingId: listing.id, amount: c.amount, rate: c.rate };
-      }),
-    [items, commissionTiers],
-  );
-  const platformFee = itemFees.reduce((s, f) => s + f.amount, 0);
-  const totalPayable = totalPrice + platformFee;
+  const totalPayable = totalPrice + buyerProtectionFee;
 
   return (
     <Sheet>
@@ -81,8 +71,7 @@ export default function CartDrawer() {
           <>
             <ScrollArea className="-mx-6 flex-1 px-6">
               <div className="flex flex-col gap-4 py-4">
-                {items.map(({ listing }) => {
-                  const fee = itemFees.find(f => f.listingId === listing.id);
+                {cartItems.map(({ listing, buyerProtectionFee: fee }) => {
                   return (
                     <div key={listing.id} className="flex gap-3">
                       <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
@@ -100,9 +89,9 @@ export default function CartDrawer() {
                           <p className="line-clamp-1 text-sm font-medium text-foreground">
                             {listing.title}
                           </p>
-                          {fee && fee.amount > 0 && (
+                          {fee && (
                             <p className="text-[11px] text-muted-foreground">
-                              + Platform fee ({fee.rate}
+                              + Buyer protection fee ({fee.rate}
                               %): Rs {fee.amount.toLocaleString()}
                             </p>
                           )}
@@ -136,12 +125,10 @@ export default function CartDrawer() {
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="text-foreground">Rs {totalPrice.toLocaleString()}</span>
               </div>
-              {platformFee > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Platform fee</span>
-                  <span className="text-foreground">Rs {platformFee.toLocaleString()}</span>
-                </div>
-              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Buyer protection fee</span>
+                <span className="text-foreground">Rs {buyerProtectionFee.toLocaleString()}</span>
+              </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">Total payable</span>

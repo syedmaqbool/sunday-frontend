@@ -193,6 +193,19 @@ describe('listing seller navigation', () => {
     expect(await screen.findByText('Item detail page')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1');
   });
+
+  it('shows the buyer total and Buyer Protection note in list view', async () => {
+    renderListings({ listings: [{ ...listing, buyerTotalPrice: 3000 }] });
+
+    await screen.findByText('Vintage Jacket');
+    fireEvent.click(screen.getByRole('button', { name: 'List view' }));
+
+    expect(await screen.findByText('Rs 3,000')).toBeInTheDocument();
+    expect(screen.getByText('incl. Buyer Protection')).toHaveClass(
+      'text-xs',
+      'text-muted-foreground',
+    );
+  });
 });
 
 describe('listing clothing type filter', () => {

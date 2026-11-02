@@ -1,6 +1,6 @@
 {
   "name": "vite_react_shadcn_ts",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "bump:patch": "npm version patch --no-git-tag-version --force",
     "check": "vp check",
     "check:fix": "vp check --fix",
-    "typegen": "openapi-ts && vp fmt src/types/generated-api --write",
+    "typegen": "openapi-ts && vp check --fix src/types/generated-api ",
     "build:dev": "vp build --mode development",
     "staged": "vp staged",
     "preview": "vp preview",

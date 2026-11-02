@@ -853,6 +853,13 @@ export type {
   GetAdminUserAuditHistoryResponses,
 } from './getAdminUserAuditHistory.gen';
 export type {
+  GetAdminUserBankDetailsData,
+  GetAdminUserBankDetailsError,
+  GetAdminUserBankDetailsErrors,
+  GetAdminUserBankDetailsResponse,
+  GetAdminUserBankDetailsResponses,
+} from './getAdminUserBankDetails.gen';
+export type {
   GetAdminUserByIdData,
   GetAdminUserByIdError,
   GetAdminUserByIdErrors,
@@ -1188,6 +1195,13 @@ export type {
   GetPublicProfileResponse,
   GetPublicProfileResponses,
 } from './getPublicProfile.gen';
+export type {
+  GetPublicSellerSoldListingsData,
+  GetPublicSellerSoldListingsError,
+  GetPublicSellerSoldListingsErrors,
+  GetPublicSellerSoldListingsResponse,
+  GetPublicSellerSoldListingsResponses,
+} from './getPublicSellerSoldListings.gen';
 export type {
   GetReceivedOffersData,
   GetReceivedOffersError,

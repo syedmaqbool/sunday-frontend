@@ -1,4 +1,9 @@
-import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  QueryClient,
+  QueryClientProvider,
+  queryOptions,
+} from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { HTTPError } from 'ky';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -20,6 +25,23 @@ vi.mock('@/components/ReviewsList', () => ({ ReviewsList: () => null }));
 vi.mock('@/queries/marketplace.query', () => ({
   getSellerListingsOptions: () =>
     queryOptions({ queryFn: async () => [], queryKey: ['seller-listings'] }),
+  getSellerSoldListingsOptions: () =>
+    infiniteQueryOptions({
+      getNextPageParam: lastPage => lastPage.pagination.nextPage ?? undefined,
+      initialPageParam: 1,
+      queryFn: async () => ({
+        data: [],
+        pagination: {
+          currentPage: 1,
+          lastPage: 1,
+          nextPage: null,
+          perPage: 100,
+          prevPage: null,
+          total: 0,
+        },
+      }),
+      queryKey: ['seller-sold-listings'],
+    }),
   getSellerProfileOptions: () =>
     queryOptions({
       queryFn: async () => ({

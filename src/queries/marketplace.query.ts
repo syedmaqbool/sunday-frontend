@@ -2,6 +2,7 @@ import type {
   GetFeaturedListingsResponses,
   GetForYouListingsResponses,
   GetPublicListingsData,
+  GetPublicSellerSoldListingsResponses,
   GetTrendingListingsResponses,
 } from '@/types/generated-api';
 import type {
@@ -106,6 +107,8 @@ export const marketplaceQueryKey = {
     [...marketplaceQueryKey.all(), 'seller-listings', 'list', sellerId ?? null] as const,
   sellerProfile: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-profile', 'detail', sellerId ?? null] as const,
+  sellerSoldListings: (sellerId?: string) =>
+    [...marketplaceQueryKey.all(), 'seller-sold-listings', 'list', sellerId ?? null] as const,
   trendingListings: () => [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
 };
 
@@ -241,6 +244,22 @@ export function getSellerListingsOptions(
         sortBy: 'createdAt',
       }),
     queryKey: marketplaceQueryKey.sellerListings(sellerId),
+  });
+}
+
+export function getSellerSoldListingsOptions(sellerId?: string, enabled = false) {
+  return infiniteQueryOptions({
+    enabled: !!sellerId && enabled,
+    getNextPageParam: (lastPage: GetPublicSellerSoldListingsResponses[200]) =>
+      lastPage.pagination.nextPage ?? undefined,
+    initialPageParam: 1 as number,
+    queryFn: ({ pageParam }: { pageParam: number }) =>
+      publicApi
+        .get(`/api/v1/users/${sellerId!}/sold-listings`, {
+          searchParams: { page: pageParam, size: 100 },
+        })
+        .json<GetPublicSellerSoldListingsResponses[200]>(),
+    queryKey: marketplaceQueryKey.sellerSoldListings(sellerId),
   });
 }
 

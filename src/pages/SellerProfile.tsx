@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, MapPin, Package, Star } from 'lucide-react';
@@ -12,15 +13,24 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSellerRatingOptions } from '@/hooks/useSellerRating';
-import { getSellerListingsOptions, getSellerProfileOptions } from '@/queries/marketplace.query';
+import {
+  getSellerListingsOptions,
+  getSellerProfileOptions,
+  getSellerSoldListingsOptions,
+} from '@/queries/marketplace.query';
 
 function SellerProfile() {
   const { id } = useParams<{ id: string }>();
   const [searchParameters, setSearchParameters] = useSearchParams();
   const { user } = useAuth();
   const focusedReviewId = searchParameters.get('review');
-  const selectedTab =
-    searchParameters.get('tab') === 'reviews' || focusedReviewId ? 'reviews' : 'listings';
+  const selectedTab = focusedReviewId
+    ? 'reviews'
+    : searchParameters.get('tab') === 'reviews'
+      ? 'reviews'
+      : searchParameters.get('tab') === 'sold'
+        ? 'sold'
+        : 'listings';
 
   const { data: profile, isLoading: profileLoading } = useQuery(getSellerProfileOptions(id));
 
@@ -28,9 +38,36 @@ function SellerProfile() {
     getSellerListingsOptions(id, profile?.fullName, !!id && !!profile),
   );
 
+  const {
+    data: soldListingPageData,
+    fetchNextPage: fetchNextSoldListingPage,
+    hasNextPage: hasMoreSoldListings,
+    isError: soldListingsFailed,
+    isFetchNextPageError: soldListingsFetchNextPageFailed,
+    isFetchingNextPage: soldListingsFetchingNextPage,
+    isLoading: soldListingsLoading,
+    refetch: refetchSoldListings,
+  } = useInfiniteQuery(getSellerSoldListingsOptions(id, !!id && !!profile));
+
+  const soldListingPages = soldListingPageData?.pages ?? [];
+  const soldListings = soldListingPages.flatMap(page => page.data);
+  const soldListingCount = soldListingPages[0]?.pagination.total ?? 0;
+  const isLoadingAllSoldListings =
+    soldListingsLoading || Boolean(hasMoreSoldListings) || soldListingsFetchingNextPage;
+
+  useEffect(() => {
+    if (hasMoreSoldListings && !soldListingsFetchingNextPage && !soldListingsFetchNextPageFailed) {
+      void fetchNextSoldListingPage();
+    }
+  }, [
+    fetchNextSoldListingPage,
+    hasMoreSoldListings,
+    soldListingsFetchNextPageFailed,
+    soldListingsFetchingNextPage,
+  ]);
   const { data: rating } = useQuery(getSellerRatingOptions(id));
 
-  const isLoading = profileLoading || listingsLoading;
+  const isLoading = profileLoading || listingsLoading || soldListingsLoading;
 
   if (isLoading) {
     return (
@@ -187,6 +224,7 @@ function SellerProfile() {
           <TabsList>
             <TabsTrigger value="listings">Listings ({listings.length})</TabsTrigger>
             <TabsTrigger value="reviews">Reviews ({rating?.totalReviews ?? 0})</TabsTrigger>
+            <TabsTrigger value="sold">Sold ({soldListingCount})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="listings" className="mt-4">
@@ -214,6 +252,44 @@ function SellerProfile() {
               onFocusedReviewMissing={clearMissingReview}
               limit={20}
             />
+          </TabsContent>
+
+          <TabsContent value="sold" className="mt-4">
+            {soldListingsFailed ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <p>Could not load sold items.</p>
+                <button
+                  className="
+                    mt-3 underline underline-offset-4
+                    hover:text-foreground
+                  "
+                  onClick={() =>
+                    void (hasMoreSoldListings ? fetchNextSoldListingPage() : refetchSoldListings())
+                  }
+                  type="button"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : isLoadingAllSoldListings ? (
+              <div className="flex justify-center py-12">
+                <Loader2 aria-label="Loading sold items" className="h-6 w-6 animate-spin" />
+              </div>
+            ) : soldListings.length === 0 ? (
+              <p className="py-12 text-center text-muted-foreground">No sold items yet.</p>
+            ) : (
+              <div
+                className="
+                  grid grid-cols-2 gap-4
+                  sm:grid-cols-3
+                  lg:grid-cols-4
+                "
+              >
+                {soldListings.map((listing, index) => (
+                  <ListingCard key={listing.id} index={index} listing={listing} />
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

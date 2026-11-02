@@ -20,6 +20,23 @@ vi.mock('@/components/Footer', () => ({ default: () => null }));
 vi.mock('@/queries/marketplace.query', () => ({
   getSellerListingsOptions: sellerListingsQueryMock,
   getSellerProfileOptions: sellerProfileQueryMock,
+  getSellerSoldListingsOptions: () =>
+    infiniteQueryOptions({
+      getNextPageParam: lastPage => lastPage.pagination.nextPage ?? undefined,
+      initialPageParam: 1,
+      queryFn: async () => ({
+        data: [],
+        pagination: {
+          currentPage: 1,
+          lastPage: 1,
+          nextPage: null,
+          perPage: 100,
+          prevPage: null,
+          total: 0,
+        },
+      }),
+      queryKey: ['seller-sold-listings'],
+    }),
 }));
 vi.mock('@/hooks/useSellerRating', () => ({
   getSellerRatingOptions: () =>

@@ -11,7 +11,7 @@ import type {
   MarketplaceSellerProfile,
 } from '@/types/marketplace.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { tokenStorage } from '@/lib/tokenStorage';
 import base, { API_BASE_URL } from '@/services/ky-base-instance';
 import { authInstance } from '@/services/ky.instance';
@@ -27,6 +27,8 @@ export type {
 const publicApi = base.extend({
   baseUrl: API_BASE_URL,
 });
+
+export type MarketplaceListingsParameters = Omit<GetPublicListingsData['query'], 'page' | 'size'>;
 
 async function fetchAllMarketplaceListings(
   searchParams: Record<string, number | string | undefined>,
@@ -60,6 +62,24 @@ async function fetchAllMarketplaceListings(
   return data;
 }
 
+export async function fetchMarketplaceListings(
+  searchParams: MarketplaceListingsParameters,
+  page: number,
+  buyerId?: string,
+) {
+  const client = buyerId ? authInstance : publicApi;
+  return client
+    .get('/api/v1/listings', {
+      retry: 0,
+      searchParams: {
+        page,
+        size: 20,
+        ...searchParams,
+      },
+    })
+    .json<PaginatedResponse<MarketplaceListing>>();
+}
+
 export const marketplaceQueryKey = {
   all: () => ['marketplace'] as const,
   editListing: (listingId?: string) =>
@@ -75,26 +95,19 @@ export const marketplaceQueryKey = {
       listingId ?? null,
       isAuthenticated ? 'auth' : 'public',
     ] as const,
-  listings: (clothingTypeId?: GetPublicListingsData['query']['clothingTypeId']) =>
-    clothingTypeId
-      ? ([...marketplaceQueryKey.all(), 'listings', 'list', { clothingTypeId }] as const)
-      : ([...marketplaceQueryKey.all(), 'listings', 'list'] as const),
+  listings: (parameters: MarketplaceListingsParameters = {}, buyerId?: string) =>
+    [
+      ...marketplaceQueryKey.all(),
+      'listings',
+      'list',
+      { buyerId: buyerId ?? null, parameters },
+    ] as const,
   sellerListings: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-listings', 'list', sellerId ?? null] as const,
   sellerProfile: (sellerId?: string) =>
     [...marketplaceQueryKey.all(), 'seller-profile', 'detail', sellerId ?? null] as const,
   trendingListings: () => [...marketplaceQueryKey.all(), 'trending-listings', 'list'] as const,
 };
-
-export async function fetchMarketplaceListings(
-  clothingTypeId?: GetPublicListingsData['query']['clothingTypeId'],
-): Promise<MarketplaceListing[]> {
-  return fetchAllMarketplaceListings({
-    clothingTypeId,
-    sortOrder: 'desc',
-    sortBy: 'createdAt',
-  });
-}
 
 export async function fetchMarketplaceListing(
   listingId: string,
@@ -113,13 +126,18 @@ export async function fetchMarketplaceListing(
 }
 
 export function getMarketplaceListingsOptions(
-  clothingTypeId?: GetPublicListingsData['query']['clothingTypeId'],
+  parameters: MarketplaceListingsParameters,
+  buyerId?: string,
   enabled = true,
 ) {
-  return queryOptions({
+  return infiniteQueryOptions({
     enabled,
-    queryFn: () => fetchMarketplaceListings(clothingTypeId),
-    queryKey: marketplaceQueryKey.listings(clothingTypeId),
+    getNextPageParam: (lastPage: PaginatedResponse<MarketplaceListing>) =>
+      lastPage.pagination.nextPage ?? undefined,
+    initialPageParam: 1 as number,
+    queryFn: ({ pageParam }: { pageParam: number }) =>
+      fetchMarketplaceListings(parameters, pageParam, buyerId),
+    queryKey: marketplaceQueryKey.listings(parameters, buyerId),
   });
 }
 

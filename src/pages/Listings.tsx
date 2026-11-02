@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Grid3X3, List, Loader2, Search, SlidersHorizontal } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
@@ -16,10 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { applyBoostRanking, useBoostScoreMap } from '@/hooks/useBoosts';
+import { useAuth } from '@/contexts/AuthContext';
 import { getCategoriesOptions, getSubcategoriesOptions } from '@/hooks/useCategories';
 import { getSellerRatingsOptions } from '@/hooks/useSellerRating';
-import { getUserPreferencesOptions, personalizeListings } from '@/hooks/useUserPreferences';
 import { CONDITIONS, SIZES, SORT_OPTIONS } from '@/lib/constants';
 import { formatEnumLabel } from '@/lib/utilities';
 import { getClothingTypesOptions } from '@/queries/clothing-types.query';
@@ -48,8 +47,8 @@ function Listings() {
   const [sort, setSort] = useState('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const { data: preferencesResponse } = useQuery(getUserPreferencesOptions());
-  const prefs = preferencesResponse?.data;
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const { loading: authLoading, user } = useAuth();
   const { data: parentCategories = [] } = useQuery(getCategoriesOptions());
   const selectedParentCategoryId = parentCategories.find(
     category => category.value === parentCat,
@@ -63,17 +62,43 @@ function Listings() {
   const clothingTypes = clothingTypePages.flatMap(page => page.data);
   const selectedClothingTypeId = clothingTypes.find(type => type.value === clothingType)?.id;
 
-  const { data: listings = [], isLoading } = useQuery(
+  const listingParameters = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      categoryValue: parentCat === 'all' ? undefined : parentCat,
+      subcategoryValue: subCat === 'all' ? undefined : subCat,
+      clothingTypeId: selectedClothingTypeId,
+      condition: condition === 'all' ? undefined : condition,
+      sizeValue: size === 'all' ? undefined : size,
+      sortBy: sort === 'newest' ? ('createdAt' as const) : ('price' as const),
+      sortOrder: sort === 'price_asc' ? ('asc' as const) : ('desc' as const),
+    }),
+    [condition, debouncedSearch, parentCat, selectedClothingTypeId, size, sort, subCat],
+  );
+  const {
+    data: listingPages,
+    isLoading,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery(
     getMarketplaceListingsOptions(
-      selectedClothingTypeId,
-      clothingType === 'all' || !!selectedClothingTypeId,
+      listingParameters,
+      user?.id,
+      !authLoading && (clothingType === 'all' || !!selectedClothingTypeId),
     ),
   );
+  const listings = useMemo(
+    () => listingPages?.pages.flatMap(page => page.data) ?? [],
+    [listingPages],
+  );
+  const totalListings = listingPages?.pages.at(-1)?.pagination.total ?? 0;
+  const loadMoreElement = useRef<HTMLDivElement>(null);
+  const previousListingParameters = useRef<string>();
 
   const sellerIds = useMemo(() => listings.map(l => l.sellerId), [listings]);
   const { data: sellerRatingsMap } = useQuery(getSellerRatingsOptions(sellerIds));
-  const searchBoostMap = useBoostScoreMap('SEARCH');
-
   useEffect(() => {
     const category = searchParameters.get('category') || 'all';
     const parent =
@@ -95,39 +120,39 @@ function Listings() {
     }
   }, [clothingType, clothingTypes, clothingTypesLoaded]);
 
-  const filtered = useMemo(() => {
-    let items = [...listings];
-    if (search) {
-      items = items.filter(
-        index =>
-          index.title.toLowerCase().includes(search.toLowerCase()) ||
-          index.brand.toLowerCase().includes(search.toLowerCase()) ||
-          (index.seller?.fullName ?? '').toLowerCase().includes(search.toLowerCase()),
-      );
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search), 250);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
+  useEffect(() => {
+    const parameters = JSON.stringify(listingParameters);
+    if (previousListingParameters.current && previousListingParameters.current !== parameters) {
+      window.scrollTo(0, 0);
     }
-    if (parentCat !== 'all') {
-      items = items.filter(
-        index => index.categoryValue.toLowerCase().split('-', 1)[0] === parentCat.toLowerCase(),
-      );
+    previousListingParameters.current = parameters;
+  }, [listingParameters]);
+
+  useEffect(() => {
+    if (
+      !hasNextPage ||
+      isFetchingNextPage ||
+      isFetchNextPageError ||
+      !loadMoreElement.current ||
+      typeof IntersectionObserver === 'undefined'
+    ) {
+      return;
     }
 
-    if (subCat !== 'all') {
-      items = items.filter(index => index.categoryValue.endsWith(`-${subCat}`));
-    }
-    if (condition !== 'all') items = items.filter(index => index.condition === condition);
-    if (size !== 'all') items = items.filter(index => index.size === size);
-    if (sort === 'price_asc') {
-      items.sort((a, b) => a.buyerTotalPrice - b.buyerTotalPrice);
-    } else if (sort === 'price_desc') {
-      items.sort((a, b) => b.buyerTotalPrice - a.buyerTotalPrice);
-    } else {
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      items = personalizeListings(items, prefs, item => item.categoryValue);
-    }
-    // Boosted listings always surface first within the current sort
-    items = applyBoostRanking(items, searchBoostMap);
-    return items;
-  }, [listings, search, parentCat, subCat, condition, size, sort, prefs, searchBoostMap]);
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) void fetchNextPage();
+      },
+      { rootMargin: `${window.innerHeight}px 0px` },
+    );
+    observer.observe(loadMoreElement.current);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage]);
 
   const filterSelects = (
     <>
@@ -304,8 +329,10 @@ function Listings() {
           </div>
         ) : (
           <>
-            <p className="mt-6 text-sm text-muted-foreground">{filtered.length} items</p>
-            {filtered.length === 0 ? (
+            <p className="mt-6 text-sm text-muted-foreground">
+              {listings.length} of {totalListings} listings
+            </p>
+            {listings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="font-heading text-2xl font-semibold text-foreground">
                   No items found
@@ -320,7 +347,7 @@ function Listings() {
                   lg:grid-cols-4
                 "
               >
-                {filtered.map((l, index) => (
+                {listings.map((l, index) => (
                   <ListingCard
                     key={l.id}
                     index={index}
@@ -332,7 +359,7 @@ function Listings() {
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                {filtered.map(l => {
+                {listings.map(l => {
                   const mediaUrls = getListingMediaUrls(l);
                   return (
                     <div
@@ -377,6 +404,23 @@ function Listings() {
                   );
                 })}
               </div>
+            )}
+            <div ref={loadMoreElement} aria-hidden="true" />
+            {isFetchingNextPage && (
+              <div className="flex justify-center py-6">
+                <Loader2 aria-label="Loading more listings" className="h-6 w-6 animate-spin" />
+              </div>
+            )}
+            {isFetchNextPageError && (
+              <div className="flex flex-col items-center gap-2 py-6">
+                <p className="text-sm text-muted-foreground">Could not load more listings.</p>
+                <Button onClick={() => void fetchNextPage()}>Retry</Button>
+              </div>
+            )}
+            {!hasNextPage && listings.length > 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                You have reached the end.
+              </p>
             )}
           </>
         )}

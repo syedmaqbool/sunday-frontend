@@ -28,6 +28,9 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 const errorToast = vi.hoisted(() => vi.fn());
+const toastSuccess = vi.hoisted(() => vi.fn());
+
+vi.mock('sonner', () => ({ toast: { success: toastSuccess } }));
 
 vi.mock('@/lib/errorToast', () => ({ showErrorToast: errorToast }));
 
@@ -114,6 +117,7 @@ describe('admin user details dialog', () => {
     userService.updateAdminUserProfile.mockReset().mockResolvedValue(detailResponse);
     userService.updateAdminUserStatus.mockReset();
     errorToast.mockReset();
+    toastSuccess.mockReset();
   });
 
   it('shows editable profile fields, read-only account details, and a profile image', async () => {
@@ -134,6 +138,52 @@ describe('admin user details dialog', () => {
     expect(within(dialog).getByText('Active')).toBeInTheDocument();
     expect(within(dialog).getByText('Consented')).toBeInTheDocument();
     expect(within(dialog).getAllByRole('textbox')).toHaveLength(3);
+  });
+
+  it('shows and copies the raw ID for the currently selected user', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const renderWith = (userId: string) => (
+      <QueryClientProvider client={queryClient}>
+        <AdminUserDetailsDialog userId={userId} onClose={vi.fn()} open />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(renderWith('first-raw-user-id'));
+
+    const dialog = await screen.findByRole('dialog', { name: 'User details' });
+    await within(dialog).findByLabelText('First name');
+    expect(within(dialog).getByText('first-raw-user-id')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Copy user ID' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('first-raw-user-id'));
+    expect(toastSuccess).toHaveBeenCalledWith('User ID copied to clipboard.');
+
+    rerender(renderWith('second-raw-user-id'));
+    expect(await within(dialog).findByText('second-raw-user-id')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Copy user ID' }));
+    await waitFor(() => expect(writeText).toHaveBeenLastCalledWith('second-raw-user-id'));
+  });
+
+  it('shows a failure message when copying the user ID fails', async () => {
+    const failure = new Error('Clipboard unavailable');
+    const writeText = vi.fn().mockRejectedValue(failure);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    renderDialog();
+
+    const dialog = await screen.findByRole('dialog', { name: 'User details' });
+    await within(dialog).findByLabelText('First name');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Copy user ID' }));
+
+    await waitFor(() =>
+      expect(errorToast).toHaveBeenCalledWith(failure, 'Could not copy user ID.'),
+    );
+    expect(toastSuccess).not.toHaveBeenCalledWith('User ID copied to clipboard.');
   });
 
   it('shows a loading state while the detail request is pending', async () => {

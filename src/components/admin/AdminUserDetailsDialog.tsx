@@ -5,7 +5,7 @@ import type {
 } from '@/types/adminUser.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Copy, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -103,6 +103,17 @@ export default function AdminUserDetailsDialog({
   const statusActionLabel = user?.status === 'ACTIVE' ? 'Suspend user' : 'Reactivate user';
   const statusConfirmLabel =
     user?.status === 'ACTIVE' ? 'Confirm suspension' : 'Confirm reactivation';
+
+  const handleCopyUserId = async () => {
+    if (!userId) return;
+
+    try {
+      await navigator.clipboard.writeText(userId);
+      toast.success('User ID copied to clipboard.');
+    } catch (error) {
+      showErrorToast(error, 'Could not copy user ID.');
+    }
+  };
 
   const profileFormUserIdReference = useRef<string | null>(null);
 
@@ -231,6 +242,21 @@ export default function AdminUserDetailsDialog({
                   sm:grid-cols-2
                 "
               >
+                <div className="space-y-1">
+                  <dt className="text-sm font-medium text-muted-foreground">User ID</dt>
+                  <dd className="flex items-center gap-2">
+                    <span className="break-all text-sm text-foreground">{userId}</span>
+                    <Button
+                      aria-label="Copy user ID"
+                      onClick={handleCopyUserId}
+                      size="icon"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Copy aria-hidden="true" />
+                    </Button>
+                  </dd>
+                </div>
                 <EditableDetailField
                   id="admin-user-first-name"
                   name="firstName"

@@ -5,7 +5,7 @@ import type {
 } from '@/types/adminUser.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, Loader2 } from 'lucide-react';
+import { Copy, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ import { formatDateOrValue, joinFirstAndLastName } from '@/lib/adminUserFormatte
 import { showErrorToast } from '@/lib/errorToast';
 import {
   getAdminUserAuditHistoryQueryOptions,
+  getAdminUserBankDetailsQueryOptions,
   getAdminUserByIdQueryOptions,
   useUpdateAdminUserProfileMutation,
   useUpdateAdminUserStatusMutation,
@@ -72,7 +73,9 @@ export default function AdminUserDetailsDialog({
 }) {
   const { can } = useAccessControl();
   const canUpdateUsers = can(['USERS_READ', 'USERS_UPDATE']);
+  const canReadPayouts = can('PAYOUTS_READ');
   const [auditPage, setAuditPage] = useState(1);
+  const [bankDetailsRevealed, setBankDetailsRevealed] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const form = useForm<ProfileEditFormValues>({
     defaultValues: EMPTY_PROFILE,
@@ -96,7 +99,13 @@ export default function AdminUserDetailsDialog({
   } = useQuery(
     getAdminUserAuditHistoryQueryOptions(userId, { page: auditPage, size: AUDIT_PAGE_SIZE }),
   );
+  const {
+    data: bankDetailsResponse,
+    isError: isBankDetailsError,
+    isLoading: isBankDetailsLoading,
+  } = useQuery(getAdminUserBankDetailsQueryOptions(userId, canReadPayouts && open));
   const user = detailResponse?.data;
+  const bankDetails = bankDetailsResponse?.data;
   const auditHistory = auditHistoryResponse?.data ?? [];
   const auditPagination = auditHistoryResponse?.pagination;
   const name = user ? joinFirstAndLastName(user.firstName, user.lastName) : '';
@@ -121,6 +130,10 @@ export default function AdminUserDetailsDialog({
     setAuditPage(1);
     profileFormUserIdReference.current = null;
   }, [userId]);
+
+  useEffect(() => {
+    setBankDetailsRevealed(false);
+  }, [open, userId]);
 
   useEffect(() => {
     if (!user) {
@@ -189,7 +202,10 @@ export default function AdminUserDetailsDialog({
   return (
     <Dialog
       onOpenChange={isOpen => {
-        if (!isOpen) onClose();
+        if (!isOpen) {
+          setBankDetailsRevealed(false);
+          onClose();
+        }
       }}
       open={open}
     >
@@ -319,6 +335,101 @@ export default function AdminUserDetailsDialog({
                 </p>
               )}
             </form>
+
+            {canReadPayouts && (
+              <section aria-labelledby="admin-user-bank-details-heading" className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3
+                    id="admin-user-bank-details-heading"
+                    className="font-semibold text-foreground"
+                  >
+                    Bank details
+                  </h3>
+                  {bankDetails && (bankDetails.bankAccountNumber || bankDetails.bankIban) && (
+                    <Button
+                      aria-label={`${bankDetailsRevealed ? 'Hide' : 'Reveal'} bank account details`}
+                      onClick={() => setBankDetailsRevealed(value => !value)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {bankDetailsRevealed ? (
+                        <EyeOff aria-hidden="true" className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Eye aria-hidden="true" className="mr-2 h-4 w-4" />
+                      )}
+                      {bankDetailsRevealed ? 'Hide details' : 'Reveal details'}
+                    </Button>
+                  )}
+                </div>
+                {isBankDetailsLoading && (
+                  <div
+                    role="status"
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    Loading bank details…
+                  </div>
+                )}
+                {isBankDetailsError && (
+                  <p role="alert" className="text-sm text-destructive">
+                    Unable to load bank details. Please try again.
+                  </p>
+                )}
+                {!isBankDetailsLoading && !isBankDetailsError && bankDetails && (
+                  <dl
+                    className="
+                      grid gap-4
+                      sm:grid-cols-2
+                    "
+                  >
+                    {bankDetails.bankAccountHolder && (
+                      <DetailField value={bankDetails.bankAccountHolder} label="Account holder" />
+                    )}
+                    {bankDetails.bankName && (
+                      <DetailField value={bankDetails.bankName} label="Bank name" />
+                    )}
+                    {bankDetails.bankSwift && (
+                      <DetailField value={bankDetails.bankSwift} label="SWIFT" />
+                    )}
+                    {bankDetails.bankAccountNumber && (
+                      <DetailField
+                        value={
+                          bankDetailsRevealed
+                            ? bankDetails.bankAccountNumber
+                            : `•••• ${bankDetails.bankAccountNumber.slice(-4)}`
+                        }
+                        label="Account number"
+                      />
+                    )}
+                    {bankDetails.bankIban && (
+                      <DetailField
+                        value={
+                          bankDetailsRevealed
+                            ? bankDetails.bankIban
+                            : `${bankDetails.bankIban.slice(0, 4)} •••• •••• ${bankDetails.bankIban.slice(-4)}`
+                        }
+                        label="IBAN"
+                      />
+                    )}
+                    {!bankDetails.bankAccountHolder &&
+                      !bankDetails.bankName &&
+                      !bankDetails.bankSwift &&
+                      !bankDetails.bankAccountNumber &&
+                      !bankDetails.bankIban && (
+                        <p
+                          className="
+                            text-sm text-muted-foreground
+                            sm:col-span-2
+                          "
+                        >
+                          No bank details on file.
+                        </p>
+                      )}
+                  </dl>
+                )}
+              </section>
+            )}
 
             <section
               aria-labelledby="profile-edit-history-heading"

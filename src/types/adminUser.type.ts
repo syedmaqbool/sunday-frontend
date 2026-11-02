@@ -9,6 +9,7 @@ import type {
   CreateAdminUserData,
   GetAdminUserAuditHistoryData,
   GetAdminUserAuditHistoryResponses,
+  GetAdminUserBankDetailsResponses,
   GetAdminUserByIdResponses,
   GetAdminUsersData,
   GetAdminUsersResponses,
@@ -24,6 +25,7 @@ export type AdminUserDetails = ApiResponseData<GetAdminUserByIdResponses>;
 export type AdminUserImage = AdminUser['image'];
 export type AdminUserStatus = AdminUser['status'];
 export type AdminUserAuditEvent = ApiResponseItem<GetAdminUserAuditHistoryResponses>;
+export type AdminUserBankDetails = ApiResponseData<GetAdminUserBankDetailsResponses>;
 export type AdminUserAuditHistoryResponse = ApiSuccessResponse<GetAdminUserAuditHistoryResponses>;
 export type AdminUserAuditHistoryParameters = Partial<
   ApiRequestQuery<GetAdminUserAuditHistoryData>

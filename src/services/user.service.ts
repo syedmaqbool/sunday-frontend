@@ -2,6 +2,7 @@ import type {
   AdminUser,
   AdminUserAuditHistoryParameters,
   AdminUserAuditHistoryResponse,
+  AdminUserBankDetails,
   AdminUserDetails,
   AdminUsersParameters,
   CreateAdminUserInput,
@@ -30,6 +31,12 @@ export function listAdminUsers(parameters: AdminUsersParameters = {}) {
 
 export function getAdminUserById(userId: string) {
   return authInstance.get(`/api/v1/admin/users/${userId}`).json<Response<AdminUserDetails>>();
+}
+
+export function getAdminUserBankDetails(userId: string) {
+  return authInstance
+    .get(`/api/v1/admin/users/${userId}/bank-details`)
+    .json<Response<AdminUserBankDetails>>();
 }
 
 export function getAdminUserAuditHistory(

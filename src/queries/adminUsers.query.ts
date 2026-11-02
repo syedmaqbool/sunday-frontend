@@ -11,6 +11,7 @@ import {
   createAdminUser,
   getAdminUserAuditHistory,
   getAdminUserById,
+  getAdminUserBankDetails,
   listAdminUsers,
   updateAdminUserProfile,
   updateAdminUserStatus,
@@ -28,6 +29,11 @@ export const adminUserAuditHistoryQueryKey = {
   all: () => [...adminUsersQueryKey.all(), 'audit-history'] as const,
   list: (userId: string, parameters: AdminUserAuditHistoryParameters = {}) =>
     [...adminUserAuditHistoryQueryKey.all(), 'list', userId, parameters] as const,
+};
+
+export const adminUserBankDetailsQueryKey = {
+  all: () => [...adminUsersQueryKey.all(), 'bank-details'] as const,
+  detail: (userId: string) => [...adminUserBankDetailsQueryKey.all(), 'detail', userId] as const,
 };
 
 export type AdminUsersParams = Partial<ApiRequestQuery<GetAdminUsersData>>;
@@ -66,6 +72,18 @@ export function getAdminUserAuditHistoryQueryOptions(
       return getAdminUserAuditHistory(userId, parameters);
     },
     queryKey: adminUserAuditHistoryQueryKey.list(userId ?? '', parameters),
+  });
+}
+
+export function getAdminUserBankDetailsQueryOptions(userId: string | null, enabled = true) {
+  return queryOptions({
+    enabled: Boolean(userId) && enabled,
+    queryFn: async () => {
+      if (!userId) throw new Error('A user must be selected before loading bank details.');
+
+      return getAdminUserBankDetails(userId);
+    },
+    queryKey: adminUserBankDetailsQueryKey.detail(userId ?? ''),
   });
 }
 

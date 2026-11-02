@@ -5,6 +5,7 @@ import AdminUserDetailsDialog from '@/components/admin/AdminUserDetailsDialog';
 
 const userService = vi.hoisted(() => ({
   getAdminUserById: vi.fn(),
+  getAdminUserBankDetails: vi.fn(),
   createAdminUser: vi.fn(),
   getAdminUserAuditHistory: vi.fn(),
   listAdminUsers: vi.fn(),
@@ -113,6 +114,7 @@ describe('admin user details dialog', () => {
   beforeEach(() => {
     authState.permissions = ['USERS_READ', 'USERS_UPDATE'];
     userService.getAdminUserById.mockReset().mockResolvedValue(detailResponse);
+    userService.getAdminUserBankDetails.mockReset();
     userService.getAdminUserAuditHistory.mockReset().mockResolvedValue(auditHistoryResponse);
     userService.updateAdminUserProfile.mockReset().mockResolvedValue(detailResponse);
     userService.updateAdminUserStatus.mockReset();
@@ -228,6 +230,97 @@ describe('admin user details dialog', () => {
     expect(within(dialog).queryByRole('button', { name: 'Save profile' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Suspend user' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Suspend user' })).not.toBeInTheDocument();
+    expect(userService.getAdminUserBankDetails).not.toHaveBeenCalled();
+    expect(within(dialog).queryByRole('region', { name: 'Bank details' })).not.toBeInTheDocument();
+  });
+
+  it('shows payout bank values masked until revealed and masks them again when the dialog closes', async () => {
+    authState.permissions = ['USERS_READ', 'PAYOUTS_READ'];
+    userService.getAdminUserBankDetails.mockResolvedValue({
+      data: {
+        bankAccountHolder: 'Amina Raza',
+        bankAccountNumber: '123456789012',
+        bankIban: 'PK36ABCD1234567890123456',
+        bankName: 'Example Bank',
+        bankSwift: 'EXAMPKKA',
+      },
+      message: 'Bank details loaded',
+      statusCode: 200,
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const onClose = vi.fn();
+    const view = (open: boolean) => (
+      <QueryClientProvider client={queryClient}>
+        <AdminUserDetailsDialog userId="user-id" onClose={onClose} open={open} />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(view(true));
+
+    const dialog = await screen.findByRole('dialog', { name: 'User details' });
+    const bankDetails = await within(dialog).findByRole('region', { name: 'Bank details' });
+    expect(userService.getAdminUserBankDetails).toHaveBeenCalledWith('user-id');
+    expect(within(bankDetails).getByText('Amina Raza')).toBeInTheDocument();
+    expect(within(bankDetails).getByText('Example Bank')).toBeInTheDocument();
+    expect(within(bankDetails).getByText('EXAMPKKA')).toBeInTheDocument();
+    expect(within(bankDetails).getByText('•••• 9012')).toBeInTheDocument();
+    expect(within(bankDetails).getByText('PK36 •••• •••• 3456')).toBeInTheDocument();
+    expect(within(bankDetails).queryByText('123456789012')).not.toBeInTheDocument();
+    expect(within(bankDetails).queryByText('PK36ABCD1234567890123456')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(bankDetails).getByRole('button', { name: 'Reveal bank account details' }),
+    );
+    expect(within(bankDetails).getByText('123456789012')).toBeInTheDocument();
+    expect(within(bankDetails).getByText('PK36ABCD1234567890123456')).toBeInTheDocument();
+
+    rerender(view(false));
+    rerender(view(true));
+    const reopenedBankDetails = await within(
+      await screen.findByRole('dialog', { name: 'User details' }),
+    ).findByRole('region', { name: 'Bank details' });
+    expect(within(reopenedBankDetails).getByText('•••• 9012')).toBeInTheDocument();
+    expect(within(reopenedBankDetails).getByText('PK36 •••• •••• 3456')).toBeInTheDocument();
+  });
+
+  it('shows empty and error states for payout bank details', async () => {
+    authState.permissions = ['USERS_READ', 'PAYOUTS_READ'];
+    userService.getAdminUserBankDetails.mockResolvedValueOnce({
+      data: {
+        bankAccountHolder: null,
+        bankAccountNumber: null,
+        bankIban: null,
+        bankName: null,
+        bankSwift: null,
+      },
+      message: 'No bank details',
+      statusCode: 200,
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <AdminUserDetailsDialog userId="user-id" onClose={vi.fn()} open />
+      </QueryClientProvider>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'User details' });
+    const bankDetails = await within(dialog).findByRole('region', { name: 'Bank details' });
+    expect(within(bankDetails).getByText('No bank details on file.')).toBeInTheDocument();
+
+    userService.getAdminUserBankDetails.mockRejectedValue(new Error('Request failed'));
+    queryClient.clear();
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <AdminUserDetailsDialog userId="other-user-id" onClose={vi.fn()} open />
+      </QueryClientProvider>,
+    );
+    const failedBankDetails = await within(
+      await screen.findByRole('dialog', { name: 'User details' }),
+    ).findByRole('region', { name: 'Bank details' });
+    expect(within(failedBankDetails).getByRole('alert')).toHaveTextContent(
+      'Unable to load bank details. Please try again.',
+    );
+    expect(
+      within(failedBankDetails).queryByText('No bank details on file.'),
+    ).not.toBeInTheDocument();
   });
 
   it('shows validation when no profile field changed', async () => {

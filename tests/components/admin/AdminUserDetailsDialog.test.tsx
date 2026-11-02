@@ -142,7 +142,7 @@ describe('admin user details dialog', () => {
     expect(within(dialog).getAllByRole('textbox')).toHaveLength(3);
   });
 
-  it('shows and copies the raw ID for the currently selected user', async () => {
+  it('copies the current raw ID without showing it', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -158,13 +158,14 @@ describe('admin user details dialog', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'User details' });
     await within(dialog).findByLabelText('First name');
-    expect(within(dialog).getByText('first-raw-user-id')).toBeInTheDocument();
+    expect(within(dialog).queryByText('first-raw-user-id')).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Copy user ID' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('first-raw-user-id'));
     expect(toastSuccess).toHaveBeenCalledWith('User ID copied to clipboard.');
 
     rerender(renderWith('second-raw-user-id'));
-    expect(await within(dialog).findByText('second-raw-user-id')).toBeInTheDocument();
+    await within(dialog).findByLabelText('First name');
+    expect(within(dialog).queryByText('second-raw-user-id')).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Copy user ID' }));
     await waitFor(() => expect(writeText).toHaveBeenLastCalledWith('second-raw-user-id'));
   });

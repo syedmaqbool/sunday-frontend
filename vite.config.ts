@@ -1,7 +1,7 @@
 // vp migrate: merged .oxlintrc.json (1cb96cff00e3a08cd439ac8c50403a11).
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { componentTagger } from 'lovable-tagger';
 import { defineConfig } from 'vite-plus';
 

@@ -247,6 +247,13 @@ export default function AdminUserDetailsDialog({
               />
             )}
 
+            <div className="flex justify-start">
+              <Button onClick={handleCopyUserId} size="sm" type="button" variant="outline">
+                <Copy aria-hidden="true" className="mr-2 h-4 w-4" />
+                Copy user ID
+              </Button>
+            </div>
+
             <form
               id="admin-user-profile-form"
               onSubmit={form.handleSubmit(handleProfileSave)}
@@ -258,21 +265,6 @@ export default function AdminUserDetailsDialog({
                   sm:grid-cols-2
                 "
               >
-                <div className="space-y-1">
-                  <dt className="text-sm font-medium text-muted-foreground">User ID</dt>
-                  <dd className="flex items-center gap-2">
-                    <span className="break-all text-sm text-foreground">{userId}</span>
-                    <Button
-                      aria-label="Copy user ID"
-                      onClick={handleCopyUserId}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
-                      <Copy aria-hidden="true" />
-                    </Button>
-                  </dd>
-                </div>
                 <EditableDetailField
                   id="admin-user-first-name"
                   name="firstName"

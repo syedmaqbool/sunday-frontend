@@ -9,8 +9,9 @@ import type {
   PayoutRunItem,
   PayoutRunItemListParams,
   PayoutRunListParams,
+  RecordSellerPayoutCyclePaymentPayload,
+  RecordSellerPayoutCyclePaymentResponse,
   SellerPayout,
-  UpdatePayoutRunItemStatusPayload,
 } from '@/types/payout.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -45,15 +46,14 @@ export function listPayoutRunItems(runId: string, parameters: PayoutRunItemListP
     .json<PaginatedResponse<PayoutRunItem>>();
 }
 
-export function updatePayoutRunItemStatus(
-  itemId: string,
-  payload: UpdatePayoutRunItemStatusPayload,
+export function recordSellerPayoutCyclePayment(
+  runId: string,
+  sellerId: string,
+  payload: RecordSellerPayoutCyclePaymentPayload,
 ) {
   return authInstance
-    .patch(`/api/v1/admin/payout-runs/items/${itemId}/status`, {
-      json: payload,
-    })
-    .json<Response<PayoutRunItem>>();
+    .post(`/api/v1/admin/payout-runs/${runId}/sellers/${sellerId}/payment`, { json: payload })
+    .json<RecordSellerPayoutCyclePaymentResponse>();
 }
 
 export function listRefundPayouts(parameters: AdminRefundReportParams = {}) {

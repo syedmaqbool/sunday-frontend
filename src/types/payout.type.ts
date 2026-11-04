@@ -16,7 +16,8 @@ import type {
   GetAdminPayoutRunsResponses,
   GetAdminPayoutsData,
   GetAdminPayoutsResponses,
-  UpdateAdminPayoutRunItemStatusData,
+  RecordAdminSellerPayoutCyclePaymentData,
+  RecordAdminSellerPayoutCyclePaymentResponses,
 } from '@/types/generated-api';
 
 export type PayoutRun = ApiResponseItem<GetAdminPayoutRunsResponses>;
@@ -27,7 +28,10 @@ export type EligibleSellerPayoutItemsResponse =
   ApiSuccessResponse<GetAdminEligibleSellerPayoutItemsResponses>;
 export type CreatePayoutRunPayload = ApiRequestBody<CreateAdminPayoutRunData>;
 export type CreateSellerPayoutPayload = ApiRequestBody<CreateSellerPayoutData>;
-export type UpdatePayoutRunItemStatusPayload = ApiRequestBody<UpdateAdminPayoutRunItemStatusData>;
+export type RecordSellerPayoutCyclePaymentPayload =
+  ApiRequestBody<RecordAdminSellerPayoutCyclePaymentData>;
+export type RecordSellerPayoutCyclePaymentResponse =
+  ApiSuccessResponse<RecordAdminSellerPayoutCyclePaymentResponses>;
 export type PayoutRunListParams = Partial<ApiRequestQuery<GetAdminPayoutRunsData>>;
 export type EligibleSellerPayoutItemsParams =
   ApiRequestQuery<GetAdminEligibleSellerPayoutItemsData>;

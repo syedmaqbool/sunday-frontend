@@ -13,7 +13,7 @@ const payoutService = vi.hoisted(() => ({
   listPayoutRuns: vi.fn(),
   listRefundPayouts: vi.fn(),
   listSellerPayouts: vi.fn(),
-  updatePayoutRunItemStatus: vi.fn(),
+  recordSellerPayoutCyclePayment: vi.fn(),
 }));
 
 vi.mock('@/services/payout.service', () => payoutService);
@@ -105,6 +105,28 @@ const sellerPayoutRunItem = {
   updatedAt: '2026-10-01T00:00:00.000Z',
 };
 
+const sellerBasePayoutRunItem = {
+  ...sellerPayoutRunItem,
+  id: 'run-item-2',
+  amount: 10000,
+  orderId: 'order-87654321',
+  orderItemId: 'order-item-2',
+  payoutComponent: 'BASE' as const,
+  sourceMetadata: { listingTitle: 'Leather bag' },
+};
+
+const otherSellerPayoutRunItem = {
+  ...sellerPayoutRunItem,
+  id: 'run-item-3',
+  amount: 2000,
+  orderId: 'order-55555555',
+  orderItemId: 'order-item-3',
+  sellerId: 'seller-2',
+  userId: 'seller-2',
+  userFullName: 'Seller Two',
+  payoutComponent: 'BASE' as const,
+};
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -144,8 +166,8 @@ async function openRunDetails() {
   fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout runs' }), { button: 0 });
   fireEvent.click(await screen.findByText('Finance Admin'));
   expect(await screen.findByRole('heading', { name: 'Payout run details' })).toBeInTheDocument();
-  expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', {});
-  expect(await screen.findByText('Seller One')).toBeInTheDocument();
+  expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', { page: 1, size: 100 });
+  expect((await screen.findAllByText('Seller One')).length).toBeGreaterThan(0);
 }
 
 describe('admin payout eligibility page', () => {
@@ -162,12 +184,52 @@ describe('admin payout eligibility page', () => {
     });
   });
 
-  it('labels an incentive bonus as a bonus in the payout run details', async () => {
+  it('groups seller components and keeps each source item available in payout run details', async () => {
+    payoutService.listPayoutRunItems.mockResolvedValue({
+      ...emptyPage,
+      data: [sellerPayoutRunItem, sellerBasePayoutRunItem, otherSellerPayoutRunItem],
+    });
     await openRunDetails();
 
     expect(screen.getAllByText('Seller incentive bonus')).toHaveLength(1);
-    expect(screen.getAllByText('Rs 2,450.00').length).toBeGreaterThan(1);
+    expect(screen.getAllByText('Base payout')).toHaveLength(2);
+    expect(screen.getAllByText('Seller incentive')).toHaveLength(2);
+    expect(screen.getByText('Rs 12,450.00')).toBeInTheDocument();
+    expect(screen.getAllByText('Rs 10,000.00')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /mark .* paid/i })).toHaveLength(2);
+    expect(screen.getAllByText('Vintage jacket').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Leather bag').length).toBeGreaterThan(0);
+    expect(screen.getByText('Order order-12')).toBeInTheDocument();
+    expect(screen.getByText('Order order-87')).toBeInTheDocument();
     expect(screen.queryByText(/payout fee/i)).not.toBeInTheDocument();
+  });
+
+  it('loads every payout-run item page before grouping seller totals', async () => {
+    payoutService.listPayoutRunItems.mockImplementation(async (_runId, parameters) => {
+      const isFirstPage = parameters.page === 1;
+      return {
+        ...emptyPage,
+        data: [isFirstPage ? sellerBasePayoutRunItem : sellerPayoutRunItem],
+        pagination: {
+          ...emptyPage.pagination,
+          currentPage: isFirstPage ? 1 : 2,
+          lastPage: 2,
+          nextPage: isFirstPage ? 2 : null,
+          perPage: 100,
+          prevPage: isFirstPage ? null : 1,
+          total: 2,
+        },
+      };
+    });
+    await openRunDetails();
+
+    expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', { page: 2, size: 100 });
+    expect(screen.getByText('Rs 12,450.00')).toBeInTheDocument();
+    expect(screen.getByText('Leather bag')).toBeInTheDocument();
+    expect(screen.getByText('Vintage jacket')).toBeInTheDocument();
+    expect(screen.getByText('Order order-87')).toBeInTheDocument();
+    expect(screen.getByText('Order order-12')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mark Seller One paid' })).toBeInTheDocument();
   });
 
   it('waits for a selected period and sends full calendar-day boundaries', async () => {
@@ -283,24 +345,40 @@ describe('admin payout eligibility page', () => {
     expect(await screen.findByText('Run creation failed')).toBeInTheDocument();
   });
 
-  it('lets an admin record an unpaid seller payout as paid after an external transfer', async () => {
+  it('records one payment for all unpaid components for a seller in the selected cycle', async () => {
+    payoutService.listPayoutRunItems.mockResolvedValue({
+      ...emptyPage,
+      data: [sellerPayoutRunItem, sellerBasePayoutRunItem],
+    });
+    payoutService.recordSellerPayoutCyclePayment.mockResolvedValue({
+      data: {
+        amount: 12450,
+        paidAt: '2026-10-07T10:15:00.000Z',
+        payoutRunItemIds: ['run-item-1', 'run-item-2'],
+        sellerId: 'seller-1',
+      },
+      message: 'Updated.',
+      statusCode: 200,
+    });
     await openRunDetails();
 
     expect(
       screen.getByText(/Record payment only after the external transfer/i),
     ).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
 
     await waitFor(() =>
-      expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledWith('run-item-1', {
-        status: 'PAID',
-      }),
+      expect(payoutService.recordSellerPayoutCyclePayment).toHaveBeenCalledWith(
+        'run-1',
+        'seller-1',
+        {},
+      ),
     );
   });
 
-  it('refreshes the run item to PAID and shows its paid timestamp after recording payment', async () => {
+  it('refreshes every seller component with the shared paid timestamp after success', async () => {
     payoutService.listPayoutRunItems.mockImplementation(async () => {
-      const isPaid = payoutService.updatePayoutRunItemStatus.mock.calls.length > 0;
+      const isPaid = payoutService.recordSellerPayoutCyclePayment.mock.calls.length > 0;
       return {
         ...emptyPage,
         data: [
@@ -309,43 +387,54 @@ describe('admin payout eligibility page', () => {
             status: isPaid ? 'PAID' : 'UNPAID',
             paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
           },
+          {
+            ...sellerBasePayoutRunItem,
+            status: isPaid ? 'PAID' : 'UNPAID',
+            paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
+          },
         ],
       };
     });
-    payoutService.updatePayoutRunItemStatus.mockResolvedValue({
-      data: { ...sellerPayoutRunItem, status: 'PAID', paidAt: '2026-10-07T10:15:00.000Z' },
+    payoutService.recordSellerPayoutCyclePayment.mockResolvedValue({
+      data: {
+        amount: 12450,
+        paidAt: '2026-10-07T10:15:00.000Z',
+        payoutRunItemIds: ['run-item-1', 'run-item-2'],
+        sellerId: 'seller-1',
+      },
       message: 'Updated.',
       statusCode: 200,
     });
     await openRunDetails();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
 
     await waitFor(() =>
       expect(payoutService.listPayoutRunItems.mock.calls.length).toBeGreaterThan(1),
     );
-    expect(screen.getByText('Paid')).toBeInTheDocument();
-    expect(screen.getByText('Paid').parentElement).toHaveTextContent(
-      /Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/,
-    );
+    expect(screen.getAllByText('Paid')).toHaveLength(2);
+    expect(screen.getAllByText(/Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/)).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Mark Seller One paid' })).not.toBeInTheDocument();
   });
 
-  it('disables repeat payment submission while the request is pending', async () => {
+  it('disables repeat seller payment submission while the request is pending', async () => {
     let resolvePayment!: (response: { data: unknown; message: string; statusCode: number }) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    payoutService.updatePayoutRunItemStatus.mockReturnValue(
+    payoutService.recordSellerPayoutCyclePayment.mockReturnValue(
       new Promise(resolve => {
         resolvePayment = resolve;
       }),
     );
     await openRunDetails();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark paid' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
 
-    const pendingButton = await screen.findByRole('button', { name: 'Recording payment…' });
+    const pendingButton = await screen.findByRole('button', {
+      name: 'Recording payment for Seller One',
+    });
     expect(pendingButton).toBeDisabled();
     fireEvent.click(pendingButton);
-    expect(payoutService.updatePayoutRunItemStatus).toHaveBeenCalledTimes(1);
+    expect(payoutService.recordSellerPayoutCyclePayment).toHaveBeenCalledTimes(1);
     resolvePayment({ data: sellerPayoutRunItem, message: 'Updated.', statusCode: 200 });
   });
 
@@ -364,15 +453,19 @@ describe('admin payout eligibility page', () => {
         },
       ],
     });
-    payoutService.updatePayoutRunItemStatus.mockRejectedValue(new Error('Payment update failed'));
+    payoutService.recordSellerPayoutCyclePayment.mockRejectedValue(
+      new Error('Payment update failed'),
+    );
     await openRunDetails();
 
     expect(screen.getAllByText('Buyer refunds').length).toBeGreaterThan(1);
     expect(screen.getByText('Buyer One')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Mark paid' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Mark paid' }));
+    expect(screen.getAllByRole('button', { name: /mark .* paid/i })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Seller One paid' }));
 
     expect(await screen.findByText('Payment update failed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mark Seller One paid' })).toBeEnabled();
+    expect(screen.getAllByText('Unpaid').length).toBeGreaterThan(0);
   });
 
   it('keeps historical manual payout records and refund reporting available without manual creation', async () => {

@@ -6,7 +6,7 @@ import type {
   EligibleSellerPayoutItemsParams,
   PayoutRunItemListParams,
   PayoutRunListParams,
-  UpdatePayoutRunItemStatusPayload,
+  RecordSellerPayoutCyclePaymentPayload,
 } from '@/types/payout.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,7 +17,7 @@ import {
   listPayoutRuns,
   listRefundPayouts,
   listSellerPayouts,
-  updatePayoutRunItemStatus,
+  recordSellerPayoutCyclePayment,
 } from '@/services/payout.service';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -87,23 +87,22 @@ export function getPayoutRunItemsOptions(runId: string, parameters: PayoutRunIte
   });
 }
 
-export function useUpdatePayoutRunItemStatusMutation() {
+export function useRecordSellerPayoutCyclePaymentMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
-      itemId,
       payload,
+      runId,
+      sellerId,
     }: {
-      itemId: string;
-      payload: UpdatePayoutRunItemStatusPayload;
-    }) => updatePayoutRunItemStatus(itemId, payload),
+      payload: RecordSellerPayoutCyclePaymentPayload;
+      runId: string;
+      sellerId: string;
+    }) => recordSellerPayoutCyclePayment(runId, sellerId, payload),
 
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: payoutQueryKey.runs() }),
-        queryClient.invalidateQueries({ queryKey: payoutQueryKey.refunds() }),
-      ]);
+    onSuccess: async (_response, { runId }) => {
+      await queryClient.invalidateQueries({ queryKey: payoutQueryKey.runItems(runId) });
     },
   });
 }

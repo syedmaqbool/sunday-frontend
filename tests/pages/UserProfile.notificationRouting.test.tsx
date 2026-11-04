@@ -3,14 +3,27 @@ import type { Order, Sale } from '@/types/order.type';
 import { infiniteQueryOptions, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import UserProfile, { ReturnsTab } from '@/pages/UserProfile';
 
-const { reviewsOptionsMock, sellerOrders, sellerRatingTotal, sellerSales } = vi.hoisted(() => ({
+const {
+  createComplaintMock,
+  getOrderItemComplaintMock,
+  getOrderMock,
+  reviewsOptionsMock,
+  sellerOrders,
+  sellerRatingTotal,
+  sellerSales,
+  toastErrorMock,
+} = vi.hoisted(() => ({
+  createComplaintMock: vi.fn(),
+  getOrderItemComplaintMock: vi.fn(),
+  getOrderMock: vi.fn(),
   reviewsOptionsMock: vi.fn(),
   sellerOrders: { value: [] as Order[] },
   sellerRatingTotal: { value: 2 },
   sellerSales: { value: [] as Sale[] },
+  toastErrorMock: vi.fn(),
 }));
 
 const complaints: Complaint[] = [
@@ -31,8 +44,22 @@ const complaints: Complaint[] = [
 ];
 
 vi.mock('@/services/complaints.service', () => ({
+  createComplaint: createComplaintMock,
+  getOrderItemComplaint: getOrderItemComplaintMock,
   listComplaintsAgainstMe: async () => ({ data: [complaints[1]] }),
   listMyRefundComplaints: async () => ({ data: [complaints[0]] }),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    error: toastErrorMock,
+    success: vi.fn(),
+  },
+}));
+
+vi.mock('@/lib/uploadFile', () => ({
+  getUploadedFileUrl: () => 'https://example.com/evidence.jpg',
+  uploadFile: vi.fn(async () => ({ data: { url: 'https://example.com/evidence.jpg' } })),
 }));
 
 vi.mock('@/queries/review.query', () => ({
@@ -94,6 +121,7 @@ vi.mock('@/hooks/useSellerRating', () => ({
 }));
 
 vi.mock('@/services/myorders.service', () => ({
+  getOrder: getOrderMock,
   updateItemStatus: vi.fn(),
   uploadShippingProof: vi.fn(),
 }));
@@ -188,7 +216,7 @@ function createSale(overrides: Partial<Sale> = {}): Sale {
   };
 }
 
-function createBuyerOrder(): Order {
+function createBuyerOrder(itemOverrides: Partial<Sale> = {}): Order {
   return {
     id: 'buyer-order-1',
     buyerId: 'current-user',
@@ -200,7 +228,14 @@ function createBuyerOrder(): Order {
     currency: 'PKR',
     discountAmount: 125,
     discountCode: 'OLD-SELLER-COUPON',
-    items: [createSale({ sellerId: 'seller-1', sellerIncentiveBonus: 0, status: 'DELIVERED' })],
+    items: [
+      createSale({
+        sellerId: 'seller-1',
+        sellerIncentiveBonus: 0,
+        status: 'DELIVERED',
+        ...itemOverrides,
+      }),
+    ],
     manualPaymentSubmission: undefined,
     paymentStatus: 'PAID',
     platformFeeAmount: 0,
@@ -223,6 +258,19 @@ function createBuyerOrder(): Order {
     createdAt: '2026-09-01T00:00:00.000Z',
     updatedAt: '2026-09-01T00:00:00.000Z',
   };
+}
+
+async function openBuyerOrderDetails(
+  itemOverrides: Partial<Sale> = {},
+  complaint: Complaint | null = null,
+) {
+  sellerOrders.value = [createBuyerOrder(itemOverrides)];
+  getOrderItemComplaintMock.mockResolvedValue(complaint ? { data: complaint } : null);
+  getOrderMock.mockResolvedValue({
+    data: { items: [{ expectedDelivery: null, id: 'sale-1', shippedAt: null }] },
+  });
+  renderUserProfile('/profile?tab=bought');
+  fireEvent.click(await screen.findByRole('button', { name: /Details/ }));
 }
 
 describe('profile complaint notification navigation', () => {
@@ -430,5 +478,93 @@ describe('historical order discounts', () => {
 
     expect(await screen.findByText('Discount (OLD-SELLER-COUPON)')).toBeInTheDocument();
     expect(screen.getByText('−Rs 125')).toBeInTheDocument();
+  });
+});
+
+describe('buyer quality complaint window', () => {
+  beforeEach(() => {
+    getOrderItemComplaintMock.mockReset().mockResolvedValue(null);
+    getOrderMock.mockReset().mockResolvedValue({
+      data: { items: [{ expectedDelivery: null, id: 'sale-1', shippedAt: null }] },
+    });
+    createComplaintMock.mockReset();
+    toastErrorMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows the quality complaint action for an item received less than twelve hours ago', async () => {
+    const receivedAt = new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString();
+    await openBuyerOrderDetails({ receivedAt });
+
+    expect(await screen.findByRole('button', { name: 'Inadequate Quality' })).toBeInTheDocument();
+  });
+
+  it('hides the quality complaint action at exactly twelve hours after receipt', async () => {
+    const receivedAt = '2026-10-01T00:00:00.000Z';
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse(receivedAt) + 12 * 60 * 60 * 1000);
+    await openBuyerOrderDetails({ receivedAt });
+
+    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+  });
+
+  it('hides the quality complaint action when receipt time is missing', async () => {
+    await openBuyerOrderDetails({ receivedAt: null });
+
+    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+  });
+
+  it('keeps existing complaint details visible after the quality window expires', async () => {
+    await openBuyerOrderDetails({ receivedAt: '2026-10-01T00:00:00.000Z' }, complaints[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'View complaint details' }));
+
+    expect(await screen.findByText('Not as described')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the quality complaint action unavailable while the item is shipped', async () => {
+    await openBuyerOrderDetails({ receivedAt: new Date().toISOString(), status: 'SHIPPED' });
+
+    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+  });
+
+  it('keeps an open complaint form and submits it after the receipt window expires', async () => {
+    const receivedAt = new Date(Date.now() - (12 * 60 * 60 * 1000 - 1500)).toISOString();
+    await openBuyerOrderDetails({ receivedAt });
+    fireEvent.click(await screen.findByRole('button', { name: 'Inadequate Quality' }));
+
+    const reason = screen.getByRole('textbox', { name: "What's wrong?" });
+    fireEvent.change(reason, { target: { value: 'The item arrived damaged.' } });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument(),
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(reason).toHaveValue('The item arrived damaged.');
+    expect(screen.getByRole('button', { name: 'Submit for review' })).toBeEnabled();
+
+    const evidence = new File(['photo'], 'damage.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByLabelText('Evidence photos'), {
+      target: { files: [evidence] },
+    });
+    const failure = new Error('The quality complaint window has expired.');
+    createComplaintMock.mockRejectedValueOnce(failure);
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for review' }));
+
+    await waitFor(() => expect(createComplaintMock).toHaveBeenCalled());
+    expect(createComplaintMock).toHaveBeenCalledWith({
+      evidenceUrls: ['https://example.com/evidence.jpg'],
+      orderId: 'buyer-order-1',
+      orderItemId: 'sale-1',
+      reason: 'The item arrived damaged.',
+    });
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith('Error', {
+        description: failure.message,
+      }),
+    );
   });
 });

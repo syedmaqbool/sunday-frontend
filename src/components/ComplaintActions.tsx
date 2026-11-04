@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock, Loader2, PackageCheck, Truck, Upload, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -27,7 +27,10 @@ import { createComplaint, submitReturnProof } from '@/services/complaints.servic
 interface ComplaintActionsProps {
   orderId: string;
   orderItemId: string;
+  receivedAt: string | null;
 }
+
+const QUALITY_COMPLAINT_WINDOW_MILLISECONDS = 12 * 60 * 60 * 1000;
 
 const complaintFileSchema = z.custom<File>(
   value => typeof File !== 'undefined' && value instanceof File,
@@ -69,12 +72,32 @@ async function uploadMediaFiles(files: File[]) {
   return urls;
 }
 
-export function ComplaintActions({ orderId, orderItemId }: ComplaintActionsProps) {
+export function ComplaintActions({ orderId, orderItemId, receivedAt }: ComplaintActionsProps) {
   const queryClient = useQueryClient();
   const [minimumExpectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const complaintDeadline = receivedAt
+    ? Date.parse(receivedAt) + QUALITY_COMPLAINT_WINDOW_MILLISECONDS
+    : null;
+  const canRaiseComplaint =
+    complaintDeadline !== null &&
+    Number.isFinite(complaintDeadline) &&
+    currentTime < complaintDeadline;
+
+  useEffect(() => {
+    if (complaintDeadline === null || !Number.isFinite(complaintDeadline)) return;
+
+    const currentTime = Date.now();
+    setCurrentTime(currentTime);
+    const remainingMilliseconds = complaintDeadline - currentTime;
+    if (remainingMilliseconds <= 0) return;
+
+    const timeoutId = window.setTimeout(() => setCurrentTime(Date.now()), remainingMilliseconds);
+    return () => window.clearTimeout(timeoutId);
+  }, [complaintDeadline]);
 
   const raiseForm = useForm<RaiseComplaintFormValues>({
     defaultValues: emptyRaiseComplaintForm,
@@ -292,20 +315,24 @@ export function ComplaintActions({ orderId, orderItemId }: ComplaintActionsProps
   }
 
   // No complaint yet — show entry button
+  if (!canRaiseComplaint && !raiseOpen) return null;
+
   return (
     <>
-      <Button
-        onClick={() => setRaiseOpen(true)}
-        size="sm"
-        variant="ghost"
-        className="
-          mt-2 h-7 gap-1 text-xs text-amber-700
-          hover:bg-amber-500/10 hover:text-amber-800
-        "
-      >
-        <AlertTriangle className="h-3 w-3" />
-        Inadequate Quality
-      </Button>
+      {canRaiseComplaint && (
+        <Button
+          onClick={() => setRaiseOpen(true)}
+          size="sm"
+          variant="ghost"
+          className="
+            mt-2 h-7 gap-1 text-xs text-amber-700
+            hover:bg-amber-500/10 hover:text-amber-800
+          "
+        >
+          <AlertTriangle className="h-3 w-3" />
+          Inadequate Quality
+        </Button>
+      )}
 
       <Dialog
         onOpenChange={open => {

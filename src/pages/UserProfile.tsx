@@ -731,7 +731,11 @@ function OrderCard({ order }: { order: Order }) {
 
                         {/* Complaint + Review after delivered */}
                         {item.status === 'DELIVERED' && (
-                          <ComplaintActions orderId={order.id} orderItemId={item.id} />
+                          <ComplaintActions
+                            orderId={order.id}
+                            orderItemId={item.id}
+                            receivedAt={item.receivedAt}
+                          />
                         )}
                         {item.status === 'DELIVERED' && (
                           <OrderItemReview

@@ -120,6 +120,7 @@ export type GetAdminBuyerRefundReportResponses = {
       id: string;
       buyerId: string | null;
       complaintId: string | null;
+      cyclePayoutRunId: string;
       orderId: string | null;
       orderItemId: string | null;
       payoutRunId: string;

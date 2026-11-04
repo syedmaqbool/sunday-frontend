@@ -1356,12 +1356,12 @@ export type {
   ReconnectAdminQuickBooksConnectionResponses,
 } from './reconnectAdminQuickBooksConnection.gen';
 export type {
-  RecordAdminPayoutRunItemPaymentData,
-  RecordAdminPayoutRunItemPaymentError,
-  RecordAdminPayoutRunItemPaymentErrors,
-  RecordAdminPayoutRunItemPaymentResponse,
-  RecordAdminPayoutRunItemPaymentResponses,
-} from './recordAdminPayoutRunItemPayment.gen';
+  RecordAdminSellerPayoutCyclePaymentData,
+  RecordAdminSellerPayoutCyclePaymentError,
+  RecordAdminSellerPayoutCyclePaymentErrors,
+  RecordAdminSellerPayoutCyclePaymentResponse,
+  RecordAdminSellerPayoutCyclePaymentResponses,
+} from './recordAdminSellerPayoutCyclePayment.gen';
 export type {
   RefreshAdminQuickBooksConnectionData,
   RefreshAdminQuickBooksConnectionError,

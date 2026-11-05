@@ -141,7 +141,12 @@ function Payouts() {
   });
   const { data: periodPayoutsData } = useQuery(
     getAdminSellerPayoutsOptions(
-      rangeStart && rangeEnd ? { periodEnd: rangeEnd, periodStart: rangeStart } : {},
+      rangeStart && rangeEnd
+        ? {
+            periodEnd: new Date(`${rangeEnd}T23:59:59.999`).toISOString(),
+            periodStart: new Date(`${rangeStart}T00:00:00`).toISOString(),
+          }
+        : {},
     ),
   );
   // Refund report doesn't support period filtering directly — we derive period

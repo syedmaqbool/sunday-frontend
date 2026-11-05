@@ -352,16 +352,14 @@ function ListingDetail() {
                     Your accepted offer
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">Including Buyer Protection</p>
+                <p className="text-sm text-muted-foreground">Including Platform Fee</p>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between gap-4">
                     <span>Offer amount</span>
                     <span>Rs {listing.reservedOffer.amount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between gap-4 text-muted-foreground">
-                    <span>
-                      Buyer protection fee ({listing.reservedOffer.buyerProtectionFee.rate}%)
-                    </span>
+                    <span>Platform fee ({listing.reservedOffer.buyerProtectionFee.rate}%)</span>
                     <span>
                       Rs {listing.reservedOffer.buyerProtectionFee.amount.toLocaleString()}
                     </span>
@@ -373,14 +371,14 @@ function ListingDetail() {
                 <p className="text-3xl font-bold text-foreground">
                   Rs {listing.buyerTotalPrice.toLocaleString()}
                 </p>
-                <p className="text-sm text-muted-foreground">Including Buyer Protection</p>
+                <p className="text-sm text-muted-foreground">Including Platform Fee</p>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between gap-4">
                     <span>Item price</span>
                     <span>Rs {listing.price.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between gap-4 text-muted-foreground">
-                    <span>Buyer protection fee ({listing.buyerProtectionFee.rate}%)</span>
+                    <span>Platform fee ({listing.buyerProtectionFee.rate}%)</span>
                     <span>Rs {listing.buyerProtectionFee.amount.toLocaleString()}</span>
                   </div>
                 </div>
@@ -588,7 +586,7 @@ function ListingDetail() {
               <Shield className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Buyer Protection
+                  Platform fee
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Money-back guarantee if item isn't as described

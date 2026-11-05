@@ -86,24 +86,24 @@ describe('buyer pricing on listing detail', () => {
       renderListingDetail();
 
       expect(await screen.findByText('Rs 4,480')).toBeInTheDocument();
-      expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+      expect(screen.getByText('Including Platform Fee')).toBeInTheDocument();
       expect(screen.getByText('Item price')).toBeInTheDocument();
-      expect(screen.getByText('Buyer protection fee (12%)')).toBeInTheDocument();
+      expect(screen.getByText('Platform fee (12%)')).toBeInTheDocument();
       expect(screen.getByText('Rs 4,000')).toBeInTheDocument();
       expect(screen.getByText('Rs 480')).toBeInTheDocument();
       expect(listPublicCommissionTiersMock).not.toHaveBeenCalled();
     },
   );
 
-  it('shows the total and a zero-fee breakdown when buyer protection is zero', async () => {
+  it('shows the total and a zero-fee breakdown when platform fee is zero', async () => {
     listingState.listing.buyerProtectionFee = { rate: 0, amount: 0 };
     listingState.listing.buyerTotalPrice = listingState.listing.price;
 
     renderListingDetail();
 
     expect(await screen.findAllByText('Rs 4,000')).toHaveLength(2);
-    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee (0%)')).toBeInTheDocument();
+    expect(screen.getByText('Including Platform Fee')).toBeInTheDocument();
+    expect(screen.getByText('Platform fee (0%)')).toBeInTheDocument();
     expect(screen.getByText('Rs 0')).toBeInTheDocument();
     expect(listPublicCommissionTiersMock).not.toHaveBeenCalled();
   });
@@ -121,9 +121,9 @@ describe('buyer pricing on listing detail', () => {
     renderListingDetail();
 
     expect(await screen.findByText('Rs 3,920')).toBeInTheDocument();
-    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('Including Platform Fee')).toBeInTheDocument();
     expect(screen.getByText('Offer amount')).toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee (12%)')).toBeInTheDocument();
+    expect(screen.getByText('Platform fee (12%)')).toBeInTheDocument();
     expect(screen.getByText('Rs 3,500')).toBeInTheDocument();
     expect(screen.getByText('Rs 420')).toBeInTheDocument();
     expect(screen.getByText('Rs 4,480')).toHaveClass('line-through');

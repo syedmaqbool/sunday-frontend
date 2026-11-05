@@ -223,16 +223,13 @@ describe('listing seller navigation', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/listing/listing-1');
   });
 
-  it('shows the buyer total and Buyer Protection note in list view', async () => {
+  it('shows the buyer total and Platform fee note in list view', async () => {
     renderListings({ listings: [{ ...listing, buyerTotalPrice: 3000 }] });
 
     await screen.findByText('Vintage Jacket');
     fireEvent.click(screen.getByRole('button', { name: 'List view' }));
 
     expect(await screen.findByText('Rs 3,000')).toBeInTheDocument();
-    expect(screen.getByText('incl. Buyer Protection')).toHaveClass(
-      'text-xs',
-      'text-muted-foreground',
-    );
+    expect(screen.getByText('incl. Platform Fee')).toHaveClass('text-xs', 'text-muted-foreground');
   });
 });

@@ -26,13 +26,13 @@ function renderListingCard(cardListing: Parameters<typeof ListingCard>[0]['listi
 }
 
 describe('listing card pricing', () => {
-  it('shows the buyer total with a Buyer Protection note', () => {
+  it('shows the buyer total with a Platform fee note', () => {
     renderListingCard({
       ...listing,
     });
 
     expect(screen.getByText('Rs 2,750')).toBeInTheDocument();
-    expect(screen.getByText('incl. Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('incl. Platform fee')).toBeInTheDocument();
   });
 
   it('shows the item price as the buyer total when the fee is zero', () => {
@@ -43,7 +43,7 @@ describe('listing card pricing', () => {
     });
 
     expect(screen.getByText('Rs 2,500')).toBeInTheDocument();
-    expect(screen.getByText('incl. Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('incl. Platform fee')).toBeInTheDocument();
   });
 
   it('shows the buyer total on a reserved listing', () => {

@@ -88,7 +88,7 @@ function ListingCard({
             <p className="text-sm font-semibold text-foreground">
               Rs {listing.buyerTotalPrice.toLocaleString()}
             </p>
-            <p className="text-xs text-muted-foreground">incl. Buyer Protection</p>
+            <p className="text-xs text-muted-foreground">incl. Platform fee</p>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 Size

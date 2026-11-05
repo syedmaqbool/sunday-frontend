@@ -196,8 +196,8 @@ describe('accepted offer deadline on listing detail', () => {
     expect(await screen.findByText('Your accepted offer')).toBeInTheDocument();
     expect(screen.getByText('Rs 120')).toBeInTheDocument();
     expect(screen.getByText('Rs 150')).toHaveClass('line-through');
-    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee (20%)')).toBeInTheDocument();
+    expect(screen.getByText('Including Platform Fee')).toBeInTheDocument();
+    expect(screen.getByText('Platform fee (20%)')).toBeInTheDocument();
     expect(screen.getByText('Offer amount')).toBeInTheDocument();
     expect(screen.queryByTestId('seller-coupon-estimate')).not.toBeInTheDocument();
   });
@@ -216,8 +216,8 @@ describe('accepted offer deadline on listing detail', () => {
     expect(
       screen.getAllByText('Rs 150').some(element => element.classList.contains('line-through')),
     ).toBe(true);
-    expect(screen.getByText('Including Buyer Protection')).toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee (20%)')).toBeInTheDocument();
+    expect(screen.getByText('Including Platform Fee')).toBeInTheDocument();
+    expect(screen.getByText('Platform fee (20%)')).toBeInTheDocument();
   });
 
   it('uses the listing detail request without fetching the reserved offer separately', async () => {

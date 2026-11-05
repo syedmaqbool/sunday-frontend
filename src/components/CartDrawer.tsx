@@ -91,7 +91,7 @@ export default function CartDrawer() {
                           </p>
                           {fee && (
                             <p className="text-[11px] text-muted-foreground">
-                              + Buyer protection fee ({fee.rate}
+                              + Platform fee ({fee.rate}
                               %): Rs {fee.amount.toLocaleString()}
                             </p>
                           )}
@@ -126,7 +126,7 @@ export default function CartDrawer() {
                 <span className="text-foreground">Rs {totalPrice.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Buyer protection fee</span>
+                <span className="text-muted-foreground">Platform fee</span>
                 <span className="text-foreground">Rs {buyerProtectionFee.toLocaleString()}</span>
               </div>
               <Separator />

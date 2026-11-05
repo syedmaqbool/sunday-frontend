@@ -54,8 +54,8 @@ describe('CartDrawer buyer pricing', () => {
     renderCartDrawer();
 
     expect(screen.getAllByText('Rs 1,000')).toHaveLength(3);
-    expect(screen.queryByText(/Buyer protection fee \(/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Buyer protection fee').parentElement).toHaveTextContent('Rs 0');
+    expect(screen.queryByText(/Platform fee \(/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('Rs 0');
     expect(screen.getByText('Total payable').parentElement).toHaveTextContent('Rs 1,000');
 
     resolveListing({
@@ -64,9 +64,9 @@ describe('CartDrawer buyer pricing', () => {
       buyerTotalPrice: 1100,
     });
 
-    expect(await screen.findByText('+ Buyer protection fee (10%): Rs 100')).toBeInTheDocument();
+    expect(await screen.findByText('+ Platform fee (10%): Rs 100')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText('Buyer protection fee').parentElement).toHaveTextContent('Rs 100');
+      expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('Rs 100');
       expect(screen.getByText('Total payable').parentElement).toHaveTextContent('Rs 1,100');
     });
   });
@@ -99,9 +99,9 @@ describe('CartDrawer buyer pricing', () => {
 
     renderCartDrawer();
 
-    expect(await screen.findByText('+ Buyer protection fee (6.25%): Rs 50')).toBeInTheDocument();
+    expect(await screen.findByText('+ Platform fee (6.25%): Rs 50')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText('Buyer protection fee').parentElement).toHaveTextContent('Rs 50');
+      expect(screen.getByText('Platform fee').parentElement).toHaveTextContent('Rs 50');
       expect(screen.getByText('Total payable').parentElement).toHaveTextContent('Rs 850');
     });
   });

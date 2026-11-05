@@ -51,7 +51,7 @@ export function getManualVerificationCopy(state: ManualVerificationState): Manua
   switch (state) {
     case 'APPROVED': {
       return {
-        description: 'Your payment has been approved and your order is being prepared.',
+        description: 'Your payment has been approved',
         heading: 'Payment approved',
         label: 'Approved',
       };

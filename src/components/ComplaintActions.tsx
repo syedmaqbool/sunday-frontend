@@ -330,7 +330,7 @@ export function ComplaintActions({ orderId, orderItemId, receivedAt }: Complaint
           "
         >
           <AlertTriangle className="h-3 w-3" />
-          Inadequate Quality
+          Report an Issue
         </Button>
       )}
 

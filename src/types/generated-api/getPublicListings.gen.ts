@@ -36,7 +36,7 @@ export type GetPublicListingsData = {
     status?: 'APPROVED' | 'RESERVED';
     subcategoryValue?: string;
     /**
-     * When set to price, sorts by the buyer total including the buyer protection fee.
+     * When set to price, sorts by the buyer total including the platform fee.
      */
     sortBy?: 'createdAt' | 'price';
   };

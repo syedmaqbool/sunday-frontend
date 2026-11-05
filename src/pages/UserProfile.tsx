@@ -660,7 +660,7 @@ function OrderCard({ order }: { order: Order }) {
               <div className="space-y-2">
                 {items.map(item => (
                   <div key={item.id} className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-start gap-3">
                       <img
                         src={item.imageUrl || '/placeholder.svg'}
                         alt={item.title}
@@ -716,19 +716,6 @@ function OrderCard({ order }: { order: Order }) {
                           </div>
                         )}
 
-                        {/* Buyer actions */}
-                        {item.status === 'SHIPPED' && (
-                          <BuyerReceiptActions
-                            orderId={order.id}
-                            orderItemId={item.id}
-                            onChanged={() =>
-                              queryClient.invalidateQueries({
-                                queryKey: myOrdersQueryKey.all(),
-                              })
-                            }
-                          />
-                        )}
-
                         {/* Complaint + Review after delivered */}
                         {item.status === 'DELIVERED' && (
                           <ComplaintActions
@@ -747,9 +734,22 @@ function OrderCard({ order }: { order: Order }) {
                           />
                         )}
                       </div>
-                      <p className="whitespace-nowrap text-sm font-semibold">
-                        Rs {(Number(item.price) * item.quantity).toLocaleString()}
-                      </p>
+                      <div className="ml-auto flex flex-shrink-0 flex-col items-end gap-2">
+                        <p className="whitespace-nowrap text-sm font-semibold">
+                          Rs {(Number(item.price) * item.quantity).toLocaleString()}
+                        </p>
+                        {item.status === 'SHIPPED' && (
+                          <BuyerReceiptActions
+                            orderId={order.id}
+                            orderItemId={item.id}
+                            onChanged={() =>
+                              queryClient.invalidateQueries({
+                                queryKey: myOrdersQueryKey.all(),
+                              })
+                            }
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1219,18 +1219,16 @@ function BuyerReceiptActions({
   };
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      <Button
-        onClick={markReceived}
-        disabled={updateStatus.isPending}
-        size="sm"
-        variant="outline"
-        className="h-7 gap-1 text-xs"
-      >
-        <CheckCircle2 className="h-3 w-3" />
-        Mark as received
-      </Button>
-    </div>
+    <Button
+      onClick={markReceived}
+      disabled={updateStatus.isPending}
+      size="sm"
+      variant="outline"
+      className="gap-1.5"
+    >
+      <CheckCircle2 className="h-4 w-4" />
+      Mark as received
+    </Button>
   );
 }
 

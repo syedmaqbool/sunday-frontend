@@ -499,7 +499,7 @@ describe('buyer quality complaint window', () => {
     const receivedAt = new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString();
     await openBuyerOrderDetails({ receivedAt });
 
-    expect(await screen.findByRole('button', { name: 'Inadequate Quality' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Report an Issue' })).toBeInTheDocument();
   });
 
   it('hides the quality complaint action at exactly twelve hours after receipt', async () => {
@@ -507,13 +507,13 @@ describe('buyer quality complaint window', () => {
     vi.spyOn(Date, 'now').mockReturnValue(Date.parse(receivedAt) + 12 * 60 * 60 * 1000);
     await openBuyerOrderDetails({ receivedAt });
 
-    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report an Issue' })).not.toBeInTheDocument();
   });
 
   it('hides the quality complaint action when receipt time is missing', async () => {
     await openBuyerOrderDetails({ receivedAt: null });
 
-    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report an Issue' })).not.toBeInTheDocument();
   });
 
   it('keeps existing complaint details visible after the quality window expires', async () => {
@@ -521,25 +521,25 @@ describe('buyer quality complaint window', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'View complaint details' }));
 
     expect(await screen.findByText('Not as described')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report an Issue' })).not.toBeInTheDocument();
   });
 
   it('keeps the quality complaint action unavailable while the item is shipped', async () => {
     await openBuyerOrderDetails({ receivedAt: new Date().toISOString(), status: 'SHIPPED' });
 
-    expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report an Issue' })).not.toBeInTheDocument();
   });
 
   it('keeps an open complaint form and submits it after the receipt window expires', async () => {
     const receivedAt = new Date(Date.now() - (12 * 60 * 60 * 1000 - 1500)).toISOString();
     await openBuyerOrderDetails({ receivedAt });
-    fireEvent.click(await screen.findByRole('button', { name: 'Inadequate Quality' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Report an Issue' }));
 
     const reason = screen.getByRole('textbox', { name: "What's wrong?" });
     fireEvent.change(reason, { target: { value: 'The item arrived damaged.' } });
 
     await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Inadequate Quality' })).not.toBeInTheDocument(),
+      expect(screen.queryByRole('button', { name: 'Report an Issue' })).not.toBeInTheDocument(),
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();

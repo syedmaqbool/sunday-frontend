@@ -388,7 +388,7 @@ function Listings() {
                           <p className="mt-1 text-sm font-bold text-card-foreground">
                             Rs {l.buyerTotalPrice.toLocaleString()}
                           </p>
-                          <p className="text-xs text-muted-foreground">incl. Buyer Protection</p>
+                          <p className="text-xs text-muted-foreground">incl. Platform Fee</p>
                           <p className="text-xs text-muted-foreground">
                             Size {l.size} · {formatEnumLabel(l.condition)}
                           </p>

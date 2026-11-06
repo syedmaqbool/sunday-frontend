@@ -20,6 +20,7 @@ import type {
   GetAdminPayoutSellersResponses,
   GetAdminSellerPayableResponses,
   RecordAdminSellerPaymentData,
+  RecordAdminSellerPaymentErrors,
   RecordAdminSellerPaymentResponses,
   RecordAdminSellerPayoutCyclePaymentData,
   RecordAdminSellerPayoutCyclePaymentResponses,
@@ -29,6 +30,9 @@ export type PayoutRun = ApiResponseItem<GetAdminPayoutRunsResponses>;
 export type PayoutRunItem = ApiResponseItem<GetAdminPayoutRunItemsResponses>;
 export type SellerPayout = ApiResponseItem<GetAdminPayoutsResponses>;
 export type SellerPayoutSummaryResponse = ApiSuccessResponse<GetAdminPayoutSellersResponses>;
+export type SellerPayoutReviewReason = NonNullable<
+  ApiResponseItem<GetAdminPayoutSellersResponses>['reviewReason']
+>;
 export type SellerPayablePreviewResponse = ApiSuccessResponse<GetAdminSellerPayableResponses>;
 export type EligibleSellerPayoutItem = ApiResponseItem<GetAdminEligibleSellerPayoutItemsResponses>;
 export type EligibleSellerPayoutItemsResponse =
@@ -42,6 +46,7 @@ export type RecordSellerPayoutCyclePaymentResponse =
 export type RecordAdminSellerPaymentPayload = ApiRequestBody<RecordAdminSellerPaymentData>;
 export type RecordAdminSellerPaymentResponse =
   ApiSuccessResponse<RecordAdminSellerPaymentResponses>;
+export type RecordAdminSellerPaymentReviewError = RecordAdminSellerPaymentErrors[422];
 export type PayoutRunListParams = Partial<ApiRequestQuery<GetAdminPayoutRunsData>>;
 export type EligibleSellerPayoutItemsParams =
   ApiRequestQuery<GetAdminEligibleSellerPayoutItemsData>;

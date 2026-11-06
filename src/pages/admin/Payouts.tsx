@@ -1,4 +1,10 @@
-import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
+import type {
+  PayoutRun,
+  PayoutRunItem,
+  RecordAdminSellerPaymentReviewError,
+  SellerPayout,
+  SellerPayoutReviewReason,
+} from '@/types/payout.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -73,6 +79,12 @@ const recordSellerPaymentSchema = z.object({
 
 type RecordSellerPaymentForm = z.infer<typeof recordSellerPaymentSchema>;
 
+const sellerPayoutReviewReasonLabels: Record<SellerPayoutReviewReason, string> = {
+  INCOMPLETE_ACCOUNTING_ADJUSTMENT: 'Incomplete accounting adjustment',
+  INCOMPLETE_PAYABLE_CALCULATION: 'Incomplete payable calculation',
+  UNALLOCATED_PAID_AMOUNT: 'Unallocated paid amount',
+};
+
 function fmt(n: number) {
   return `Rs ${(Math.round(n * 100) / 100).toLocaleString('en-PK', {
     maximumFractionDigits: 2,
@@ -123,6 +135,8 @@ function Payouts() {
   const [recordPayoutSellerId, setRecordPayoutSellerId] = useState<string | null>(null);
   const [recordPayoutIdempotencyKey, setRecordPayoutIdempotencyKey] = useState<string | null>(null);
   const [recordPayoutError, setRecordPayoutError] = useState<string | null>(null);
+  const [recordPayoutReviewReason, setRecordPayoutReviewReason] =
+    useState<SellerPayoutReviewReason | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -250,6 +264,7 @@ function Payouts() {
     setRecordPayoutSellerId(sellerId);
     setRecordPayoutIdempotencyKey(crypto.randomUUID());
     setRecordPayoutError(null);
+    setRecordPayoutReviewReason(null);
     recordSellerPaymentForm.reset({ notes: '', reference: '' });
   };
 
@@ -259,6 +274,7 @@ function Payouts() {
     setRecordPayoutSellerId(null);
     setRecordPayoutIdempotencyKey(null);
     setRecordPayoutError(null);
+    setRecordPayoutReviewReason(null);
     recordSellerPaymentForm.reset({ notes: '', reference: '' });
   };
 
@@ -267,6 +283,8 @@ function Payouts() {
       !recordPayoutSellerId ||
       !sellerPayablePreview ||
       sellerPayablePreview.total === null ||
+      recordPayoutReviewReason ||
+      sellerPayablePreview.payableStatus === 'REVIEW_REQUIRED' ||
       sellerPayablePreview.bankDetailsMissing ||
       !recordPayoutIdempotencyKey
     ) {
@@ -291,6 +309,25 @@ function Payouts() {
       });
       closeRecordPayout(false);
     } catch (error) {
+      if (error instanceof HTTPError && error.response.status === 422) {
+        let response: RecordAdminSellerPaymentReviewError | undefined;
+        try {
+          response = (await error.response.clone().json()) as RecordAdminSellerPaymentReviewError;
+        } catch {
+          response = undefined;
+        }
+
+        if (response?.code === 'APP_SELLER_PAYOUT_REVIEW_REQUIRED' && response.reviewReason) {
+          const reasonLabel = sellerPayoutReviewReasonLabels[response.reviewReason];
+          setRecordPayoutReviewReason(response.reviewReason);
+          setRecordPayoutError(
+            `Seller requires finance review: ${reasonLabel}. This payout was not recorded.`,
+          );
+          await refetchSellerSummaries();
+          return;
+        }
+      }
+
       if (error instanceof HTTPError) {
         let errorCode: string | undefined;
         let errorMessage: string | undefined;
@@ -894,7 +931,21 @@ function Payouts() {
                       )}
                     {sellerSummaries.map(s => (
                       <TableRow key={s.sellerId}>
-                        <TableCell className="font-medium">{s.sellerFullName}</TableCell>
+                        <TableCell className="font-medium">
+                          <span>{s.sellerFullName}</span>
+                          {s.payableStatus === 'REVIEW_REQUIRED' && (
+                            <Badge
+                              aria-label={`Finance review required: ${s.reviewReason ? sellerPayoutReviewReasonLabels[s.reviewReason] : 'reason unavailable'}`}
+                              className="ml-2"
+                              id={`seller-review-${s.sellerId}`}
+                              variant="destructive"
+                            >
+                              {s.reviewReason
+                                ? sellerPayoutReviewReasonLabels[s.reviewReason]
+                                : 'Finance review required'}
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">{fmt(Number(s.netSales))}</TableCell>
                         <TableCell className="text-right font-medium text-destructive">
                           {s.refundedCount === 0 ? (
@@ -925,10 +976,15 @@ function Payouts() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
-                            disabled={s.payableStatus === 'NOTHING_DUE'}
+                            aria-describedby={
+                              s.payableStatus === 'REVIEW_REQUIRED'
+                                ? `seller-review-${s.sellerId}`
+                                : undefined
+                            }
+                            disabled={s.payableStatus !== 'PAYABLE'}
                             onClick={() => openRecordPayout(s.sellerId)}
                             size="sm"
-                            variant={s.payableStatus === 'NOTHING_DUE' ? 'outline' : 'default'}
+                            variant={s.payableStatus === 'PAYABLE' ? 'default' : 'outline'}
                           >
                             Record payout
                           </Button>
@@ -1297,6 +1353,18 @@ function Payouts() {
                 </div>
               </div>
 
+              {sellerPayablePreview.payableStatus === 'REVIEW_REQUIRED' && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Finance review is required:{' '}
+                    {sellerPayablePreview.reviewReason
+                      ? sellerPayoutReviewReasonLabels[sellerPayablePreview.reviewReason]
+                      : 'the reason is unavailable'}
+                    .
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {sellerPayablePreview.bankDetailsDiffer && (
                 <Alert>
                   <AlertDescription>
@@ -1420,6 +1488,8 @@ function Payouts() {
                 <Button
                   disabled={
                     sellerPayablePreview.total === null ||
+                    Boolean(recordPayoutReviewReason) ||
+                    sellerPayablePreview.payableStatus === 'REVIEW_REQUIRED' ||
                     sellerPayablePreview.bankDetailsMissing ||
                     recordAdminSellerPaymentMutation.isPending
                   }

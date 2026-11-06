@@ -405,6 +405,128 @@ describe('admin payout eligibility page', () => {
     expect(notesInput).toHaveValue('Transfer made');
     expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeDisabled();
   });
+  it('explains each finance review reason and disables payout for reviewed sellers', async () => {
+    payoutService.listAdminPayoutSellers.mockResolvedValue({
+      ...sellerSummaryResponse,
+      data: [
+        {
+          ...sellerSummaryResponse.data[0],
+          sellerId: 'seller-unallocated-payment',
+          sellerFullName: 'Unallocated Seller',
+          balanceDue: null,
+          payableStatus: 'REVIEW_REQUIRED' as const,
+          reviewReason: 'UNALLOCATED_PAID_AMOUNT' as const,
+        },
+        {
+          ...sellerSummaryResponse.data[0],
+          sellerId: 'seller-incomplete-adjustment',
+          sellerFullName: 'Adjustment Seller',
+          balanceDue: 1000,
+          payableStatus: 'REVIEW_REQUIRED' as const,
+          reviewReason: 'INCOMPLETE_ACCOUNTING_ADJUSTMENT' as const,
+        },
+        {
+          ...sellerSummaryResponse.data[0],
+          sellerId: 'seller-incomplete-calculation',
+          sellerFullName: 'Calculation Seller',
+          balanceDue: null,
+          payableStatus: 'REVIEW_REQUIRED' as const,
+          reviewReason: 'INCOMPLETE_PAYABLE_CALCULATION' as const,
+        },
+        {
+          ...sellerSummaryResponse.data[0],
+          sellerId: 'seller-payable',
+          sellerFullName: 'Payable Seller',
+        },
+      ],
+      pagination: { ...sellerSummaryResponse.pagination, total: 4 },
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+
+    const reviewedSellers = [
+      ['Unallocated Seller', 'Unallocated paid amount'],
+      ['Adjustment Seller', 'Incomplete accounting adjustment'],
+      ['Calculation Seller', 'Incomplete payable calculation'],
+    ] as const;
+    for (const [sellerName, reasonLabel] of reviewedSellers) {
+      const row = screen.getByRole('row', { name: new RegExp(sellerName) });
+      expect(within(row).getByText(reasonLabel)).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: 'Record payout' })).toBeDisabled();
+    }
+
+    const unallocatedRow = screen.getByRole('row', { name: /Unallocated Seller/ });
+    expect(within(unallocatedRow).getAllByRole('cell')[4]).toHaveTextContent('—');
+    const payableRow = screen.getByRole('row', { name: /Payable Seller/ });
+    expect(within(payableRow).getByRole('button', { name: 'Record payout' })).toBeEnabled();
+  });
+
+  it('shows a late finance review refusal and refreshes seller payment states', async () => {
+    const reviewRequiredError = new HTTPError(
+      new Response(
+        JSON.stringify({
+          statusCode: 422,
+          code: 'APP_SELLER_PAYOUT_REVIEW_REQUIRED',
+          message: 'Seller payment requires finance review.',
+          reviewReason: 'INCOMPLETE_PAYABLE_CALCULATION',
+        }),
+        { headers: { 'Content-Type': 'application/json' }, status: 422 },
+      ),
+      new Request('http://localhost/api/v1/admin/payouts/sellers/seller-1/payment'),
+      {} as never,
+    );
+    let sellerSummaryRequests = 0;
+    payoutService.listAdminPayoutSellers.mockImplementation(async () => {
+      sellerSummaryRequests += 1;
+      if (sellerSummaryRequests === 1) return sellerSummaryResponse;
+
+      return {
+        ...sellerSummaryResponse,
+        data: [
+          {
+            ...sellerSummaryResponse.data[0],
+            balanceDue: null,
+            payableStatus: 'REVIEW_REQUIRED' as const,
+            reviewReason: 'INCOMPLETE_PAYABLE_CALCULATION' as const,
+          },
+          {
+            ...sellerSummaryResponse.data[1],
+            balanceDue: 2500,
+            payableStatus: 'PAYABLE' as const,
+            reviewReason: null,
+          },
+        ],
+      };
+    });
+    payoutService.recordAdminSellerPayment.mockRejectedValue(reviewRequiredError);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(await within(dialog).findByLabelText('Reference'), {
+      target: { value: 'BANK-123' },
+    });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+
+    expect(
+      await within(dialog).findByText(/requires finance review: incomplete payable calculation/i),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeDisabled();
+    await waitFor(() => expect(payoutService.listAdminPayoutSellers).toHaveBeenCalledTimes(2));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    const reviewedRow = await screen.findByRole('row', { name: /Seller One/ });
+    expect(within(reviewedRow).getByText('Incomplete payable calculation')).toBeInTheDocument();
+    expect(within(reviewedRow).getByRole('button', { name: 'Record payout' })).toBeDisabled();
+    const otherSellerRow = screen.getByRole('row', { name: /Seller Two/ });
+    expect(within(otherSellerRow).getByRole('button', { name: 'Record payout' })).toBeEnabled();
+  });
+
   it('requires a reference and records the previewed amount with an idempotency key', async () => {
     payoutService.recordAdminSellerPayment.mockResolvedValue(sellerPaymentResponse);
     renderPage();

@@ -468,6 +468,13 @@ export type {
   GetAdminBuyerRefundReportResponses,
 } from './getAdminBuyerRefundReport.gen';
 export type {
+  GetAdminBuyerRefundsData,
+  GetAdminBuyerRefundsError,
+  GetAdminBuyerRefundsErrors,
+  GetAdminBuyerRefundsResponse,
+  GetAdminBuyerRefundsResponses,
+} from './getAdminBuyerRefunds.gen';
+export type {
   GetAdminCategoriesData,
   GetAdminCategoriesError,
   GetAdminCategoriesErrors,
@@ -685,6 +692,20 @@ export type {
   GetAdminPayoutsResponses,
 } from './getAdminPayouts.gen';
 export type {
+  GetAdminPayoutSellersData,
+  GetAdminPayoutSellersError,
+  GetAdminPayoutSellersErrors,
+  GetAdminPayoutSellersResponse,
+  GetAdminPayoutSellersResponses,
+} from './getAdminPayoutSellers.gen';
+export type {
+  GetAdminPayoutTransactionsData,
+  GetAdminPayoutTransactionsError,
+  GetAdminPayoutTransactionsErrors,
+  GetAdminPayoutTransactionsResponse,
+  GetAdminPayoutTransactionsResponses,
+} from './getAdminPayoutTransactions.gen';
+export type {
   GetAdminPermissionsData,
   GetAdminPermissionsError,
   GetAdminPermissionsErrors,
@@ -789,6 +810,27 @@ export type {
   GetAdminSellerCouponsResponse,
   GetAdminSellerCouponsResponses,
 } from './getAdminSellerCoupons.gen';
+export type {
+  GetAdminSellerPayableData,
+  GetAdminSellerPayableError,
+  GetAdminSellerPayableErrors,
+  GetAdminSellerPayableResponse,
+  GetAdminSellerPayableResponses,
+} from './getAdminSellerPayable.gen';
+export type {
+  GetAdminSellerPaymentData,
+  GetAdminSellerPaymentError,
+  GetAdminSellerPaymentErrors,
+  GetAdminSellerPaymentResponse,
+  GetAdminSellerPaymentResponses,
+} from './getAdminSellerPayment.gen';
+export type {
+  GetAdminSellerPaymentsData,
+  GetAdminSellerPaymentsError,
+  GetAdminSellerPaymentsErrors,
+  GetAdminSellerPaymentsResponse,
+  GetAdminSellerPaymentsResponses,
+} from './getAdminSellerPayments.gen';
 export type {
   GetAdminSettingsData,
   GetAdminSettingsError,
@@ -1355,6 +1397,13 @@ export type {
   ReconnectAdminQuickBooksConnectionResponse,
   ReconnectAdminQuickBooksConnectionResponses,
 } from './reconnectAdminQuickBooksConnection.gen';
+export type {
+  RecordAdminSellerPaymentData,
+  RecordAdminSellerPaymentError,
+  RecordAdminSellerPaymentErrors,
+  RecordAdminSellerPaymentResponse,
+  RecordAdminSellerPaymentResponses,
+} from './recordAdminSellerPayment.gen';
 export type {
   RecordAdminSellerPayoutCyclePaymentData,
   RecordAdminSellerPayoutCyclePaymentError,

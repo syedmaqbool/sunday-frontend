@@ -24,6 +24,7 @@ import {
   listRefundPayouts,
   listAdminPayoutSellers,
   listAdminSellerPayments,
+  getAdminSellerPayment,
   listSellerPayouts,
   recordSellerPayoutCyclePayment,
   recordAdminSellerPayment,
@@ -58,6 +59,8 @@ export const payoutQueryKey = {
   sellerPayments: () => [...payoutQueryKey.all(), 'seller-payments'] as const,
   sellerPaymentList: (parameters: SellerPaymentListParams) =>
     [...payoutQueryKey.sellerPayments(), 'list', parameters] as const,
+  sellerPaymentDetail: (paymentId: string) =>
+    [...payoutQueryKey.sellerPayments(), 'detail', paymentId] as const,
 };
 
 export function getAdminSellerPayableOptions(sellerId: string) {
@@ -96,6 +99,14 @@ export function getAdminSellerPaymentsOptions(parameters: SellerPaymentListParam
   return queryOptions({
     queryFn: () => listAdminSellerPayments(parameters),
     queryKey: payoutQueryKey.sellerPaymentList(parameters),
+  });
+}
+
+export function getAdminSellerPaymentOptions(paymentId: string) {
+  return queryOptions({
+    enabled: Boolean(paymentId),
+    queryFn: () => getAdminSellerPayment(paymentId),
+    queryKey: payoutQueryKey.sellerPaymentDetail(paymentId),
   });
 }
 

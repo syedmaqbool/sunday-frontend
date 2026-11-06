@@ -12,6 +12,7 @@ const payoutService = vi.hoisted(() => ({
   listEligibleSellerPayoutItems: vi.fn(),
   listAdminBuyerRefunds: vi.fn(),
   listAdminPayoutSellers: vi.fn(),
+  getAdminSellerPayment: vi.fn(),
   listAdminSellerPayments: vi.fn(),
   getAdminSellerPayable: vi.fn(),
   listPayoutRunItems: vi.fn(),
@@ -136,6 +137,56 @@ const sellerPaymentsResponse = {
     },
   ],
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
+};
+
+const sellerPaymentDetailsResponse = {
+  data: {
+    id: 'payment-newest',
+    sellerId: 'seller-1',
+    sellerFullName: 'Seller One',
+    amount: 9700,
+    baseAmount: 7200,
+    sellerIncentiveBonusAmount: 2500,
+    method: 'bank_transfer',
+    periodStart: '2026-10-01',
+    periodEnd: '2026-10-31',
+    reference: 'BANK-7200',
+    notes: 'October transfer',
+    paidAt: '2026-11-01T10:00:00.000Z',
+    source: 'LEDGER' as const,
+    itemsAvailable: true,
+    items: [
+      {
+        orderId: '12345678-order',
+        amount: 7200,
+        buyerFullName: 'Buyer One',
+        date: '2026-10-12T10:00:00.000Z',
+        payoutComponent: 'BASE' as const,
+        refunded: false,
+        title: 'Leather jacket',
+      },
+      {
+        orderId: '87654321-order',
+        amount: 2500,
+        buyerFullName: 'Buyer Two',
+        date: '2026-10-15T10:00:00.000Z',
+        payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
+        refunded: false,
+        title: 'Vintage bag',
+      },
+      {
+        orderId: '55555555-order',
+        amount: 1500,
+        buyerFullName: 'Buyer Three',
+        date: '2026-10-18T10:00:00.000Z',
+        payoutComponent: 'BASE' as const,
+        refunded: true,
+        title: 'Refunded coat',
+      },
+    ],
+  },
+  message: 'Loaded.',
+  statusCode: 200,
 };
 
 const sellerPayablePreviewResponse = {
@@ -316,6 +367,7 @@ describe('admin payout eligibility page', () => {
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
     payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
+    payoutService.getAdminSellerPayment.mockResolvedValue(sellerPaymentDetailsResponse);
     payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
@@ -1352,6 +1404,98 @@ describe('admin payout eligibility page', () => {
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
     expect(await screen.findByText('No buyer refunds.')).toBeInTheDocument();
+  });
+
+  it('opens accessible payout details with the recorded split and settled items', async () => {
+    payoutService.listAdminSellerPayments.mockResolvedValue(sellerPaymentsResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+    const paymentRow = await screen.findByRole('row', { name: /Seller One/ });
+
+    expect(paymentRow).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(paymentRow, { key: 'Enter' });
+
+    const dialog = await screen.findByRole('dialog', { name: 'Payout details' });
+    expect(
+      await within(dialog).findByText(/Seller One · Rs 9,700.00 · Nov 1, 2026/),
+    ).toBeInTheDocument();
+    expect(payoutService.getAdminSellerPayment).toHaveBeenCalledWith('payment-newest');
+    expect(within(dialog).getByText('Bank Transfer')).toBeInTheDocument();
+    expect(within(dialog).getByText('2026-10-01 → 2026-10-31')).toBeInTheDocument();
+    expect(within(dialog).getByText('BANK-7200')).toBeInTheDocument();
+    expect(within(dialog).getByText('October transfer')).toBeInTheDocument();
+    expect(within(dialog).getByText('Base payout')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('Rs 7,200.00')).toHaveLength(2);
+    expect(within(dialog).getAllByText('Seller incentive bonus')).toHaveLength(2);
+    expect(within(dialog).getAllByText('Rs 2,500.00')).toHaveLength(2);
+    expect(within(dialog).getByText('Leather jacket')).toBeInTheDocument();
+    expect(within(dialog).getByText('Buyer One')).toBeInTheDocument();
+    expect(within(dialog).getByText('Order 12345678')).toBeInTheDocument();
+    expect(within(dialog).getByText('Refunded')).toBeInTheDocument();
+    expect(within(dialog).getByText('Refunded coat').closest('tr')).toHaveClass('bg-destructive/5');
+  });
+
+  it('explains when legacy payments have no item breakdown', async () => {
+    payoutService.listAdminSellerPayments.mockResolvedValue({
+      ...sellerPaymentsResponse,
+      data: [sellerPaymentsResponse.data[1]],
+    });
+    payoutService.getAdminSellerPayment.mockResolvedValue({
+      ...sellerPaymentDetailsResponse,
+      data: {
+        ...sellerPaymentDetailsResponse.data,
+        id: 'payment-legacy',
+        sellerId: 'seller-2',
+        sellerFullName: 'Seller Two',
+        amount: 1800,
+        baseAmount: null,
+        sellerIncentiveBonusAmount: null,
+        method: null,
+        periodStart: null,
+        periodEnd: null,
+        reference: null,
+        notes: null,
+        source: 'LEGACY' as const,
+        itemsAvailable: false,
+        items: [],
+      },
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+    fireEvent.click(await screen.findByRole('row', { name: /Seller Two/ }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Payout details' });
+    expect(
+      await within(dialog).findByText('No item breakdown is available for this payment.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByRole('columnheader', { name: 'Item' })).not.toBeInTheDocument();
+  });
+
+  it('offers retry for payout detail failures and explains when a payment is missing', async () => {
+    const missingPaymentError = new HTTPError(
+      new Response(JSON.stringify({ message: 'Payment not found.' }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 404,
+      }),
+      new Request('http://localhost/api/v1/admin/payouts/payments/payment-newest'),
+      {} as never,
+    );
+    payoutService.listAdminSellerPayments.mockResolvedValue(sellerPaymentsResponse);
+    payoutService.getAdminSellerPayment
+      .mockRejectedValueOnce(new Error('Payout detail request failed'))
+      .mockRejectedValueOnce(missingPaymentError);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+    fireEvent.click(await screen.findByRole('row', { name: /Seller One/ }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Payout details' });
+    expect(await within(dialog).findByText(/Could not load payout details/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Retry' }));
+
+    expect(
+      await within(dialog).findByText('This payment is no longer available.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
   });
 
   it('moves through server pages of payout history', async () => {

@@ -4,6 +4,7 @@ import type {
   RecordAdminSellerPaymentReviewError,
   SellerPayout,
   SellerPayoutReviewReason,
+  SellerPayment,
 } from '@/types/payout.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -59,6 +60,7 @@ import {
   getAdminRefundReportOptions,
   getAdminBuyerRefundsOptions,
   getAdminSellerPayableOptions,
+  getAdminSellerPaymentOptions,
   getAdminSellerPaymentsOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminSellerPayoutsOptions,
@@ -133,6 +135,7 @@ interface PeriodItem {
 function Payouts() {
   const [sellerFilter, setSellerFilter] = useState<string>('all');
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
+  const [selectedSellerPayment, setSelectedSellerPayment] = useState<SellerPayment | null>(null);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
   const [eligiblePage, setEligiblePage] = useState(1);
@@ -176,6 +179,12 @@ function Payouts() {
     isLoading: sellerPaymentsLoading,
     refetch: refetchSellerPayments,
   } = useQuery(getAdminSellerPaymentsOptions(sellerPaymentParameters));
+  const {
+    data: sellerPaymentDetailResponse,
+    error: sellerPaymentDetailError,
+    isLoading: sellerPaymentDetailLoading,
+    refetch: refetchSellerPaymentDetail,
+  } = useQuery(getAdminSellerPaymentOptions(selectedSellerPayment?.id ?? ''));
   const {
     data: sellerSummariesData,
     error: sellerSummariesError,
@@ -289,6 +298,11 @@ function Payouts() {
     [sellerPayoutsData?.data],
   );
   const sellerPayments = sellerPaymentsData?.data ?? [];
+  const sellerPaymentDetail = sellerPaymentDetailResponse?.data;
+  const selectedPaymentDetails = sellerPaymentDetail ?? selectedSellerPayment;
+  const sellerPaymentDetailNotFound =
+    sellerPaymentDetailError instanceof HTTPError &&
+    sellerPaymentDetailError.response.status === 404;
   const sellerFilterSummariesLoading =
     sellerFilterSummariesFirstPageLoading ||
     additionalSellerFilterSummaryQueries.some(query => query.isLoading);
@@ -1260,7 +1274,23 @@ function Payouts() {
                         </TableRow>
                       )}
                     {sellerPayments.map(p => (
-                      <TableRow key={p.id}>
+                      <TableRow
+                        key={p.id}
+                        aria-haspopup="dialog"
+                        aria-label={`View payout details for ${p.sellerFullName}`}
+                        className="
+                          cursor-pointer
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                        "
+                        onClick={() => setSelectedSellerPayment(p)}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setSelectedSellerPayment(p);
+                          }
+                        }}
+                        tabIndex={0}
+                      >
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(p.paidAt), 'MMM d, yyyy')}
                         </TableCell>
@@ -1898,6 +1928,166 @@ function Payouts() {
 
           <DialogFooter>
             <Button onClick={() => setDetailRun(null)} variant="outline">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        onOpenChange={open => {
+          if (!open) setSelectedSellerPayment(null);
+        }}
+        open={Boolean(selectedSellerPayment)}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Payout details</DialogTitle>
+            <DialogDescription>
+              {selectedPaymentDetails
+                ? `${selectedPaymentDetails.sellerFullName} · ${fmt(selectedPaymentDetails.amount)} · ${format(
+                    new Date(selectedPaymentDetails.paidAt),
+                    'MMM d, yyyy',
+                  )}`
+                : 'View the details for this seller payment.'}
+            </DialogDescription>
+          </DialogHeader>
+          {sellerPaymentDetailLoading && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Loading payout details…
+            </p>
+          )}
+          {sellerPaymentDetailError && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {sellerPaymentDetailNotFound
+                  ? 'This payment is no longer available.'
+                  : 'Could not load payout details. Please try again.'}{' '}
+                {!sellerPaymentDetailNotFound && (
+                  <Button
+                    onClick={() => void refetchSellerPaymentDetail()}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Retry
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          {sellerPaymentDetail && (
+            <div className="space-y-4">
+              <div
+                className="
+                  grid grid-cols-2 gap-3 text-sm
+                  md:grid-cols-4
+                "
+              >
+                <Info
+                  label="Method"
+                  value={
+                    sellerPaymentDetail.method ? formatEnumLabel(sellerPaymentDetail.method) : '—'
+                  }
+                />
+                <Info
+                  label="Period"
+                  value={
+                    sellerPaymentDetail.periodStart && sellerPaymentDetail.periodEnd
+                      ? `${sellerPaymentDetail.periodStart} → ${sellerPaymentDetail.periodEnd}`
+                      : 'All time'
+                  }
+                />
+                <Info label="Reference" value={sellerPaymentDetail.reference || '—'} />
+                <Info
+                  label="Sales included"
+                  value={String(
+                    sellerPaymentDetail.items.filter(
+                      item => item.payoutComponent === 'BASE' && !item.refunded,
+                    ).length,
+                  )}
+                />
+              </div>
+              {sellerPaymentDetail.baseAmount !== null && (
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <Info label="Base payout" value={fmt(sellerPaymentDetail.baseAmount)} />
+                  <Info
+                    label="Seller incentive bonus"
+                    value={fmt(sellerPaymentDetail.sellerIncentiveBonusAmount ?? 0)}
+                  />
+                </div>
+              )}
+              {sellerPaymentDetail.notes && (
+                <div className="rounded-md bg-muted/40 p-3 text-sm">
+                  <p className="text-xs font-medium text-muted-foreground">Notes</p>
+                  <p className="mt-0.5 whitespace-pre-wrap">{sellerPaymentDetail.notes}</p>
+                </div>
+              )}
+              {sellerPaymentDetail.itemsAvailable ? (
+                <div className="max-h-[50vh] overflow-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Buyer</TableHead>
+                        <TableHead>Order</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sellerPaymentDetail.items.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                            No settled items.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {sellerPaymentDetail.items.map((item, index) => (
+                        <TableRow
+                          key={`${item.orderId}-${item.payoutComponent}-${index}`}
+                          className={item.refunded ? 'bg-destructive/5' : undefined}
+                        >
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {format(new Date(item.date), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            <div className="flex items-center gap-1.5">
+                              <span>{item.title}</span>
+                              {item.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
+                                <PayoutComponentCaption payoutComponent={item.payoutComponent} />
+                              )}
+                              {item.refunded && (
+                                <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                  Refunded
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{item.buyerFullName}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            Order {item.orderId.slice(0, 8)}
+                          </TableCell>
+                          <TableCell
+                            className={`
+                              text-right font-medium
+                              ${item.refunded ? 'text-muted-foreground line-through' : ''}
+                            `}
+                          >
+                            {fmt(item.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="rounded-md bg-muted/40 p-4 text-sm text-muted-foreground">
+                  No item breakdown is available for this payment.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setSelectedSellerPayment(null)} variant="outline">
               Close
             </Button>
           </DialogFooter>

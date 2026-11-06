@@ -20,6 +20,8 @@ import type {
   GetAdminPayoutsResponses,
   GetAdminPayoutSellersData,
   GetAdminPayoutSellersResponses,
+  GetAdminPayoutTransactionsData,
+  GetAdminPayoutTransactionsResponses,
   GetAdminSellerPaymentsData,
   GetAdminSellerPaymentsResponses,
   GetAdminSellerPaymentResponses,
@@ -41,6 +43,8 @@ export type SellerPayoutReviewReason = NonNullable<
 >;
 export type SellerPayment = ApiResponseItem<GetAdminSellerPaymentsResponses>;
 export type SellerPaymentDetailResponse = ApiSuccessResponse<GetAdminSellerPaymentResponses>;
+export type AdminPayoutTransaction = ApiResponseItem<GetAdminPayoutTransactionsResponses>;
+export type AdminPayoutTransactionListParams = ApiRequestQuery<GetAdminPayoutTransactionsData>;
 export type SellerPaymentListParams = ApiRequestQuery<GetAdminSellerPaymentsData>;
 export type SellerPayablePreviewResponse = ApiSuccessResponse<GetAdminSellerPayableResponses>;
 export type EligibleSellerPayoutItem = ApiResponseItem<GetAdminEligibleSellerPayoutItemsResponses>;

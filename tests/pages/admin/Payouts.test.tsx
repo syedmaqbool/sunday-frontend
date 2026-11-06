@@ -14,6 +14,7 @@ const payoutService = vi.hoisted(() => ({
   listAdminPayoutSellers: vi.fn(),
   getAdminSellerPayment: vi.fn(),
   listAdminSellerPayments: vi.fn(),
+  listAdminPayoutTransactions: vi.fn(),
   getAdminSellerPayable: vi.fn(),
   listPayoutRunItems: vi.fn(),
   listPayoutRuns: vi.fn(),
@@ -230,6 +231,61 @@ const sellerPaymentResponse = {
   statusCode: 201,
 };
 
+const transactionResponse = {
+  ...emptyPage,
+  data: [
+    {
+      id: 'sale-1:BASE',
+      sellerId: 'seller-1',
+      description: 'Vintage jacket',
+      amount: 8500,
+      date: '2026-09-18T10:30:00.000Z',
+      payoutComponent: 'BASE' as const,
+      reference: 'order-12345678',
+      refunded: false,
+      sellerFullName: 'Seller One',
+      type: 'SALE' as const,
+    },
+    {
+      id: 'sale-1:SELLER_INCENTIVE_BONUS',
+      sellerId: 'seller-1',
+      description: 'Vintage jacket',
+      amount: 1500,
+      date: '2026-09-18T10:30:00.000Z',
+      payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
+      reference: 'order-12345678',
+      refunded: false,
+      sellerFullName: 'Seller One',
+      type: 'SALE' as const,
+    },
+    {
+      id: 'sale-2:REFUNDED',
+      sellerId: 'seller-2',
+      description: 'Leather bag',
+      amount: 0,
+      date: '2026-09-17T10:30:00.000Z',
+      payoutComponent: null,
+      reference: 'order-87654321',
+      refunded: true,
+      sellerFullName: 'Seller Two',
+      type: 'SALE' as const,
+    },
+    {
+      id: 'payout:ledger:payment-1',
+      sellerId: 'seller-1',
+      description: 'Payout · bank transfer',
+      amount: -3000,
+      date: '2026-09-16T10:30:00.000Z',
+      payoutComponent: null,
+      reference: 'PAY-123',
+      refunded: false,
+      sellerFullName: 'Seller One',
+      type: 'PAYOUT' as const,
+    },
+  ],
+  pagination: { ...emptyPage.pagination, lastPage: 1, total: 4 },
+};
+
 const eligibleResponse = createEligibleResponse({
   aggregates: { totalAmount: 2450 },
   data: [
@@ -369,6 +425,7 @@ describe('admin payout eligibility page', () => {
     payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
     payoutService.getAdminSellerPayment.mockResolvedValue(sellerPaymentDetailsResponse);
     payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
+    payoutService.listAdminPayoutTransactions.mockResolvedValue(emptyPage);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
       data: { id: 'run-1' },
@@ -895,6 +952,180 @@ describe('admin payout eligibility page', () => {
     expect(screen.getByText('Balance due', { selector: 'p' }).parentElement).toHaveTextContent(
       'Rs 12,500.00',
     );
+  });
+
+  it('shows sales and payouts with refunded and incentive details in Transactions', async () => {
+    payoutService.listAdminPayoutTransactions.mockResolvedValue(transactionResponse);
+    renderPage();
+
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+
+    expect(await screen.findByRole('columnheader', { name: 'Date' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Type' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Seller' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Description' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Reference' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+
+    expect(screen.getAllByText('Sale')).toHaveLength(3);
+    expect(screen.getByText('Payout')).toBeInTheDocument();
+    expect(screen.getByText('Seller incentive bonus')).toBeInTheDocument();
+    expect(screen.getByText('+Rs 8,500.00')).toBeInTheDocument();
+    expect(screen.getByText('-Rs 3,000.00')).toHaveClass('text-destructive');
+
+    const refundedRow = screen.getByRole('row', { name: /Leather bag/ });
+    expect(within(refundedRow).getByText('Refunded')).toBeInTheDocument();
+    expect(refundedRow).toHaveClass('bg-destructive/5');
+    expect(within(refundedRow).getByText('+Rs 0.00')).toHaveClass('line-through');
+  });
+
+  it('filters Transactions through the server by seller', async () => {
+    payoutService.listAdminPayoutTransactions.mockImplementation(async parameters => ({
+      ...transactionResponse,
+      data: parameters.sellerId
+        ? transactionResponse.data.filter(item => item.sellerId === parameters.sellerId)
+        : transactionResponse.data,
+    }));
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+    expect(await screen.findByText('Leather bag')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Seller Two' }));
+
+    expect(await screen.findByText('Leather bag')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(payoutService.listAdminPayoutTransactions).toHaveBeenCalledWith({
+        page: 1,
+        sellerId: 'seller-2',
+        size: 20,
+      }),
+    );
+    expect(screen.queryByText('Vintage jacket')).not.toBeInTheDocument();
+  });
+
+  it('offers sellers beyond the current summary page in the Transactions filter', async () => {
+    const visibleSellerSummaries = Array.from({ length: 20 }, (_, index) => ({
+      ...sellerSummaryResponse.data[0],
+      sellerId: `page-seller-${index + 1}`,
+      sellerFullName: `Page Seller ${index + 1}`,
+    }));
+    const laterSeller = {
+      ...sellerSummaryResponse.data[1],
+      sellerId: 'seller-21',
+      sellerFullName: 'Seller Twenty One',
+    };
+    payoutService.listAdminPayoutSellers.mockImplementation(async ({ size }) =>
+      size === 100
+        ? {
+            ...sellerSummaryResponse,
+            data: [...visibleSellerSummaries, laterSeller],
+            pagination: { ...sellerSummaryResponse.pagination, lastPage: 1, total: 21 },
+          }
+        : {
+            ...sellerSummaryResponse,
+            data: visibleSellerSummaries,
+            pagination: { ...sellerSummaryResponse.pagination, lastPage: 2, total: 21 },
+          },
+    );
+    payoutService.listAdminPayoutTransactions.mockImplementation(async ({ sellerId }) => ({
+      ...transactionResponse,
+      data: sellerId ? [] : transactionResponse.data,
+    }));
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Seller Twenty One' }));
+
+    await waitFor(() =>
+      expect(payoutService.listAdminPayoutTransactions).toHaveBeenCalledWith({
+        page: 1,
+        sellerId: 'seller-21',
+        size: 20,
+      }),
+    );
+  });
+
+  it('moves through server pages of transactions', async () => {
+    payoutService.listAdminPayoutTransactions.mockImplementation(async ({ page }) =>
+      page === 1
+        ? {
+            ...transactionResponse,
+            data: [transactionResponse.data[0]],
+            pagination: {
+              ...transactionResponse.pagination,
+              currentPage: 1,
+              lastPage: 2,
+              nextPage: 2,
+              total: 2,
+            },
+          }
+        : {
+            ...transactionResponse,
+            data: [transactionResponse.data[2]],
+            pagination: {
+              ...transactionResponse.pagination,
+              currentPage: 2,
+              lastPage: 2,
+              nextPage: null,
+              prevPage: 1,
+              total: 2,
+            },
+          },
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+    expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    await waitFor(() =>
+      expect(payoutService.listAdminPayoutTransactions).toHaveBeenCalledWith({
+        page: 2,
+        size: 20,
+      }),
+    );
+    expect(await screen.findByText('Page 2 of 2 · 2 transactions')).toBeInTheDocument();
+    expect(await screen.findByText('Leather bag')).toBeInTheDocument();
+    expect(screen.queryByText('Vintage jacket')).not.toBeInTheDocument();
+  });
+
+  it('shows loading while Transactions are being fetched', async () => {
+    let resolveTransactions!: (response: typeof transactionResponse) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.listAdminPayoutTransactions.mockReturnValue(
+      new Promise(resolve => {
+        resolveTransactions = resolve;
+      }),
+    );
+    renderPage();
+
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+    expect(await screen.findByText('Loading transactions…')).toBeInTheDocument();
+
+    resolveTransactions(transactionResponse);
+    expect((await screen.findAllByText('Vintage jacket')).length).toBe(2);
+  });
+
+  it('shows no transactions when the server returns an empty page', async () => {
+    payoutService.listAdminPayoutTransactions.mockResolvedValue(emptyPage);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+
+    expect(await screen.findByText('No transactions.')).toBeInTheDocument();
+  });
+
+  it('shows a retryable error when Transactions cannot be loaded', async () => {
+    payoutService.listAdminPayoutTransactions
+      .mockRejectedValueOnce(new Error('Transactions unavailable'))
+      .mockResolvedValueOnce(transactionResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+
+    expect(await screen.findByText(/could not load transactions/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect((await screen.findAllByText('Vintage jacket')).length).toBe(2);
   });
 
   it('lists refunded complaints from the refund report, newest first', async () => {

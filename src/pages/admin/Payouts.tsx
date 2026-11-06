@@ -1,4 +1,5 @@
 import type {
+  AdminPayoutTransaction,
   PayoutRun,
   PayoutRunItem,
   RecordAdminSellerPaymentReviewError,
@@ -63,6 +64,7 @@ import {
   getAdminSellerPaymentOptions,
   getAdminSellerPaymentsOptions,
   getAdminPayoutSellerSummariesOptions,
+  getAdminPayoutTransactionsOptions,
   getAdminSellerPayoutsOptions,
   getEligibleSellerPayoutItemsOptions,
   getPayoutRunItemsOptions,
@@ -78,6 +80,7 @@ const SELLER_SUMMARY_PAGE_SIZE = 20;
 const BUYER_REFUNDS_PAGE_SIZE = 20;
 const SELLER_FILTER_PAGE_SIZE = 100;
 const SELLER_PAYMENT_PAGE_SIZE = 20;
+const PAYOUT_TRANSACTION_PAGE_SIZE = 20;
 
 const recordSellerPaymentSchema = z.object({
   notes: z.string(),
@@ -134,6 +137,8 @@ interface PeriodItem {
 
 function Payouts() {
   const [sellerFilter, setSellerFilter] = useState<string>('all');
+  const [transactionSellerFilter, setTransactionSellerFilter] = useState<string>('all');
+  const [transactionPage, setTransactionPage] = useState(1);
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
   const [selectedSellerPayment, setSelectedSellerPayment] = useState<SellerPayment | null>(null);
   const [rangeStart, setRangeStart] = useState('');
@@ -196,6 +201,21 @@ function Payouts() {
       page: sellerSummaryPage,
       size: SELLER_SUMMARY_PAGE_SIZE,
     }),
+    placeholderData: previousData => previousData,
+  });
+  const transactionParameters = {
+    page: transactionPage,
+    size: PAYOUT_TRANSACTION_PAGE_SIZE,
+    ...(transactionSellerFilter === 'all' ? {} : { sellerId: transactionSellerFilter }),
+  };
+  const {
+    data: transactionsData,
+    error: transactionsError,
+    isFetching: transactionsFetching,
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions,
+  } = useQuery({
+    ...getAdminPayoutTransactionsOptions(transactionParameters),
     placeholderData: previousData => previousData,
   });
   const { data: sellerFilterSummariesFirstPage, isLoading: sellerFilterSummariesFirstPageLoading } =
@@ -313,6 +333,8 @@ function Payouts() {
 
   const sellerSummaries = sellerSummariesData?.data ?? [];
   const sellerSummaryPagination = sellerSummariesData?.pagination;
+  const transactions: AdminPayoutTransaction[] = transactionsData?.data ?? [];
+  const transactionPagination = transactionsData?.pagination;
   const totals = {
     due: sellerSummariesData?.aggregates?.balanceDue ?? 0,
     paid: sellerSummariesData?.aggregates?.paid ?? 0,
@@ -686,6 +708,7 @@ function Payouts() {
             <TabsTrigger value="available">Available items</TabsTrigger>
             <TabsTrigger value="runs">Payout runs</TabsTrigger>
             <TabsTrigger value="sellers">By seller</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
             <TabsTrigger value="history">Payout history</TabsTrigger>
             <TabsTrigger value="period">Period report</TabsTrigger>
@@ -1082,6 +1105,165 @@ function Payouts() {
                           )
                         }
                         disabled={!sellerSummaryPagination.nextPage || sellerSummariesFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Transactions ── */}
+          <TabsContent value="transactions">
+            <Card>
+              <CardContent className="space-y-4 p-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">Filter</Label>
+                  <Select
+                    onValueChange={value => {
+                      setTransactionSellerFilter(value);
+                      setTransactionPage(1);
+                    }}
+                    value={transactionSellerFilter}
+                  >
+                    <SelectTrigger className="h-9 w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sellers</SelectItem>
+                      {sellerFilterSummaries.map(seller => (
+                        <SelectItem key={seller.sellerId} value={seller.sellerId}>
+                          {seller.sellerFullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {transactionsError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      Could not load transactions. Please try again.{' '}
+                      <Button
+                        onClick={() => void refetchTransactions()}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Seller</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactionsLoading && transactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                          Loading transactions…
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!transactionsLoading && !transactionsError && transactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                          No transactions.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {transactions.map(transaction => {
+                      const amount = Number(transaction.amount);
+                      return (
+                        <TableRow
+                          key={transaction.id}
+                          className={transaction.refunded ? 'bg-destructive/5' : undefined}
+                        >
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {format(new Date(transaction.date), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <Badge
+                                variant={transaction.type === 'SALE' ? 'secondary' : 'default'}
+                              >
+                                {transaction.type === 'SALE' ? 'Sale' : 'Payout'}
+                              </Badge>
+                              {transaction.refunded && (
+                                <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                  Refunded
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {transaction.sellerFullName}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {transaction.description}
+                            {transaction.payoutComponent === 'SELLER_INCENTIVE_BONUS' && (
+                              <span className="block text-xs text-muted-foreground">
+                                Seller incentive bonus
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {transaction.reference || '—'}
+                          </TableCell>
+                          <TableCell
+                            className={`
+                              text-right font-medium
+                              ${
+                                transaction.refunded
+                                  ? 'text-muted-foreground line-through'
+                                  : amount < 0
+                                    ? 'text-destructive'
+                                    : 'text-foreground'
+                              }
+                            `}
+                          >
+                            {amount < 0 ? '-' : '+'}
+                            {fmt(Math.abs(amount))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {transactionPagination && transactionPagination.lastPage > 1 && (
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <p className="text-muted-foreground">
+                      Page {transactionPagination.currentPage} of {transactionPagination.lastPage}
+                      {' · '}
+                      {transactionPagination.total} transactions
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() =>
+                          setTransactionPage(transactionPagination.prevPage ?? transactionPage)
+                        }
+                        disabled={!transactionPagination.prevPage || transactionsFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setTransactionPage(transactionPagination.nextPage ?? transactionPage)
+                        }
+                        disabled={!transactionPagination.nextPage || transactionsFetching}
                         size="sm"
                         variant="outline"
                       >

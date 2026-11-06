@@ -1,6 +1,7 @@
 import type {
   AdminBuyerRefundsParams,
   AdminRefundReportParams,
+  AdminPayoutTransactionListParams,
   AdminSellerPayoutListParams,
   CreatePayoutRunPayload,
   CreateSellerPayoutPayload,
@@ -25,6 +26,7 @@ import {
   listAdminPayoutSellers,
   listAdminSellerPayments,
   getAdminSellerPayment,
+  listAdminPayoutTransactions,
   listSellerPayouts,
   recordSellerPayoutCyclePayment,
   recordAdminSellerPayment,
@@ -61,6 +63,9 @@ export const payoutQueryKey = {
     [...payoutQueryKey.sellerPayments(), 'list', parameters] as const,
   sellerPaymentDetail: (paymentId: string) =>
     [...payoutQueryKey.sellerPayments(), 'detail', paymentId] as const,
+  transactions: () => [...payoutQueryKey.all(), 'transactions'] as const,
+  transactionList: (parameters: AdminPayoutTransactionListParams) =>
+    [...payoutQueryKey.transactions(), 'list', parameters] as const,
 };
 
 export function getAdminSellerPayableOptions(sellerId: string) {
@@ -107,6 +112,13 @@ export function getAdminSellerPaymentOptions(paymentId: string) {
     enabled: Boolean(paymentId),
     queryFn: () => getAdminSellerPayment(paymentId),
     queryKey: payoutQueryKey.sellerPaymentDetail(paymentId),
+  });
+}
+
+export function getAdminPayoutTransactionsOptions(parameters: AdminPayoutTransactionListParams) {
+  return queryOptions({
+    queryFn: () => listAdminPayoutTransactions(parameters),
+    queryKey: payoutQueryKey.transactionList(parameters),
   });
 }
 

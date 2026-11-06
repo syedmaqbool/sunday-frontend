@@ -3,6 +3,8 @@ import type {
   AdminBuyerRefundsParams,
   AdminBuyerRefundsResponse,
   AdminSellerPayoutListParams,
+  AdminPayoutTransaction,
+  AdminPayoutTransactionListParams,
   CreatePayoutRunPayload,
   CreateSellerPayoutPayload,
   EligibleSellerPayoutItemsParams,
@@ -110,6 +112,14 @@ export function getAdminSellerPayment(paymentId: string) {
   return authInstance
     .get(`/api/v1/admin/payouts/payments/${paymentId}`)
     .json<SellerPaymentDetailResponse>();
+}
+
+export function listAdminPayoutTransactions(parameters: AdminPayoutTransactionListParams) {
+  return authInstance
+    .get('/api/v1/admin/payouts/transactions', {
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
+    })
+    .json<PaginatedResponse<AdminPayoutTransaction>>();
 }
 
 export function getAdminSellerPayable(sellerId: string) {

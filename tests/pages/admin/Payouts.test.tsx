@@ -10,6 +10,7 @@ const payoutService = vi.hoisted(() => ({
   createPayoutRun: vi.fn(),
   createSellerPayout: vi.fn(),
   listEligibleSellerPayoutItems: vi.fn(),
+  listAdminBuyerRefunds: vi.fn(),
   listAdminPayoutSellers: vi.fn(),
   getAdminSellerPayable: vi.fn(),
   listPayoutRunItems: vi.fn(),
@@ -73,6 +74,33 @@ const sellerSummaryResponse = {
     },
   ],
   aggregates: { grossSales: 24000, buyerRefunds: 2500, paid: 5000, balanceDue: 12500 },
+  pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
+};
+
+const buyerRefundResponse = {
+  ...emptyPage,
+  data: [
+    {
+      buyerId: 'buyer-1',
+      complaintId: 'complaint-1',
+      orderId: 'order-12345678',
+      orderItemId: 'order-item-1',
+      amount: 1800,
+      buyerFullName: 'Buyer One',
+      date: '2026-10-10T12:00:00.000Z',
+      listingTitle: 'Vintage jacket',
+    },
+    {
+      buyerId: 'buyer-2',
+      complaintId: 'complaint-2',
+      orderId: 'order-87654321',
+      orderItemId: 'order-item-2',
+      amount: 900,
+      buyerFullName: 'Buyer Two',
+      date: '2026-10-08T12:00:00.000Z',
+      listingTitle: 'Leather bag',
+    },
+  ],
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
 };
 
@@ -250,6 +278,7 @@ describe('admin payout eligibility page', () => {
     vi.clearAllMocks();
     payoutService.listPayoutRuns.mockResolvedValue(emptyPage);
     payoutService.listRefundPayouts.mockResolvedValue(emptyPage);
+    payoutService.listAdminBuyerRefunds.mockResolvedValue(buyerRefundResponse);
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
     payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
@@ -782,6 +811,93 @@ describe('admin payout eligibility page', () => {
     );
   });
 
+  it('lists refunded complaints from the refund report, newest first', async () => {
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
+
+    expect(await screen.findByText('Buyer One')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Date' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Buyer' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Item' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Order' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+    expect(screen.getByText('Vintage jacket')).toBeInTheDocument();
+    expect(screen.getByText('Order order-12')).toBeInTheDocument();
+    expect(screen.getByText('Rs 1,800.00')).toBeInTheDocument();
+
+    const refundRows = screen.getAllByRole('row');
+    expect(refundRows[1]).toHaveTextContent('Oct 10, 2026');
+    expect(refundRows[2]).toHaveTextContent('Oct 8, 2026');
+    expect(refundRows[1]).toHaveTextContent('Buyer One');
+    expect(screen.queryByRole('button', { name: /mark.*refund.*paid/i })).not.toBeInTheDocument();
+  });
+
+  it('shows loading while buyer refunds are being fetched', async () => {
+    let resolveRefunds!: (response: typeof buyerRefundResponse) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.listAdminBuyerRefunds.mockReturnValue(
+      new Promise(resolve => {
+        resolveRefunds = resolve;
+      }),
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
+
+    expect(await screen.findByText('Loading buyer refunds…')).toBeInTheDocument();
+    resolveRefunds({ ...buyerRefundResponse, data: [] });
+    expect(await screen.findByText('No buyer refunds.')).toBeInTheDocument();
+  });
+
+  it('moves through server pages of buyer refunds', async () => {
+    payoutService.listAdminBuyerRefunds.mockImplementation(async ({ page }) =>
+      page === 1
+        ? {
+            ...buyerRefundResponse,
+            data: [buyerRefundResponse.data[0]],
+            pagination: {
+              ...buyerRefundResponse.pagination,
+              currentPage: 1,
+              lastPage: 2,
+              nextPage: 2,
+              total: 2,
+            },
+          }
+        : {
+            ...buyerRefundResponse,
+            data: [buyerRefundResponse.data[1]],
+            pagination: {
+              ...buyerRefundResponse.pagination,
+              currentPage: 2,
+              lastPage: 2,
+              nextPage: null,
+              prevPage: 1,
+              total: 2,
+            },
+          },
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
+    expect(await screen.findByText('Buyer One')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(await screen.findByText('Page 2 of 2 · 2 buyer refunds')).toBeInTheDocument();
+    expect(await screen.findByText('Buyer Two')).toBeInTheDocument();
+    expect(screen.queryByText('Buyer One')).not.toBeInTheDocument();
+  });
+
+  it('shows a retryable error when buyer refunds cannot be loaded', async () => {
+    payoutService.listAdminBuyerRefunds
+      .mockRejectedValueOnce(new Error('Buyer refunds unavailable'))
+      .mockResolvedValueOnce(buyerRefundResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
+
+    expect(await screen.findByText(/could not load buyer refunds/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Buyer One')).toBeInTheDocument();
+  });
+
   it('moves through server pages of seller balances', async () => {
     payoutService.listAdminPayoutSellers.mockImplementation(async ({ page }) =>
       page === 1
@@ -1163,6 +1279,7 @@ describe('admin payout eligibility page', () => {
   });
 
   it('keeps historical manual payout records and refund reporting available without manual creation', async () => {
+    payoutService.listAdminBuyerRefunds.mockResolvedValue(emptyPage);
     payoutService.listSellerPayouts.mockResolvedValue({
       ...emptyPage,
       data: [

@@ -57,6 +57,7 @@ import { toast } from '@/hooks/use-toast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
+  getAdminBuyerRefundsOptions,
   getAdminSellerPayableOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminSellerPayoutsOptions,
@@ -71,6 +72,7 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SELLER_SUMMARY_PAGE_SIZE = 20;
+const BUYER_REFUNDS_PAGE_SIZE = 20;
 
 const recordSellerPaymentSchema = z.object({
   notes: z.string(),
@@ -132,6 +134,7 @@ function Payouts() {
   const [rangeEnd, setRangeEnd] = useState('');
   const [eligiblePage, setEligiblePage] = useState(1);
   const [sellerSummaryPage, setSellerSummaryPage] = useState(1);
+  const [buyerRefundPage, setBuyerRefundPage] = useState(1);
   const [recordPayoutSellerId, setRecordPayoutSellerId] = useState<string | null>(null);
   const [recordPayoutIdempotencyKey, setRecordPayoutIdempotencyKey] = useState<string | null>(null);
   const [recordPayoutError, setRecordPayoutError] = useState<string | null>(null);
@@ -144,7 +147,16 @@ function Payouts() {
   // ─── Queries ───────────────────────────────────────────────────────────────
 
   const { data: runsData, isLoading: lruns } = useQuery(getPayoutRunsOptions());
-  const { data: refundsData, isLoading: lrefunds } = useQuery(getAdminRefundReportOptions());
+  const {
+    data: buyerRefundsData,
+    error: buyerRefundsError,
+    isFetching: buyerRefundsFetching,
+    isLoading: buyerRefundsLoading,
+    refetch: refetchBuyerRefunds,
+  } = useQuery({
+    ...getAdminBuyerRefundsOptions({ page: buyerRefundPage, size: BUYER_REFUNDS_PAGE_SIZE }),
+    placeholderData: previousData => previousData,
+  });
   const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
     getAdminSellerPayoutsOptions(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
   );
@@ -238,13 +250,12 @@ function Payouts() {
     resolver: zodResolver(recordSellerPaymentSchema),
   });
 
-  const loading =
-    lruns || lrefunds || lpayouts || (sellerSummariesLoading && sellerSummaryPage === 1);
+  const loading = lruns || lpayouts || (sellerSummariesLoading && sellerSummaryPage === 1);
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
   const runs: PayoutRun[] = useMemo(() => runsData?.data ?? [], [runsData?.data]);
-  const refundItems: PayoutRunItem[] = useMemo(() => refundsData?.data ?? [], [refundsData?.data]);
+  const buyerRefunds = buyerRefundsData?.data ?? [];
   const sellerPayouts: SellerPayout[] = useMemo(
     () => sellerPayoutsData?.data ?? [],
     [sellerPayoutsData?.data],
@@ -1037,6 +1048,20 @@ function Payouts() {
           <TabsContent value="refunds">
             <Card>
               <CardContent className="p-0">
+                {buyerRefundsError && (
+                  <Alert variant="destructive" className="m-4">
+                    <AlertDescription>
+                      Could not load buyer refunds. Please try again.{' '}
+                      <Button
+                        onClick={() => void refetchBuyerRefunds()}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1048,34 +1073,77 @@ function Payouts() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {refundItems.length === 0 && (
+                    {buyerRefundsLoading && buyerRefunds.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                          Loading buyer refunds…
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!buyerRefundsLoading && !buyerRefundsError && buyerRefunds.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                           No buyer refunds.
                         </TableCell>
                       </TableRow>
                     )}
-                    {refundItems.map(r => (
-                      <TableRow key={r.id}>
+                    {buyerRefunds.map(refund => (
+                      <TableRow key={refund.complaintId}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {format(new Date(r.sourceDate ?? r.createdAt), 'MMM d, yyyy')}
+                          {format(new Date(refund.date), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {r.userFullName || `User ${r.buyerId?.slice(0, 6) ?? '?'}`}
+                          {refund.buyerFullName || `User ${refund.buyerId.slice(0, 6)}`}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {getListingTitle(r.sourceMetadata) || 'Refunded item'}
+                          {refund.listingTitle || 'Refunded item'}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {r.orderId ? `Order ${r.orderId.slice(0, 8)}` : '—'}
+                          {refund.orderId ? `Order ${refund.orderId.slice(0, 8)}` : '—'}
                         </TableCell>
                         <TableCell className="text-right font-medium text-destructive">
-                          {fmt(Number(r.amount))}
+                          {fmt(Number(refund.amount))}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                {buyerRefundsData && buyerRefundsData.pagination.lastPage > 1 && (
+                  <div className="flex items-center justify-between gap-3 p-4 text-sm">
+                    <p className="text-muted-foreground">
+                      Page {buyerRefundsData.pagination.currentPage} of{' '}
+                      {buyerRefundsData.pagination.lastPage}
+                      {' · '}
+                      {buyerRefundsData.pagination.total} buyer refunds
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() =>
+                          setBuyerRefundPage(
+                            buyerRefundsData.pagination.prevPage ?? buyerRefundPage,
+                          )
+                        }
+                        disabled={!buyerRefundsData.pagination.prevPage || buyerRefundsFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setBuyerRefundPage(
+                            buyerRefundsData.pagination.nextPage ?? buyerRefundPage,
+                          )
+                        }
+                        disabled={!buyerRefundsData.pagination.nextPage || buyerRefundsFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

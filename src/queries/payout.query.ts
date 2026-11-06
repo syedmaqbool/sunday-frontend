@@ -1,4 +1,5 @@
 import type {
+  AdminBuyerRefundsParams,
   AdminRefundReportParams,
   AdminSellerPayoutListParams,
   CreatePayoutRunPayload,
@@ -16,6 +17,7 @@ import {
   createSellerPayout,
   getAdminSellerPayable,
   listEligibleSellerPayoutItems,
+  listAdminBuyerRefunds,
   listPayoutRunItems,
   listPayoutRuns,
   listRefundPayouts,
@@ -29,6 +31,9 @@ import {
 
 export const payoutQueryKey = {
   all: () => ['payouts'] as const,
+  buyerRefundList: (parameters: AdminBuyerRefundsParams) =>
+    [...payoutQueryKey.buyerRefunds(), 'list', parameters] as const,
+  buyerRefunds: () => [...payoutQueryKey.all(), 'buyer-refunds'] as const,
   eligibleItemList: (parameters: EligibleSellerPayoutItemsParams) =>
     [...payoutQueryKey.eligibleItems(), 'list', parameters] as const,
   eligibleItems: () => [...payoutQueryKey.all(), 'eligible-items'] as const,
@@ -158,6 +163,13 @@ export function getAdminRefundReportOptions(parameters: AdminRefundReportParams 
       return response;
     },
     queryKey: payoutQueryKey.refundList(parameters),
+  });
+}
+
+export function getAdminBuyerRefundsOptions(parameters: AdminBuyerRefundsParams) {
+  return queryOptions({
+    queryFn: () => listAdminBuyerRefunds(parameters),
+    queryKey: payoutQueryKey.buyerRefundList(parameters),
   });
 }
 

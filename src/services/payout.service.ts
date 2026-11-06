@@ -1,5 +1,7 @@
 import type {
   AdminRefundReportParams,
+  AdminBuyerRefundsParams,
+  AdminBuyerRefundsResponse,
   AdminSellerPayoutListParams,
   CreatePayoutRunPayload,
   CreateSellerPayoutPayload,
@@ -67,6 +69,14 @@ export function listRefundPayouts(parameters: AdminRefundReportParams = {}) {
       searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<PayoutRunItem>>();
+}
+
+export function listAdminBuyerRefunds(parameters: AdminBuyerRefundsParams) {
+  return authInstance
+    .get('/api/v1/admin/payouts/refunds', {
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
+    })
+    .json<AdminBuyerRefundsResponse>();
 }
 
 export function listSellerPayouts(parameters: AdminSellerPayoutListParams = {}) {

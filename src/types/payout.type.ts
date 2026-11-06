@@ -8,6 +8,8 @@ import type {
   CreateAdminPayoutRunData,
   CreateSellerPayoutData,
   GetAdminBuyerRefundReportData,
+  GetAdminBuyerRefundsData,
+  GetAdminBuyerRefundsResponses,
   GetAdminEligibleSellerPayoutItemsData,
   GetAdminEligibleSellerPayoutItemsResponses,
   GetAdminPayoutRunItemsData,
@@ -28,6 +30,7 @@ import type {
 
 export type PayoutRun = ApiResponseItem<GetAdminPayoutRunsResponses>;
 export type PayoutRunItem = ApiResponseItem<GetAdminPayoutRunItemsResponses>;
+export type AdminBuyerRefundsResponse = ApiSuccessResponse<GetAdminBuyerRefundsResponses>;
 export type SellerPayout = ApiResponseItem<GetAdminPayoutsResponses>;
 export type SellerPayoutSummaryResponse = ApiSuccessResponse<GetAdminPayoutSellersResponses>;
 export type SellerPayoutReviewReason = NonNullable<
@@ -52,5 +55,6 @@ export type EligibleSellerPayoutItemsParams =
   ApiRequestQuery<GetAdminEligibleSellerPayoutItemsData>;
 export type PayoutRunItemListParams = Partial<ApiRequestQuery<GetAdminPayoutRunItemsData>>;
 export type AdminRefundReportParams = Partial<ApiRequestQuery<GetAdminBuyerRefundReportData>>;
+export type AdminBuyerRefundsParams = ApiRequestQuery<GetAdminBuyerRefundsData>;
 export type AdminSellerPayoutListParams = Partial<ApiRequestQuery<GetAdminPayoutsData>>;
 export type SellerPayoutSummaryListParams = ApiRequestQuery<GetAdminPayoutSellersData>;

@@ -3,12 +3,11 @@ import type {
   PayoutRun,
   PayoutRunItem,
   RecordAdminSellerPaymentReviewError,
-  SellerPayout,
   SellerPayoutReviewReason,
   SellerPayment,
 } from '@/types/payout.type';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { HTTPError } from 'ky';
 import {
@@ -133,12 +132,28 @@ interface PeriodItem {
   reference: string;
 }
 
+function downloadCsv(rows: string[][], filename: string) {
+  const csv = rows
+    .map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function Payouts() {
+  const queryClient = useQueryClient();
   const [sellerFilter, setSellerFilter] = useState<string>('all');
   const [transactionSellerFilter, setTransactionSellerFilter] = useState<string>('all');
   const [transactionPage, setTransactionPage] = useState(1);
+  const [isExportingTransactions, setIsExportingTransactions] = useState(false);
+  const [transactionsExportError, setTransactionsExportError] = useState<string | null>(null);
   const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
   const [selectedSellerPayment, setSelectedSellerPayment] = useState<SellerPayment | null>(null);
   const [rangeStart, setRangeStart] = useState('');
@@ -169,9 +184,6 @@ function Payouts() {
     ...getAdminBuyerRefundsOptions({ page: buyerRefundPage, size: BUYER_REFUNDS_PAGE_SIZE }),
     placeholderData: previousData => previousData,
   });
-  const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
-    getAdminSellerPayoutsOptions(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
-  );
   const sellerPaymentParameters = {
     page: sellerPaymentPage,
     size: SELLER_PAYMENT_PAGE_SIZE,
@@ -307,16 +319,12 @@ function Payouts() {
     resolver: zodResolver(recordSellerPaymentSchema),
   });
 
-  const loading = lruns || lpayouts || (sellerSummariesLoading && sellerSummaryPage === 1);
+  const loading = lruns || (sellerSummariesLoading && sellerSummaryPage === 1);
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
   const runs: PayoutRun[] = useMemo(() => runsData?.data ?? [], [runsData?.data]);
   const buyerRefunds = buyerRefundsData?.data ?? [];
-  const sellerPayouts: SellerPayout[] = useMemo(
-    () => sellerPayoutsData?.data ?? [],
-    [sellerPayoutsData?.data],
-  );
   const sellerPayments = sellerPaymentsData?.data ?? [];
   const sellerPaymentDetail = sellerPaymentDetailResponse?.data;
   const selectedPaymentDetails = sellerPaymentDetail ?? selectedSellerPayment;
@@ -563,28 +571,47 @@ function Payouts() {
     }
   };
 
-  const exportCsv = () => {
-    const rows = [
-      ['Date', 'Seller', 'Period', 'Method', 'Reference', 'Amount (PKR)'],
-      ...sellerPayouts.map(p => [
-        format(new Date(p.paidAt), 'yyyy-MM-dd HH:mm'),
-        p.sellerFullName,
-        p.periodStart && p.periodEnd ? `${p.periodStart} → ${p.periodEnd}` : '—',
-        p.method.replace('_', ' '),
-        p.reference || '',
-        Number(p.amount).toFixed(2),
-      ]),
-    ];
-    const csv = rows
-      .map(r => r.map(c => `"${String(c).replaceAll('"', '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payout-transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const exportCsv = async () => {
+    setIsExportingTransactions(true);
+    setTransactionsExportError(null);
+
+    try {
+      const exportParameters = {
+        page: 1,
+        size: PAYOUT_TRANSACTION_PAGE_SIZE,
+        ...(transactionSellerFilter === 'all' ? {} : { sellerId: transactionSellerFilter }),
+      };
+      const firstPage = await queryClient.fetchQuery(
+        getAdminPayoutTransactionsOptions(exportParameters),
+      );
+      const remainingPages = await Promise.all(
+        Array.from({ length: Math.max(firstPage.pagination.lastPage - 1, 0) }, (_, index) =>
+          queryClient.fetchQuery(
+            getAdminPayoutTransactionsOptions({ ...exportParameters, page: index + 2 }),
+          ),
+        ),
+      );
+      const matchingTransactions = [
+        ...firstPage.data,
+        ...remainingPages.flatMap(page => page.data),
+      ];
+      const rows = [
+        ['Date', 'Type', 'Seller', 'Amount (PKR)', 'Description', 'Reference'],
+        ...matchingTransactions.map(transaction => [
+          format(new Date(transaction.date), 'yyyy-MM-dd HH:mm'),
+          transaction.type.toLowerCase(),
+          transaction.sellerFullName,
+          Number(transaction.amount).toFixed(2),
+          transaction.description,
+          transaction.reference ?? '',
+        ]),
+      ];
+      downloadCsv(rows, `payout-transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    } catch {
+      setTransactionsExportError('Could not export transactions. Please try again.');
+    } finally {
+      setIsExportingTransactions(false);
+    }
   };
 
   const exportPeriodCsv = () => {
@@ -596,19 +623,12 @@ function Payouts() {
           format(new Date(index.at), 'yyyy-MM-dd HH:mm'),
           index.kind,
           index.party,
-          index.description.replaceAll('"', '""'),
-          index.reference.replaceAll('"', '""'),
+          index.description,
+          index.reference,
           index.amount.toFixed(2),
         ]),
     ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payout-period-${rangeStart}_to_${rangeEnd}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(rows, `payout-period-${rangeStart}_to_${rangeEnd}.csv`);
   };
 
   // ─── Run detail items ──────────────────────────────────────────────────────
@@ -666,10 +686,21 @@ function Payouts() {
             runs.
           </p>
         </div>
-        <Button onClick={exportCsv} size="sm" variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Export CSV
+        <Button
+          disabled={isExportingTransactions}
+          onClick={() => void exportCsv()}
+          size="sm"
+          variant="outline"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {isExportingTransactions ? 'Exporting…' : 'Export CSV'}
         </Button>
       </div>
+      {transactionsExportError && (
+        <Alert variant="destructive">
+          <AlertDescription>{transactionsExportError}</AlertDescription>
+        </Alert>
+      )}
 
       <div
         className="

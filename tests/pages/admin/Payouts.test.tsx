@@ -1004,6 +1004,164 @@ describe('admin payout eligibility page', () => {
     expect(screen.queryByText('Vintage jacket')).not.toBeInTheDocument();
   });
 
+  it('exports every transaction page for the selected seller using the reference CSV columns', async () => {
+    const selectedSellerTransactions = [
+      {
+        ...transactionResponse.data[0],
+        description: 'Jacket "Special"',
+        reference: 'sale,"one"',
+        sellerFullName: 'Seller Two',
+        sellerId: 'seller-2',
+      },
+      {
+        ...transactionResponse.data[3],
+        sellerFullName: 'Seller Two',
+        sellerId: 'seller-2',
+      },
+    ];
+    payoutService.listAdminPayoutTransactions.mockImplementation(async ({ page, sellerId }) => {
+      if (sellerId !== 'seller-2') return transactionResponse;
+
+      return {
+        ...transactionResponse,
+        data: [selectedSellerTransactions[page === 1 ? 0 : 1]],
+        pagination: {
+          ...transactionResponse.pagination,
+          currentPage: page,
+          lastPage: 2,
+          nextPage: page === 1 ? 2 : null,
+          prevPage: page === 2 ? 1 : null,
+          total: 2,
+        },
+      };
+    });
+    const createObjectUrl = vi.fn().mockReturnValue('blob:transactions');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectUrl,
+      writable: true,
+    });
+    const downloadedFiles: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloadedFiles.push(this.download);
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Transactions' }), { button: 0 });
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Seller Two' }));
+    await screen.findByText('Leather bag');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    await waitFor(() => expect(createObjectUrl).toHaveBeenCalledTimes(1));
+
+    const csvFile = createObjectUrl.mock.calls[0][0] as Blob;
+    const csv = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Expected CSV text.'));
+      });
+      reader.addEventListener('error', () => reject(reader.error));
+      reader.readAsText(csvFile);
+    });
+    expect(csv).toBe(
+      '"Date","Type","Seller","Amount (PKR)","Description","Reference"\n' +
+        '"2026-09-18 15:30","sale","Seller Two","8500.00","Jacket ""Special""","sale,""one"""\n' +
+        '"2026-09-16 15:30","payout","Seller Two","-3000.00","Payout · bank transfer","PAY-123"',
+    );
+    expect(downloadedFiles).toHaveLength(1);
+    expect(downloadedFiles[0]).toMatch(/^payout-transactions-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(payoutService.listAdminPayoutTransactions).toHaveBeenCalledWith({
+      page: 2,
+      sellerId: 'seller-2',
+      size: 20,
+    });
+  });
+
+  it('shows export progress and disables the button until all pages are ready', async () => {
+    let resolveSecondPage!: (response: typeof transactionResponse) => void;
+    payoutService.listAdminPayoutTransactions.mockImplementation(async ({ page }) =>
+      page === 1
+        ? {
+            ...transactionResponse,
+            pagination: { ...transactionResponse.pagination, lastPage: 2, nextPage: 2 },
+          }
+        : new Promise(resolve => {
+            resolveSecondPage = resolve;
+          }),
+    );
+    const createObjectUrl = vi.fn().mockReturnValue('blob:transactions');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectUrl,
+      writable: true,
+    });
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    const exportingButton = await screen.findByRole('button', { name: 'Exporting…' });
+    expect(exportingButton).toBeDisabled();
+    expect(createObjectUrl).not.toHaveBeenCalled();
+
+    resolveSecondPage(transactionResponse);
+    await waitFor(() => expect(createObjectUrl).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeEnabled();
+  });
+
+  it('shows an export error and does not download partial results when a page fails', async () => {
+    payoutService.listAdminPayoutTransactions.mockImplementation(async ({ page }) => {
+      if (page === 2) throw new Error('Transactions page unavailable');
+
+      return {
+        ...transactionResponse,
+        pagination: { ...transactionResponse.pagination, lastPage: 2, nextPage: 2 },
+      };
+    });
+    const createObjectUrl = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectUrl,
+      writable: true,
+    });
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+
+    expect(
+      await screen.findByText('Could not export transactions. Please try again.'),
+    ).toBeInTheDocument();
+    expect(createObjectUrl).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeEnabled();
+  });
+
+  it('exports only the CSV header when no transactions match', async () => {
+    payoutService.listAdminPayoutTransactions.mockResolvedValue(emptyPage);
+    const createObjectUrl = vi.fn().mockReturnValue('blob:transactions');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectUrl,
+      writable: true,
+    });
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    await waitFor(() => expect(createObjectUrl).toHaveBeenCalledTimes(1));
+
+    const csvFile = createObjectUrl.mock.calls[0][0] as Blob;
+    const csv = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Expected CSV text.'));
+      });
+      reader.addEventListener('error', () => reject(reader.error));
+      reader.readAsText(csvFile);
+    });
+    expect(csv).toBe('"Date","Type","Seller","Amount (PKR)","Description","Reference"');
+  });
+
   it('offers sellers beyond the current summary page in the Transactions filter', async () => {
     const visibleSellerSummaries = Array.from({ length: 20 }, (_, index) => ({
       ...sellerSummaryResponse.data[0],

@@ -9,6 +9,7 @@ const payoutService = vi.hoisted(() => ({
   createPayoutRun: vi.fn(),
   createSellerPayout: vi.fn(),
   listEligibleSellerPayoutItems: vi.fn(),
+  listAdminPayoutSellers: vi.fn(),
   listPayoutRunItems: vi.fn(),
   listPayoutRuns: vi.fn(),
   listRefundPayouts: vi.fn(),
@@ -41,6 +42,36 @@ function createEligibleResponse(
     ...overrides,
   } as EligibleSellerPayoutItemsResponse;
 }
+
+const sellerSummaryResponse = {
+  ...emptyPage,
+  data: [
+    {
+      sellerId: 'seller-1',
+      sellerFullName: 'Seller One',
+      netSales: 20000,
+      refundedAmount: 2500,
+      refundedCount: 2,
+      paid: 5000,
+      balanceDue: 12500,
+      payableStatus: 'PAYABLE' as const,
+      reviewReason: null,
+    },
+    {
+      sellerId: 'seller-2',
+      sellerFullName: 'Seller Two',
+      netSales: 0,
+      refundedAmount: 0,
+      refundedCount: 0,
+      paid: 0,
+      balanceDue: 0,
+      payableStatus: 'NOTHING_DUE' as const,
+      reviewReason: null,
+    },
+  ],
+  aggregates: { grossSales: 24000, buyerRefunds: 2500, paid: 5000, balanceDue: 12500 },
+  pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
+};
 
 const eligibleResponse = createEligibleResponse({
   aggregates: { totalAmount: 2450 },
@@ -176,12 +207,136 @@ describe('admin payout eligibility page', () => {
     payoutService.listPayoutRuns.mockResolvedValue(emptyPage);
     payoutService.listRefundPayouts.mockResolvedValue(emptyPage);
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
+    payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
       data: { id: 'run-1' },
       message: 'Created.',
       statusCode: 201,
     });
+  });
+
+  it('shows seller balances and server totals on the By seller tab', async () => {
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+
+    expect(await screen.findByRole('columnheader', { name: 'Net sales' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Refunded/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Paid' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Balance due' })).toBeInTheDocument();
+    expect(screen.getByText('Seller One')).toBeInTheDocument();
+    expect(screen.getByText('Rs 20,000.00')).toBeInTheDocument();
+    expect(screen.getAllByText('Rs 2,500.00')).toHaveLength(2);
+    expect(screen.getAllByText('Rs 12,500.00')).toHaveLength(2);
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('Gross sales', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 24,000.00',
+    );
+    expect(screen.getByText('Buyer refunds', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 2,500.00',
+    );
+    expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 5,000.00',
+    );
+    expect(screen.getByText('Balance due', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 12,500.00',
+    );
+  });
+
+  it('moves through server pages of seller balances', async () => {
+    payoutService.listAdminPayoutSellers.mockImplementation(async ({ page }) =>
+      page === 1
+        ? {
+            ...sellerSummaryResponse,
+            data: [sellerSummaryResponse.data[0]],
+            pagination: {
+              ...sellerSummaryResponse.pagination,
+              currentPage: 1,
+              lastPage: 2,
+              nextPage: 2,
+              total: 2,
+            },
+          }
+        : {
+            ...sellerSummaryResponse,
+            data: [sellerSummaryResponse.data[1]],
+            pagination: {
+              ...sellerSummaryResponse.pagination,
+              currentPage: 2,
+              lastPage: 2,
+              nextPage: null,
+              prevPage: 1,
+              total: 2,
+            },
+          },
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    await waitFor(() =>
+      expect(payoutService.listAdminPayoutSellers).toHaveBeenCalledWith({ page: 2, size: 20 }),
+    );
+    expect(await screen.findByText('Page 2 of 2 · 2 sellers')).toBeInTheDocument();
+    expect(screen.getByText('Seller Two')).toBeInTheDocument();
+    expect(screen.queryByText('Seller One')).not.toBeInTheDocument();
+  });
+
+  it('keeps server totals unchanged when the payout history seller filter changes', async () => {
+    payoutService.listSellerPayouts.mockImplementation(async parameters => ({
+      ...emptyPage,
+      data: [
+        {
+          id: 'payout-1',
+          sellerId: 'seller-1',
+          sellerFullName: 'Seller One',
+          amount: parameters.sellerId ? 1000 : 9000,
+          method: 'bank_transfer',
+          periodStart: null,
+          periodEnd: null,
+          reference: null,
+          paidAt: '2026-10-01T00:00:00.000Z',
+        },
+      ],
+    }));
+    renderPage();
+
+    await screen.findByRole('tab', { name: 'Payout history' });
+    expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 5,000.00',
+    );
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Payout history' }), { button: 0 });
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Seller One' }));
+
+    await waitFor(() =>
+      expect(payoutService.listSellerPayouts).toHaveBeenCalledWith({ sellerId: 'seller-1' }),
+    );
+    expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
+      'Rs 5,000.00',
+    );
+  });
+
+  it('shows a retryable error when seller balances cannot be loaded', async () => {
+    payoutService.listAdminPayoutSellers
+      .mockRejectedValueOnce(new Error('Seller summaries unavailable'))
+      .mockResolvedValueOnce(sellerSummaryResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+
+    expect(await screen.findByText(/could not load seller balances/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when there has been no seller activity', async () => {
+    payoutService.listAdminPayoutSellers.mockResolvedValue(emptyPage);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+
+    expect(await screen.findByText('No seller activity yet.')).toBeInTheDocument();
   });
 
   it('groups seller components and keeps each source item available in payout run details', async () => {

@@ -12,6 +12,8 @@ import type {
   RecordSellerPayoutCyclePaymentPayload,
   RecordSellerPayoutCyclePaymentResponse,
   SellerPayout,
+  SellerPayoutSummaryListParams,
+  SellerPayoutSummaryResponse,
 } from '@/types/payout.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -70,6 +72,14 @@ export function listSellerPayouts(parameters: AdminSellerPayoutListParams = {}) 
       searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<PaginatedResponse<SellerPayout>>();
+}
+
+export function listAdminPayoutSellers(parameters: SellerPayoutSummaryListParams) {
+  return authInstance
+    .get('/api/v1/admin/payouts/sellers', {
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
+    })
+    .json<SellerPayoutSummaryResponse>();
 }
 
 export function createSellerPayout(payload: CreateSellerPayoutPayload) {

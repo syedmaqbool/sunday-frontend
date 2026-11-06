@@ -47,6 +47,7 @@ import { toast } from '@/hooks/use-toast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
+  getAdminPayoutSellerSummariesOptions,
   getAdminSellerPayoutsOptions,
   getEligibleSellerPayoutItemsOptions,
   getPayoutRunItemsOptions,
@@ -56,6 +57,8 @@ import {
 } from '@/queries/payout.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const SELLER_SUMMARY_PAGE_SIZE = 20;
 
 function fmt(n: number) {
   return `Rs ${(Math.round(n * 100) / 100).toLocaleString('en-PK', {
@@ -103,6 +106,7 @@ function Payouts() {
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
   const [eligiblePage, setEligiblePage] = useState(1);
+  const [sellerSummaryPage, setSellerSummaryPage] = useState(1);
   const [runError, setRunError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -114,6 +118,19 @@ function Payouts() {
   const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
     getAdminSellerPayoutsOptions(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
   );
+  const {
+    data: sellerSummariesData,
+    error: sellerSummariesError,
+    isFetching: sellerSummariesFetching,
+    isLoading: sellerSummariesLoading,
+    refetch: refetchSellerSummaries,
+  } = useQuery({
+    ...getAdminPayoutSellerSummariesOptions({
+      page: sellerSummaryPage,
+      size: SELLER_SUMMARY_PAGE_SIZE,
+    }),
+    placeholderData: previousData => previousData,
+  });
   const eligiblePeriod =
     rangeStart && rangeEnd && rangeEnd >= rangeStart
       ? {
@@ -176,7 +193,8 @@ function Payouts() {
   const createPayoutRunMutation = useCreatePayoutRunMutation();
   const recordSellerPayoutCyclePaymentMutation = useRecordSellerPayoutCyclePaymentMutation();
 
-  const loading = lruns || lrefunds || lpayouts;
+  const loading =
+    lruns || lrefunds || lpayouts || (sellerSummariesLoading && sellerSummaryPage === 1);
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
@@ -187,67 +205,14 @@ function Payouts() {
     [sellerPayoutsData?.data],
   );
 
-  /** Aggregate per-seller summary from payout runs */
-  const sellerSummaries = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        sellerId: string;
-        balance: number;
-        name: string;
-        paid: number;
-        sales: number;
-      }
-    >();
-
-    // Build from seller payouts — each record tells us sellerId + amount paid
-    for (const p of sellerPayouts) {
-      if (!map.has(p.sellerId)) {
-        map.set(p.sellerId, {
-          sellerId: p.sellerId,
-          balance: 0,
-          name: p.sellerFullName || `User ${p.sellerId.slice(0, 6)}`,
-          paid: 0,
-          sales: 0,
-        });
-      }
-      const s = map.get(p.sellerId)!;
-      s.paid += Number(p.amount);
-    }
-
-    // Add sales from payout runs (sellerPayoutAmount per run)
-    // We don't have per-seller breakdown from runs alone — balance is best shown
-    // per run. For the "by seller" tab we rely on the sellerPayouts list.
-    map.forEach(s => {
-      s.balance = s.sales - s.paid;
-    });
-
-    return map
-      .values()
-      .toArray()
-      .toSorted((a, b) => b.balance - a.balance);
-  }, [sellerPayouts]);
-
-  /** Global totals from payout runs */
-  const totals = useMemo(() => {
-    let sales = 0;
-    let refunds = 0;
-    let totalPaid = 0;
-
-    for (const run of runs) {
-      sales += Number(run.sellerPayoutAmount);
-      refunds += Number(run.buyerRefundAmount);
-    }
-
-    for (const payout of sellerPayouts) totalPaid += Number(payout.amount);
-
-    return {
-      due: Math.max(0, sales - totalPaid),
-      paid: totalPaid,
-      refunds,
-      sales,
-    };
-  }, [runs, sellerPayouts]);
+  const sellerSummaries = sellerSummariesData?.data ?? [];
+  const sellerSummaryPagination = sellerSummariesData?.pagination;
+  const totals = {
+    due: sellerSummariesData?.aggregates?.balanceDue ?? 0,
+    paid: sellerSummariesData?.aggregates?.paid ?? 0,
+    refunds: sellerSummariesData?.aggregates?.buyerRefunds ?? 0,
+    sales: sellerSummariesData?.aggregates?.grossSales ?? 0,
+  };
 
   // ─── Period report items ───────────────────────────────────────────────────
 
@@ -761,29 +726,123 @@ function Payouts() {
           <TabsContent value="sellers">
             <Card>
               <CardContent className="p-0">
+                {sellerSummariesError && (
+                  <Alert variant="destructive" className="m-4">
+                    <AlertDescription>
+                      Could not load seller balances. Please try again.{' '}
+                      <Button
+                        onClick={() => void refetchSellerSummaries()}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Seller</TableHead>
+                      <TableHead className="text-right">Net sales</TableHead>
+                      <TableHead className="text-right">
+                        Refunded <span className="text-xs text-muted-foreground">(excluded)</span>
+                      </TableHead>
                       <TableHead className="text-right">Paid</TableHead>
+                      <TableHead className="text-right">Balance due</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sellerSummaries.length === 0 && (
+                    {sellerSummariesLoading && sellerSummaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} className="py-10 text-center text-muted-foreground">
-                          No seller activity yet.
+                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                          Loading seller balances…
                         </TableCell>
                       </TableRow>
                     )}
+                    {!sellerSummariesLoading &&
+                      !sellerSummariesError &&
+                      sellerSummaries.length === 0 && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="py-10 text-center text-muted-foreground"
+                          >
+                            No seller activity yet.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     {sellerSummaries.map(s => (
                       <TableRow key={s.sellerId}>
-                        <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell className="text-right">{fmt(s.paid)}</TableCell>
+                        <TableCell className="font-medium">{s.sellerFullName}</TableCell>
+                        <TableCell className="text-right">{fmt(Number(s.netSales))}</TableCell>
+                        <TableCell className="text-right font-medium text-destructive">
+                          {s.refundedCount === 0 ? (
+                            '—'
+                          ) : (
+                            <>
+                              {fmt(Number(s.refundedAmount))}
+                              <Badge variant="secondary" className="ml-1.5">
+                                {s.refundedCount}
+                              </Badge>
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">{fmt(Number(s.paid))}</TableCell>
+                        <TableCell
+                          className={`
+                            text-right font-semibold
+                            ${
+                              s.balanceDue === null
+                                ? 'text-muted-foreground'
+                                : s.balanceDue > 0
+                                  ? 'text-emerald-600'
+                                  : 'text-muted-foreground'
+                            }
+                          `}
+                        >
+                          {s.balanceDue === null ? '—' : fmt(Number(s.balanceDue))}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                {sellerSummaryPagination && sellerSummaryPagination.lastPage > 1 && (
+                  <div className="flex items-center justify-between gap-3 p-4 text-sm">
+                    <p className="text-muted-foreground">
+                      Page {sellerSummaryPagination.currentPage} of{' '}
+                      {sellerSummaryPagination.lastPage}
+                      {' · '}
+                      {sellerSummaryPagination.total} sellers
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() =>
+                          setSellerSummaryPage(
+                            sellerSummaryPagination.prevPage ?? sellerSummaryPage,
+                          )
+                        }
+                        disabled={!sellerSummaryPagination.prevPage || sellerSummariesFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setSellerSummaryPage(
+                            sellerSummaryPagination.nextPage ?? sellerSummaryPage,
+                          )
+                        }
+                        disabled={!sellerSummaryPagination.nextPage || sellerSummariesFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -849,7 +908,7 @@ function Payouts() {
                       <SelectItem value="all">All sellers</SelectItem>
                       {sellerSummaries.map(s => (
                         <SelectItem key={s.sellerId} value={s.sellerId}>
-                          {s.name}
+                          {s.sellerFullName}
                         </SelectItem>
                       ))}
                     </SelectContent>

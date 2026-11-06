@@ -7,6 +7,7 @@ import type {
   PayoutRunItemListParams,
   PayoutRunListParams,
   RecordSellerPayoutCyclePaymentPayload,
+  SellerPayoutSummaryListParams,
 } from '@/types/payout.type';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -16,6 +17,7 @@ import {
   listPayoutRunItems,
   listPayoutRuns,
   listRefundPayouts,
+  listAdminPayoutSellers,
   listSellerPayouts,
   recordSellerPayoutCyclePayment,
 } from '@/services/payout.service';
@@ -38,7 +40,17 @@ export const payoutQueryKey = {
   sellerPayoutList: (parameters: AdminSellerPayoutListParams = {}) =>
     [...payoutQueryKey.sellerPayouts(), 'list', parameters] as const,
   sellerPayouts: () => [...payoutQueryKey.all(), 'seller-payouts'] as const,
+  sellerSummaryList: (parameters: SellerPayoutSummaryListParams) =>
+    [...payoutQueryKey.sellerSummaries(), 'list', parameters] as const,
+  sellerSummaries: () => [...payoutQueryKey.all(), 'seller-summaries'] as const,
 };
+
+export function getAdminPayoutSellerSummariesOptions(parameters: SellerPayoutSummaryListParams) {
+  return queryOptions({
+    queryFn: () => listAdminPayoutSellers(parameters),
+    queryKey: payoutQueryKey.sellerSummaryList(parameters),
+  });
+}
 
 export function getEligibleSellerPayoutItemsOptions(parameters: EligibleSellerPayoutItemsParams) {
   return queryOptions({

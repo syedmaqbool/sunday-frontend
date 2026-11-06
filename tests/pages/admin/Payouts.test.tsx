@@ -290,6 +290,121 @@ describe('admin payout eligibility page', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows read-only seller bank details and a dash for an absent SWIFT code', async () => {
+    payoutService.getAdminSellerPayable.mockResolvedValue({
+      ...sellerPayablePreviewResponse,
+      data: { ...sellerPayablePreviewResponse.data, bankSwift: null },
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+
+    await within(dialog).findByLabelText('Amount (PKR)');
+
+    expect(within(dialog).getByLabelText('Account holder')).toHaveValue('Seller One');
+    expect(within(dialog).getByLabelText('Account number')).toHaveValue('1234567890');
+    expect(within(dialog).getByLabelText('IBAN')).toHaveValue('PK00TEST0000000000000000');
+    expect(within(dialog).getByLabelText('Bank name')).toHaveValue('Example Bank');
+    expect(within(dialog).getByLabelText('SWIFT')).toHaveValue('—');
+    for (const label of ['Account holder', 'Account number', 'IBAN', 'Bank name', 'SWIFT']) {
+      expect(within(dialog).getByLabelText(label)).toHaveAttribute('readonly');
+    }
+  });
+  it('warns when payout items have different bank details without blocking save', async () => {
+    payoutService.getAdminSellerPayable.mockResolvedValue({
+      ...sellerPayablePreviewResponse,
+      data: { ...sellerPayablePreviewResponse.data, bankDetailsDiffer: true },
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByLabelText('Amount (PKR)');
+
+    expect(
+      within(dialog).getByText(/bank details differ between payout items/i),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeEnabled();
+  });
+  it('blocks payout recording when required bank details are missing', async () => {
+    payoutService.getAdminSellerPayable.mockResolvedValue({
+      ...sellerPayablePreviewResponse,
+      data: {
+        ...sellerPayablePreviewResponse.data,
+        bankAccountHolder: null,
+        bankAccountNumber: null,
+        bankDetailsMissing: true,
+        bankIban: null,
+        bankName: null,
+        bankSwift: null,
+      },
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByLabelText('Amount (PKR)');
+
+    expect(within(dialog).getByText(/complete bank details are required/i)).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeDisabled();
+  });
+  it('keeps entries and reloads the preview when the server refuses missing bank details', async () => {
+    const missingBankDetailsError = new HTTPError(
+      new Response(
+        JSON.stringify({
+          code: 'APP_SELLER_PAYOUT_BANK_DETAILS_MISSING',
+          message: 'Complete bank details are required to record a seller payment.',
+        }),
+        { headers: { 'Content-Type': 'application/json' }, status: 422 },
+      ),
+      new Request('http://localhost/api/v1/admin/payouts/sellers/seller-1/payment'),
+      {} as never,
+    );
+    payoutService.getAdminSellerPayable
+      .mockResolvedValueOnce(sellerPayablePreviewResponse)
+      .mockResolvedValueOnce({
+        ...sellerPayablePreviewResponse,
+        data: { ...sellerPayablePreviewResponse.data, bankDetailsMissing: true },
+      });
+    payoutService.recordAdminSellerPayment.mockRejectedValueOnce(missingBankDetailsError);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const referenceInput = await within(dialog).findByLabelText('Reference');
+    const notesInput = within(dialog).getByLabelText('Notes (optional)');
+    fireEvent.change(referenceInput, { target: { value: 'BANK-123' } });
+    fireEvent.change(notesInput, { target: { value: 'Transfer made' } });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+
+    expect(
+      await within(dialog).findByText(
+        'Complete bank details are required to record a seller payment.',
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(payoutService.getAdminSellerPayable).toHaveBeenCalledTimes(2));
+    expect(referenceInput).toHaveValue('BANK-123');
+    expect(notesInput).toHaveValue('Transfer made');
+    expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeDisabled();
+  });
   it('requires a reference and records the previewed amount with an idempotency key', async () => {
     payoutService.recordAdminSellerPayment.mockResolvedValue(sellerPaymentResponse);
     renderPage();

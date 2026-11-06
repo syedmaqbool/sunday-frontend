@@ -267,6 +267,7 @@ function Payouts() {
       !recordPayoutSellerId ||
       !sellerPayablePreview ||
       sellerPayablePreview.total === null ||
+      sellerPayablePreview.bankDetailsMissing ||
       !recordPayoutIdempotencyKey
     ) {
       return;
@@ -290,16 +291,33 @@ function Payouts() {
       });
       closeRecordPayout(false);
     } catch (error) {
-      if (error instanceof HTTPError && error.response.status === 409) {
+      if (error instanceof HTTPError) {
         let errorCode: string | undefined;
+        let errorMessage: string | undefined;
         try {
-          const body = (await error.response.clone().json()) as { code?: unknown };
+          const body = (await error.response.clone().json()) as {
+            code?: unknown;
+            message?: unknown;
+          };
           errorCode = typeof body.code === 'string' ? body.code : undefined;
+          errorMessage = typeof body.message === 'string' ? body.message : undefined;
         } catch {
           errorCode = undefined;
+          errorMessage = undefined;
         }
 
-        if (errorCode === 'APP_SELLER_PAYOUT_AMOUNT_CHANGED') {
+        if (
+          error.response.status === 422 &&
+          errorCode === 'APP_SELLER_PAYOUT_BANK_DETAILS_MISSING'
+        ) {
+          setRecordPayoutError(
+            errorMessage ?? 'Complete bank details are required to record a seller payment.',
+          );
+          await refetchSellerPayablePreview();
+          return;
+        }
+
+        if (error.response.status === 409 && errorCode === 'APP_SELLER_PAYOUT_AMOUNT_CHANGED') {
           setRecordPayoutError(
             'The seller balance changed. Review the updated amount before saving again.',
           );
@@ -1279,6 +1297,14 @@ function Payouts() {
                 </div>
               </div>
 
+              {sellerPayablePreview.bankDetailsDiffer && (
+                <Alert>
+                  <AlertDescription>
+                    Bank details differ between payout items. Check the account before transferring.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div
                 className="
                   grid gap-3 rounded-md border p-3
@@ -1296,6 +1322,62 @@ function Payouts() {
                   </p>
                 </div>
               </div>
+
+              <div
+                className="
+                  grid gap-4
+                  sm:grid-cols-2
+                "
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-account-holder">Account holder</Label>
+                  <Input
+                    id="seller-payout-account-holder"
+                    readOnly
+                    value={sellerPayablePreview.bankAccountHolder ?? '—'}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-account-number">Account number</Label>
+                  <Input
+                    id="seller-payout-account-number"
+                    readOnly
+                    value={sellerPayablePreview.bankAccountNumber ?? '—'}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-iban">IBAN</Label>
+                  <Input
+                    id="seller-payout-iban"
+                    readOnly
+                    value={sellerPayablePreview.bankIban ?? '—'}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-bank-name">Bank name</Label>
+                  <Input
+                    id="seller-payout-bank-name"
+                    readOnly
+                    value={sellerPayablePreview.bankName ?? '—'}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-bank-swift">SWIFT</Label>
+                  <Input
+                    id="seller-payout-bank-swift"
+                    readOnly
+                    value={sellerPayablePreview.bankSwift ?? '—'}
+                  />
+                </div>
+              </div>
+
+              {sellerPayablePreview.bankDetailsMissing && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Complete bank details are required before you can record this payout.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="seller-payout-reference">Reference</Label>
@@ -1338,6 +1420,7 @@ function Payouts() {
                 <Button
                   disabled={
                     sellerPayablePreview.total === null ||
+                    sellerPayablePreview.bankDetailsMissing ||
                     recordAdminSellerPaymentMutation.isPending
                   }
                   type="submit"

@@ -138,7 +138,6 @@ function getAdditionalPageQueryOptions<TQueryOptions>(
 
 function Payouts() {
   const queryClient = useQueryClient();
-  const [sellerFilter, setSellerFilter] = useState<string>('all');
   const [transactionSellerFilter, setTransactionSellerFilter] = useState<string>('all');
   const [transactionPage, setTransactionPage] = useState(1);
   const [isExportingTransactions, setIsExportingTransactions] = useState(false);
@@ -168,11 +167,7 @@ function Payouts() {
     ...getAdminBuyerRefundsOptions({ page: buyerRefundPage, size: BUYER_REFUNDS_PAGE_SIZE }),
     placeholderData: previousData => previousData,
   });
-  const sellerPaymentParameters = {
-    page: sellerPaymentPage,
-    size: SELLER_PAYMENT_PAGE_SIZE,
-    ...(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
-  };
+  const sellerPaymentParameters = { page: sellerPaymentPage, size: SELLER_PAYMENT_PAGE_SIZE };
   const {
     data: sellerPaymentsData,
     error: sellerPaymentsError,
@@ -214,8 +209,9 @@ function Payouts() {
     ...getAdminPayoutTransactionsOptions(transactionParameters),
     placeholderData: previousData => previousData,
   });
-  const { data: sellerFilterSummariesFirstPage, isLoading: sellerFilterSummariesFirstPageLoading } =
-    useQuery(getAdminPayoutSellerSummariesOptions({ page: 1, size: SELLER_FILTER_PAGE_SIZE }));
+  const { data: sellerFilterSummariesFirstPage } = useQuery(
+    getAdminPayoutSellerSummariesOptions({ page: 1, size: SELLER_FILTER_PAGE_SIZE }),
+  );
   const additionalSellerFilterSummaryQueries = useQueries({
     queries: Array.from(
       { length: Math.max((sellerFilterSummariesFirstPage?.pagination.lastPage ?? 1) - 1, 0) },
@@ -307,9 +303,6 @@ function Payouts() {
   const sellerPaymentDetailNotFound =
     sellerPaymentDetailError instanceof HTTPError &&
     sellerPaymentDetailError.response.status === 404;
-  const sellerFilterSummariesLoading =
-    sellerFilterSummariesFirstPageLoading ||
-    additionalSellerFilterSummaryQueries.some(query => query.isLoading);
   const sellerFilterSummaries = [
     ...(sellerFilterSummariesFirstPage?.data ?? []),
     ...additionalSellerFilterSummaryQueries.flatMap(query => query.data?.data ?? []),
@@ -1077,28 +1070,6 @@ function Payouts() {
           <TabsContent value="history">
             <Card>
               <CardContent className="space-y-3 p-4">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Filter by seller</Label>
-                  <Select
-                    onValueChange={value => {
-                      setSellerFilter(value);
-                      setSellerPaymentPage(1);
-                    }}
-                    value={sellerFilter}
-                  >
-                    <SelectTrigger className="h-9 w-64" disabled={sellerFilterSummariesLoading}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All sellers</SelectItem>
-                      {sellerFilterSummaries.map(s => (
-                        <SelectItem key={s.sellerId} value={s.sellerId}>
-                          {s.sellerFullName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>

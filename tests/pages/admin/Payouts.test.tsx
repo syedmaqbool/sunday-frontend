@@ -1306,39 +1306,15 @@ describe('admin payout eligibility page', () => {
     expect(screen.queryByText('Seller One')).not.toBeInTheDocument();
   });
 
-  it('keeps server totals unchanged when the payout history seller filter changes', async () => {
-    payoutService.listAdminSellerPayments.mockImplementation(async parameters => ({
-      ...emptyPage,
-      data: [
-        {
-          ...sellerPaymentsResponse.data[0],
-          id: parameters.sellerId ? 'filtered-payment' : 'all-payment',
-          sellerId: parameters.sellerId ?? 'seller-1',
-          sellerFullName: 'Seller One',
-          amount: parameters.sellerId ? 1000 : 9000,
-        },
-      ],
-    }));
+  it('shows all seller payments in payout history without a seller filter', async () => {
+    payoutService.listAdminSellerPayments.mockResolvedValue(sellerPaymentsResponse);
     renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
 
-    await screen.findByRole('tab', { name: 'Payout history' });
-    expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
-      'Rs 5,000.00',
-    );
-    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Payout history' }), { button: 0 });
-    fireEvent.click(screen.getByRole('combobox'));
-    fireEvent.click(await screen.findByRole('option', { name: 'Seller One' }));
-
-    await waitFor(() =>
-      expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
-        page: 1,
-        size: 20,
-        sellerId: 'seller-1',
-      }),
-    );
-    expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
-      'Rs 5,000.00',
-    );
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
+    expect(screen.queryByText('Filter by seller')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({ page: 1, size: 20 });
   });
 
   it('shows a retryable error when seller balances cannot be loaded', async () => {
@@ -1729,50 +1705,6 @@ describe('admin payout eligibility page', () => {
     expect(await screen.findByText('Seller Two')).toBeInTheDocument();
     expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({ page: 2, size: 20 });
     expect(screen.getByText('Page 2 of 2 · 2 payments')).toBeInTheDocument();
-  });
-
-  it('offers sellers beyond the first summary page in the payout history filter', async () => {
-    const sellerOutsideFirstPage = {
-      ...sellerSummaryResponse.data[0],
-      sellerId: 'seller-outside-first-page',
-      sellerFullName: 'Seller Outside First Page',
-    };
-    payoutService.listAdminPayoutSellers.mockImplementation(async ({ page, size }) => {
-      if (size === 100) {
-        return page === 1
-          ? {
-              ...sellerSummaryResponse,
-              pagination: { ...sellerSummaryResponse.pagination, lastPage: 2, total: 21 },
-            }
-          : {
-              ...sellerSummaryResponse,
-              data: [sellerOutsideFirstPage],
-              pagination: {
-                ...sellerSummaryResponse.pagination,
-                currentPage: 2,
-                lastPage: 2,
-                prevPage: 1,
-                total: 21,
-              },
-            };
-      }
-
-      return sellerSummaryResponse;
-    });
-    payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
-    renderPage();
-    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
-    fireEvent.click(await screen.findByRole('combobox'));
-
-    fireEvent.click(await screen.findByRole('option', { name: 'Seller Outside First Page' }));
-
-    await waitFor(() =>
-      expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
-        page: 1,
-        size: 20,
-        sellerId: 'seller-outside-first-page',
-      }),
-    );
   });
 
   it('shows a retryable error when payout history cannot be loaded', async () => {

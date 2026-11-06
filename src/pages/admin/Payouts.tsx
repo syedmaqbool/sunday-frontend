@@ -1,7 +1,5 @@
 import type {
   AdminPayoutTransaction,
-  PayoutRun,
-  PayoutRunItem,
   RecordAdminSellerPaymentReviewError,
   SellerPayoutReviewReason,
   SellerPayment,
@@ -17,7 +15,6 @@ import {
   CircleDollarSign,
   Download,
   Loader2,
-  Play,
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -63,11 +60,6 @@ import {
   getAdminSellerPaymentsOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminPayoutTransactionsOptions,
-  getEligibleSellerPayoutItemsOptions,
-  getPayoutRunItemsOptions,
-  getPayoutRunsOptions,
-  useCreatePayoutRunMutation,
-  useRecordSellerPayoutCyclePaymentMutation,
   useRecordAdminSellerPaymentMutation,
 } from '@/queries/payout.query';
 
@@ -100,21 +92,10 @@ function fmt(n: number) {
   })}`;
 }
 
-function getListingTitle(sourceMetadata: unknown) {
-  if (
-    typeof sourceMetadata !== 'object' ||
-    sourceMetadata === null ||
-    !('listingTitle' in sourceMetadata)
-  )
-    return;
-
-  return typeof sourceMetadata.listingTitle === 'string' ? sourceMetadata.listingTitle : undefined;
-}
-
 function PayoutComponentCaption({
   payoutComponent,
 }: {
-  payoutComponent: PayoutRunItem['payoutComponent'];
+  payoutComponent: AdminPayoutTransaction['payoutComponent'];
 }) {
   if (payoutComponent !== 'SELLER_INCENTIVE_BONUS') return null;
 
@@ -162,11 +143,9 @@ function Payouts() {
   const [transactionPage, setTransactionPage] = useState(1);
   const [isExportingTransactions, setIsExportingTransactions] = useState(false);
   const [transactionsExportError, setTransactionsExportError] = useState<string | null>(null);
-  const [detailRun, setDetailRun] = useState<PayoutRun | null>(null);
   const [selectedSellerPayment, setSelectedSellerPayment] = useState<SellerPayment | null>(null);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
-  const [eligiblePage, setEligiblePage] = useState(1);
   const [sellerSummaryPage, setSellerSummaryPage] = useState(1);
   const [buyerRefundPage, setBuyerRefundPage] = useState(1);
   const [sellerPaymentPage, setSellerPaymentPage] = useState(1);
@@ -175,13 +154,10 @@ function Payouts() {
   const [recordPayoutError, setRecordPayoutError] = useState<string | null>(null);
   const [recordPayoutReviewReason, setRecordPayoutReviewReason] =
     useState<SellerPayoutReviewReason | null>(null);
-  const [runError, setRunError] = useState<string | null>(null);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 
-  const { data: runsData, isLoading: lruns } = useQuery(getPayoutRunsOptions());
   const {
     data: buyerRefundsData,
     error: buyerRefundsError,
@@ -260,31 +236,6 @@ function Payouts() {
     ...getAdminSellerPayableOptions(recordPayoutSellerId ?? ''),
     enabled: Boolean(recordPayoutSellerId),
   });
-  const eligiblePeriod =
-    rangeStart && rangeEnd && rangeEnd >= rangeStart
-      ? {
-          page: eligiblePage,
-          periodEnd: new Date(`${rangeEnd}T23:59:59.999`).toISOString(),
-          periodStart: new Date(`${rangeStart}T00:00:00`).toISOString(),
-          size: 100,
-        }
-      : null;
-  const eligibleParameters = eligiblePeriod ?? {
-    page: eligiblePage,
-    periodEnd: '',
-    periodStart: '',
-    size: 100,
-  };
-  const {
-    data: eligibleItemsData,
-    error: eligibleItemsError,
-    isFetching: eligibleItemsFetching,
-    isLoading: eligibleItemsLoading,
-    refetch: refetchEligibleItems,
-  } = useQuery({
-    ...getEligibleSellerPayoutItemsOptions(eligibleParameters),
-    enabled: Boolean(eligiblePeriod),
-  });
   const periodReportRange =
     rangeStart && rangeEnd && rangeEnd >= rangeStart
       ? {
@@ -339,40 +290,16 @@ function Payouts() {
     additionalPeriodPaymentQueries.find(query => query.error)?.error ??
     periodRefundsQuery.error ??
     additionalPeriodRefundQueries.find(query => query.error)?.error;
-  const runItemsQuery = useQuery(
-    getPayoutRunItemsOptions(detailRun?.id ?? '', { page: 1, size: 100 }),
-  );
-  const additionalRunItemQueries = useQueries({
-    queries: Array.from(
-      { length: Math.max((runItemsQuery.data?.pagination.lastPage ?? 1) - 1, 0) },
-      (_, index) => getPayoutRunItemsOptions(detailRun?.id ?? '', { page: index + 2, size: 100 }),
-    ),
-  });
-  const runItemsLoading =
-    runItemsQuery.isLoading || additionalRunItemQueries.some(query => query.isLoading);
-  const runItemsError =
-    runItemsQuery.error ?? additionalRunItemQueries.find(query => query.error)?.error;
-  const runItems =
-    runItemsLoading || runItemsError
-      ? []
-      : [
-          ...(runItemsQuery.data?.data ?? []),
-          ...additionalRunItemQueries.flatMap(query => query.data?.data ?? []),
-        ];
-
-  const createPayoutRunMutation = useCreatePayoutRunMutation();
-  const recordSellerPayoutCyclePaymentMutation = useRecordSellerPayoutCyclePaymentMutation();
   const recordAdminSellerPaymentMutation = useRecordAdminSellerPaymentMutation();
   const recordSellerPaymentForm = useForm<RecordSellerPaymentForm>({
     defaultValues: { notes: '', reference: '' },
     resolver: zodResolver(recordSellerPaymentSchema),
   });
 
-  const loading = lruns || (sellerSummariesLoading && sellerSummaryPage === 1);
+  const loading = sellerSummariesLoading && sellerSummaryPage === 1;
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
-  const runs: PayoutRun[] = useMemo(() => runsData?.data ?? [], [runsData?.data]);
   const buyerRefunds = buyerRefundsData?.data ?? [];
   const sellerPayments = sellerPaymentsData?.data ?? [];
   const sellerPaymentDetail = sellerPaymentDetailResponse?.data;
@@ -599,42 +526,6 @@ function Payouts() {
 
   // ─── Actions ───────────────────────────────────────────────────────────────
 
-  const generatePayoutRun = async () => {
-    if (!eligiblePeriod) return;
-
-    setRunError(null);
-    try {
-      await createPayoutRunMutation.mutateAsync({
-        periodEnd: eligiblePeriod.periodEnd,
-        periodStart: eligiblePeriod.periodStart,
-      });
-      setEligiblePage(1);
-      toast({
-        description: 'Eligible items have been added as unpaid payout run items.',
-        title: 'Payout run generated',
-      });
-    } catch (error: unknown) {
-      setRunError(error instanceof Error ? error.message : 'Could not generate a payout run.');
-    }
-  };
-
-  const markSellerPayoutPaid = async (sellerId: string) => {
-    if (!detailRun) return;
-
-    setPaymentError(null);
-    try {
-      await recordSellerPayoutCyclePaymentMutation.mutateAsync({
-        payload: {},
-        runId: detailRun.id,
-        sellerId,
-      });
-    } catch (error: unknown) {
-      setPaymentError(
-        error instanceof Error ? error.message : 'Could not record the payout payment.',
-      );
-    }
-  };
-
   const exportCsv = async () => {
     setIsExportingTransactions(true);
     setTransactionsExportError(null);
@@ -697,47 +588,6 @@ function Payouts() {
 
   // ─── Run detail items ──────────────────────────────────────────────────────
 
-  const detailRunItems = runItems;
-  const detailSellerItems = detailRunItems.filter(index => index.itemType === 'SELLER_PAYOUT');
-  const detailRefundItems = detailRunItems.filter(index => index.itemType === 'BUYER_REFUND');
-  const detailSellerGroups = (() => {
-    const sellerGroups = new Map<
-      string,
-      {
-        baseAmount: number;
-        incentiveAmount: number;
-        items: PayoutRunItem[];
-        sellerId: string;
-        sellerName: string;
-        unpaidAmount: number;
-      }
-    >();
-
-    for (const item of detailSellerItems) {
-      const sellerId = item.sellerId ?? item.userId;
-      let group = sellerGroups.get(sellerId);
-      if (!group) {
-        group = {
-          baseAmount: 0,
-          incentiveAmount: 0,
-          items: [],
-          sellerId,
-          sellerName: item.userFullName || `User ${sellerId.slice(0, 6)}`,
-          unpaidAmount: 0,
-        };
-        sellerGroups.set(sellerId, group);
-      }
-
-      const amount = Number(item.amount);
-      group.items.push(item);
-      if (item.payoutComponent === 'BASE') group.baseAmount += amount;
-      else group.incentiveAmount += amount;
-      if (item.status === 'UNPAID') group.unpaidAmount += amount;
-    }
-
-    return [...sellerGroups.values()];
-  })();
-
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -746,8 +596,7 @@ function Payouts() {
         <div>
           <h2 className="font-heading text-xl font-semibold">Seller payouts</h2>
           <p className="text-sm text-muted-foreground">
-            Review ledger-eligible seller items for a selected period and generate unpaid payout
-            runs.
+            Sales become payable after the buyer confirms receipt.
           </p>
         </div>
         <Button
@@ -798,10 +647,8 @@ function Payouts() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Tabs defaultValue="available" className="min-w-0 space-y-4">
+        <Tabs defaultValue="sellers" className="min-w-0 space-y-4">
           <TabsList className="max-w-full justify-start overflow-x-auto">
-            <TabsTrigger value="available">Available items</TabsTrigger>
-            <TabsTrigger value="runs">Payout runs</TabsTrigger>
             <TabsTrigger value="sellers">By seller</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="refunds">Buyer refunds</TabsTrigger>
@@ -809,255 +656,6 @@ function Payouts() {
             <TabsTrigger value="period">Period report</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="available">
-            <Card>
-              <CardContent className="space-y-4 p-4">
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="eligible-period-start">Period start</Label>
-                    <Input
-                      id="eligible-period-start"
-                      onChange={event => {
-                        setRangeStart(event.target.value);
-                        setEligiblePage(1);
-                        setRunError(null);
-                      }}
-                      value={rangeStart}
-                      type="date"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="eligible-period-end">Period end</Label>
-                    <Input
-                      id="eligible-period-end"
-                      onChange={event => {
-                        setRangeEnd(event.target.value);
-                        setEligiblePage(1);
-                        setRunError(null);
-                      }}
-                      value={rangeEnd}
-                      min={rangeStart || undefined}
-                      type="date"
-                    />
-                  </div>
-                  <Button
-                    onClick={generatePayoutRun}
-                    disabled={
-                      !eligiblePeriod ||
-                      eligibleItemsFetching ||
-                      eligibleItemsLoading ||
-                      createPayoutRunMutation.isPending ||
-                      !eligibleItemsData?.data.length
-                    }
-                    type="button"
-                  >
-                    {createPayoutRunMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Play className="mr-2 h-4 w-4" />
-                    )}
-                    {createPayoutRunMutation.isPending ? 'Generating run…' : 'Generate payout run'}
-                  </Button>
-                </div>
-
-                {rangeStart && rangeEnd && rangeEnd < rangeStart && (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      Period end must be on or after period start.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {eligibleItemsError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      Could not load eligible payout items. Please adjust the period or try again.{' '}
-                      <Button
-                        onClick={() => void refetchEligibleItems()}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Retry
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {runError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{runError}</AlertDescription>
-                  </Alert>
-                )}
-
-                {eligiblePeriod ? (
-                  eligibleItemsLoading ? (
-                    <div
-                      aria-live="polite"
-                      role="status"
-                      className="py-8 text-center text-sm text-muted-foreground"
-                    >
-                      Loading eligible items…
-                    </div>
-                  ) : eligibleItemsError ? null : eligibleItemsData?.data.length ? (
-                    <>
-                      <div className="flex flex-wrap gap-6 rounded-md bg-muted/50 p-3 text-sm">
-                        <p>
-                          <span className="text-muted-foreground">Eligible items: </span>
-                          <span className="font-semibold">
-                            {eligibleItemsData.pagination.total}
-                          </span>
-                        </p>
-                        <p>
-                          <span className="text-muted-foreground">Eligible total: </span>
-                          <span className="font-semibold">
-                            {fmt(Number(eligibleItemsData.aggregates?.totalAmount ?? 0))}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="overflow-auto rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Seller</TableHead>
-                              <TableHead>Order</TableHead>
-                              <TableHead>Item</TableHead>
-                              <TableHead>Received</TableHead>
-                              <TableHead className="text-right">Payout amount</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {eligibleItemsData.data.map(item => (
-                              <TableRow key={item.orderItemId}>
-                                <TableCell className="font-medium">{item.sellerFullName}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground">
-                                  Order {item.orderId.slice(0, 8)}
-                                </TableCell>
-                                <TableCell>
-                                  {item.title}
-                                  <PayoutComponentCaption payoutComponent={item.payoutComponent} />
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                                  {format(new Date(item.receivedAt), 'MMM d, yyyy')}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                  {fmt(Number(item.amount))}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {eligibleItemsData.pagination.lastPage > 1 && (
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <p className="text-muted-foreground">
-                            Page {eligibleItemsData.pagination.currentPage} of{' '}
-                            {eligibleItemsData.pagination.lastPage}
-                            {' · '}
-                            {eligibleItemsData.pagination.total} eligible items
-                          </p>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() =>
-                                setEligiblePage(eligibleItemsData.pagination.prevPage ?? 1)
-                              }
-                              disabled={!eligibleItemsData.pagination.prevPage}
-                              size="sm"
-                              variant="outline"
-                            >
-                              Previous
-                            </Button>
-                            <Button
-                              onClick={() =>
-                                setEligiblePage(
-                                  eligibleItemsData.pagination.nextPage ?? eligiblePage,
-                                )
-                              }
-                              disabled={!eligibleItemsData.pagination.nextPage}
-                              size="sm"
-                              variant="outline"
-                            >
-                              Next
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <Alert>
-                      <AlertDescription>
-                        No items are eligible for this period. Buyer receipt confirmation and a
-                        posted local accounting snapshot are required before an item can be paid
-                        out.
-                      </AlertDescription>
-                    </Alert>
-                  )
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Select a period to load payout-eligible items.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ── Payout Runs ── */}
-          <TabsContent value="runs">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Generated by</TableHead>
-                      <TableHead className="text-right">Items</TableHead>
-                      <TableHead className="text-right">Seller payouts</TableHead>
-                      <TableHead className="text-right">Buyer refunds</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {runs.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                          No payout runs yet.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {runs.map(r => (
-                      <TableRow
-                        key={r.id}
-                        onClick={() => setDetailRun(r)}
-                        className="cursor-pointer"
-                      >
-                        <TableCell className="whitespace-nowrap text-sm font-medium">
-                          {r.periodStart
-                            ? `${format(new Date(r.periodStart), 'MMM d')} → ${format(new Date(r.periodEnd), 'MMM d, yyyy')}`
-                            : '—'}
-                        </TableCell>
-                        <TableCell className="text-sm">{r.generatedByFullName}</TableCell>
-                        <TableCell className="text-right text-sm">{Number(r.itemCount)}</TableCell>
-                        <TableCell className="text-right font-medium text-emerald-600">
-                          {fmt(Number(r.sellerPayoutAmount))}
-                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                            ({Number(r.sellerPayoutItemCount)})
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-destructive">
-                          {fmt(Number(r.buyerRefundAmount))}
-                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                            ({Number(r.buyerRefundItemCount)})
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {fmt(Number(r.totalAmount))}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ── By Seller ── */}
           <TabsContent value="sellers">
             <Card>
               <CardContent className="p-0">
@@ -2002,230 +1600,6 @@ function Payouts() {
         </DialogContent>
       </Dialog>
 
-      <Dialog onOpenChange={o => !o && setDetailRun(null)} open={!!detailRun}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Payout run details</DialogTitle>
-            <DialogDescription>
-              {detailRun
-                ? `${detailRun.periodStart ? format(new Date(detailRun.periodStart), 'MMM d') : ''} → ${detailRun.periodEnd ? format(new Date(detailRun.periodEnd), 'MMM d, yyyy') : ''} · Generated by ${detailRun.generatedByFullName}`
-                : ''}
-            </DialogDescription>
-          </DialogHeader>
-
-          {detailRun && (
-            <div className="space-y-4">
-              {runItemsLoading && (
-                <div aria-live="polite" role="status" className="text-sm text-muted-foreground">
-                  Loading payout run items…
-                </div>
-              )}
-              {runItemsError && (
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    Could not load all payout run items.{' '}
-                    <Button
-                      onClick={() => {
-                        void runItemsQuery.refetch();
-                        for (const query of additionalRunItemQueries) void query.refetch();
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Retry
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-              <div
-                className="
-                  grid grid-cols-2 gap-3 text-sm
-                  md:grid-cols-4
-                "
-              >
-                <Info value={fmt(Number(detailRun.sellerPayoutAmount))} label="Seller payouts" />
-                <Info value={fmt(Number(detailRun.buyerRefundAmount))} label="Buyer refunds" />
-                <Info value={String(Number(detailRun.itemCount))} label="Total items" />
-                <Info value={fmt(Number(detailRun.totalAmount))} label="Total" />
-              </div>
-
-              {detailSellerItems.length > 0 && (
-                <>
-                  <Alert>
-                    <AlertDescription>
-                      Record payment only after the external transfer. This updates Sunday’s payout
-                      record; it does not move money.
-                    </AlertDescription>
-                  </Alert>
-                  {paymentError && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{paymentError}</AlertDescription>
-                    </Alert>
-                  )}
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Seller payouts
-                  </p>
-                  <div className="space-y-4">
-                    {detailSellerGroups.map(group => {
-                      const totalAmount = group.baseAmount + group.incentiveAmount;
-                      const isRecordingThisPayment =
-                        recordSellerPayoutCyclePaymentMutation.isPending &&
-                        recordSellerPayoutCyclePaymentMutation.variables?.sellerId ===
-                          group.sellerId;
-
-                      return (
-                        <section
-                          key={group.sellerId}
-                          aria-label={`${group.sellerName} payout`}
-                          className="space-y-3 rounded-md border p-3"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="space-y-2">
-                              <h3 className="font-semibold">{group.sellerName}</h3>
-                              <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                                <div>
-                                  <dt className="text-muted-foreground">Total payout</dt>
-                                  <dd className="font-semibold">{fmt(totalAmount)}</dd>
-                                </div>
-                                <div>
-                                  <dt className="text-muted-foreground">Base payout</dt>
-                                  <dd>{fmt(group.baseAmount)}</dd>
-                                </div>
-                                <div>
-                                  <dt className="text-muted-foreground">Seller incentive</dt>
-                                  <dd>{fmt(group.incentiveAmount)}</dd>
-                                </div>
-                                {group.unpaidAmount !== totalAmount && group.unpaidAmount > 0 && (
-                                  <div>
-                                    <dt className="text-muted-foreground">Unpaid amount</dt>
-                                    <dd>{fmt(group.unpaidAmount)}</dd>
-                                  </div>
-                                )}
-                              </dl>
-                            </div>
-                            {group.unpaidAmount > 0 && (
-                              <Button
-                                aria-label={
-                                  isRecordingThisPayment
-                                    ? `Recording payment for ${group.sellerName}`
-                                    : `Mark ${group.sellerName} paid`
-                                }
-                                onClick={() => void markSellerPayoutPaid(group.sellerId)}
-                                disabled={recordSellerPayoutCyclePaymentMutation.isPending}
-                                size="sm"
-                                type="button"
-                              >
-                                {isRecordingThisPayment ? 'Recording payment…' : 'Mark paid'}
-                              </Button>
-                            )}
-                          </div>
-                          <div className="max-h-60 overflow-auto rounded-md border">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Item</TableHead>
-                                  <TableHead>Order</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="text-right">Amount</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {group.items.map(item => (
-                                  <TableRow key={item.id}>
-                                    <TableCell className="max-w-xs">
-                                      <span className="block truncate">
-                                        {getListingTitle(item.sourceMetadata) || '—'}
-                                      </span>
-                                      <PayoutComponentCaption
-                                        payoutComponent={item.payoutComponent}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground">
-                                      {item.orderId ? `Order ${item.orderId.slice(0, 8)}` : '—'}
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex flex-col items-start gap-1">
-                                        <Badge
-                                          variant={item.status === 'PAID' ? 'default' : 'secondary'}
-                                        >
-                                          {formatEnumLabel(item.status)}
-                                        </Badge>
-                                        {item.status === 'PAID' && item.paidAt && (
-                                          <span className="text-xs text-muted-foreground">
-                                            Paid ·{' '}
-                                            {format(new Date(item.paidAt), 'MMM d, yyyy, h:mm a')}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      {fmt(Number(item.amount))}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </section>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
-              {detailRefundItems.length > 0 && (
-                <>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Buyer refunds
-                  </p>
-                  <div className="max-h-60 overflow-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Buyer</TableHead>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Order</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {detailRefundItems.map(item => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">
-                              {item.userFullName || `User ${item.buyerId?.slice(0, 6) ?? '?'}`}
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">
-                              {getListingTitle(item.sourceMetadata) || '—'}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {item.orderId ? `Order ${item.orderId.slice(0, 8)}` : '—'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={item.status === 'PAID' ? 'default' : 'secondary'}>
-                                {formatEnumLabel(item.status)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-medium text-destructive">
-                              {fmt(Number(item.amount))}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button onClick={() => setDetailRun(null)} variant="outline">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog
         onOpenChange={open => {
           if (!open) setSelectedSellerPayment(null);

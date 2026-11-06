@@ -1,4 +1,3 @@
-import type { EligibleSellerPayoutItemsResponse } from '@/types/payout.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HTTPError } from 'ky';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -7,20 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import Payouts from '@/pages/admin/Payouts';
 
 const payoutService = vi.hoisted(() => ({
-  createPayoutRun: vi.fn(),
-  createSellerPayout: vi.fn(),
-  listEligibleSellerPayoutItems: vi.fn(),
   listAdminBuyerRefunds: vi.fn(),
   listAdminPayoutSellers: vi.fn(),
   getAdminSellerPayment: vi.fn(),
   listAdminSellerPayments: vi.fn(),
   listAdminPayoutTransactions: vi.fn(),
   getAdminSellerPayable: vi.fn(),
-  listPayoutRunItems: vi.fn(),
-  listPayoutRuns: vi.fn(),
-  listRefundPayouts: vi.fn(),
-  listSellerPayouts: vi.fn(),
-  recordSellerPayoutCyclePayment: vi.fn(),
   recordAdminSellerPayment: vi.fn(),
 }));
 const createObjectURLDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
@@ -41,16 +32,6 @@ const emptyPage = {
   },
   statusCode: 200,
 };
-
-function createEligibleResponse(
-  overrides: Partial<EligibleSellerPayoutItemsResponse> = {},
-): EligibleSellerPayoutItemsResponse {
-  return {
-    ...emptyPage,
-    aggregates: { totalAmount: 0 },
-    ...overrides,
-  } as EligibleSellerPayoutItemsResponse;
-}
 
 const sellerSummaryResponse = {
   ...emptyPage,
@@ -288,91 +269,6 @@ const transactionResponse = {
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 4 },
 };
 
-const eligibleResponse = createEligibleResponse({
-  aggregates: { totalAmount: 2450 },
-  data: [
-    {
-      orderId: 'order-12345678',
-      orderItemId: 'order-item-1',
-      sellerId: 'seller-1',
-      amount: 2450,
-      payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
-      sellerFullName: 'Seller One',
-      title: 'Vintage jacket',
-      receivedAt: '2026-09-18T10:30:00.000Z',
-    },
-  ],
-  pagination: { ...emptyPage.pagination, lastPage: 1, total: 1 },
-});
-
-const payoutRun = {
-  id: 'run-1',
-  buyerRefundAmount: 0,
-  buyerRefundItemCount: 0,
-  generatedByFullName: 'Finance Admin',
-  itemCount: 1,
-  periodEnd: '2026-09-30T23:59:59.999Z',
-  periodStart: '2026-09-01T00:00:00.000Z',
-  sellerPayoutAmount: 2450,
-  sellerPayoutItemCount: 1,
-  totalAmount: 2450,
-  generatedBy: 'admin-1',
-  createdAt: '2026-10-01T00:00:00.000Z',
-  updatedAt: '2026-10-01T00:00:00.000Z',
-};
-
-const sellerPayoutRunItem = {
-  id: 'run-item-1',
-  buyerId: null,
-  complaintId: null,
-  orderId: 'order-12345678',
-  orderItemId: 'order-item-1',
-  payoutRunId: 'run-1',
-  sellerId: 'seller-1',
-  userId: 'seller-1',
-  amount: 2450,
-  bankAccountHolder: null,
-  bankAccountNumber: null,
-  bankIban: null,
-  bankName: null,
-  bankSwift: null,
-  itemType: 'SELLER_PAYOUT' as const,
-  payoutComponent: 'SELLER_INCENTIVE_BONUS' as const,
-  periodEnd: payoutRun.periodEnd,
-  periodStart: payoutRun.periodStart,
-  sourceDate: '2026-09-18T10:30:00.000Z',
-  sourceMetadata: { listingTitle: 'Vintage jacket' },
-  sourceStatus: 'DELIVERED',
-  sourceType: 'ORDER_ITEM',
-  status: 'UNPAID' as const,
-  userFullName: 'Seller One',
-  paidAt: null,
-  createdAt: '2026-10-01T00:00:00.000Z',
-  updatedAt: '2026-10-01T00:00:00.000Z',
-};
-
-const sellerBasePayoutRunItem = {
-  ...sellerPayoutRunItem,
-  id: 'run-item-2',
-  amount: 10000,
-  orderId: 'order-87654321',
-  orderItemId: 'order-item-2',
-  payoutComponent: 'BASE' as const,
-  sourceMetadata: { listingTitle: 'Leather bag' },
-};
-
-const otherSellerPayoutRunItem = {
-  ...sellerPayoutRunItem,
-  id: 'run-item-3',
-  amount: 2000,
-  orderId: 'order-55555555',
-  orderItemId: 'order-item-3',
-  sellerId: 'seller-2',
-  userId: 'seller-2',
-  userFullName: 'Seller Two',
-  payoutComponent: 'BASE' as const,
-};
-
 function renderPage({ staleTime = 0 }: { staleTime?: number } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime } },
@@ -385,35 +281,6 @@ function renderPage({ staleTime = 0 }: { staleTime?: number } = {}) {
       </MemoryRouter>
     </QueryClientProvider>,
   );
-}
-
-async function selectPeriod(expectedContent: RegExp | string = 'Vintage jacket') {
-  fireEvent.change(await screen.findByLabelText('Period start'), {
-    target: { value: '2026-09-01' },
-  });
-  fireEvent.change(await screen.findByLabelText('Period end'), {
-    target: { value: '2026-09-30' },
-  });
-  expect(await screen.findByText(expectedContent)).toBeInTheDocument();
-}
-
-async function openRunDetails() {
-  payoutService.listPayoutRuns.mockResolvedValue({
-    ...emptyPage,
-    data: [payoutRun],
-  });
-  if (!payoutService.listPayoutRunItems.getMockImplementation()) {
-    payoutService.listPayoutRunItems.mockResolvedValue({
-      ...emptyPage,
-      data: [sellerPayoutRunItem],
-    });
-  }
-  renderPage();
-  fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout runs' }), { button: 0 });
-  fireEvent.click(await screen.findByText('Finance Admin'));
-  expect(await screen.findByRole('heading', { name: 'Payout run details' })).toBeInTheDocument();
-  expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', { page: 1, size: 100 });
-  expect((await screen.findAllByText('Seller One')).length).toBeGreaterThan(0);
 }
 
 describe('admin payout eligibility page', () => {
@@ -433,21 +300,31 @@ describe('admin payout eligibility page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    payoutService.listPayoutRuns.mockResolvedValue(emptyPage);
-    payoutService.listRefundPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminBuyerRefunds.mockResolvedValue(buyerRefundResponse);
-    payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
     payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
     payoutService.getAdminSellerPayment.mockResolvedValue(sellerPaymentDetailsResponse);
     payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
     payoutService.listAdminPayoutTransactions.mockResolvedValue(emptyPage);
-    payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
-    payoutService.createPayoutRun.mockResolvedValue({
-      data: { id: 'run-1' },
-      message: 'Created.',
-      statusCode: 201,
-    });
+  });
+
+  it('shows the five payout tabs by seller first without the run-based flow', async () => {
+    renderPage();
+
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs.map(tab => tab.textContent)).toEqual([
+      'By seller',
+      'Transactions',
+      'Buyer refunds',
+      'Payout history',
+      'Period report',
+    ]);
+    expect(tabs[0]).toHaveAttribute('data-state', 'active');
+    expect(
+      screen.getByText(/sales become payable after the buyer confirms receipt/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/generate.*run|5% commission/i)).not.toBeInTheDocument();
+    expect(payoutService.listAdminPayoutSellers).toHaveBeenCalled();
   });
 
   it('opens the seller payout dialog with the server amount and payout split', async () => {
@@ -1485,54 +1362,6 @@ describe('admin payout eligibility page', () => {
     expect(await screen.findByText('No seller activity yet.')).toBeInTheDocument();
   });
 
-  it('groups seller components and keeps each source item available in payout run details', async () => {
-    payoutService.listPayoutRunItems.mockResolvedValue({
-      ...emptyPage,
-      data: [sellerPayoutRunItem, sellerBasePayoutRunItem, otherSellerPayoutRunItem],
-    });
-    await openRunDetails();
-
-    expect(screen.getAllByText('Seller incentive bonus')).toHaveLength(1);
-    expect(screen.getAllByText('Base payout')).toHaveLength(2);
-    expect(screen.getAllByText('Seller incentive')).toHaveLength(2);
-    expect(screen.getByText('Rs 12,450.00')).toBeInTheDocument();
-    expect(screen.getAllByText('Rs 10,000.00')).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: /mark .* paid/i })).toHaveLength(2);
-    expect(screen.getAllByText('Vintage jacket').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Leather bag').length).toBeGreaterThan(0);
-    expect(screen.getByText('Order order-12')).toBeInTheDocument();
-    expect(screen.getByText('Order order-87')).toBeInTheDocument();
-    expect(screen.queryByText(/payout fee/i)).not.toBeInTheDocument();
-  });
-
-  it('loads every payout-run item page before grouping seller totals', async () => {
-    payoutService.listPayoutRunItems.mockImplementation(async (_runId, parameters) => {
-      const isFirstPage = parameters.page === 1;
-      return {
-        ...emptyPage,
-        data: [isFirstPage ? sellerBasePayoutRunItem : sellerPayoutRunItem],
-        pagination: {
-          ...emptyPage.pagination,
-          currentPage: isFirstPage ? 1 : 2,
-          lastPage: 2,
-          nextPage: isFirstPage ? 2 : null,
-          perPage: 100,
-          prevPage: isFirstPage ? null : 1,
-          total: 2,
-        },
-      };
-    });
-    await openRunDetails();
-
-    expect(payoutService.listPayoutRunItems).toHaveBeenCalledWith('run-1', { page: 2, size: 100 });
-    expect(screen.getByText('Rs 12,450.00')).toBeInTheDocument();
-    expect(screen.getByText('Leather bag')).toBeInTheDocument();
-    expect(screen.getByText('Vintage jacket')).toBeInTheDocument();
-    expect(screen.getByText('Order order-87')).toBeInTheDocument();
-    expect(screen.getByText('Order order-12')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Mark Seller One paid' })).toBeInTheDocument();
-  });
-
   it('loads every period report page with server date filters and merges rows newest first', async () => {
     payoutService.listAdminSellerPayments.mockImplementation(async parameters => {
       const isFirstPage = parameters.page === 1;
@@ -1732,242 +1561,6 @@ describe('admin payout eligibility page', () => {
     expect(await screen.findByText('1 of 1 selected')).toBeInTheDocument();
   });
 
-  it('waits for a selected period and sends full calendar-day boundaries', async () => {
-    renderPage();
-
-    expect(
-      await screen.findByText('Select a period to load payout-eligible items.'),
-    ).toBeInTheDocument();
-    expect(payoutService.listEligibleSellerPayoutItems).not.toHaveBeenCalled();
-
-    await selectPeriod();
-
-    const start = new Date('2026-09-01T00:00:00').toISOString();
-    const end = new Date('2026-09-30T23:59:59.999').toISOString();
-    expect(payoutService.listEligibleSellerPayoutItems).toHaveBeenCalledWith({
-      page: 1,
-      periodEnd: end,
-      periodStart: start,
-      size: 100,
-    });
-  });
-
-  it('renders backend candidate fields and the backend eligible total', async () => {
-    renderPage();
-    await selectPeriod();
-
-    expect(screen.getByText('Seller One')).toBeInTheDocument();
-    expect(screen.getByText('Order order-12')).toBeInTheDocument();
-    expect(screen.getByText('Sep 18, 2026')).toBeInTheDocument();
-    expect(screen.getAllByText('Rs 2,450.00')).toHaveLength(2);
-    expect(screen.getByText('Seller incentive bonus')).toBeInTheDocument();
-    expect(screen.getByText('Eligible items:').parentElement).toHaveTextContent('1');
-    expect(screen.getByText('Eligible total:').parentElement).toHaveTextContent('Rs 2,450.00');
-    expect(screen.queryByText(/commission on the listing price/i)).not.toBeInTheDocument();
-  });
-
-  it('generates a run for the selected period and refreshes candidates and run history', async () => {
-    renderPage();
-    await selectPeriod();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Generate payout run' }));
-
-    const periodStart = new Date('2026-09-01T00:00:00').toISOString();
-    const periodEnd = new Date('2026-09-30T23:59:59.999').toISOString();
-    await waitFor(() =>
-      expect(payoutService.createPayoutRun).toHaveBeenCalledWith({
-        periodEnd,
-        periodStart,
-      }),
-    );
-    await waitFor(() =>
-      expect(payoutService.listEligibleSellerPayoutItems.mock.calls.length).toBeGreaterThan(1),
-    );
-    await waitFor(() => expect(payoutService.listPayoutRuns.mock.calls.length).toBeGreaterThan(1));
-  });
-
-  it('shows a loading state while the payout run is being generated', async () => {
-    let resolveRun!: (response: {
-      data: { id: string };
-      message: string;
-      statusCode: number;
-    }) => void;
-    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    const pendingRun = new Promise(resolve => {
-      resolveRun = resolve;
-    });
-    payoutService.createPayoutRun.mockReturnValue(pendingRun);
-    renderPage();
-    await selectPeriod();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Generate payout run' }));
-    expect(await screen.findByRole('button', { name: 'Generating run…' })).toBeDisabled();
-
-    resolveRun({ data: { id: 'run-1' }, message: 'Created.', statusCode: 201 });
-    await screen.findByRole('button', { name: 'Generate payout run' });
-  });
-
-  it('explains why no items are eligible', async () => {
-    payoutService.listEligibleSellerPayoutItems.mockResolvedValue(createEligibleResponse());
-    renderPage();
-    await selectPeriod(/No items are eligible for this period/);
-
-    expect(
-      screen.getByText(
-        /buyer receipt confirmation and a posted local accounting snapshot are required/i,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Generate payout run' })).toBeDisabled();
-  });
-
-  it('keeps loading and API errors visible', async () => {
-    payoutService.listEligibleSellerPayoutItems.mockRejectedValue(
-      new Error('Eligibility unavailable'),
-    );
-    renderPage();
-    fireEvent.change(await screen.findByLabelText('Period start'), {
-      target: { value: '2026-09-01' },
-    });
-    fireEvent.change(await screen.findByLabelText('Period end'), {
-      target: { value: '2026-09-30' },
-    });
-
-    expect(await screen.findByText(/could not load eligible payout items/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
-  });
-
-  it('shows a payout-run creation error', async () => {
-    payoutService.createPayoutRun.mockRejectedValue(new Error('Run creation failed'));
-    renderPage();
-    await selectPeriod();
-    fireEvent.click(screen.getByRole('button', { name: 'Generate payout run' }));
-
-    expect(await screen.findByText('Run creation failed')).toBeInTheDocument();
-  });
-
-  it('records one payment for all unpaid components for a seller in the selected cycle', async () => {
-    payoutService.listPayoutRunItems.mockResolvedValue({
-      ...emptyPage,
-      data: [sellerPayoutRunItem, sellerBasePayoutRunItem],
-    });
-    payoutService.recordSellerPayoutCyclePayment.mockResolvedValue({
-      data: {
-        amount: 12450,
-        paidAt: '2026-10-07T10:15:00.000Z',
-        payoutRunItemIds: ['run-item-1', 'run-item-2'],
-        sellerId: 'seller-1',
-      },
-      message: 'Updated.',
-      statusCode: 200,
-    });
-    await openRunDetails();
-
-    expect(
-      screen.getByText(/Record payment only after the external transfer/i),
-    ).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
-
-    await waitFor(() =>
-      expect(payoutService.recordSellerPayoutCyclePayment).toHaveBeenCalledWith(
-        'run-1',
-        'seller-1',
-        {},
-      ),
-    );
-  });
-
-  it('refreshes every seller component with the shared paid timestamp after success', async () => {
-    payoutService.listPayoutRunItems.mockImplementation(async () => {
-      const isPaid = payoutService.recordSellerPayoutCyclePayment.mock.calls.length > 0;
-      return {
-        ...emptyPage,
-        data: [
-          {
-            ...sellerPayoutRunItem,
-            status: isPaid ? 'PAID' : 'UNPAID',
-            paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
-          },
-          {
-            ...sellerBasePayoutRunItem,
-            status: isPaid ? 'PAID' : 'UNPAID',
-            paidAt: isPaid ? '2026-10-07T10:15:00.000Z' : null,
-          },
-        ],
-      };
-    });
-    payoutService.recordSellerPayoutCyclePayment.mockResolvedValue({
-      data: {
-        amount: 12450,
-        paidAt: '2026-10-07T10:15:00.000Z',
-        payoutRunItemIds: ['run-item-1', 'run-item-2'],
-        sellerId: 'seller-1',
-      },
-      message: 'Updated.',
-      statusCode: 200,
-    });
-    await openRunDetails();
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
-
-    await waitFor(() =>
-      expect(payoutService.listPayoutRunItems.mock.calls.length).toBeGreaterThan(1),
-    );
-    expect(screen.getAllByText('Paid')).toHaveLength(2);
-    expect(screen.getAllByText(/Paid · \w+ \d+, 2026, \d+:\d+ [AP]M/)).toHaveLength(2);
-    expect(screen.queryByRole('button', { name: 'Mark Seller One paid' })).not.toBeInTheDocument();
-  });
-
-  it('disables repeat seller payment submission while the request is pending', async () => {
-    let resolvePayment!: (response: { data: unknown; message: string; statusCode: number }) => void;
-    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
-    payoutService.recordSellerPayoutCyclePayment.mockReturnValue(
-      new Promise(resolve => {
-        resolvePayment = resolve;
-      }),
-    );
-    await openRunDetails();
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark Seller One paid' }));
-
-    const pendingButton = await screen.findByRole('button', {
-      name: 'Recording payment for Seller One',
-    });
-    expect(pendingButton).toBeDisabled();
-    fireEvent.click(pendingButton);
-    expect(payoutService.recordSellerPayoutCyclePayment).toHaveBeenCalledTimes(1);
-    resolvePayment({ data: sellerPayoutRunItem, message: 'Updated.', statusCode: 200 });
-  });
-
-  it('shows payment errors and keeps buyer refunds separate from seller payment actions', async () => {
-    payoutService.listPayoutRunItems.mockResolvedValue({
-      ...emptyPage,
-      data: [
-        sellerPayoutRunItem,
-        {
-          ...sellerPayoutRunItem,
-          id: 'refund-item-1',
-          buyerId: 'buyer-1',
-          sellerId: null,
-          itemType: 'BUYER_REFUND',
-          userFullName: 'Buyer One',
-        },
-      ],
-    });
-    payoutService.recordSellerPayoutCyclePayment.mockRejectedValue(
-      new Error('Payment update failed'),
-    );
-    await openRunDetails();
-
-    expect(screen.getAllByText('Buyer refunds').length).toBeGreaterThan(1);
-    expect(screen.getByText('Buyer One')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /mark .* paid/i })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Mark Seller One paid' }));
-
-    expect(await screen.findByText('Payment update failed')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Mark Seller One paid' })).toBeEnabled();
-    expect(screen.getAllByText('Unpaid').length).toBeGreaterThan(0);
-  });
-
   it('shows loading and empty states while payout history loads', async () => {
     let resolvePayments!: (response: typeof emptyPage) => void;
     // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
@@ -2004,7 +1597,6 @@ describe('admin payout eligibility page', () => {
     expect(rows[2]).toHaveTextContent('—');
     expect(rows[2]).toHaveTextContent('Rs 1,800.00');
     expect(screen.queryByRole('button', { name: 'Record payout' })).not.toBeInTheDocument();
-    expect(payoutService.createSellerPayout).not.toHaveBeenCalled();
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
     expect(await screen.findByText('No buyer refunds.')).toBeInTheDocument();

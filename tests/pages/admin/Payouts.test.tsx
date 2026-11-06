@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HTTPError } from 'ky';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Payouts from '@/pages/admin/Payouts';
 
 const payoutService = vi.hoisted(() => ({
@@ -23,6 +23,8 @@ const payoutService = vi.hoisted(() => ({
   recordSellerPayoutCyclePayment: vi.fn(),
   recordAdminSellerPayment: vi.fn(),
 }));
+const createObjectURLDescriptor = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+const revokeObjectURLDescriptor = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
 
 vi.mock('@/services/payout.service', () => payoutService);
 
@@ -371,9 +373,9 @@ const otherSellerPayoutRunItem = {
   payoutComponent: 'BASE' as const,
 };
 
-function renderPage() {
+function renderPage({ staleTime = 0 }: { staleTime?: number } = {}) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false, staleTime } },
   });
 
   return render(
@@ -415,6 +417,20 @@ async function openRunDetails() {
 }
 
 describe('admin payout eligibility page', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (createObjectURLDescriptor) {
+      Object.defineProperty(URL, 'createObjectURL', createObjectURLDescriptor);
+    } else {
+      Reflect.deleteProperty(URL, 'createObjectURL');
+    }
+    if (revokeObjectURLDescriptor) {
+      Object.defineProperty(URL, 'revokeObjectURL', revokeObjectURLDescriptor);
+    } else {
+      Reflect.deleteProperty(URL, 'revokeObjectURL');
+    }
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     payoutService.listPayoutRuns.mockResolvedValue(emptyPage);
@@ -1515,6 +1531,205 @@ describe('admin payout eligibility page', () => {
     expect(screen.getByText('Order order-87')).toBeInTheDocument();
     expect(screen.getByText('Order order-12')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mark Seller One paid' })).toBeInTheDocument();
+  });
+
+  it('loads every period report page with server date filters and merges rows newest first', async () => {
+    payoutService.listAdminSellerPayments.mockImplementation(async parameters => {
+      const isFirstPage = parameters.page === 1;
+      return {
+        ...sellerPaymentsResponse,
+        data: [
+          isFirstPage
+            ? { ...sellerPaymentsResponse.data[0], paidAt: '2026-09-29T10:00:00.000Z' }
+            : { ...sellerPaymentsResponse.data[1], paidAt: '2026-09-03T10:00:00.000Z' },
+        ],
+        pagination: {
+          ...emptyPage.pagination,
+          currentPage: parameters.page,
+          lastPage: 2,
+          nextPage: isFirstPage ? 2 : null,
+          perPage: 100,
+          prevPage: isFirstPage ? null : 1,
+          total: 2,
+        },
+      };
+    });
+    payoutService.listAdminBuyerRefunds.mockImplementation(async parameters => {
+      const isFirstPage = parameters.page === 1;
+      return {
+        ...buyerRefundResponse,
+        data: [
+          isFirstPage
+            ? { ...buyerRefundResponse.data[0], date: '2026-09-27T12:00:00.000Z' }
+            : { ...buyerRefundResponse.data[1], date: '2026-09-05T12:00:00.000Z' },
+        ],
+        pagination: {
+          ...emptyPage.pagination,
+          currentPage: parameters.page,
+          lastPage: 2,
+          nextPage: isFirstPage ? 2 : null,
+          perPage: 100,
+          prevPage: isFirstPage ? null : 1,
+          total: 2,
+        },
+      };
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Period report' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-09-30' } });
+
+    expect(await screen.findByText('Leather bag')).toBeInTheDocument();
+    expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
+      page: 1,
+      paidFrom: new Date('2026-09-01T00:00:00').toISOString(),
+      paidTo: new Date('2026-09-30T23:59:59.999').toISOString(),
+      size: 100,
+    });
+    expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
+      page: 2,
+      paidFrom: new Date('2026-09-01T00:00:00').toISOString(),
+      paidTo: new Date('2026-09-30T23:59:59.999').toISOString(),
+      size: 100,
+    });
+    expect(payoutService.listAdminBuyerRefunds).toHaveBeenCalledWith({
+      page: 1,
+      resolvedFrom: new Date('2026-09-01T00:00:00').toISOString(),
+      resolvedTo: new Date('2026-09-30T23:59:59.999').toISOString(),
+      size: 100,
+    });
+    expect(payoutService.listAdminBuyerRefunds).toHaveBeenCalledWith({
+      page: 2,
+      resolvedFrom: new Date('2026-09-01T00:00:00').toISOString(),
+      resolvedTo: new Date('2026-09-30T23:59:59.999').toISOString(),
+      size: 100,
+    });
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Sep 29, 2026');
+    expect(rows[2]).toHaveTextContent('Sep 27, 2026');
+    expect(rows[3]).toHaveTextContent('Sep 5, 2026');
+    expect(rows[4]).toHaveTextContent('Sep 3, 2026');
+  });
+
+  it('rejects an inverted period without requesting report pages', async () => {
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Period report' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-30' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-09-01' } });
+
+    expect(screen.getByText('Period end must be on or after period start.')).toBeInTheDocument();
+    expect(
+      payoutService.listAdminSellerPayments.mock.calls.some(
+        ([parameters]) => 'paidFrom' in parameters,
+      ),
+    ).toBe(false);
+    expect(
+      payoutService.listAdminBuyerRefunds.mock.calls.some(
+        ([parameters]) => 'resolvedFrom' in parameters,
+      ),
+    ).toBe(false);
+  });
+
+  it('hides partial results and offers retry when a report page fails', async () => {
+    payoutService.listAdminSellerPayments.mockImplementation(async parameters => {
+      if (!('paidFrom' in parameters)) return emptyPage;
+      if (parameters.page === 2) throw new Error('Page unavailable');
+      return {
+        ...sellerPaymentsResponse,
+        pagination: { ...sellerPaymentsResponse.pagination, lastPage: 2 },
+      };
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Period report' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-09-30' } });
+
+    expect(
+      await screen.findByText('Could not load the period report. Please try again.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('BANK-7200')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() =>
+      expect(
+        payoutService.listAdminSellerPayments.mock.calls.filter(
+          ([parameters]) => parameters.page === 2 && 'paidFrom' in parameters,
+        ).length,
+      ).toBeGreaterThan(1),
+    );
+  });
+
+  it('selects report rows by default and exports only the selected rows', async () => {
+    let exportedBlob: Blob | undefined;
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn((blob: Blob) => {
+        exportedBlob = blob;
+        return 'blob:period-report';
+      }),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    payoutService.listAdminSellerPayments.mockResolvedValue({
+      ...sellerPaymentsResponse,
+      data: [
+        { ...sellerPaymentsResponse.data[0], paidAt: '2026-09-29T10:00:00.000Z' },
+        { ...sellerPaymentsResponse.data[1], paidAt: '2026-09-03T10:00:00.000Z' },
+      ],
+    });
+    payoutService.listAdminBuyerRefunds.mockResolvedValue({
+      ...buyerRefundResponse,
+      data: [
+        { ...buyerRefundResponse.data[0], date: '2026-09-27T12:00:00.000Z' },
+        { ...buyerRefundResponse.data[1], date: '2026-09-05T12:00:00.000Z' },
+      ],
+    });
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Period report' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-09-30' } });
+
+    expect(await screen.findByText('4 of 4 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    expect(screen.getByText('0 of 4 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Vintage jacket' }));
+    expect(screen.getByText('1 of 4 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Export selected' }));
+
+    expect(exportedBlob).toBeDefined();
+    const csv = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(exportedBlob!);
+    });
+    expect(csv).toContain('"refund","Buyer One","Vintage jacket"');
+    expect(csv).not.toContain('"payout"');
+    expect(csv).not.toContain('"Leather bag"');
+  });
+
+  it('selects all report rows again when the date range changes', async () => {
+    payoutService.listAdminSellerPayments.mockResolvedValue({
+      ...sellerPaymentsResponse,
+      data: [{ ...sellerPaymentsResponse.data[0], paidAt: '2026-09-15T10:00:00.000Z' }],
+    });
+    payoutService.listAdminBuyerRefunds.mockResolvedValue({ ...buyerRefundResponse, data: [] });
+    renderPage({ staleTime: Infinity });
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Period report' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-09-30' } });
+
+    expect(await screen.findByText('1 of 1 selected')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-02' } });
+    expect(await screen.findByText('1 of 1 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Payout · bank transfer' }));
+    expect(screen.getByText('0 of 1 selected')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
+
+    expect(await screen.findByText('1 of 1 selected')).toBeInTheDocument();
   });
 
   it('waits for a selected period and sends full calendar-day boundaries', async () => {

@@ -57,14 +57,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
-  getAdminRefundReportOptions,
   getAdminBuyerRefundsOptions,
   getAdminSellerPayableOptions,
   getAdminSellerPaymentOptions,
   getAdminSellerPaymentsOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminPayoutTransactionsOptions,
-  getAdminSellerPayoutsOptions,
   getEligibleSellerPayoutItemsOptions,
   getPayoutRunItemsOptions,
   getPayoutRunsOptions,
@@ -80,6 +78,7 @@ const BUYER_REFUNDS_PAGE_SIZE = 20;
 const SELLER_FILTER_PAGE_SIZE = 100;
 const SELLER_PAYMENT_PAGE_SIZE = 20;
 const PAYOUT_TRANSACTION_PAGE_SIZE = 20;
+const PERIOD_REPORT_PAGE_SIZE = 100;
 
 const recordSellerPaymentSchema = z.object({
   notes: z.string(),
@@ -143,6 +142,15 @@ function downloadCsv(rows: string[][], filename: string) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function getAdditionalPageQueryOptions<TQueryOptions>(
+  lastPage: number | undefined,
+  createPageQueryOptions: (page: number) => TQueryOptions,
+) {
+  return Array.from({ length: Math.max((lastPage ?? 1) - 1, 0) }, (_, index) =>
+    createPageQueryOptions(index + 2),
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -277,19 +285,60 @@ function Payouts() {
     ...getEligibleSellerPayoutItemsOptions(eligibleParameters),
     enabled: Boolean(eligiblePeriod),
   });
-  const { data: periodPayoutsData } = useQuery(
-    getAdminSellerPayoutsOptions(
-      rangeStart && rangeEnd
-        ? {
-            periodEnd: new Date(`${rangeEnd}T23:59:59.999`).toISOString(),
-            periodStart: new Date(`${rangeStart}T00:00:00`).toISOString(),
-          }
-        : {},
+  const periodReportRange =
+    rangeStart && rangeEnd && rangeEnd >= rangeStart
+      ? {
+          from: new Date(`${rangeStart}T00:00:00`).toISOString(),
+          to: new Date(`${rangeEnd}T23:59:59.999`).toISOString(),
+        }
+      : null;
+  const periodPaymentsParameters = {
+    page: 1,
+    paidFrom: periodReportRange?.from,
+    paidTo: periodReportRange?.to,
+    size: PERIOD_REPORT_PAGE_SIZE,
+  };
+  const periodPaymentsQuery = useQuery({
+    ...getAdminSellerPaymentsOptions(periodPaymentsParameters),
+    enabled: Boolean(periodReportRange),
+  });
+  const additionalPeriodPaymentQueries = useQueries({
+    queries: getAdditionalPageQueryOptions(periodPaymentsQuery.data?.pagination.lastPage, page =>
+      getAdminSellerPaymentsOptions({
+        ...periodPaymentsParameters,
+        page,
+      }),
     ),
-  );
-  // Refund report doesn't support period filtering directly — we derive period
-  // refunds from all refund items and filter by sourceDate on the client side.
-  const { data: allRefundsData } = useQuery(getAdminRefundReportOptions());
+  });
+  const periodRefundsParameters = {
+    page: 1,
+    resolvedFrom: periodReportRange?.from,
+    resolvedTo: periodReportRange?.to,
+    size: PERIOD_REPORT_PAGE_SIZE,
+  };
+  const periodRefundsQuery = useQuery({
+    ...getAdminBuyerRefundsOptions(periodRefundsParameters),
+    enabled: Boolean(periodReportRange),
+  });
+  const additionalPeriodRefundQueries = useQueries({
+    queries: getAdditionalPageQueryOptions(periodRefundsQuery.data?.pagination.lastPage, page =>
+      getAdminBuyerRefundsOptions({
+        ...periodRefundsParameters,
+        page,
+      }),
+    ),
+  });
+  const periodReportLoading =
+    Boolean(periodReportRange) &&
+    (periodPaymentsQuery.isFetching ||
+      additionalPeriodPaymentQueries.some(query => query.isFetching) ||
+      periodRefundsQuery.isFetching ||
+      additionalPeriodRefundQueries.some(query => query.isFetching));
+  const periodReportError =
+    periodPaymentsQuery.error ??
+    additionalPeriodPaymentQueries.find(query => query.error)?.error ??
+    periodRefundsQuery.error ??
+    additionalPeriodRefundQueries.find(query => query.error)?.error;
   const runItemsQuery = useQuery(
     getPayoutRunItemsOptions(detailRun?.id ?? '', { page: 1, size: 100 }),
   );
@@ -463,45 +512,45 @@ function Payouts() {
 
   // ─── Period report items ───────────────────────────────────────────────────
 
-  const periodItems = useMemo<PeriodItem[]>(() => {
-    if (!rangeStart || !rangeEnd) return [];
+  const periodItems: PeriodItem[] = (() => {
+    if (!periodReportRange || periodReportLoading || periodReportError) return [];
 
-    const payoutPeriodItems: PeriodItem[] = (periodPayoutsData?.data ?? []).map(p => ({
-      id: `payout-${p.id}`,
-      amount: Number(p.amount),
-      at: p.paidAt,
-      description: `Payout · ${p.method.replace('_', ' ')}`,
+    const payments = [
+      ...(periodPaymentsQuery.data?.data ?? []),
+      ...additionalPeriodPaymentQueries.flatMap(query => query.data?.data ?? []),
+    ];
+    const refunds = [
+      ...(periodRefundsQuery.data?.data ?? []),
+      ...additionalPeriodRefundQueries.flatMap(query => query.data?.data ?? []),
+    ];
+    const payoutPeriodItems: PeriodItem[] = payments.map(payment => ({
+      id: `payout-${payment.id}`,
+      amount: Number(payment.amount),
+      at: payment.paidAt,
+      description: `Payout · ${payment.method?.replace('_', ' ') ?? '—'}`,
       kind: 'payout',
-      party: p.sellerFullName || `User ${p.sellerId.slice(0, 6)}`,
+      party: payment.sellerFullName || `User ${payment.sellerId.slice(0, 6)}`,
       reference:
-        p.reference || (p.periodStart && p.periodEnd ? `${p.periodStart} → ${p.periodEnd}` : ''),
+        payment.reference ||
+        (payment.periodStart && payment.periodEnd
+          ? `${payment.periodStart} → ${payment.periodEnd}`
+          : ''),
     }));
 
-    // Filter all refunds client-side by sourceDate within the selected range
-    const start = new Date(rangeStart);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(rangeEnd);
-    end.setHours(23, 59, 59, 999);
-
-    const refundPeriodItems: PeriodItem[] = (allRefundsData?.data ?? [])
-      .filter(r => {
-        const d = new Date(r.sourceDate ?? r.createdAt).getTime();
-        return d >= start.getTime() && d <= end.getTime();
-      })
-      .map(r => ({
-        id: `refund-${r.id}`,
-        amount: Number(r.amount),
-        at: r.sourceDate ?? r.createdAt,
-        description: getListingTitle(r.sourceMetadata) || 'Refunded item',
-        kind: 'refund' as const,
-        party: r.userFullName || `User ${r.buyerId?.slice(0, 6) ?? '?'}`,
-        reference: r.orderId ? `Order ${r.orderId.slice(0, 8)}` : '',
-      }));
+    const refundPeriodItems: PeriodItem[] = refunds.map(refund => ({
+      id: `refund-${refund.complaintId}`,
+      amount: Number(refund.amount),
+      at: refund.date,
+      description: refund.listingTitle || 'Refunded item',
+      kind: 'refund',
+      party: refund.buyerFullName || `User ${refund.buyerId.slice(0, 6)}`,
+      reference: refund.orderId ? `Order ${refund.orderId.slice(0, 8)}` : '',
+    }));
 
     return [...payoutPeriodItems, ...refundPeriodItems].toSorted(
       (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
     );
-  }, [rangeStart, rangeEnd, periodPayoutsData, allRefundsData]);
+  })();
 
   const periodTotals = useMemo(() => {
     let payoutTotal = 0;
@@ -514,10 +563,16 @@ function Payouts() {
     return { count: selectedIds.size, payoutTotal, refundTotal };
   }, [periodItems, selectedIds]);
 
-  // Auto-select all when period items load
+  // Auto-select all when period items load or the selected date range changes.
+  const periodItemSelectionKey = JSON.stringify({
+    itemIds: periodItems.map(item => item.id),
+    rangeEnd,
+    rangeStart,
+  });
   useEffect(() => {
-    setSelectedIds(new Set(periodItems.map(index => index.id)));
-  }, [periodItems]);
+    const { itemIds } = JSON.parse(periodItemSelectionKey) as { itemIds: string[] };
+    setSelectedIds(new Set(itemIds));
+  }, [periodItemSelectionKey]);
 
   const toggleSelected = (id: string) => {
     setSelectedIds(previous => {
@@ -531,6 +586,15 @@ function Payouts() {
   const toggleAllSelected = () => {
     if (selectedIds.size === periodItems.length) setSelectedIds(new Set());
     else setSelectedIds(new Set(periodItems.map(index => index.id)));
+  };
+
+  const retryPeriodReport = () => {
+    void Promise.all([
+      periodPaymentsQuery.refetch(),
+      ...additionalPeriodPaymentQueries.map(query => query.refetch()),
+      periodRefundsQuery.refetch(),
+      ...additionalPeriodRefundQueries.map(query => query.refetch()),
+    ]);
   };
 
   // ─── Actions ───────────────────────────────────────────────────────────────
@@ -1595,8 +1659,7 @@ function Payouts() {
                     <>
                       <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
                         <Badge variant="secondary">
-                          {periodTotals.count} of
-                          {periodItems.length} selected
+                          {periodTotals.count} of {periodItems.length} selected
                         </Badge>
                         <Badge variant="outline">Payouts {fmt(periodTotals.payoutTotal)}</Badge>
                         <Badge variant="outline" className="text-destructive">
@@ -1621,6 +1684,23 @@ function Payouts() {
                     <p className="text-sm">
                       Select a date range to view payouts and refunds for that period.
                     </p>
+                  </div>
+                ) : rangeEnd < rangeStart ? (
+                  <p className="py-10 text-center text-sm text-destructive">
+                    Period end must be on or after period start.
+                  </p>
+                ) : periodReportLoading ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    Loading period report…
+                  </div>
+                ) : periodReportError ? (
+                  <div className="flex flex-col items-center gap-3 py-10 text-center">
+                    <p className="text-sm text-destructive">
+                      Could not load the period report. Please try again.
+                    </p>
+                    <Button onClick={retryPeriodReport} size="sm" variant="outline">
+                      Retry
+                    </Button>
                   </div>
                 ) : periodItems.length === 0 ? (
                   <div className="py-10 text-center text-sm text-muted-foreground">

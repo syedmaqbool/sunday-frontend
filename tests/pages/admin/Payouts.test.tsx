@@ -1,6 +1,7 @@
 import type { EligibleSellerPayoutItemsResponse } from '@/types/payout.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { HTTPError } from 'ky';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Payouts from '@/pages/admin/Payouts';
@@ -10,11 +11,13 @@ const payoutService = vi.hoisted(() => ({
   createSellerPayout: vi.fn(),
   listEligibleSellerPayoutItems: vi.fn(),
   listAdminPayoutSellers: vi.fn(),
+  getAdminSellerPayable: vi.fn(),
   listPayoutRunItems: vi.fn(),
   listPayoutRuns: vi.fn(),
   listRefundPayouts: vi.fn(),
   listSellerPayouts: vi.fn(),
   recordSellerPayoutCyclePayment: vi.fn(),
+  recordAdminSellerPayment: vi.fn(),
 }));
 
 vi.mock('@/services/payout.service', () => payoutService);
@@ -71,6 +74,47 @@ const sellerSummaryResponse = {
   ],
   aggregates: { grossSales: 24000, buyerRefunds: 2500, paid: 5000, balanceDue: 12500 },
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
+};
+
+const sellerPayablePreviewResponse = {
+  data: {
+    sellerId: 'seller-1',
+    sellerFullName: 'Seller One',
+    payableStatus: 'PAYABLE' as const,
+    reviewReason: null,
+    base: 10000,
+    sellerIncentiveBonus: 2500,
+    total: 12500,
+    periodStart: '2026-09-01T00:00:00.000Z',
+    periodEnd: '2026-09-30T23:59:59.999Z',
+    itemCount: 3,
+    bankAccountHolder: 'Seller One',
+    bankAccountNumber: '1234567890',
+    bankIban: 'PK00TEST0000000000000000',
+    bankName: 'Example Bank',
+    bankSwift: 'EXAMPKKA',
+    bankDetailsMissing: false,
+    bankDetailsDiffer: false,
+  },
+  message: 'Loaded.',
+  statusCode: 200,
+};
+
+const sellerPaymentResponse = {
+  data: {
+    id: 'payment-1',
+    sellerId: 'seller-1',
+    amount: 12500,
+    method: 'BANK_TRANSFER' as const,
+    notes: 'October transfer',
+    payoutRunItemIds: ['item-1', 'item-2'],
+    periodEnd: '2026-09-30T23:59:59.999Z',
+    periodStart: '2026-09-01T00:00:00.000Z',
+    reference: 'BANK-123',
+    paidAt: '2026-10-01T10:00:00.000Z',
+  },
+  message: 'Recorded.',
+  statusCode: 201,
 };
 
 const eligibleResponse = createEligibleResponse({
@@ -208,12 +252,270 @@ describe('admin payout eligibility page', () => {
     payoutService.listRefundPayouts.mockResolvedValue(emptyPage);
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
+    payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
       data: { id: 'run-1' },
       message: 'Created.',
       statusCode: 201,
     });
+  });
+
+  it('opens the seller payout dialog with the server amount and payout split', async () => {
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    const sellerOneRow = screen.getByRole('row', { name: /Seller One/ });
+    const sellerTwoRow = screen.getByRole('row', { name: /Seller Two/ });
+    const recordSellerOneButton = within(sellerOneRow).getByRole('button', {
+      name: 'Record payout',
+    });
+    expect(recordSellerOneButton).toBeEnabled();
+    expect(within(sellerTwoRow).getByRole('button', { name: 'Record payout' })).toBeDisabled();
+
+    fireEvent.click(recordSellerOneButton);
+
+    expect(payoutService.getAdminSellerPayable).toHaveBeenCalledWith('seller-1');
+    const dialog = await screen.findByRole('dialog');
+    const amountInput = await within(dialog).findByLabelText('Amount (PKR)');
+    expect(amountInput).toHaveValue('Rs 12,500.00');
+    expect(amountInput).toHaveAttribute('readonly');
+    expect(within(dialog).getByLabelText('Method')).toHaveValue('Bank transfer');
+    expect(within(dialog).getByText(/^Sep 1, 2026 – /)).toBeInTheDocument();
+    expect(within(dialog).getByText('Base payout')).toBeInTheDocument();
+    expect(within(dialog).getByText('Rs 10,000.00')).toBeInTheDocument();
+    expect(within(dialog).getByText('Seller incentive bonus')).toBeInTheDocument();
+    expect(within(dialog).getByText('Rs 2,500.00')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/recording a payment does not move money/i),
+    ).toBeInTheDocument();
+  });
+
+  it('requires a reference and records the previewed amount with an idempotency key', async () => {
+    payoutService.recordAdminSellerPayment.mockResolvedValue(sellerPaymentResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByLabelText('Amount (PKR)');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Reference is required.');
+    expect(payoutService.recordAdminSellerPayment).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText('Reference'), { target: { value: 'BANK-123' } });
+    fireEvent.change(within(dialog).getByLabelText('Notes (optional)'), {
+      target: { value: 'October transfer' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+
+    await waitFor(() => expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledTimes(1));
+    expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledWith('seller-1', {
+      expectedAmount: 12500,
+      idempotencyKey: expect.any(String),
+      notes: 'October transfer',
+      reference: 'BANK-123',
+    });
+  });
+
+  it('refreshes seller balances and disables the action when a payout is recorded', async () => {
+    payoutService.listAdminPayoutSellers.mockImplementation(async () => {
+      if (payoutService.recordAdminSellerPayment.mock.calls.length === 0) {
+        return sellerSummaryResponse;
+      }
+
+      return {
+        ...sellerSummaryResponse,
+        data: [
+          {
+            ...sellerSummaryResponse.data[0],
+            paid: 17500,
+            balanceDue: 0,
+            payableStatus: 'NOTHING_DUE' as const,
+          },
+          sellerSummaryResponse.data[1],
+        ],
+        aggregates: { ...sellerSummaryResponse.aggregates, paid: 17500, balanceDue: 0 },
+      };
+    });
+    payoutService.recordAdminSellerPayment.mockResolvedValue(sellerPaymentResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(await within(dialog).findByLabelText('Reference'), {
+      target: { value: 'BANK-123' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const updatedSellerRow = await screen.findByRole('row', { name: /Seller One/ });
+    expect(within(updatedSellerRow).getByText('Rs 17,500.00')).toBeInTheDocument();
+    expect(within(updatedSellerRow).getByText('Rs 0.00')).toBeInTheDocument();
+    expect(within(updatedSellerRow).getByRole('button', { name: 'Record payout' })).toBeDisabled();
+  });
+
+  it('shows preview loading and lets the administrator retry a failed preview', async () => {
+    payoutService.getAdminSellerPayable
+      .mockRejectedValueOnce(new Error('Preview unavailable'))
+      .mockResolvedValueOnce(sellerPayablePreviewResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      await within(dialog).findByText(
+        'Could not load the seller payout preview. Please try again.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Retry' }));
+
+    expect(await within(dialog).findByLabelText('Amount (PKR)')).toHaveValue('Rs 12,500.00');
+    expect(payoutService.getAdminSellerPayable).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows a loading state while the seller payout preview is being fetched', async () => {
+    let resolvePreview!: (response: typeof sellerPayablePreviewResponse) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.getAdminSellerPayable.mockReturnValue(
+      new Promise(resolve => {
+        resolvePreview = resolve;
+      }),
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByText('Loading seller payout preview…')).toBeInTheDocument();
+    resolvePreview(sellerPayablePreviewResponse);
+    expect(await within(dialog).findByLabelText('Amount (PKR)')).toHaveValue('Rs 12,500.00');
+  });
+
+  it('keeps form entries and reuses the idempotency key after a failed payment request', async () => {
+    payoutService.recordAdminSellerPayment
+      .mockRejectedValueOnce(new Error('The response was lost.'))
+      .mockResolvedValueOnce(sellerPaymentResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const referenceInput = await within(dialog).findByLabelText('Reference');
+    const notesInput = within(dialog).getByLabelText('Notes (optional)');
+    fireEvent.change(referenceInput, { target: { value: 'BANK-123' } });
+    fireEvent.change(notesInput, { target: { value: 'October transfer' } });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    expect(await within(dialog).findByText('The response was lost.')).toBeInTheDocument();
+    expect(referenceInput).toHaveValue('BANK-123');
+    expect(notesInput).toHaveValue('October transfer');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    await waitFor(() => expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledTimes(2));
+    const firstPayload = payoutService.recordAdminSellerPayment.mock.calls[0][1];
+    const retryPayload = payoutService.recordAdminSellerPayment.mock.calls[1][1];
+    expect(retryPayload).toEqual(firstPayload);
+  });
+
+  it('prevents duplicate submission while a seller payment is pending', async () => {
+    let resolvePayment!: (response: typeof sellerPaymentResponse) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.recordAdminSellerPayment.mockReturnValue(
+      new Promise(resolve => {
+        resolvePayment = resolve;
+      }),
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(await within(dialog).findByLabelText('Reference'), {
+      target: { value: 'BANK-123' },
+    });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    const pendingButton = await within(dialog).findByRole('button', { name: 'Saving payout…' });
+    expect(pendingButton).toBeDisabled();
+    fireEvent.click(pendingButton);
+    expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledTimes(1);
+
+    resolvePayment(sellerPaymentResponse);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('reloads a changed amount and requires an explicit retry with a new key', async () => {
+    const staleAmountError = new HTTPError(
+      new Response(
+        JSON.stringify({
+          code: 'APP_SELLER_PAYOUT_AMOUNT_CHANGED',
+          message: 'Seller payable amount changed after it was previewed.',
+        }),
+        { headers: { 'Content-Type': 'application/json' }, status: 409 },
+      ),
+      new Request('http://localhost/api/v1/admin/payouts/sellers/seller-1/payment'),
+      {} as never,
+    );
+    payoutService.getAdminSellerPayable
+      .mockResolvedValueOnce(sellerPayablePreviewResponse)
+      .mockResolvedValueOnce({
+        ...sellerPayablePreviewResponse,
+        data: { ...sellerPayablePreviewResponse.data, base: 9000, total: 11000 },
+      });
+    payoutService.recordAdminSellerPayment
+      .mockRejectedValueOnce(staleAmountError)
+      .mockResolvedValueOnce(sellerPaymentResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'By seller' }), { button: 0 });
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Seller One/ })).getByRole('button', {
+        name: 'Record payout',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const amountInput = await within(dialog).findByLabelText('Amount (PKR)');
+    fireEvent.change(within(dialog).getByLabelText('Reference'), {
+      target: { value: 'BANK-123' },
+    });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    expect(
+      await within(dialog).findByText(
+        'The seller balance changed. Review the updated amount before saving again.',
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(amountInput).toHaveValue('Rs 11,000.00'));
+    expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save payout' }));
+    await waitFor(() => expect(payoutService.recordAdminSellerPayment).toHaveBeenCalledTimes(2));
+    expect(payoutService.recordAdminSellerPayment.mock.calls[1][1].expectedAmount).toBe(11000);
+    expect(payoutService.recordAdminSellerPayment.mock.calls[1][1].idempotencyKey).not.toBe(
+      payoutService.recordAdminSellerPayment.mock.calls[0][1].idempotencyKey,
+    );
   });
 
   it('shows seller balances and server totals on the By seller tab', async () => {

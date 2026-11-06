@@ -6,6 +6,7 @@ import type {
   EligibleSellerPayoutItemsParams,
   PayoutRunItemListParams,
   PayoutRunListParams,
+  RecordAdminSellerPaymentPayload,
   RecordSellerPayoutCyclePaymentPayload,
   SellerPayoutSummaryListParams,
 } from '@/types/payout.type';
@@ -13,6 +14,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import {
   createPayoutRun,
   createSellerPayout,
+  getAdminSellerPayable,
   listEligibleSellerPayoutItems,
   listPayoutRunItems,
   listPayoutRuns,
@@ -20,6 +22,7 @@ import {
   listAdminPayoutSellers,
   listSellerPayouts,
   recordSellerPayoutCyclePayment,
+  recordAdminSellerPayment,
 } from '@/services/payout.service';
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -40,10 +43,37 @@ export const payoutQueryKey = {
   sellerPayoutList: (parameters: AdminSellerPayoutListParams = {}) =>
     [...payoutQueryKey.sellerPayouts(), 'list', parameters] as const,
   sellerPayouts: () => [...payoutQueryKey.all(), 'seller-payouts'] as const,
+  sellerPayable: (sellerId: string) =>
+    [...payoutQueryKey.all(), 'seller-payable', 'detail', sellerId] as const,
   sellerSummaryList: (parameters: SellerPayoutSummaryListParams) =>
     [...payoutQueryKey.sellerSummaries(), 'list', parameters] as const,
   sellerSummaries: () => [...payoutQueryKey.all(), 'seller-summaries'] as const,
 };
+
+export function getAdminSellerPayableOptions(sellerId: string) {
+  return queryOptions({
+    enabled: Boolean(sellerId),
+    queryFn: () => getAdminSellerPayable(sellerId),
+    queryKey: payoutQueryKey.sellerPayable(sellerId),
+  });
+}
+
+export function useRecordAdminSellerPaymentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      payload,
+      sellerId,
+    }: {
+      payload: RecordAdminSellerPaymentPayload;
+      sellerId: string;
+    }) => recordAdminSellerPayment(sellerId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: payoutQueryKey.all() });
+    },
+  });
+}
 
 export function getAdminPayoutSellerSummariesOptions(parameters: SellerPayoutSummaryListParams) {
   return queryOptions({

@@ -9,11 +9,14 @@ import type {
   PayoutRunItem,
   PayoutRunItemListParams,
   PayoutRunListParams,
+  RecordAdminSellerPaymentPayload,
+  RecordAdminSellerPaymentResponse,
   RecordSellerPayoutCyclePaymentPayload,
   RecordSellerPayoutCyclePaymentResponse,
   SellerPayout,
   SellerPayoutSummaryListParams,
   SellerPayoutSummaryResponse,
+  SellerPayablePreviewResponse,
 } from '@/types/payout.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
 import { authInstance } from '@/services/ky.instance';
@@ -80,6 +83,21 @@ export function listAdminPayoutSellers(parameters: SellerPayoutSummaryListParams
       searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<SellerPayoutSummaryResponse>();
+}
+
+export function getAdminSellerPayable(sellerId: string) {
+  return authInstance
+    .get(`/api/v1/admin/payouts/sellers/${sellerId}/payable`)
+    .json<SellerPayablePreviewResponse>();
+}
+
+export function recordAdminSellerPayment(
+  sellerId: string,
+  payload: RecordAdminSellerPaymentPayload,
+) {
+  return authInstance
+    .post(`/api/v1/admin/payouts/sellers/${sellerId}/payment`, { json: payload })
+    .json<RecordAdminSellerPaymentResponse>();
 }
 
 export function createSellerPayout(payload: CreateSellerPayoutPayload) {

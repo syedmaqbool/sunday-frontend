@@ -1,6 +1,8 @@
 import type { PayoutRun, PayoutRunItem, SellerPayout } from '@/types/payout.type';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { HTTPError } from 'ky';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -12,6 +14,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,6 +51,7 @@ import { toast } from '@/hooks/use-toast';
 import { formatEnumLabel } from '@/lib/utilities';
 import {
   getAdminRefundReportOptions,
+  getAdminSellerPayableOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminSellerPayoutsOptions,
   getEligibleSellerPayoutItemsOptions,
@@ -54,11 +59,19 @@ import {
   getPayoutRunsOptions,
   useCreatePayoutRunMutation,
   useRecordSellerPayoutCyclePaymentMutation,
+  useRecordAdminSellerPaymentMutation,
 } from '@/queries/payout.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SELLER_SUMMARY_PAGE_SIZE = 20;
+
+const recordSellerPaymentSchema = z.object({
+  notes: z.string(),
+  reference: z.string().trim().min(1, 'Reference is required.'),
+});
+
+type RecordSellerPaymentForm = z.infer<typeof recordSellerPaymentSchema>;
 
 function fmt(n: number) {
   return `Rs ${(Math.round(n * 100) / 100).toLocaleString('en-PK', {
@@ -107,6 +120,9 @@ function Payouts() {
   const [rangeEnd, setRangeEnd] = useState('');
   const [eligiblePage, setEligiblePage] = useState(1);
   const [sellerSummaryPage, setSellerSummaryPage] = useState(1);
+  const [recordPayoutSellerId, setRecordPayoutSellerId] = useState<string | null>(null);
+  const [recordPayoutIdempotencyKey, setRecordPayoutIdempotencyKey] = useState<string | null>(null);
+  const [recordPayoutError, setRecordPayoutError] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -130,6 +146,16 @@ function Payouts() {
       size: SELLER_SUMMARY_PAGE_SIZE,
     }),
     placeholderData: previousData => previousData,
+  });
+  const {
+    data: sellerPayablePreviewResponse,
+    error: sellerPayablePreviewError,
+    isFetching: sellerPayablePreviewFetching,
+    isLoading: sellerPayablePreviewLoading,
+    refetch: refetchSellerPayablePreview,
+  } = useQuery({
+    ...getAdminSellerPayableOptions(recordPayoutSellerId ?? ''),
+    enabled: Boolean(recordPayoutSellerId),
   });
   const eligiblePeriod =
     rangeStart && rangeEnd && rangeEnd >= rangeStart
@@ -192,6 +218,11 @@ function Payouts() {
 
   const createPayoutRunMutation = useCreatePayoutRunMutation();
   const recordSellerPayoutCyclePaymentMutation = useRecordSellerPayoutCyclePaymentMutation();
+  const recordAdminSellerPaymentMutation = useRecordAdminSellerPaymentMutation();
+  const recordSellerPaymentForm = useForm<RecordSellerPaymentForm>({
+    defaultValues: { notes: '', reference: '' },
+    resolver: zodResolver(recordSellerPaymentSchema),
+  });
 
   const loading =
     lruns || lrefunds || lpayouts || (sellerSummariesLoading && sellerSummaryPage === 1);
@@ -212,6 +243,76 @@ function Payouts() {
     paid: sellerSummariesData?.aggregates?.paid ?? 0,
     refunds: sellerSummariesData?.aggregates?.buyerRefunds ?? 0,
     sales: sellerSummariesData?.aggregates?.grossSales ?? 0,
+  };
+  const sellerPayablePreview = sellerPayablePreviewResponse?.data;
+
+  const openRecordPayout = (sellerId: string) => {
+    setRecordPayoutSellerId(sellerId);
+    setRecordPayoutIdempotencyKey(crypto.randomUUID());
+    setRecordPayoutError(null);
+    recordSellerPaymentForm.reset({ notes: '', reference: '' });
+  };
+
+  const closeRecordPayout = (open: boolean) => {
+    if (open || recordAdminSellerPaymentMutation.isPending) return;
+
+    setRecordPayoutSellerId(null);
+    setRecordPayoutIdempotencyKey(null);
+    setRecordPayoutError(null);
+    recordSellerPaymentForm.reset({ notes: '', reference: '' });
+  };
+
+  const submitSellerPayment = async (values: RecordSellerPaymentForm) => {
+    if (
+      !recordPayoutSellerId ||
+      !sellerPayablePreview ||
+      sellerPayablePreview.total === null ||
+      !recordPayoutIdempotencyKey
+    ) {
+      return;
+    }
+
+    setRecordPayoutError(null);
+    try {
+      const response = await recordAdminSellerPaymentMutation.mutateAsync({
+        sellerId: recordPayoutSellerId,
+        payload: {
+          expectedAmount: sellerPayablePreview.total,
+          idempotencyKey: recordPayoutIdempotencyKey,
+          notes: values.notes.trim() || null,
+          reference: values.reference,
+        },
+      });
+
+      toast({
+        description: `${fmt(response.data.amount)} paid to ${sellerPayablePreview.sellerFullName}.`,
+        title: 'Payout recorded',
+      });
+      closeRecordPayout(false);
+    } catch (error) {
+      if (error instanceof HTTPError && error.response.status === 409) {
+        let errorCode: string | undefined;
+        try {
+          const body = (await error.response.clone().json()) as { code?: unknown };
+          errorCode = typeof body.code === 'string' ? body.code : undefined;
+        } catch {
+          errorCode = undefined;
+        }
+
+        if (errorCode === 'APP_SELLER_PAYOUT_AMOUNT_CHANGED') {
+          setRecordPayoutError(
+            'The seller balance changed. Review the updated amount before saving again.',
+          );
+          const refreshedPreview = await refetchSellerPayablePreview();
+          if (refreshedPreview.data) setRecordPayoutIdempotencyKey(crypto.randomUUID());
+          return;
+        }
+      }
+
+      setRecordPayoutError(
+        error instanceof Error ? error.message : 'Could not record this payout.',
+      );
+    }
   };
 
   // ─── Period report items ───────────────────────────────────────────────────
@@ -750,12 +851,13 @@ function Payouts() {
                       </TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right">Balance due</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sellerSummariesLoading && sellerSummaries.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                           Loading seller balances…
                         </TableCell>
                       </TableRow>
@@ -765,7 +867,7 @@ function Payouts() {
                       sellerSummaries.length === 0 && (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="py-10 text-center text-muted-foreground"
                           >
                             No seller activity yet.
@@ -802,6 +904,16 @@ function Payouts() {
                           `}
                         >
                           {s.balanceDue === null ? '—' : fmt(Number(s.balanceDue))}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            disabled={s.payableStatus === 'NOTHING_DUE'}
+                            onClick={() => openRecordPayout(s.sellerId)}
+                            size="sm"
+                            variant={s.payableStatus === 'NOTHING_DUE' ? 'outline' : 'default'}
+                          >
+                            Record payout
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1094,6 +1206,150 @@ function Payouts() {
       )}
 
       {/* ── Payout Run Detail Dialog ── */}
+      <Dialog open={Boolean(recordPayoutSellerId)} onOpenChange={closeRecordPayout}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record payout</DialogTitle>
+            <DialogDescription>
+              {sellerPayablePreview?.sellerFullName
+                ? `Review the payout for ${sellerPayablePreview.sellerFullName}.`
+                : 'Review the seller payout before recording it.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {sellerPayablePreviewLoading && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Loading seller payout preview…
+            </p>
+          )}
+
+          {sellerPayablePreviewError && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Could not load the seller payout preview. Please try again.{' '}
+                <Button
+                  disabled={sellerPayablePreviewFetching}
+                  onClick={() => void refetchSellerPayablePreview()}
+                  size="sm"
+                  variant="outline"
+                >
+                  {sellerPayablePreviewFetching ? 'Retrying…' : 'Retry'}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {sellerPayablePreview && (
+            <form
+              className="space-y-4"
+              onSubmit={recordSellerPaymentForm.handleSubmit(submitSellerPayment)}
+            >
+              <div
+                className="
+                  grid gap-4
+                  sm:grid-cols-2
+                "
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-amount">Amount (PKR)</Label>
+                  <Input
+                    id="seller-payout-amount"
+                    readOnly
+                    value={
+                      sellerPayablePreview.total === null ? '—' : fmt(sellerPayablePreview.total)
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seller-payout-method">Method</Label>
+                  <Input id="seller-payout-method" readOnly value="Bank transfer" />
+                </div>
+                <div
+                  className="
+                    space-y-1.5
+                    sm:col-span-2
+                  "
+                >
+                  <Label>Payment period</Label>
+                  <p className="rounded-md border px-3 py-2 text-sm">
+                    {sellerPayablePreview.periodStart && sellerPayablePreview.periodEnd
+                      ? `${format(new Date(sellerPayablePreview.periodStart), 'MMM d, yyyy')} – ${format(new Date(sellerPayablePreview.periodEnd), 'MMM d, yyyy')}`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="
+                  grid gap-3 rounded-md border p-3
+                  sm:grid-cols-2
+                "
+              >
+                <div>
+                  <p className="text-xs text-muted-foreground">Base payout</p>
+                  <p className="font-medium">{fmt(Number(sellerPayablePreview.base ?? 0))}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Seller incentive bonus</p>
+                  <p className="font-medium">
+                    {fmt(Number(sellerPayablePreview.sellerIncentiveBonus ?? 0))}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="seller-payout-reference">Reference</Label>
+                <Input
+                  id="seller-payout-reference"
+                  {...recordSellerPaymentForm.register('reference')}
+                />
+                {recordSellerPaymentForm.formState.errors.reference?.message && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {recordSellerPaymentForm.formState.errors.reference.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="seller-payout-notes">Notes (optional)</Label>
+                <Input id="seller-payout-notes" {...recordSellerPaymentForm.register('notes')} />
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Recording a payment does not move money. Transfer the funds first, then record the
+                payment here.
+              </p>
+
+              {recordPayoutError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{recordPayoutError}</AlertDescription>
+                </Alert>
+              )}
+
+              <DialogFooter>
+                <Button
+                  disabled={recordAdminSellerPaymentMutation.isPending}
+                  onClick={() => closeRecordPayout(false)}
+                  type="button"
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={
+                    sellerPayablePreview.total === null ||
+                    recordAdminSellerPaymentMutation.isPending
+                  }
+                  type="submit"
+                >
+                  {recordAdminSellerPaymentMutation.isPending ? 'Saving payout…' : 'Save payout'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog onOpenChange={o => !o && setDetailRun(null)} open={!!detailRun}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>

@@ -18,6 +18,8 @@ import type {
   SellerPayout,
   SellerPayoutSummaryListParams,
   SellerPayoutSummaryResponse,
+  SellerPayment,
+  SellerPaymentListParams,
   SellerPayablePreviewResponse,
 } from '@/types/payout.type';
 import type { PaginatedResponse, Response } from '@/types/response.type';
@@ -93,6 +95,14 @@ export function listAdminPayoutSellers(parameters: SellerPayoutSummaryListParams
       searchParams: parameters as Record<string, boolean | number | string | undefined>,
     })
     .json<SellerPayoutSummaryResponse>();
+}
+
+export function listAdminSellerPayments(parameters: SellerPaymentListParams) {
+  return authInstance
+    .get('/api/v1/admin/payouts/payments', {
+      searchParams: parameters as Record<string, boolean | number | string | undefined>,
+    })
+    .json<PaginatedResponse<SellerPayment>>();
 }
 
 export function getAdminSellerPayable(sellerId: string) {

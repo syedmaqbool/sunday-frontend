@@ -12,6 +12,7 @@ const payoutService = vi.hoisted(() => ({
   listEligibleSellerPayoutItems: vi.fn(),
   listAdminBuyerRefunds: vi.fn(),
   listAdminPayoutSellers: vi.fn(),
+  listAdminSellerPayments: vi.fn(),
   getAdminSellerPayable: vi.fn(),
   listPayoutRunItems: vi.fn(),
   listPayoutRuns: vi.fn(),
@@ -99,6 +100,39 @@ const buyerRefundResponse = {
       buyerFullName: 'Buyer Two',
       date: '2026-10-08T12:00:00.000Z',
       listingTitle: 'Leather bag',
+    },
+  ],
+  pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
+};
+
+const sellerPaymentsResponse = {
+  ...emptyPage,
+  data: [
+    {
+      id: 'payment-newest',
+      sellerId: 'seller-1',
+      sellerFullName: 'Seller One',
+      amount: 7200,
+      method: 'bank_transfer',
+      periodStart: '2026-10-01',
+      periodEnd: '2026-10-31',
+      reference: 'BANK-7200',
+      paidAt: '2026-11-01T10:00:00.000Z',
+      source: 'LEDGER' as const,
+      notes: null,
+    },
+    {
+      id: 'payment-legacy',
+      sellerId: 'seller-2',
+      sellerFullName: 'Seller Two',
+      amount: 1800,
+      method: null,
+      periodStart: null,
+      periodEnd: null,
+      reference: null,
+      paidAt: '2026-08-15T10:00:00.000Z',
+      source: 'LEGACY' as const,
+      notes: null,
     },
   ],
   pagination: { ...emptyPage.pagination, lastPage: 1, total: 2 },
@@ -281,6 +315,7 @@ describe('admin payout eligibility page', () => {
     payoutService.listAdminBuyerRefunds.mockResolvedValue(buyerRefundResponse);
     payoutService.listSellerPayouts.mockResolvedValue(emptyPage);
     payoutService.listAdminPayoutSellers.mockResolvedValue(sellerSummaryResponse);
+    payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
     payoutService.getAdminSellerPayable.mockResolvedValue(sellerPayablePreviewResponse);
     payoutService.listEligibleSellerPayoutItems.mockResolvedValue(eligibleResponse);
     payoutService.createPayoutRun.mockResolvedValue({
@@ -546,7 +581,6 @@ describe('admin payout eligibility page', () => {
       await within(dialog).findByText(/requires finance review: incomplete payable calculation/i),
     ).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Save payout' })).toBeDisabled();
-    await waitFor(() => expect(payoutService.listAdminPayoutSellers).toHaveBeenCalledTimes(2));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
 
     const reviewedRow = await screen.findByRole('row', { name: /Seller One/ });
@@ -939,19 +973,15 @@ describe('admin payout eligibility page', () => {
   });
 
   it('keeps server totals unchanged when the payout history seller filter changes', async () => {
-    payoutService.listSellerPayouts.mockImplementation(async parameters => ({
+    payoutService.listAdminSellerPayments.mockImplementation(async parameters => ({
       ...emptyPage,
       data: [
         {
-          id: 'payout-1',
-          sellerId: 'seller-1',
+          ...sellerPaymentsResponse.data[0],
+          id: parameters.sellerId ? 'filtered-payment' : 'all-payment',
+          sellerId: parameters.sellerId ?? 'seller-1',
           sellerFullName: 'Seller One',
           amount: parameters.sellerId ? 1000 : 9000,
-          method: 'bank_transfer',
-          periodStart: null,
-          periodEnd: null,
-          reference: null,
-          paidAt: '2026-10-01T00:00:00.000Z',
         },
       ],
     }));
@@ -966,7 +996,11 @@ describe('admin payout eligibility page', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'Seller One' }));
 
     await waitFor(() =>
-      expect(payoutService.listSellerPayouts).toHaveBeenCalledWith({ sellerId: 'seller-1' }),
+      expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
+        page: 1,
+        size: 20,
+        sellerId: 'seller-1',
+      }),
     );
     expect(screen.getByText('Paid to sellers', { selector: 'p' }).parentElement).toHaveTextContent(
       'Rs 5,000.00',
@@ -1278,39 +1312,139 @@ describe('admin payout eligibility page', () => {
     expect(screen.getAllByText('Unpaid').length).toBeGreaterThan(0);
   });
 
-  it('keeps historical manual payout records and refund reporting available without manual creation', async () => {
+  it('shows loading and empty states while payout history loads', async () => {
+    let resolvePayments!: (response: typeof emptyPage) => void;
+    // eslint-disable-next-line unicorn/prefer-promise-with-resolvers
+    payoutService.listAdminSellerPayments.mockReturnValue(
+      new Promise(resolve => {
+        resolvePayments = resolve;
+      }),
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+
+    expect(screen.getByText('Loading payout history…')).toBeInTheDocument();
+    resolvePayments(emptyPage);
+
+    expect(await screen.findByText('No payouts recorded yet.')).toBeInTheDocument();
+  });
+
+  it('shows ledger and legacy payments in server order with empty legacy fields', async () => {
     payoutService.listAdminBuyerRefunds.mockResolvedValue(emptyPage);
-    payoutService.listSellerPayouts.mockResolvedValue({
-      ...emptyPage,
-      data: [
-        {
-          id: 'payout-1',
-          sellerId: 'seller-history',
-          amount: 1250,
-          method: 'bank_transfer',
-          periodEnd: '2026-08-10',
-          periodStart: '2026-08-01',
-          reference: 'REF-1',
-          sellerFullName: 'Historical Seller',
-          paidAt: '2026-08-12T09:00:00.000Z',
-        },
-      ],
-    });
+    payoutService.listAdminSellerPayments.mockResolvedValue(sellerPaymentsResponse);
     renderPage();
 
     fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Payout history' })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      ),
-    );
-    await waitFor(() => expect(payoutService.listSellerPayouts).toHaveBeenCalled());
-    expect(await screen.findByText('Historical Seller')).toBeInTheDocument();
+
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
+    expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({ page: 1, size: 20 });
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Seller One');
+    expect(rows[2]).toHaveTextContent('Seller Two');
+    expect(rows[1]).toHaveTextContent('Nov 1, 2026');
+    expect(rows[1]).toHaveTextContent('2026-10-01 → 2026-10-31');
+    expect(rows[1]).toHaveTextContent('Bank Transfer');
+    expect(rows[1]).toHaveTextContent('BANK-7200');
+    expect(rows[2]).toHaveTextContent('—');
+    expect(rows[2]).toHaveTextContent('Rs 1,800.00');
     expect(screen.queryByRole('button', { name: 'Record payout' })).not.toBeInTheDocument();
     expect(payoutService.createSellerPayout).not.toHaveBeenCalled();
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Buyer refunds' }), { button: 0 });
     expect(await screen.findByText('No buyer refunds.')).toBeInTheDocument();
+  });
+
+  it('moves through server pages of payout history', async () => {
+    payoutService.listAdminSellerPayments.mockImplementation(async ({ page }) =>
+      page === 1
+        ? {
+            ...sellerPaymentsResponse,
+            data: [sellerPaymentsResponse.data[0]],
+            pagination: {
+              ...sellerPaymentsResponse.pagination,
+              currentPage: 1,
+              lastPage: 2,
+              nextPage: 2,
+              total: 2,
+            },
+          }
+        : {
+            ...sellerPaymentsResponse,
+            data: [sellerPaymentsResponse.data[1]],
+            pagination: {
+              ...sellerPaymentsResponse.pagination,
+              currentPage: 2,
+              lastPage: 2,
+              nextPage: null,
+              prevPage: 1,
+              total: 2,
+            },
+          },
+    );
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(await screen.findByText('Seller Two')).toBeInTheDocument();
+    expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({ page: 2, size: 20 });
+    expect(screen.getByText('Page 2 of 2 · 2 payments')).toBeInTheDocument();
+  });
+
+  it('offers sellers beyond the first summary page in the payout history filter', async () => {
+    const sellerOutsideFirstPage = {
+      ...sellerSummaryResponse.data[0],
+      sellerId: 'seller-outside-first-page',
+      sellerFullName: 'Seller Outside First Page',
+    };
+    payoutService.listAdminPayoutSellers.mockImplementation(async ({ page, size }) => {
+      if (size === 100) {
+        return page === 1
+          ? {
+              ...sellerSummaryResponse,
+              pagination: { ...sellerSummaryResponse.pagination, lastPage: 2, total: 21 },
+            }
+          : {
+              ...sellerSummaryResponse,
+              data: [sellerOutsideFirstPage],
+              pagination: {
+                ...sellerSummaryResponse.pagination,
+                currentPage: 2,
+                lastPage: 2,
+                prevPage: 1,
+                total: 21,
+              },
+            };
+      }
+
+      return sellerSummaryResponse;
+    });
+    payoutService.listAdminSellerPayments.mockResolvedValue(emptyPage);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+    fireEvent.click(await screen.findByRole('combobox'));
+
+    fireEvent.click(await screen.findByRole('option', { name: 'Seller Outside First Page' }));
+
+    await waitFor(() =>
+      expect(payoutService.listAdminSellerPayments).toHaveBeenCalledWith({
+        page: 1,
+        size: 20,
+        sellerId: 'seller-outside-first-page',
+      }),
+    );
+  });
+
+  it('shows a retryable error when payout history cannot be loaded', async () => {
+    payoutService.listAdminSellerPayments
+      .mockRejectedValueOnce(new Error('Payout history unavailable'))
+      .mockResolvedValueOnce(sellerPaymentsResponse);
+    renderPage();
+    fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Payout history' }), { button: 0 });
+
+    expect(await screen.findByText(/could not load payout history/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Seller One')).toBeInTheDocument();
   });
 });

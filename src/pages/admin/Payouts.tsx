@@ -59,6 +59,7 @@ import {
   getAdminRefundReportOptions,
   getAdminBuyerRefundsOptions,
   getAdminSellerPayableOptions,
+  getAdminSellerPaymentsOptions,
   getAdminPayoutSellerSummariesOptions,
   getAdminSellerPayoutsOptions,
   getEligibleSellerPayoutItemsOptions,
@@ -73,6 +74,8 @@ import {
 
 const SELLER_SUMMARY_PAGE_SIZE = 20;
 const BUYER_REFUNDS_PAGE_SIZE = 20;
+const SELLER_FILTER_PAGE_SIZE = 100;
+const SELLER_PAYMENT_PAGE_SIZE = 20;
 
 const recordSellerPaymentSchema = z.object({
   notes: z.string(),
@@ -135,6 +138,7 @@ function Payouts() {
   const [eligiblePage, setEligiblePage] = useState(1);
   const [sellerSummaryPage, setSellerSummaryPage] = useState(1);
   const [buyerRefundPage, setBuyerRefundPage] = useState(1);
+  const [sellerPaymentPage, setSellerPaymentPage] = useState(1);
   const [recordPayoutSellerId, setRecordPayoutSellerId] = useState<string | null>(null);
   const [recordPayoutIdempotencyKey, setRecordPayoutIdempotencyKey] = useState<string | null>(null);
   const [recordPayoutError, setRecordPayoutError] = useState<string | null>(null);
@@ -160,6 +164,18 @@ function Payouts() {
   const { data: sellerPayoutsData, isLoading: lpayouts } = useQuery(
     getAdminSellerPayoutsOptions(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
   );
+  const sellerPaymentParameters = {
+    page: sellerPaymentPage,
+    size: SELLER_PAYMENT_PAGE_SIZE,
+    ...(sellerFilter === 'all' ? {} : { sellerId: sellerFilter }),
+  };
+  const {
+    data: sellerPaymentsData,
+    error: sellerPaymentsError,
+    isFetching: sellerPaymentsFetching,
+    isLoading: sellerPaymentsLoading,
+    refetch: refetchSellerPayments,
+  } = useQuery(getAdminSellerPaymentsOptions(sellerPaymentParameters));
   const {
     data: sellerSummariesData,
     error: sellerSummariesError,
@@ -172,6 +188,18 @@ function Payouts() {
       size: SELLER_SUMMARY_PAGE_SIZE,
     }),
     placeholderData: previousData => previousData,
+  });
+  const { data: sellerFilterSummariesFirstPage, isLoading: sellerFilterSummariesFirstPageLoading } =
+    useQuery(getAdminPayoutSellerSummariesOptions({ page: 1, size: SELLER_FILTER_PAGE_SIZE }));
+  const additionalSellerFilterSummaryQueries = useQueries({
+    queries: Array.from(
+      { length: Math.max((sellerFilterSummariesFirstPage?.pagination.lastPage ?? 1) - 1, 0) },
+      (_, index) =>
+        getAdminPayoutSellerSummariesOptions({
+          page: index + 2,
+          size: SELLER_FILTER_PAGE_SIZE,
+        }),
+    ),
   });
   const {
     data: sellerPayablePreviewResponse,
@@ -260,6 +288,14 @@ function Payouts() {
     () => sellerPayoutsData?.data ?? [],
     [sellerPayoutsData?.data],
   );
+  const sellerPayments = sellerPaymentsData?.data ?? [];
+  const sellerFilterSummariesLoading =
+    sellerFilterSummariesFirstPageLoading ||
+    additionalSellerFilterSummaryQueries.some(query => query.isLoading);
+  const sellerFilterSummaries = [
+    ...(sellerFilterSummariesFirstPage?.data ?? []),
+    ...additionalSellerFilterSummaryQueries.flatMap(query => query.data?.data ?? []),
+  ];
 
   const sellerSummaries = sellerSummariesData?.data ?? [];
   const sellerSummaryPagination = sellerSummariesData?.pagination;
@@ -1154,13 +1190,19 @@ function Payouts() {
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs text-muted-foreground">Filter by seller</Label>
-                  <Select onValueChange={setSellerFilter} value={sellerFilter}>
-                    <SelectTrigger className="h-9 w-64">
+                  <Select
+                    onValueChange={value => {
+                      setSellerFilter(value);
+                      setSellerPaymentPage(1);
+                    }}
+                    value={sellerFilter}
+                  >
+                    <SelectTrigger className="h-9 w-64" disabled={sellerFilterSummariesLoading}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All sellers</SelectItem>
-                      {sellerSummaries.map(s => (
+                      {sellerFilterSummaries.map(s => (
                         <SelectItem key={s.sellerId} value={s.sellerId}>
                           {s.sellerFullName}
                         </SelectItem>
@@ -1180,14 +1222,44 @@ function Payouts() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sellerPayouts.length === 0 && (
+                    {sellerPaymentsError && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                          No payouts recorded yet.
+                        <TableCell colSpan={6} className="py-10 text-center">
+                          <Alert variant="destructive" className="mx-auto max-w-xl text-left">
+                            <AlertDescription>
+                              Could not load payout history. Please try again.{' '}
+                              <Button
+                                onClick={() => void refetchSellerPayments()}
+                                size="sm"
+                                variant="outline"
+                              >
+                                Retry
+                              </Button>
+                            </AlertDescription>
+                          </Alert>
                         </TableCell>
                       </TableRow>
                     )}
-                    {sellerPayouts.map(p => (
+                    {sellerPaymentsLoading && sellerPayments.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                          Loading payout history…
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!sellerPaymentsLoading &&
+                      !sellerPaymentsError &&
+                      sellerPayments.length === 0 && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={6}
+                            className="py-10 text-center text-muted-foreground"
+                          >
+                            No payouts recorded yet.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    {sellerPayments.map(p => (
                       <TableRow key={p.id}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(new Date(p.paidAt), 'MMM d, yyyy')}
@@ -1196,7 +1268,7 @@ function Payouts() {
                         <TableCell className="text-xs text-muted-foreground">
                           {p.periodStart && p.periodEnd ? `${p.periodStart} → ${p.periodEnd}` : '—'}
                         </TableCell>
-                        <TableCell className="capitalize">{p.method.replace('_', ' ')}</TableCell>
+                        <TableCell>{p.method ? formatEnumLabel(p.method) : '—'}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {p.reference || '—'}
                         </TableCell>
@@ -1207,6 +1279,42 @@ function Payouts() {
                     ))}
                   </TableBody>
                 </Table>
+                {sellerPaymentsData && sellerPaymentsData.pagination.lastPage > 1 && (
+                  <div className="flex items-center justify-between gap-3 p-4 text-sm">
+                    <p className="text-muted-foreground">
+                      Page {sellerPaymentsData.pagination.currentPage} of{' '}
+                      {sellerPaymentsData.pagination.lastPage}
+                      {' · '}
+                      {sellerPaymentsData.pagination.total} payments
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() =>
+                          setSellerPaymentPage(
+                            sellerPaymentsData.pagination.prevPage ?? sellerPaymentPage,
+                          )
+                        }
+                        disabled={!sellerPaymentsData.pagination.prevPage || sellerPaymentsFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setSellerPaymentPage(
+                            sellerPaymentsData.pagination.nextPage ?? sellerPaymentPage,
+                          )
+                        }
+                        disabled={!sellerPaymentsData.pagination.nextPage || sellerPaymentsFetching}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

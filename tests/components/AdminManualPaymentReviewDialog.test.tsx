@@ -2,7 +2,10 @@ import type { AdminOrderDetail } from '@/types/adminOrder.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { AdminManualPaymentReviewDialog } from '@/components/admin/AdminManualPaymentReviewDialog';
+import {
+  AdminManualPaymentReviewDialog,
+  maskSenderAccountNumber,
+} from '@/components/admin/AdminManualPaymentReviewDialog';
 
 const state = vi.hoisted(() => ({
   approve: vi.fn(),
@@ -244,5 +247,16 @@ describe('admin manual payment review dialog', () => {
     expect(screen.getByRole('button', { name: 'Approve payment' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Request resubmission' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reject payment' })).toBeDisabled();
+  });
+});
+
+describe('maskSenderAccountNumber', () => {
+  it('shows only the last four characters of a longer account number', () => {
+    expect(maskSenderAccountNumber('444455556666')).toBe('••••••••6666');
+  });
+
+  it('fully masks an account number of four characters or fewer', () => {
+    expect(maskSenderAccountNumber('6666')).toBe('••••');
+    expect(maskSenderAccountNumber('12')).toBe('••••');
   });
 });

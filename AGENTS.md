@@ -1,3 +1,11 @@
+# AGENTS.md
+
+## Working agreement
+
+- Keep responses short and direct.
+- Never commit without the user's explicit approval.
+- Never add a `Co-Authored-By` trailer to commit messages, amended commits, or PR descriptions.
+
 ## Worktrees
 
 - Frontend worktrees live in the sibling directory `../sunday-frontend.worktrees/`.

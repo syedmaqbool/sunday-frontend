@@ -1,4 +1,9 @@
-import type { AdminOrder, AdminOrderDetail, AdminOrderItem } from '@/types/adminOrder.type';
+import type {
+  AdminManualPaymentSubmission,
+  AdminOrder,
+  AdminOrderDetail,
+  AdminOrderItem,
+} from '@/types/adminOrder.type';
 import type { AdminComplaint } from '@/types/complaint.type';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
@@ -7,6 +12,8 @@ import { HTTPError } from 'ky';
 import {
   AlertTriangle,
   ExternalLink,
+  Eye,
+  EyeOff,
   Loader2,
   MessageSquareWarning,
   Package,
@@ -685,6 +692,7 @@ function AdminOrders() {
           });
         }}
         canCancel={canReviewPayments}
+        orderDetail={selectedOrderDetailQuery.data?.data}
         row={selectedReviewOrderId ? null : selected}
       />
       <ComplaintDialog onClose={() => setSelectedComplaint(null)} complaint={selectedComplaint} />
@@ -843,14 +851,53 @@ function ComplaintDialog({
   );
 }
 
+function BuyerPaymentAccount({ submission }: { submission: AdminManualPaymentSubmission }) {
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  return (
+    <div className="mt-3 space-y-2 border-t pt-3">
+      <div>
+        <p className="text-xs text-muted-foreground">Account title</p>
+        <p className="text-sm font-medium">{submission.senderAccountTitle}</p>
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground">Account number</p>
+        <div className="flex items-center gap-2">
+          <p className="font-mono text-sm">
+            {isRevealed
+              ? submission.senderAccountNumber
+              : maskSenderAccountNumber(submission.senderAccountNumber)}
+          </p>
+          <Button
+            aria-label={isRevealed ? 'Hide account number' : 'Show account number'}
+            className="h-7 w-7"
+            onClick={() => setIsRevealed(value => !value)}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            {isRevealed ? (
+              <EyeOff aria-hidden="true" className="h-4 w-4" />
+            ) : (
+              <Eye aria-hidden="true" className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Detail dialog — no extra API calls, item already carries all display data ──
 function OrderDetailDialog({
   canCancel,
   onClose,
+  orderDetail,
   row,
 }: {
   canCancel: boolean;
   onClose: () => void;
+  orderDetail?: AdminOrderDetail;
   row: Row | null;
 }) {
   const cancelMutation = useCancelAdminOrderMutation();
@@ -858,6 +905,7 @@ function OrderDetailDialog({
   if (!row) return null;
 
   const { item, order } = row;
+  const paymentSubmission = orderDetail ? latestManualPaymentSubmission(orderDetail) : null;
   const cancelOrder = async () => {
     try {
       await cancelMutation.mutateAsync(order.id);
@@ -973,6 +1021,9 @@ function OrderDetailDialog({
                 >
                   View profile <ExternalLink className="h-3 w-3" />
                 </Link>
+                {paymentSubmission && (
+                  <BuyerPaymentAccount key={order.id} submission={paymentSubmission} />
+                )}
               </CardContent>
             </Card>
 

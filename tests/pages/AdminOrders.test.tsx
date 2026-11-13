@@ -1,7 +1,7 @@
 import type { AdminOrder, AdminOrderDetail } from '@/types/adminOrder.type';
 import type { AdminComplaint } from '@/types/complaint.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
@@ -913,5 +913,170 @@ describe('admin order notification selection', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Back'));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+});
+
+function renderAdminOrders(initialEntry = '/admin/orders') {
+  return render(
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <AdminOrders />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('admin order buyer payment account', () => {
+  it('shows the latest submission sender title and a masked account number in the buyer section', async () => {
+    const order = makeOrder('SUBMITTED', 'Account item');
+    const submission = {
+      ...order.manualPaymentSubmissions[0],
+      senderAccountNumber: '444455556666',
+      senderAccountTitle: 'Sender Title',
+    };
+    order.manualPaymentSubmissions = [submission];
+    orders.current = [order];
+    orders.detail = { ...order } as unknown as AdminOrderDetail;
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('Account item'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Account title')).toBeInTheDocument();
+    expect(within(dialog).getByText('Sender Title')).toBeInTheDocument();
+    expect(within(dialog).getByText('MASKED-6666')).toBeInTheDocument();
+    expect(within(dialog).queryByText('444455556666')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /copy/i })).not.toBeInTheDocument();
+  });
+
+  it('reveals the full account number from the order detail response and masks it again', async () => {
+    const order = makeOrder('SUBMITTED', 'Reveal item');
+    const listSubmission = {
+      ...order.manualPaymentSubmissions[0],
+      senderAccountNumber: '111122223333',
+      senderAccountTitle: 'Sender Title',
+    };
+    order.manualPaymentSubmissions = [listSubmission];
+    orders.current = [order];
+    orders.detail = {
+      ...order,
+      manualPaymentSubmissions: [{ ...listSubmission, senderAccountNumber: '444455556666' }],
+    } as unknown as AdminOrderDetail;
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('Reveal item'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('MASKED-6666')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Show account number' }));
+    expect(within(dialog).getByText('444455556666')).toBeInTheDocument();
+    expect(within(dialog).queryByText('111122223333')).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hide account number' }));
+    expect(within(dialog).getByText('MASKED-6666')).toBeInTheDocument();
+    expect(within(dialog).queryByText('444455556666')).not.toBeInTheDocument();
+  });
+
+  it('starts masked again when the dialog is reopened or another order is opened', async () => {
+    const firstOrder = makeOrder('SUBMITTED', 'First item');
+    firstOrder.manualPaymentSubmissions = [
+      {
+        ...firstOrder.manualPaymentSubmissions[0],
+        senderAccountNumber: '111122223333',
+        senderAccountTitle: 'First Title',
+      },
+    ];
+    const secondOrder = makeOrder('APPROVED', 'Second item');
+    secondOrder.manualPaymentSubmissions = [
+      {
+        ...secondOrder.manualPaymentSubmissions[0],
+        senderAccountNumber: '999988887777',
+        senderAccountTitle: 'Second Title',
+      },
+    ];
+    orders.current = [firstOrder, secondOrder];
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('First item'));
+    let dialog = await screen.findByRole('dialog');
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Show account number' }));
+    expect(within(dialog).getByText('111122223333')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('First item'));
+    dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('MASKED-3333')).toBeInTheDocument();
+    expect(within(dialog).queryByText('111122223333')).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Show account number' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Second item'));
+    dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Second Title')).toBeInTheDocument();
+    expect(within(dialog).getByText('MASKED-7777')).toBeInTheDocument();
+    expect(within(dialog).queryByText('999988887777')).not.toBeInTheDocument();
+  });
+
+  it('shows the latest of several submissions by updatedAt', async () => {
+    const order = makeOrder('SUBMITTED', 'Several submissions item');
+    const base = order.manualPaymentSubmissions[0];
+    order.manualPaymentSubmissions = [
+      {
+        ...base,
+        id: 'middle-submission-id',
+        senderAccountNumber: '555500001111',
+        senderAccountTitle: 'Middle Title',
+        updatedAt: '2026-09-09T00:00:00.000Z',
+      },
+      {
+        ...base,
+        id: 'latest-submission-id',
+        senderAccountNumber: '555500002222',
+        senderAccountTitle: 'Latest Title',
+        updatedAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        ...base,
+        id: 'oldest-submission-id',
+        senderAccountNumber: '555500003333',
+        senderAccountTitle: 'Oldest Title',
+        updatedAt: '2026-09-08T00:00:00.000Z',
+      },
+    ];
+    orders.current = [order];
+    orders.detail = { ...order } as unknown as AdminOrderDetail;
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('Several submissions item'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Latest Title')).toBeInTheDocument();
+    expect(within(dialog).getByText('MASKED-2222')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Middle Title')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Oldest Title')).not.toBeInTheDocument();
+  });
+
+  it('omits the account rows and reveal button when the order has no manual payment submission', async () => {
+    const order = makeOrder('APPROVED', 'No payment item');
+    order.manualPaymentSubmissions = [];
+    orders.current = [order];
+    orders.detail = { ...order } as unknown as AdminOrderDetail;
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('No payment item'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Jane Buyer')).toBeInTheDocument();
+    // Let the order detail query settle before asserting that the rows stay absent.
+    await act(() => new Promise(resolve => setTimeout(resolve, 10)));
+    expect(within(dialog).queryByText('Account title')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Account number')).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: /account number/i }),
+    ).not.toBeInTheDocument();
   });
 });

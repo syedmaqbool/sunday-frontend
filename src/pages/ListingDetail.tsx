@@ -270,6 +270,7 @@ function ListingDetail() {
 
   const isOwner = listing && user && listing.sellerId === user.id;
   const isReserved = listing?.status === 'RESERVED';
+  const isSold = listing?.status === 'SOLD';
   const isReservedForMe = !!listing?.reservedForCurrentUser;
   const isReservedForOther = isReserved && !isReservedForMe && !isOwner;
   const { countdown, isExpired: isReservationExpired } = useCountdown(
@@ -410,15 +411,19 @@ function ListingDetail() {
             <p className="mt-6 leading-relaxed text-muted-foreground">{listing.description}</p>
             {isOwner && <MyListingFeedbackSection listingId={listing.id} />}
 
-            {listing.status === 'SOLD' && !isOwner && (
+            {isSold && (
               <div className="mt-8 rounded-lg border border-border bg-muted px-4 py-6 text-center">
                 <p className="font-heading text-lg font-semibold text-foreground">Sold</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This item has already been purchased and is no longer available.
+                  {isOwner
+                    ? 'Your item has been sold and is no longer available.'
+                    : 'This item has already been purchased and is no longer available.'}
                 </p>
-                <Button onClick={() => navigate('/listings')} variant="outline" className="mt-4">
-                  Browse other listings
-                </Button>
+                {!isOwner && (
+                  <Button onClick={() => navigate('/listings')} variant="outline" className="mt-4">
+                    Browse other listings
+                  </Button>
+                )}
                 <SoldListingNotice />
               </div>
             )}
@@ -464,7 +469,7 @@ function ListingDetail() {
               </div>
             )}
 
-            {isOwner ? (
+            {isSold ? null : isOwner ? (
               <div className="mt-8 flex flex-wrap gap-3">
                 {isSellerEditableListingStatus(listing.status) && (
                   <Button
@@ -529,7 +534,7 @@ function ListingDetail() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            ) : listing.status === 'SOLD' ? null : (
+            ) : (
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button
                   onClick={() => addItem(listing, isReservedForMe ? effectivePrice : undefined)}

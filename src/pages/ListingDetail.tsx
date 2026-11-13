@@ -340,7 +340,13 @@ function ListingDetail() {
             >
               {listing.title}
             </h1>
-            {listing.reservedOffer ? (
+            {isSold ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-3xl font-bold text-foreground">
+                  Rs {listing.price.toLocaleString()}
+                </p>
+              </div>
+            ) : listing.reservedOffer ? (
               <div className="mt-4 space-y-2">
                 <div className="flex flex-wrap items-baseline gap-3">
                   <p className="text-3xl font-bold text-foreground">

@@ -53,6 +53,7 @@ function makeOrder(overrides: Partial<AdminOrderDetail> = {}): AdminOrderDetail 
     reviewNote: null,
     senderAccountNumber: '123456789012',
     senderAccountTitle: 'Jane Buyer',
+    senderBankName: 'Example Bank',
     status: 'SUBMITTED' as const,
     reviewedAt: null,
     createdAt: '2026-09-08T00:00:00.000Z',

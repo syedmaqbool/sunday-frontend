@@ -40,6 +40,7 @@ vi.mock('@/components/ManualPaymentDialog', () => ({
       proofFileId: string;
       senderAccountNumber: string;
       senderAccountTitle: string;
+      senderBankName: string;
     }) => Promise<void>;
     open: boolean;
   }) =>
@@ -51,6 +52,7 @@ vi.mock('@/components/ManualPaymentDialog', () => ({
               proofFileId: 'proof-file-id',
               senderAccountNumber: '1234567890',
               senderAccountTitle: 'Jane Doe',
+              senderBankName: 'Example Bank',
             });
           }}
         >

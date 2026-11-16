@@ -412,6 +412,9 @@ describe('seller boost status', () => {
       within(paymentDialog).getByRole('heading', { name: 'Resubmit payment proof' }),
     ).toBeInTheDocument();
     expect(await within(paymentDialog).findByText('Sunday Store')).toBeInTheDocument();
+    fireEvent.change(within(paymentDialog).getByLabelText('Bank or wallet name'), {
+      target: { value: 'Example Bank' },
+    });
     fireEvent.change(within(paymentDialog).getByLabelText('Sender account title/name'), {
       target: { value: 'Jane Doe' },
     });
@@ -429,6 +432,7 @@ describe('seller boost status', () => {
         proofFileId: 'replacement-proof-id',
         senderAccountNumber: '123456789',
         senderAccountTitle: 'Jane Doe',
+        senderBankName: 'Example Bank',
       }),
     );
   });

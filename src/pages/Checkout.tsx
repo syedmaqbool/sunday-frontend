@@ -263,10 +263,12 @@ function Checkout() {
     proofFileId,
     senderAccountNumber,
     senderAccountTitle,
+    senderBankName,
   }: {
     proofFileId: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
+    senderBankName: string;
   }) => {
     if (
       hasMixedAcceptedOfferCart ||
@@ -293,6 +295,7 @@ function Checkout() {
         quoteRevision: currentQuote.quoteRevision,
         senderAccountNumber,
         senderAccountTitle,
+        senderBankName,
         shippingAddress: shipping.address,
         shippingCity: shipping.city,
         shippingFirstName: shipping.firstName,

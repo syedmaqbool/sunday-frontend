@@ -140,6 +140,7 @@ export type ApproveAdminManualPaymentResponses = {
       proofFileId: string;
       reviewerId: null | string;
       reviewNote: null | string;
+      senderBankName: null | string;
       senderAccountNumber: string;
       senderAccountTitle: string;
       status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';

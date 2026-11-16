@@ -185,6 +185,7 @@ function OrderConfirmation() {
     proofFileId: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
+    senderBankName: string;
   }) => {
     if (!order || resubmitting) return;
     if (hasCorrectionDeadlinePassed(order, Date.now())) {

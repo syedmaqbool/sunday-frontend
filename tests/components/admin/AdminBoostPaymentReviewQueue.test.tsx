@@ -76,6 +76,7 @@ function makeSubmission(overrides: Record<string, unknown> = {}) {
       reviewNote: null,
       senderAccountNumber: '123456789012',
       senderAccountTitle: 'Jane Seller',
+      senderBankName: 'Example Bank',
       status: 'SUBMITTED',
       reviewedAt: null,
       createdAt: '2026-10-18T00:00:00.000Z',
@@ -125,6 +126,7 @@ describe('admin boost payment review queue', () => {
 
     expect(await screen.findByText('Vintage jacket')).toBeInTheDocument();
     expect(screen.getByText('Jane Seller')).toBeInTheDocument();
+    expect(screen.getByText('Bank or wallet name: Example Bank')).toBeInTheDocument();
     expect(screen.getByText(/jane@example.com/)).toBeInTheDocument();
     expect(screen.getByText('Purchase').parentElement).toHaveTextContent(/Rs\s*1,200/);
     expect(screen.getByText('Trending week')).toBeInTheDocument();

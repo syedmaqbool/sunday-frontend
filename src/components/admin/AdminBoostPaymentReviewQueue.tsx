@@ -168,6 +168,9 @@ function ReviewSubmission({
           <p className="font-mono">{submission.paymentSubmission.senderAccountNumber}</p>
           <p>{submission.paymentSubmission.senderAccountTitle}</p>
           <p>
+            Bank or wallet name: {submission.paymentSubmission.senderBankName ?? 'Not provided'}
+          </p>
+          <p>
             Submitted
             {format(new Date(submission.paymentSubmission.createdAt), 'PPp')}
           </p>

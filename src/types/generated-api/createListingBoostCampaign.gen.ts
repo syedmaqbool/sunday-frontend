@@ -4,6 +4,7 @@ export type CreateListingBoostCampaignData = {
   body: {
     proofFileId: string;
     placement: 'SEARCH' | 'FOR_YOU';
+    senderBankName: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
     endsAt: string;

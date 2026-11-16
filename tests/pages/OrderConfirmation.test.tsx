@@ -358,6 +358,9 @@ describe('order confirmation manual actions', () => {
     ).toBeInTheDocument();
     expect(await within(dialog).findByText('Sunday Store')).toBeInTheDocument();
 
+    fireEvent.change(within(dialog).getByLabelText('Bank or wallet name'), {
+      target: { value: 'Example Bank' },
+    });
     fireEvent.change(within(dialog).getByLabelText('Sender account title/name'), {
       target: { value: 'Jane Buyer' },
     });
@@ -376,6 +379,7 @@ describe('order confirmation manual actions', () => {
           proofFileId: 'proof-file-id',
           senderAccountNumber: '123456789',
           senderAccountTitle: 'Jane Buyer',
+          senderBankName: 'Example Bank',
         },
       }),
     );

@@ -4,6 +4,7 @@ export type CreateListingBoostData = {
   body: {
     packageId: string;
     proofFileId: string;
+    senderBankName: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
   };

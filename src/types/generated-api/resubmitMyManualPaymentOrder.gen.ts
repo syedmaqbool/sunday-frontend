@@ -3,6 +3,7 @@
 export type ResubmitMyManualPaymentOrderData = {
   body: {
     proofFileId: string;
+    senderBankName: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
   };

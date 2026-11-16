@@ -857,6 +857,10 @@ function BuyerPaymentAccount({ submission }: { submission: AdminManualPaymentSub
   return (
     <div className="mt-3 space-y-2 border-t pt-3">
       <div>
+        <p className="text-xs text-muted-foreground">Bank or wallet name</p>
+        <p className="text-sm font-medium">{submission.senderBankName ?? 'Not provided'}</p>
+      </div>
+      <div>
         <p className="text-xs text-muted-foreground">Account title</p>
         <p className="text-sm font-medium">{submission.senderAccountTitle}</p>
       </div>

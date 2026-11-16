@@ -143,6 +143,7 @@ export type RejectAdminBoostPaymentResponses = {
         proofFileId: string;
         reviewerId: string | null;
         reviewNote: string | null;
+        senderBankName: null | string;
         senderAccountNumber: string;
         senderAccountTitle: string;
         status: 'SUBMITTED' | 'RESUBMISSION_REQUESTED' | 'APPROVED' | 'REJECTED';

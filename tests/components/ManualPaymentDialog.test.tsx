@@ -45,6 +45,9 @@ function renderDialog(
 }
 
 function fillValidForm() {
+  fireEvent.change(screen.getByLabelText('Bank or wallet name'), {
+    target: { value: 'Example Bank' },
+  });
   fireEvent.change(screen.getByLabelText('Sender account title/name'), {
     target: { value: 'Jane Doe' },
   });
@@ -78,6 +81,7 @@ describe('manual payment dialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit payment proof/i }));
 
     expect(await screen.findByText('Sender account title/name is required.')).toBeInTheDocument();
+    expect(screen.getByText('Bank or wallet name is required.')).toBeInTheDocument();
     expect(screen.getByText('Sender account number is required.')).toBeInTheDocument();
     expect(screen.getByText('Transaction screenshot is required.')).toBeInTheDocument();
     expect(uploadPaymentProofMock).not.toHaveBeenCalled();
@@ -134,6 +138,7 @@ describe('manual payment dialog', () => {
         proofFileId: 'proof-file-id',
         senderAccountNumber: '123456789',
         senderAccountTitle: 'Jane Doe',
+        senderBankName: 'Example Bank',
       }),
     );
     expect(uploadPaymentProofMock).toHaveBeenCalledOnce();
@@ -156,6 +161,7 @@ describe('manual payment dialog', () => {
         proofFileId: 'proof-file-id',
         senderAccountNumber: '123456789',
         senderAccountTitle: 'Jane Doe',
+        senderBankName: 'Example Bank',
       }),
     );
   });

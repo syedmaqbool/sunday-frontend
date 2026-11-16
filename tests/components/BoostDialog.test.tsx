@@ -136,6 +136,9 @@ describe('seller boost purchase dialog', () => {
 
     expect(await screen.findByText('Boost amount: Rs 1,000.00')).toBeInTheDocument();
     expect(await screen.findByText('Sunday Store')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Bank or wallet name'), {
+      target: { value: 'Example Bank' },
+    });
     fireEvent.change(screen.getByLabelText('Sender account title/name'), {
       target: { value: 'Jane Doe' },
     });
@@ -153,6 +156,7 @@ describe('seller boost purchase dialog', () => {
         packageIds: ['package-1'],
         senderAccountNumber: '123456789',
         senderAccountTitle: 'Jane Doe',
+        senderBankName: 'Example Bank',
       }),
     );
     expect(toastSuccessMock).toHaveBeenCalledWith(expect.stringContaining('Rs 1,250.00'));

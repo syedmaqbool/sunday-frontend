@@ -154,6 +154,7 @@ function makeOrder(status: 'APPROVED' | 'SUBMITTED', title: string): AdminOrder 
         reviewNote: null,
         senderAccountNumber: '123456789012',
         senderAccountTitle: 'Jane Buyer',
+        senderBankName: 'Example Bank',
         status,
         reviewedAt: status === 'APPROVED' ? '2026-09-08T01:00:00.000Z' : null,
         createdAt: '2026-09-08T00:00:00.000Z',
@@ -935,6 +936,7 @@ describe('admin order buyer payment account', () => {
       ...order.manualPaymentSubmissions[0],
       senderAccountNumber: '444455556666',
       senderAccountTitle: 'Sender Title',
+      senderBankName: 'Example Bank',
     };
     order.manualPaymentSubmissions = [submission];
     orders.current = [order];
@@ -946,9 +948,23 @@ describe('admin order buyer payment account', () => {
     const dialog = await screen.findByRole('dialog');
     expect(await within(dialog).findByText('Account title')).toBeInTheDocument();
     expect(within(dialog).getByText('Sender Title')).toBeInTheDocument();
+    expect(within(dialog).getByText('Example Bank')).toBeInTheDocument();
     expect(within(dialog).getByText('MASKED-6666')).toBeInTheDocument();
     expect(within(dialog).queryByText('444455556666')).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: /copy/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a fallback when an older submission has no bank name', async () => {
+    const order = makeOrder('SUBMITTED', 'Older payment item');
+    order.manualPaymentSubmissions[0].senderBankName = null;
+    orders.current = [order];
+    orders.detail = { ...order } as unknown as AdminOrderDetail;
+
+    renderAdminOrders();
+    fireEvent.click(await screen.findByText('Older payment item'));
+    expect(
+      await within(await screen.findByRole('dialog')).findByText('Not provided'),
+    ).toBeInTheDocument();
   });
 
   it('reveals the full account number from the order detail response and masks it again', async () => {
@@ -957,6 +973,7 @@ describe('admin order buyer payment account', () => {
       ...order.manualPaymentSubmissions[0],
       senderAccountNumber: '111122223333',
       senderAccountTitle: 'Sender Title',
+      senderBankName: 'Example Bank',
     };
     order.manualPaymentSubmissions = [listSubmission];
     orders.current = [order];
@@ -986,6 +1003,7 @@ describe('admin order buyer payment account', () => {
         ...firstOrder.manualPaymentSubmissions[0],
         senderAccountNumber: '111122223333',
         senderAccountTitle: 'First Title',
+        senderBankName: 'Example Bank',
       },
     ];
     const secondOrder = makeOrder('APPROVED', 'Second item');
@@ -994,6 +1012,7 @@ describe('admin order buyer payment account', () => {
         ...secondOrder.manualPaymentSubmissions[0],
         senderAccountNumber: '999988887777',
         senderAccountTitle: 'Second Title',
+        senderBankName: 'Example Bank',
       },
     ];
     orders.current = [firstOrder, secondOrder];
@@ -1030,6 +1049,7 @@ describe('admin order buyer payment account', () => {
         id: 'middle-submission-id',
         senderAccountNumber: '555500001111',
         senderAccountTitle: 'Middle Title',
+        senderBankName: 'Example Bank',
         updatedAt: '2026-09-09T00:00:00.000Z',
       },
       {
@@ -1037,6 +1057,7 @@ describe('admin order buyer payment account', () => {
         id: 'latest-submission-id',
         senderAccountNumber: '555500002222',
         senderAccountTitle: 'Latest Title',
+        senderBankName: 'Example Bank',
         updatedAt: '2026-09-10T00:00:00.000Z',
       },
       {
@@ -1044,6 +1065,7 @@ describe('admin order buyer payment account', () => {
         id: 'oldest-submission-id',
         senderAccountNumber: '555500003333',
         senderAccountTitle: 'Oldest Title',
+        senderBankName: 'Example Bank',
         updatedAt: '2026-09-08T00:00:00.000Z',
       },
     ];

@@ -258,6 +258,9 @@ export function AdminManualPaymentReviewDialog({
                       <p className="text-sm text-muted-foreground">
                         {currentSubmission.senderAccountTitle}
                       </p>
+                      <p className="text-sm text-muted-foreground">
+                        Bank or wallet name: {currentSubmission.senderBankName ?? 'Not provided'}
+                      </p>
                     </Summary>
                     <Summary title="Review">
                       <p className="text-sm">

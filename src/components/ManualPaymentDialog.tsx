@@ -28,6 +28,7 @@ const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_PROOF_SIZE = 5 * 1024 * 1024;
 
 export const manualPaymentSchema = z.object({
+  senderBankName: z.string().trim().min(1, 'Bank or wallet name is required.').max(255),
   screenshot: z
     .custom<File>(
       value => typeof File !== 'undefined' && value instanceof File,
@@ -50,6 +51,7 @@ export const manualPaymentSchema = z.object({
 export type ManualPaymentFormValues = z.infer<typeof manualPaymentSchema>;
 
 export interface ManualPaymentSubmissionValues {
+  senderBankName: string;
   proofFileId: string;
   senderAccountNumber: string;
   senderAccountTitle: string;
@@ -116,6 +118,7 @@ export function ManualPaymentDialog({
       screenshot: undefined,
       senderAccountNumber: '',
       senderAccountTitle: '',
+      senderBankName: '',
     },
     mode: 'all',
     resolver: zodResolver(manualPaymentSchema),
@@ -149,6 +152,7 @@ export function ManualPaymentDialog({
         proofFileId,
         senderAccountNumber: values.senderAccountNumber.trim(),
         senderAccountTitle: values.senderAccountTitle.trim(),
+        senderBankName: values.senderBankName.trim(),
       });
     } catch (submissionError) {
       if (!proofUploaded) setUploadStatus('idle');
@@ -288,6 +292,17 @@ export function ManualPaymentDialog({
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="senderBankName">Bank or wallet name</Label>
+            <Input
+              id="senderBankName"
+              placeholder="Your bank or wallet"
+              {...form.register('senderBankName')}
+            />
+            {errors.senderBankName && (
+              <p className="text-sm text-destructive">{errors.senderBankName.message}</p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="senderAccountNumber">Sender account number</Label>
             <Controller

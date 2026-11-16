@@ -6,6 +6,7 @@ export type CreateOrderData = {
     discountCode?: string;
     listingIds: Array<string>;
     quoteRevision: string;
+    senderBankName: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
     shippingAddress: string;

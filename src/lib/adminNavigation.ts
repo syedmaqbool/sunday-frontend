@@ -4,6 +4,7 @@ import type { AuthUser } from '@/types/auth.type';
 import {
   AlertTriangle,
   BarChart3,
+  CreditCard,
   Filter,
   Flag,
   FolderTree,
@@ -84,6 +85,12 @@ export const adminNavSections: AdminNavSection[] = [
       { path: '/admin/tax', icon: Percent, label: 'Tax Settings', permission: 'SETTINGS_READ' },
       // { path: '/admin/boosts', icon: Rocket, label: 'Boosts', permission: 'BOOSTS_READ' },
       { path: '/admin/payouts', icon: Wallet, label: 'Payouts', permission: 'PAYOUTS_READ' },
+      {
+        path: '/admin/payfast-charges',
+        icon: CreditCard,
+        label: 'PayFast Charges',
+        permission: 'PAYOUTS_READ',
+      },
       {
         path: '/admin/margins',
         icon: BarChart3,

@@ -21,6 +21,7 @@ const QuickBooksConnection = lazy(() => import('./pages/admin/QuickBooksConnecti
 const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const Overview = lazy(() => import('./pages/admin/Overview'));
 const AdminPayouts = lazy(() => import('./pages/admin/Payouts'));
+const PayFastChargeReviews = lazy(() => import('./pages/admin/PayFastChargeReviews'));
 const Reports = lazy(() => import('./pages/admin/Reports'));
 const RolesPermissions = lazy(() => import('./pages/admin/RolesPermissions'));
 const SellerCoupons = lazy(() => import('./pages/admin/SellerCoupons'));
@@ -426,6 +427,14 @@ export default function AppRoutes() {
             </Suspense>
           }
           path="payouts"
+        />
+        <Route
+          element={
+            <Suspense fallback={<LoadingSpinner className="min-h-[calc(100vh-8rem)]" />}>
+              <PayFastChargeReviews />
+            </Suspense>
+          }
+          path="payfast-charges"
         />
         <Route
           element={

@@ -2,13 +2,13 @@
 
 export type CreateOrderData = {
   body: {
-    proofFileId: string;
+    proofFileId?: string;
     discountCode?: string;
     listingIds: Array<string>;
     quoteRevision: string;
-    senderBankName: string;
-    senderAccountNumber: string;
-    senderAccountTitle: string;
+    senderAccountNumber?: string;
+    senderAccountTitle?: string;
+    senderBankName?: string;
     shippingAddress: string;
     shippingCity: string;
     shippingFirstName: string;
@@ -232,7 +232,7 @@ export type CreateOrderResponses = {
     statusCode: 200;
     message: string;
     data: {
-      manualPaymentSubmission: {
+      manualPaymentSubmission?: {
         id: string;
         orderId: string;
         proofFileId: string;

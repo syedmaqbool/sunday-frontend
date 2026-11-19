@@ -3,9 +3,9 @@
 export type ResubmitBoostPaymentProofData = {
   body: {
     proofFileId: string;
-    senderBankName: string;
     senderAccountNumber: string;
     senderAccountTitle: string;
+    senderBankName: string;
   };
   path: {
     listingId: string;
@@ -155,6 +155,8 @@ export type ResubmitBoostPaymentProofResponses = {
         createdAt: string;
       };
       status:
+        | 'PENDING_PAYMENT'
+        | 'PAYMENT_EXPIRED'
         | 'PENDING_REVIEW'
         | 'RESUBMISSION_REQUESTED'
         | 'APPROVED'

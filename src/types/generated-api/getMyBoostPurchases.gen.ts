@@ -110,6 +110,8 @@ export type GetMyBoostPurchasesResponses = {
         reviewedAt: string | null;
       };
       status:
+        | 'PENDING_PAYMENT'
+        | 'PAYMENT_EXPIRED'
         | 'PENDING_REVIEW'
         | 'RESUBMISSION_REQUESTED'
         | 'APPROVED'

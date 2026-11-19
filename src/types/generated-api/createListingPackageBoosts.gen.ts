@@ -2,11 +2,11 @@
 
 export type CreateListingPackageBoostsData = {
   body: {
-    proofFileId: string;
+    proofFileId?: string;
+    senderAccountNumber?: string;
+    senderAccountTitle?: string;
+    senderBankName?: string;
     packageIds: Array<string>;
-    senderBankName: string;
-    senderAccountNumber: string;
-    senderAccountTitle: string;
   };
   path: {
     listingId: string;
@@ -128,6 +128,34 @@ export type CreateListingPackageBoostsErrors = {
       field: string;
     }>;
   };
+  /**
+   * Default Response
+   */
+  409: {
+    /**
+     * Request identifier for tracing the error
+     */
+    requestId: string;
+    /**
+     * Http status code of the error response
+     */
+    statusCode: 409;
+    /**
+     * Detailed human-readable error message
+     */
+    message: string;
+    /**
+     * Application or framework-specific error code
+     */
+    code: string;
+    /**
+     * Field-level validation errors when applicable
+     */
+    fieldErrors?: Array<{
+      message: string;
+      field: string;
+    }>;
+  };
 };
 
 export type CreateListingPackageBoostsError =
@@ -162,19 +190,21 @@ export type CreateListingPackageBoostsResponses = {
         createdAt: string;
         updatedAt: string;
       }>;
-      paymentInstructions: {
+      paymentInstructions?: {
         accountIban: string;
         accountNumber: string;
         accountTitle: string;
         bankOrWalletLabel: string;
       };
-      paymentSubmission: {
+      paymentSubmission?: {
         id: string;
         proofFileId: string;
         status: 'SUBMITTED' | 'RESUBMISSION_REQUESTED' | 'APPROVED' | 'REJECTED';
         createdAt: string;
       };
       status:
+        | 'PENDING_PAYMENT'
+        | 'PAYMENT_EXPIRED'
         | 'PENDING_REVIEW'
         | 'RESUBMISSION_REQUESTED'
         | 'APPROVED'

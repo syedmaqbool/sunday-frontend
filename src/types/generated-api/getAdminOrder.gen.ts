@@ -280,9 +280,9 @@ export type GetAdminOrderResponses = {
         proofFileId: string;
         reviewerId: null | string;
         reviewNote: null | string;
-        senderBankName: null | string;
         senderAccountNumber: string;
         senderAccountTitle: string;
+        senderBankName: null | string;
         status: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
         reviewedAt: null | string;
         createdAt: string;

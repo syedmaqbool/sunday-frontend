@@ -92,6 +92,8 @@ export type GetAdminBoostPaymentSubmissionsResponses = {
         sellerId: string;
         amount: number;
         status:
+          | 'PENDING_PAYMENT'
+          | 'PAYMENT_EXPIRED'
           | 'PENDING_REVIEW'
           | 'RESUBMISSION_REQUESTED'
           | 'APPROVED'
@@ -127,9 +129,9 @@ export type GetAdminBoostPaymentSubmissionsResponses = {
         proofFileId: string;
         reviewerId: string | null;
         reviewNote: string | null;
-        senderBankName: null | string;
         senderAccountNumber: string;
         senderAccountTitle: string;
+        senderBankName: null | string;
         status: 'SUBMITTED' | 'RESUBMISSION_REQUESTED' | 'APPROVED' | 'REJECTED';
         reviewedAt: string | null;
         createdAt: string;

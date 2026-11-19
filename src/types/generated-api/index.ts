@@ -671,6 +671,20 @@ export type {
   GetAdminOrdersResponses,
 } from './getAdminOrders.gen';
 export type {
+  GetAdminPayFastChargeReviewData,
+  GetAdminPayFastChargeReviewError,
+  GetAdminPayFastChargeReviewErrors,
+  GetAdminPayFastChargeReviewResponse,
+  GetAdminPayFastChargeReviewResponses,
+} from './getAdminPayFastChargeReview.gen';
+export type {
+  GetAdminPayFastChargeReviewsData,
+  GetAdminPayFastChargeReviewsError,
+  GetAdminPayFastChargeReviewsErrors,
+  GetAdminPayFastChargeReviewsResponse,
+  GetAdminPayFastChargeReviewsResponses,
+} from './getAdminPayFastChargeReviews.gen';
+export type {
   GetAdminPayoutRunItemsData,
   GetAdminPayoutRunItemsError,
   GetAdminPayoutRunItemsErrors,
@@ -1314,6 +1328,13 @@ export type {
   GetTrendingListingsResponses,
 } from './getTrendingListings.gen';
 export type {
+  HandlePayFastWebhookData,
+  HandlePayFastWebhookError,
+  HandlePayFastWebhookErrors,
+  HandlePayFastWebhookResponse,
+  HandlePayFastWebhookResponses,
+} from './handlePayFastWebhook.gen';
+export type {
   LoginUserData,
   LoginUserError,
   LoginUserErrors,
@@ -1517,6 +1538,13 @@ export type {
   ResetUserPasswordResponses,
 } from './resetUserPassword.gen';
 export type {
+  ResolveAdminPayFastChargeReviewData,
+  ResolveAdminPayFastChargeReviewError,
+  ResolveAdminPayFastChargeReviewErrors,
+  ResolveAdminPayFastChargeReviewResponse,
+  ResolveAdminPayFastChargeReviewResponses,
+} from './resolveAdminPayFastChargeReview.gen';
+export type {
   ResolveAdminReportData,
   ResolveAdminReportError,
   ResolveAdminReportErrors,
@@ -1551,6 +1579,20 @@ export type {
   RetryAdminQuickBooksSyncEventResponse,
   RetryAdminQuickBooksSyncEventResponses,
 } from './retryAdminQuickBooksSyncEvent.gen';
+export type {
+  RetryPayFastBoostCheckoutData,
+  RetryPayFastBoostCheckoutError,
+  RetryPayFastBoostCheckoutErrors,
+  RetryPayFastBoostCheckoutResponse,
+  RetryPayFastBoostCheckoutResponses,
+} from './retryPayFastBoostCheckout.gen';
+export type {
+  RetryPayFastCheckoutData,
+  RetryPayFastCheckoutError,
+  RetryPayFastCheckoutErrors,
+  RetryPayFastCheckoutResponse,
+  RetryPayFastCheckoutResponses,
+} from './retryPayFastCheckout.gen';
 export type {
   SendConversationMessageData,
   SendConversationMessageError,

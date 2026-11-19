@@ -141,6 +141,8 @@ export type CompleteAdminBoostRefundResponses = {
       sellerId: string;
       amount: number;
       status:
+        | 'PENDING_PAYMENT'
+        | 'PAYMENT_EXPIRED'
         | 'PENDING_REVIEW'
         | 'RESUBMISSION_REQUESTED'
         | 'APPROVED'

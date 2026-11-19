@@ -9,6 +9,7 @@ import type {
   QuoteCheckoutResponses,
   ResubmitMyManualPaymentOrderData,
   ResubmitMyManualPaymentOrderResponses,
+  RetryPayFastCheckoutResponses,
   UploadFileResponses,
 } from '@/types/generated-api';
 
@@ -25,3 +26,4 @@ export type CheckoutOrderResult = ApiResponseData<CreateOrderResponses>;
 export type CancelOrderResult = ApiResponseData<CancelMyAwaitingPaymentOrderResponses>;
 export type ResubmitManualPaymentPayload = ApiRequestBody<ResubmitMyManualPaymentOrderData>;
 export type ResubmitManualPaymentResult = ApiResponseData<ResubmitMyManualPaymentOrderResponses>;
+export type PayFastCheckout = ApiResponseData<RetryPayFastCheckoutResponses>;

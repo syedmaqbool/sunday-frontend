@@ -12,6 +12,7 @@ import {
   getPaymentInstructions,
   quoteCheckout,
   resubmitManualPayment,
+  startPayFastCheckout,
   uploadPaymentProof,
 } from '@/services/checkout.service';
 
@@ -41,6 +42,17 @@ export function useCreateCheckoutMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
       void queryClient.invalidateQueries({ queryKey: marketplaceQueryKey.all() });
+    },
+  });
+}
+
+export function useStartPayFastCheckoutMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: string) => startPayFastCheckout(orderId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey.all() });
     },
   });
 }

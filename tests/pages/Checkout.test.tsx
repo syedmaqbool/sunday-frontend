@@ -2,7 +2,8 @@ import type { CheckoutQuote } from '@/types/checkout.type';
 import type { MarketplaceListing } from '@/types/marketplace.type';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { toast } from '@/hooks/use-toast';
 import Checkout from '@/pages/Checkout';
 
 type CheckoutListing = Pick<MarketplaceListing, 'categoryValue' | 'id' | 'price' | 'title'> &
@@ -13,7 +14,18 @@ type CheckoutListing = Pick<MarketplaceListing, 'categoryValue' | 'id' | 'price'
     >
   >;
 
-const { cartState, createCheckoutMock, quoteCheckoutMock, removeItemMock } = vi.hoisted(() => ({
+const {
+  cartState,
+  clearCartMock,
+  createCheckoutMock,
+  payFastSubmissions,
+  quoteCheckoutMock,
+  removeItemMock,
+  startPayFastCheckoutMock,
+} = vi.hoisted(() => ({
+  clearCartMock: vi.fn(),
+  payFastSubmissions: [] as { action: string; fields: Record<string, string> }[],
+  startPayFastCheckoutMock: vi.fn(),
   cartState: {
     items: [
       {
@@ -65,7 +77,7 @@ vi.mock('@/components/Navbar', () => ({ default: () => <nav /> }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'buyer-id' } }) }));
 vi.mock('@/contexts/CartContext', () => ({
   useCart: () => ({
-    clearCart: vi.fn(),
+    clearCart: clearCartMock,
     isHydrated: true,
     items: cartState.items,
     removeItem: removeItemMock,
@@ -77,6 +89,7 @@ vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 vi.mock('@/queries/checkout.query', () => ({
   useCheckoutQuoteMutation: () => ({ mutateAsync: quoteCheckoutMock }),
   useCreateCheckoutMutation: () => ({ mutateAsync: createCheckoutMock }),
+  useStartPayFastCheckoutMutation: () => ({ mutateAsync: startPayFastCheckoutMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({ getListingMediaUrls: () => [] }));
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }));
@@ -572,5 +585,126 @@ describe('checkout', () => {
     expect(screen.getByRole('alert')).not.toHaveTextContent(/deadline.*passed/i);
     expect(screen.getByRole('button', { name: 'Place Order' })).toBeDisabled();
     expect(createCheckoutMock).not.toHaveBeenCalled();
+  });
+
+  describe('PayFast checkout', () => {
+    let submitSpy: ReturnType<typeof vi.spyOn<HTMLFormElement, 'submit'>>;
+
+    beforeEach(() => {
+      vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'true');
+      startPayFastCheckoutMock.mockReset().mockResolvedValue({
+        data: {
+          accessToken: 'access-token',
+          amount: 1000,
+          basketId: 'order-id',
+          currencyCode: 'PKR',
+          fields: { BASKET_ID: 'order-id', TOKEN: 'access-token' },
+          paymentUrl: 'https://payfast.example/checkout',
+        },
+      });
+      clearCartMock.mockReset();
+      payFastSubmissions.length = 0;
+      submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(function (
+        this: HTMLFormElement,
+      ) {
+        payFastSubmissions.push({
+          action: this.action,
+          fields: Object.fromEntries(
+            Array.from(this.querySelectorAll('input')).map(input => [input.name, input.value]),
+          ),
+        });
+      });
+      createCheckoutMock.mockResolvedValue({ data: { order: { id: 'order-id' } } });
+    });
+
+    afterEach(() => {
+      submitSpy.mockRestore();
+      vi.unstubAllEnvs();
+    });
+
+    it('creates the order without payment proof and hands the buyer to hosted PayFast', async () => {
+      renderCheckout();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled(),
+      );
+      fillShippingInformation();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
+
+      await waitFor(() => expect(payFastSubmissions).toHaveLength(1));
+      expect(
+        screen.queryByRole('button', { name: 'Submit payment proof' }),
+      ).not.toBeInTheDocument();
+      expect(createCheckoutMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          listingIds: ['listing-id'],
+          quoteRevision: expect.stringContaining('revision-listing-id'),
+          shippingCity: 'Cape Town',
+        }),
+      );
+      const orderPayload = createCheckoutMock.mock.calls[0][0] as Record<string, unknown>;
+      expect(orderPayload).not.toHaveProperty('proofFileId');
+      expect(orderPayload).not.toHaveProperty('senderAccountNumber');
+      expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id');
+      expect(payFastSubmissions).toEqual([
+        {
+          action: 'https://payfast.example/checkout',
+          fields: { BASKET_ID: 'order-id', TOKEN: 'access-token' },
+        },
+      ]);
+    });
+
+    it('keeps the cart in place until the PayFast handoff has started', async () => {
+      let resolveStart!: (value: unknown) => void;
+      startPayFastCheckoutMock.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveStart = resolve;
+        }),
+      );
+      renderCheckout();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled(),
+      );
+      fillShippingInformation();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
+
+      await waitFor(() => expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id'));
+      expect(clearCartMock).not.toHaveBeenCalled();
+
+      resolveStart({
+        data: {
+          accessToken: 'access-token',
+          amount: 1000,
+          basketId: 'order-id',
+          currencyCode: 'PKR',
+          fields: { BASKET_ID: 'order-id', TOKEN: 'access-token' },
+          paymentUrl: 'https://payfast.example/checkout',
+        },
+      });
+      await waitFor(() => expect(payFastSubmissions).toHaveLength(1));
+      expect(clearCartMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the created order and reports an error when PayFast cannot start', async () => {
+      startPayFastCheckoutMock.mockRejectedValue(new Error('PayFast is currently unavailable.'));
+      renderCheckout();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Place Order' })).toBeEnabled(),
+      );
+      fillShippingInformation();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Place Order' }));
+
+      await waitFor(() => expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id'));
+      expect(createCheckoutMock).toHaveBeenCalledTimes(1);
+      expect(payFastSubmissions).toHaveLength(0);
+      expect(clearCartMock).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(toast).toHaveBeenCalledWith(
+          expect.objectContaining({ description: 'PayFast is currently unavailable.' }),
+        ),
+      );
+    });
   });
 });

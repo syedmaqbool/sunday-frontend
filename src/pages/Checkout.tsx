@@ -19,7 +19,12 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
 import { getErrorToastOptions } from '@/lib/errorToast';
-import { useCheckoutQuoteMutation, useCreateCheckoutMutation } from '@/queries/checkout.query';
+import { isPayFastCheckoutEnabled, startPayFastHandoff } from '@/lib/payfast';
+import {
+  useCheckoutQuoteMutation,
+  useCreateCheckoutMutation,
+  useStartPayFastCheckoutMutation,
+} from '@/queries/checkout.query';
 import { getListingMediaUrls } from '@/queries/marketplace.query';
 
 const shippingSchema = z.object({
@@ -64,6 +69,24 @@ function getUpdatedCheckoutQuote(error: unknown) {
   return (body as CheckoutQuoteConflictResponse).data.quote;
 }
 
+function buildCheckoutPayload(
+  shipping: ShippingFormValues,
+  listingIds: string[],
+  quote: CheckoutQuote,
+) {
+  return {
+    listingIds,
+    quoteRevision: quote.quoteRevision,
+    shippingAddress: shipping.address,
+    shippingCity: shipping.city,
+    shippingFirstName: shipping.firstName,
+    shippingLastName: shipping.lastName,
+    shippingPhone: shipping.phone,
+    shippingPostal: shipping.postal,
+    ...(quote.marketplaceDiscountCode && { discountCode: quote.marketplaceDiscountCode }),
+  };
+}
+
 function Checkout() {
   const { clearCart, isHydrated, items, removeItem, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
@@ -86,6 +109,7 @@ function Checkout() {
   const currentListingIdsKey = useRef('');
   const { mutateAsync: requestCheckoutQuote } = useCheckoutQuoteMutation();
   const { mutateAsync: createCheckout } = useCreateCheckoutMutation();
+  const { mutateAsync: startPayFastCheckout } = useStartPayFastCheckoutMutation();
   const shippingForm = useForm<ShippingFormValues>({
     defaultValues: {
       address: '',
@@ -238,7 +262,65 @@ function Checkout() {
     discountForm.reset();
   };
 
-  const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async () => {
+  const applyChangedCheckoutQuote = (error: unknown) => {
+    const updatedQuote = getUpdatedCheckoutQuote(error);
+    if (!updatedQuote || currentListingIdsKey.current !== listingIdsKey) return false;
+
+    const updatedQuoteRequestKey = JSON.stringify([
+      listingIdsKey,
+      updatedQuote.marketplaceDiscountCode,
+    ]);
+    lastQuoteRequestKey.current = updatedQuoteRequestKey;
+    if (marketplaceDiscountCode !== updatedQuote.marketplaceDiscountCode) {
+      setMarketplaceDiscountCode(updatedQuote.marketplaceDiscountCode);
+      discountForm.reset();
+    }
+    setCheckoutQuote(updatedQuote);
+    setQuoteForKey(updatedQuoteRequestKey);
+    setQuoteReviewStatus('required');
+    setManualPaymentOpen(false);
+    setManualPaymentError(null);
+    toast({
+      description:
+        'The order was not created. Review the updated price and coupons before trying again.',
+      title: 'Checkout quote changed',
+      variant: 'destructive',
+    });
+    return true;
+  };
+
+  const placePayFastOrder = async (shipping: ShippingFormValues) => {
+    if (!currentQuote || placing) return;
+
+    setPlacing(true);
+    let orderId: string;
+    try {
+      const response = await createCheckout(
+        buildCheckoutPayload(shipping, listingIds, currentQuote),
+      );
+      orderId = response.data.order.id;
+    } catch (error: unknown) {
+      setPlacing(false);
+      if (!applyChangedCheckoutQuote(error)) {
+        toast(getErrorToastOptions(error, 'Order failed'));
+      }
+      return;
+    }
+
+    // The cart stays on screen through the handoff; it is cleared once PayFast has the buyer.
+    const handedOff = await startPayFastHandoff(
+      () => startPayFastCheckout(orderId),
+      error => {
+        setPlacing(false);
+        toast(getErrorToastOptions(error, 'PayFast checkout could not be started.'));
+        clearCart();
+        navigate(`/order-confirmation/${orderId}`, { replace: true });
+      },
+    );
+    if (handedOff) clearCart();
+  };
+
+  const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async shipping => {
     if (
       hasMixedAcceptedOfferCart ||
       hasExpiredAcceptedOffer ||
@@ -252,6 +334,11 @@ function Checkout() {
 
     if (!user) {
       navigate('/auth');
+      return;
+    }
+
+    if (isPayFastCheckoutEnabled()) {
+      await placePayFastOrder(shipping);
       return;
     }
 
@@ -291,20 +378,10 @@ function Checkout() {
     try {
       const response = await createCheckout({
         proofFileId,
-        listingIds,
-        quoteRevision: currentQuote.quoteRevision,
         senderAccountNumber,
         senderAccountTitle,
         senderBankName,
-        shippingAddress: shipping.address,
-        shippingCity: shipping.city,
-        shippingFirstName: shipping.firstName,
-        shippingLastName: shipping.lastName,
-        shippingPhone: shipping.phone,
-        shippingPostal: shipping.postal,
-        ...(currentQuote.marketplaceDiscountCode && {
-          discountCode: currentQuote.marketplaceDiscountCode,
-        }),
+        ...buildCheckoutPayload(shipping, listingIds, currentQuote),
       });
       const result = response.data;
       if (!result?.manualPaymentSubmission || !result.order)
@@ -314,30 +391,7 @@ function Checkout() {
       setManualPaymentOpen(false);
       navigate(`/order-confirmation/${result.order.id}`, { replace: true });
     } catch (error: unknown) {
-      const updatedQuote = getUpdatedCheckoutQuote(error);
-      if (updatedQuote && currentListingIdsKey.current === listingIdsKey) {
-        const updatedQuoteRequestKey = JSON.stringify([
-          listingIdsKey,
-          updatedQuote.marketplaceDiscountCode,
-        ]);
-        lastQuoteRequestKey.current = updatedQuoteRequestKey;
-        if (marketplaceDiscountCode !== updatedQuote.marketplaceDiscountCode) {
-          setMarketplaceDiscountCode(updatedQuote.marketplaceDiscountCode);
-          discountForm.reset();
-        }
-        setCheckoutQuote(updatedQuote);
-        setQuoteForKey(updatedQuoteRequestKey);
-        setQuoteReviewStatus('required');
-        setManualPaymentOpen(false);
-        setManualPaymentError(null);
-        toast({
-          description:
-            'The order was not created. Review the updated price and coupons before trying again.',
-          title: 'Checkout quote changed',
-          variant: 'destructive',
-        });
-        return;
-      }
+      if (applyChangedCheckoutQuote(error)) return;
 
       const message = error instanceof Error ? error.message : 'Unknown error';
       setManualPaymentError(message);

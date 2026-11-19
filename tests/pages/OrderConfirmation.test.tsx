@@ -1,23 +1,27 @@
 import type { NormalizedOptions } from 'ky';
 import type { Order } from '@/types/order.type';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { HTTPError } from 'ky';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import OrderConfirmation from '@/pages/OrderConfirmation';
 
 const {
   addItemMock,
   cancelOrderMock,
   fetchMarketplaceListingMock,
+  payFastSubmissions,
   resubmitManualPaymentMock,
+  startPayFastCheckoutMock,
   uploadPaymentProofMock,
 } = vi.hoisted(() => ({
   addItemMock: vi.fn(),
   cancelOrderMock: vi.fn(),
   fetchMarketplaceListingMock: vi.fn(),
+  payFastSubmissions: [] as { action: string; fields: Record<string, string> }[],
   resubmitManualPaymentMock: vi.fn(),
+  startPayFastCheckoutMock: vi.fn(),
   uploadPaymentProofMock: vi.fn(),
 }));
 const authState = vi.hoisted(() => ({
@@ -50,6 +54,7 @@ vi.mock('@/queries/checkout.query', () => ({
   }),
   useCancelOrderMutation: () => ({ mutateAsync: cancelOrderMock }),
   useResubmitManualPaymentMutation: () => ({ mutateAsync: resubmitManualPaymentMock }),
+  useStartPayFastCheckoutMutation: () => ({ mutateAsync: startPayFastCheckoutMock }),
   useUploadPaymentProofMutation: () => ({ isPending: false, mutateAsync: uploadPaymentProofMock }),
 }));
 vi.mock('@/queries/marketplace.query', () => ({
@@ -567,5 +572,162 @@ describe('order confirmation manual actions', () => {
 
     await screen.findByText('Payment pending verification');
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument();
+  });
+});
+
+function makePayFastOrder(overrides: Partial<Order> = {}): Order {
+  return makeOrder({
+    canCancel: false,
+    canResubmit: false,
+    manualPaymentSubmission: undefined,
+    paymentStatus: 'UNPAID',
+    ...overrides,
+  });
+}
+
+describe('order confirmation PayFast checkout', () => {
+  let submitSpy: ReturnType<typeof vi.spyOn<HTMLFormElement, 'submit'>>;
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'true');
+    authState.loading = false;
+    authState.user = { id: 'buyer-id' };
+    testState.currentError = null;
+    testState.currentOrder = makePayFastOrder();
+    startPayFastCheckoutMock.mockReset().mockResolvedValue({
+      data: {
+        accessToken: 'access-token',
+        amount: 100,
+        basketId: 'order-id',
+        currencyCode: 'PKR',
+        fields: { BASKET_ID: 'order-id', TOKEN: 'access-token' },
+        paymentUrl: 'https://payfast.example/checkout',
+      },
+    });
+    payFastSubmissions.length = 0;
+    submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(function (
+      this: HTMLFormElement,
+    ) {
+      payFastSubmissions.push({
+        action: this.action,
+        fields: Object.fromEntries(
+          Array.from(this.querySelectorAll('input')).map(input => [input.name, input.value]),
+        ),
+      });
+    });
+  });
+
+  afterEach(() => {
+    submitSpy.mockRestore();
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+
+  it('does not offer PayFast actions while the PayFast checkout flag is off', async () => {
+    vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'false');
+    testState.currentOrder = makePayFastOrder({ paymentStatus: 'FAILED' });
+    renderPage();
+
+    expect(await screen.findByText('Payment failed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry payment' })).not.toBeInTheDocument();
+    expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
+  });
+
+  it('starts hosted PayFast payment for an unpaid order before its deadline', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Pay with PayFast' }));
+
+    await waitFor(() => expect(payFastSubmissions).toHaveLength(1));
+    expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id');
+    expect(payFastSubmissions[0].action).toBe('https://payfast.example/checkout');
+    expect(
+      screen.queryByRole('button', { name: 'Resubmit payment proof' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('lets the buyer retry a failed PayFast attempt on the same order', async () => {
+    testState.currentOrder = makePayFastOrder({ paymentStatus: 'FAILED' });
+    renderPage();
+
+    expect(await screen.findByText('Payment failed')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry payment' }));
+
+    await waitFor(() => expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id'));
+    await waitFor(() => expect(payFastSubmissions).toHaveLength(1));
+  });
+
+  it('keeps an abandoned pending attempt payable while waiting for PayFast confirmation', async () => {
+    testState.currentOrder = makePayFastOrder({ paymentStatus: 'PENDING' });
+    renderPage();
+
+    expect(await screen.findByText('Payment is being verified')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to PayFast' }));
+
+    await waitFor(() => expect(startPayFastCheckoutMock).toHaveBeenCalledWith('order-id'));
+  });
+
+  it('shows backend-confirmed payment as successful without offering another payment', async () => {
+    testState.currentOrder = makePayFastOrder({
+      paidAt: '2026-09-08T01:00:00.000Z',
+      paymentStatus: 'PAID',
+      status: 'CONFIRMED',
+    });
+    renderPage();
+
+    expect(await screen.findByText('Thank you for your order!')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /PayFast|Retry payment/ })).not.toBeInTheDocument();
+  });
+
+  it('does not offer PayFast payment once the order deadline has passed', async () => {
+    testState.currentOrder = makePayFastOrder({ expiresAt: '2000-01-01T00:00:00.000Z' });
+    renderPage();
+
+    expect(await screen.findByText('Payment window expired')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /PayFast|Retry payment/ })).not.toBeInTheDocument();
+  });
+
+  it('hides the PayFast action once the order deadline passes while the page stays open', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-19T12:00:00.000Z'));
+    testState.currentOrder = makePayFastOrder({ expiresAt: '2026-11-19T12:05:00.000Z' });
+    renderPage();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByRole('button', { name: 'Pay with PayFast' })).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+    });
+    expect(screen.queryByRole('button', { name: /PayFast|Retry payment/ })).not.toBeInTheDocument();
+  });
+
+  it('reports an error without handing off when PayFast checkout cannot start', async () => {
+    startPayFastCheckoutMock.mockRejectedValue(new Error('PayFast is currently unavailable.'));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Pay with PayFast' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('PayFast is currently unavailable.');
+    expect(payFastSubmissions).toHaveLength(0);
+  });
+
+  it('keeps manual proof orders on the resubmission path instead of PayFast', async () => {
+    testState.currentOrder = makeOrder({
+      canResubmit: true,
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'REJECTED',
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Resubmit payment proof' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /PayFast|Retry payment/ })).not.toBeInTheDocument();
+    expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
   });
 });

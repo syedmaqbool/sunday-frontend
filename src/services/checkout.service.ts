@@ -4,6 +4,7 @@ import type {
   CheckoutQuote,
   CheckoutQuotePayload,
   CreateOrderPayload,
+  PayFastCheckout,
   PaymentInstructions,
   ResubmitManualPaymentPayload,
   ResubmitManualPaymentResult,
@@ -50,4 +51,10 @@ export function resubmitManualPayment(orderId: string, payload: ResubmitManualPa
   return authInstance
     .post(`/api/v1/checkout/orders/${orderId}/resubmit`, { json: payload })
     .json<Response<ResubmitManualPaymentResult>>();
+}
+
+export function startPayFastCheckout(orderId: string) {
+  return authInstance
+    .post(`/api/v1/checkout/orders/${orderId}/payfast`)
+    .json<Response<PayFastCheckout>>();
 }

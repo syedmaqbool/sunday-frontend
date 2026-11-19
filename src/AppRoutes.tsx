@@ -45,6 +45,7 @@ const MyListings = lazy(() => import('./pages/MyListings'));
 const MyOffers = lazy(() => import('./pages/MyOffers'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const PaymentReturn = lazy(() => import('./pages/PaymentReturn'));
 const Preferences = lazy(() => import('./pages/Preferences'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
@@ -233,6 +234,22 @@ export default function AppRoutes() {
           </Suspense>
         }
         path="/order-confirmation/:id"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <PaymentReturn />
+          </Suspense>
+        }
+        path="/payment/success"
+      />
+      <Route
+        element={
+          <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>
+            <PaymentReturn />
+          </Suspense>
+        }
+        path="/payment/cancel"
       />
       <Route
         element={

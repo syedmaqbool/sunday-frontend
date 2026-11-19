@@ -39,8 +39,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from '@/hooks/use-toast';
 import { trackEvent } from '@/lib/analytics';
+import {
+  canStartPayFastPayment,
+  isPayFastCheckoutEnabled,
+  startPayFastHandoff,
+} from '@/lib/payfast';
 import { formatEnumLabel } from '@/lib/utilities';
-import { useCancelOrderMutation, useResubmitManualPaymentMutation } from '@/queries/checkout.query';
+import {
+  useCancelOrderMutation,
+  useResubmitManualPaymentMutation,
+  useStartPayFastCheckoutMutation,
+} from '@/queries/checkout.query';
 import { fetchMarketplaceListing } from '@/queries/marketplace.query';
 import { getMyOrderOptions, myOrdersQueryKey } from '@/queries/myOrders.query';
 
@@ -63,7 +72,10 @@ function hasCorrectionDeadlinePassed(order: Order, currentTime: number) {
   return correctionDeadline !== null && Date.parse(correctionDeadline) <= currentTime;
 }
 
-function getConfirmationCopy(order: Order): { description: string; heading: string } {
+function getConfirmationCopy(
+  order: Order,
+  isPayFastPayable: boolean,
+): { description: string; heading: string } {
   if (order.status === 'CANCELLED' && order.paymentStatus === 'PAID') {
     return {
       description:
@@ -96,17 +108,32 @@ function getConfirmationCopy(order: Order): { description: string; heading: stri
   }
   if (order.paymentStatus === 'PENDING') {
     return {
-      description: 'Your payment is awaiting confirmation.',
+      description: isPayFastPayable
+        ? 'We are waiting for PayFast to confirm your payment. This page updates automatically. If you did not finish paying, continue to PayFast below.'
+        : 'Your payment is awaiting confirmation.',
       heading: 'Payment is being verified',
     };
   }
+  if (order.paymentStatus === 'FAILED') {
+    return {
+      description: isPayFastPayable
+        ? 'Your payment could not be confirmed. You can retry payment before the deadline.'
+        : 'Your payment could not be confirmed. Please contact the store for help.',
+      heading: 'Payment failed',
+    };
+  }
   return {
-    description:
-      order.paymentStatus === 'FAILED'
-        ? 'Your payment could not be confirmed. Please contact the store for help.'
-        : 'Your order is awaiting payment.',
-    heading: order.paymentStatus === 'FAILED' ? 'Payment failed' : 'Payment is pending',
+    description: 'Your order is awaiting payment.',
+    heading: 'Payment is pending',
   };
+}
+
+const PAYFAST_CONFIRMATION_POLL_MS = 5_000;
+
+function getPayFastButtonLabel(paymentStatus: Order['paymentStatus']) {
+  if (paymentStatus === 'FAILED') return 'Retry payment';
+  if (paymentStatus === 'PENDING') return 'Continue to PayFast';
+  return 'Pay with PayFast';
 }
 
 function OrderConfirmation() {
@@ -118,6 +145,9 @@ function OrderConfirmation() {
   const { addItem } = useCart();
   const { mutateAsync: cancelOrder } = useCancelOrderMutation();
   const { mutateAsync: resubmitManualPayment } = useResubmitManualPaymentMutation();
+  const { mutateAsync: startPayFastCheckout } = useStartPayFastCheckoutMutation();
+  const [payFastError, setPayFastError] = useState<string | null>(null);
+  const [startingPayFast, setStartingPayFast] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [resubmitError, setResubmitError] = useState<string | null>(null);
   const [resubmitOpen, setResubmitOpen] = useState(false);
@@ -147,26 +177,45 @@ function OrderConfirmation() {
   } = useQuery({
     ...getMyOrderOptions(id ?? ''),
     enabled: orderQueryEnabled,
+    refetchInterval: query =>
+      query.state.data?.data.paymentStatus === 'PENDING' ? PAYFAST_CONFIRMATION_POLL_MS : false,
     retry: false,
   });
   const order = orderResponse?.data;
+
+  const handlePayFastPayment = async () => {
+    if (!order || startingPayFast) return;
+
+    setStartingPayFast(true);
+    setPayFastError(null);
+    await startPayFastHandoff(
+      () => startPayFastCheckout(order.id),
+      async paymentError => {
+        if (paymentError instanceof HTTPError && paymentError.response.status === 409) {
+          await queryClient.refetchQueries({ queryKey: myOrdersQueryKey.detail(order.id) });
+        }
+        setPayFastError(getErrorMessage(paymentError, 'PayFast checkout could not be started.'));
+        setStartingPayFast(false);
+      },
+    );
+  };
   const correctionDeadlinePassed = order ? hasCorrectionDeadlinePassed(order, currentTime) : false;
 
   useEffect(() => {
-    if (order?.manualPaymentSubmission?.status !== 'RESUBMISSION_REQUESTED' || !order.expiresAt)
-      return;
+    // Re-render when the order deadline passes so Pay, Retry and correction actions hide on time.
+    if (!order?.expiresAt) return;
 
     const currentTimestamp = Date.now();
-    const correctionDeadline = Date.parse(order.expiresAt);
+    const orderDeadline = Date.parse(order.expiresAt);
     setCurrentTime(currentTimestamp);
-    const remainingTime = correctionDeadline - currentTimestamp;
+    const remainingTime = orderDeadline - currentTimestamp;
     if (remainingTime <= 0) return;
 
     let timeoutId: ReturnType<typeof globalThis.setTimeout>;
     const updateTimeAtDeadline = () => {
       const updatedTimestamp = Date.now();
       setCurrentTime(updatedTimestamp);
-      const timeUntilDeadline = correctionDeadline - updatedTimestamp;
+      const timeUntilDeadline = orderDeadline - updatedTimestamp;
       if (timeUntilDeadline > 0) {
         timeoutId = setTimeout(updateTimeAtDeadline, Math.min(timeUntilDeadline, 2_147_483_647));
       }
@@ -330,8 +379,9 @@ function OrderConfirmation() {
   const isPending = order.status === 'AWAITING_PAYMENT' && order.paymentStatus === 'PENDING';
   const verificationState = getManualVerificationState(order);
   const hasManualPayment = Boolean(order.manualPaymentSubmission);
+  const isPayFastPayable = isPayFastCheckoutEnabled() && canStartPayFastPayment(order, currentTime);
   const visiblePaymentStatus = isCancelled && !isPaid ? null : order.paymentStatus;
-  const { description, heading } = getConfirmationCopy(order);
+  const { description, heading } = getConfirmationCopy(order, isPayFastPayable);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -427,6 +477,43 @@ function OrderConfirmation() {
               lg:grid-cols-5
             "
           >
+            {isPayFastPayable && (
+              <div
+                className="
+                  space-y-2 rounded-lg border border-border bg-card p-4
+                  sm:col-span-5 sm:p-6
+                  lg:col-span-5
+                "
+              >
+                <Button
+                  onClick={() => void handlePayFastPayment()}
+                  disabled={startingPayFast}
+                  type="button"
+                  className="w-full"
+                >
+                  {startingPayFast ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    getPayFastButtonLabel(order.paymentStatus)
+                  )}
+                </Button>
+                {order.expiresAt && (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Pay by{' '}
+                    {new Date(order.expiresAt).toLocaleString('en-GB', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                )}
+                {payFastError && (
+                  <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {payFastError}
+                  </p>
+                )}
+              </div>
+            )}
             {hasManualPayment && (
               <div
                 className="

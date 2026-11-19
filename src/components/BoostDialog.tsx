@@ -37,8 +37,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { deriveBoostPurchaseStatusSource } from '@/hooks/boostPurchaseStatusDerivation';
+import { useBoostPayFastHandoff } from '@/hooks/useBoostPayFastHandoff';
 import { getBoostPackagesOptions } from '@/hooks/useBoosts';
 import { getBoostPurchaseDisplayStatus } from '@/lib/boostStatus';
+import { showErrorToast } from '@/lib/errorToast';
+import { isPayFastCheckoutEnabled } from '@/lib/payfast';
 import { cn } from '@/lib/utilities';
 import {
   getListingBoostCampaignQuoteOptions,
@@ -116,7 +120,9 @@ function purchaseStatusMessage(purchase: BoostPurchaseResponse['data']) {
     minimumFractionDigits: 2,
   });
 
-  const status = getBoostPurchaseDisplayStatus(purchase);
+  const status = getBoostPurchaseDisplayStatus(
+    deriveBoostPurchaseStatusSource(purchase, Date.now()),
+  );
 
   if (status === 'PENDING_REVIEW')
     return `Payment proof submitted for Rs ${amount}. Your boost is awaiting payment review and is not active yet.`;
@@ -135,6 +141,24 @@ function purchaseStatusMessage(purchase: BoostPurchaseResponse['data']) {
   return status === 'ACTIVE'
     ? `Payment verified for Rs ${amount}. Your boost is active.`
     : `Payment verified for Rs ${amount}. Your boost is not active yet.`;
+}
+
+// Submit button for a purchase form. `busy` covers both the purchase request and the PayFast handoff.
+function BoostSubmitButton({
+  busy,
+  disabled,
+  label,
+}: {
+  busy: boolean;
+  disabled: boolean;
+  label: string;
+}) {
+  return (
+    <Button disabled={disabled || busy} type="submit" className="gap-1">
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+      {label}
+    </Button>
+  );
 }
 
 interface Props {
@@ -204,8 +228,28 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
 
   const purchasePackages = useBoostWithPackageMutation();
   const purchaseCampaign = useBoostWithCampaignMutation();
+  const payFastEnabled = isPayFastCheckoutEnabled();
+  const { starting: payFastStarting, startHandoff } = useBoostPayFastHandoff(
+    'PayFast checkout could not be started. Retry from your boost history before the payment deadline.',
+  );
 
-  const launchCampaign = ({
+  // Creates the purchase without proof, then hands the seller to hosted PayFast. The purchase stays
+  // pending until the backend confirms payment, so a failed handoff can be retried before its deadline.
+  const payThroughPayFast = async (createPurchase: () => Promise<BoostPurchaseResponse>) => {
+    let purchaseId: string;
+    try {
+      purchaseId = (await createPurchase()).data.id;
+    } catch (error: unknown) {
+      showErrorToast(error, 'Boost purchase could not be created.');
+      return false;
+    }
+
+    const handedOff = await startHandoff({ listingId, purchaseId });
+    if (handedOff) setOpen(false);
+    return handedOff;
+  };
+
+  const launchCampaign = async ({
     endDate: campaignEndDate,
     placement: campaignPlacement,
     startDate: campaignStartDate,
@@ -216,6 +260,17 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     }
     if (!campaignQuoteResponse) {
       toast.error('Wait for the campaign quote before continuing.');
+      return;
+    }
+    if (payFastEnabled) {
+      await payThroughPayFast(() =>
+        purchaseCampaign.mutateAsync({
+          listingId,
+          placement: campaignPlacement,
+          endsAt: campaignEndDate.toISOString(),
+          startsAt: campaignStartDate.toISOString(),
+        }),
+      );
       return;
     }
     setPendingPurchase({
@@ -229,9 +284,16 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     setPaymentDialogOpen(true);
   };
 
-  const purchaseSelectedPackages = ({ packageIds }: PackageSelectionFormValues) => {
+  const purchaseSelectedPackages = async ({ packageIds }: PackageSelectionFormValues) => {
     if (!user) {
       toast.error('Not authenticated');
+      return;
+    }
+    if (payFastEnabled) {
+      const handedOff = await payThroughPayFast(() =>
+        purchasePackages.mutateAsync({ listingId, packageIds }),
+      );
+      if (handedOff) packageForm.reset({ packageIds: [] });
       return;
     }
     setPendingPurchase({ amount: packagesTotal, kind: 'package', packageIds });
@@ -274,6 +336,13 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
     for (const p of packages) g[p.placement].push(p);
     return g;
   }, [packages]);
+
+  const continueLabel = payFastEnabled ? 'Continue to PayFast' : 'Continue to payment';
+  const payFastNotice = payFastEnabled ? (
+    <p className="text-xs text-muted-foreground">
+      Pay on PayFast within 30 minutes. Your boost starts only after PayFast confirms payment.
+    </p>
+  ) : null;
 
   return (
     <>
@@ -530,24 +599,18 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                         Campaign duration: {campaignQuoteResponse.data.durationDays} days
                       </p>
                     )}
+                    {payFastNotice}
                   </div>
-                  <Button
+                  <BoostSubmitButton
+                    busy={purchaseCampaign.isPending || payFastStarting}
                     disabled={
                       paymentDialogOpen ||
                       campaignQuoteLoading ||
                       !campaignQuoteResponse ||
                       !!campaignQuoteError
                     }
-                    type="submit"
-                    className="gap-1"
-                  >
-                    {purchaseCampaign.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Rocket className="h-4 w-4" />
-                    )}
-                    Continue to payment
-                  </Button>
+                    label={continueLabel}
+                  />
                 </div>
               </form>
             </TabsContent>
@@ -646,19 +709,13 @@ function BoostDialog({ listingId, listingTitle, trigger }: Props) {
                     <p className="font-heading text-2xl font-bold text-foreground">
                       Rs {packagesTotal.toFixed(2)}
                     </p>
+                    {payFastNotice}
                   </div>
-                  <Button
+                  <BoostSubmitButton
+                    busy={purchasePackages.isPending || payFastStarting}
                     disabled={selected.length === 0 || paymentDialogOpen}
-                    type="submit"
-                    className="gap-1"
-                  >
-                    {purchasePackages.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Rocket className="h-4 w-4" />
-                    )}
-                    Continue to payment
-                  </Button>
+                    label={continueLabel}
+                  />
                 </div>
               </form>
             </TabsContent>

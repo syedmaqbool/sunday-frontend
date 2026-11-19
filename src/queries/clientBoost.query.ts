@@ -1,6 +1,7 @@
 import type { ApiRequestQuery } from '@/types/api.type';
 import type {
   BoostCampaignQuoteParameters,
+  BoostPayFastCheckoutVariables,
   BoostWithCampaignPayload,
   BoostWithPackagePayload,
   MyBoostPurchasesParameters,
@@ -18,6 +19,7 @@ import {
   listMyBoostPurchases,
   listMyBoosts,
   resubmitBoostPaymentProof,
+  startPayFastBoostCheckout,
 } from '@/services/clientBoost.service';
 
 export const clientBoostQueryKey = {
@@ -105,6 +107,12 @@ export function useBoostWithCampaignMutation() {
       void queryClient.invalidateQueries({ queryKey: clientBoostQueryKey.all() });
       void queryClient.invalidateQueries({ queryKey: boostsQueryKey.all() });
     },
+  });
+}
+
+export function useStartPayFastBoostCheckoutMutation() {
+  return useMutation({
+    mutationFn: (variables: BoostPayFastCheckoutVariables) => startPayFastBoostCheckout(variables),
   });
 }
 

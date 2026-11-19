@@ -7,6 +7,7 @@ import type {
   BoostCampaignQuote,
   BoostCampaignQuoteParameters,
   BoostPackage,
+  BoostPayFastCheckoutVariables,
   BoostPurchase,
   BoostPurchaseResponse,
   BoostWithCampaignPayload,
@@ -15,6 +16,7 @@ import type {
   MyBoostParameters,
   MyBoostPurchasesParameters,
   ResubmitBoostPaymentProofPayload,
+  StartPayFastBoostCheckoutResponse,
 } from '@/types/boost.type';
 import type { ResubmitBoostPaymentProofResponses } from '@/types/generated-api';
 import type { PaginatedResponse, Response } from '@/types/response.type';
@@ -93,4 +95,13 @@ export function boostWithCampaign(
   return authInstance
     .post(`/api/v1/me/listings/${listingId}/boosts/campaign`, { json: body })
     .json<BoostPurchaseResponse>();
+}
+
+export function startPayFastBoostCheckout({
+  listingId,
+  purchaseId,
+}: BoostPayFastCheckoutVariables): Promise<StartPayFastBoostCheckoutResponse> {
+  return authInstance
+    .post(`/api/v1/me/listings/${listingId}/boosts/purchases/${purchaseId}/payfast`)
+    .json<StartPayFastBoostCheckoutResponse>();
 }

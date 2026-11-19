@@ -1,6 +1,9 @@
 import type { ManualPaymentSubmissionValues } from '@/components/ManualPaymentDialog';
-import type { BoostPurchaseDisplayStatus } from '@/lib/boostStatus';
-import type { BoostableListingItem, ListingBoost } from '@/types/boost.type';
+import type {
+  BoostableListingItem,
+  BoostPurchaseDisplayStatus,
+  ListingBoost,
+} from '@/types/boost.type';
 
 import { useQuery } from '@tanstack/react-query';
 
@@ -14,8 +17,8 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import BoostDialog from '@/components/BoostDialog';
 import Footer from '@/components/Footer';
@@ -24,7 +27,14 @@ import Navbar from '@/components/Navbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getBoostPurchaseDisplayStatus, isBoostPaidAndWithinActiveWindow } from '@/lib/boostStatus';
+import { deriveBoostPurchaseStatusSource } from '@/hooks/boostPurchaseStatusDerivation';
+import { useBoostPayFastHandoff } from '@/hooks/useBoostPayFastHandoff';
+import {
+  canStartBoostPayFastPayment,
+  getBoostPurchaseDisplayStatus,
+  isBoostPaidAndWithinActiveWindow,
+} from '@/lib/boostStatus';
+import { isPayFastCheckoutEnabled } from '@/lib/payfast';
 import {
   getBoostableListingsOptions,
   getMyBoostPurchasesOptions,
@@ -33,6 +43,12 @@ import {
 } from '@/queries/clientBoost.query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+// Keeps "active" and "ended" labels aligned with campaign end dates while the page stays open.
+const NOW_REFRESH_MS = 60_000;
+
+// Re-checks a boost purchase still awaiting PayFast until the backend confirms or rejects it.
+const PAYFAST_CONFIRMATION_POLL_MS = 5_000;
 
 const placementIcon: Record<string, any> = {
   FOR_YOU: Sparkles,
@@ -49,6 +65,9 @@ const placementLabel: Record<string, string> = {
 const purchaseStatusLabel: Record<BoostPurchaseDisplayStatus, string> = {
   ACTIVE: 'Active',
   APPROVED: 'Approved',
+  ENDED: 'Ended',
+  PAYMENT_EXPIRED: 'Payment expired',
+  PENDING_PAYMENT: 'Awaiting PayFast payment',
   PENDING_REVIEW: 'Awaiting payment review',
   REFUND_REQUIRED: 'Refund required',
   REFUNDED: 'Refunded',
@@ -56,17 +75,40 @@ const purchaseStatusLabel: Record<BoostPurchaseDisplayStatus, string> = {
   RESUBMISSION_REQUESTED: 'Replacement proof requested',
 };
 
+// Shown for a purchase the seller just returned from PayFast. The text reflects backend status only.
+const returnedStatusMessage: Partial<Record<BoostPurchaseDisplayStatus, string>> = {
+  ACTIVE: 'PayFast confirmed payment for this boost.',
+  APPROVED: 'PayFast confirmed payment for this boost.',
+  ENDED: 'This boost has ended.',
+  PENDING_PAYMENT:
+    'PayFast has not confirmed this payment yet. This page updates automatically. If you did not finish paying, use Pay with PayFast below before the deadline.',
+  PENDING_REVIEW:
+    'PayFast received a payment for this boost. Staff are reviewing it before anything is activated.',
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function Boost() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnedPurchaseId = searchParams.get('boostPurchaseId');
   const [purchasePage, setPurchasePage] = useState(1);
   const [resubmissionPurchaseId, setResubmissionPurchaseId] = useState<string | null>(null);
+  const payFastEnabled = isPayFastCheckoutEnabled();
+  const { starting: payFastStarting, startHandoff } = useBoostPayFastHandoff(
+    'PayFast checkout could not be started. Try again before the payment deadline.',
+  );
 
   const { data: boostsResponse, isLoading: boostsLoading } = useQuery(getMyBoostsOptions());
-  const { data: purchasesResponse, isLoading: purchasesLoading } = useQuery(
-    getMyBoostPurchasesOptions({ page: purchasePage, size: 100 }),
-  );
+  const { data: purchasesResponse, isLoading: purchasesLoading } = useQuery({
+    ...getMyBoostPurchasesOptions({ page: purchasePage, size: 100 }),
+    refetchInterval: query =>
+      query.state.data?.data.some(purchase =>
+        canStartBoostPayFastPayment(deriveBoostPurchaseStatusSource(purchase, Date.now())),
+      )
+        ? PAYFAST_CONFIRMATION_POLL_MS
+        : false,
+  });
   const { data: listingsResponse, isLoading: listingsLoading } = useQuery(
     getBoostableListingsOptions(),
   );
@@ -96,7 +138,18 @@ function Boost() {
     setResubmissionPurchaseId(null);
   };
 
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), NOW_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // The returned purchase is shown from the backend status only. The redirect itself proves nothing.
+  const returnedPurchase = purchases.find(purchase => purchase.id === returnedPurchaseId) ?? null;
+  const returnedStatus = returnedPurchase
+    ? getBoostPurchaseDisplayStatus(deriveBoostPurchaseStatusSource(returnedPurchase, now), now)
+    : null;
+
   const activeBoosts = allBoosts.filter(b => isBoostPaidAndWithinActiveWindow(b, now));
   const expiredBoosts = allBoosts.filter(
     b => b.paymentStatus === 'PAID' && new Date(b.endsAt).getTime() < now,
@@ -167,6 +220,15 @@ function Boost() {
           )}
         </section>
 
+        {returnedStatus && returnedStatusMessage[returnedStatus] && (
+          <p
+            role="status"
+            className="mt-8 rounded-md border border-border bg-muted/40 p-4 text-sm text-foreground"
+          >
+            {returnedStatusMessage[returnedStatus]}
+          </p>
+        )}
+
         <section className="mt-10">
           <h2 className="font-heading text-xl font-semibold text-foreground">
             Boost Purchase History
@@ -182,9 +244,14 @@ function Boost() {
               {purchases.map(purchase => {
                 const listingId = purchase.boosts[0]?.listingId;
                 const listing = listings.find(item => item.id === listingId);
-                const status = getBoostPurchaseDisplayStatus(purchase);
+                const source = deriveBoostPurchaseStatusSource(purchase, now);
+                const status = getBoostPurchaseDisplayStatus(source, now);
                 const active = status === 'ACTIVE';
                 const statusLabel = purchaseStatusLabel[status];
+                const campaignBoost = purchase.boosts.find(boost => boost.packageId === null);
+                const payFastDeadline = source.paymentDeadline;
+                const canPayWithPayFast =
+                  payFastEnabled && canStartBoostPayFastPayment(source, now);
                 const canResubmit =
                   purchase.status === 'RESUBMISSION_REQUESTED' &&
                   purchase.paymentSubmission?.status === 'RESUBMISSION_REQUESTED' &&
@@ -215,6 +282,42 @@ function Boost() {
                           </Badge>
                         </div>
                       </div>
+
+                      {campaignBoost && (
+                        <p className="text-sm text-muted-foreground">
+                          Runs {new Date(campaignBoost.startsAt).toLocaleDateString()} to{' '}
+                          {new Date(campaignBoost.endsAt).toLocaleDateString()}
+                        </p>
+                      )}
+
+                      {canPayWithPayFast && listingId && payFastDeadline !== null && (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            Pay by {new Date(payFastDeadline).toLocaleString()}
+                          </p>
+                          <Button
+                            disabled={payFastStarting}
+                            onClick={() =>
+                              void startHandoff({ listingId, purchaseId: purchase.id })
+                            }
+                            size="sm"
+                            type="button"
+                          >
+                            Pay with PayFast
+                          </Button>
+                        </div>
+                      )}
+
+                      {status === 'PAYMENT_EXPIRED' && (
+                        <p className="text-sm text-muted-foreground">
+                          This boost was not paid within 30 minutes. Start a new boost to try again.
+                        </p>
+                      )}
+                      {status === 'ENDED' && purchase.status === 'PENDING_PAYMENT' && (
+                        <p className="text-sm text-muted-foreground">
+                          This campaign ended before PayFast confirmed payment.
+                        </p>
+                      )}
 
                       {purchase.paymentSubmission && (
                         <div className="space-y-1 text-sm text-muted-foreground">

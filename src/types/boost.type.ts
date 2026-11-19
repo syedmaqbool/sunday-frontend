@@ -23,6 +23,7 @@ import type {
   GetMyBoostsData,
   GetMyBoostsResponses,
   ResubmitBoostPaymentProofData,
+  RetryPayFastBoostCheckoutResponses,
 } from '@/types/generated-api';
 
 export type BoostPackage = ApiResponseItem<GetBoostPackagesResponses>;
@@ -50,3 +51,26 @@ export type BoostWithCampaignPayload = ApiRequestBody<CreateListingBoostCampaign
 export type BoostPurchaseResponse =
   | ApiSuccessResponse<CreateListingBoostCampaignResponses>
   | ApiSuccessResponse<CreateListingPackageBoostsResponses>;
+// The generated response name comes from the backend's retry operation, which serves this start call.
+export type StartPayFastBoostCheckoutResponse =
+  ApiSuccessResponse<RetryPayFastBoostCheckoutResponses>;
+export type BoostPayFastCheckoutVariables = {
+  listingId: string;
+  purchaseId: string;
+};
+export type BoostActivationWindow = Pick<ListingBoost, 'endsAt' | 'paymentStatus' | 'startsAt'>;
+export type BoostPurchaseDisplayStatus =
+  | 'ACTIVE'
+  | 'ENDED'
+  | 'PAYMENT_EXPIRED'
+  | BoostPurchase['status'];
+// Scalars the purchase status helpers read. The consuming layer derives them from the purchase's
+// boosts at a given time, so the helpers themselves never iterate server records.
+export type BoostPurchaseStatusSource = Pick<BoostPurchase, 'status'> & {
+  // Earliest boost creation time plus the payment window, in epoch ms. Null when there are no boosts.
+  paymentDeadline: number | null;
+  // Selected end of a custom campaign, in epoch ms. Null for package purchases.
+  campaignEndsAt: number | null;
+  hasActiveBoost: boolean;
+  allBoostsEnded: boolean;
+};

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import Boost from '@/pages/Boost';
 
 const {
@@ -10,6 +10,7 @@ const {
   listMyBoostPurchasesMock,
   listMyBoostsMock,
   resubmitBoostPaymentProofMock,
+  startPayFastBoostCheckoutMock,
   uploadPaymentProofMock,
 } = vi.hoisted(() => ({
   getPaymentInstructionsMock: vi.fn(),
@@ -17,6 +18,7 @@ const {
   listMyBoostPurchasesMock: vi.fn(),
   listMyBoostsMock: vi.fn(),
   resubmitBoostPaymentProofMock: vi.fn(),
+  startPayFastBoostCheckoutMock: vi.fn(),
   uploadPaymentProofMock: vi.fn(),
 }));
 
@@ -25,6 +27,7 @@ vi.mock('@/services/clientBoost.service', () => ({
   listMyBoostPurchases: listMyBoostPurchasesMock,
   listMyBoosts: listMyBoostsMock,
   resubmitBoostPaymentProof: resubmitBoostPaymentProofMock,
+  startPayFastBoostCheckout: startPayFastBoostCheckoutMock,
 }));
 
 vi.mock('@/services/checkout.service', () => ({
@@ -39,11 +42,11 @@ vi.mock('@/services/checkout.service', () => ({
 vi.mock('@/components/Navbar', () => ({ default: () => null }));
 vi.mock('@/components/Footer', () => ({ default: () => null }));
 
-function renderBoostPage() {
+function renderBoostPage(path = '/boost') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <Boost />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -472,5 +475,348 @@ describe('seller boost status', () => {
     expect(await screen.findByText('Rejected')).toBeInTheDocument();
     expect(screen.getByText('Showing page 2 of 2')).toBeInTheDocument();
     expect(listMyBoostPurchasesMock).toHaveBeenLastCalledWith({ page: 2, size: 100 });
+  });
+});
+
+function boostWindow(
+  startsAt: string,
+  endsAt: string,
+  paymentStatus: 'PENDING' | 'PAID',
+  overrides: Partial<{
+    createdAt: string;
+    packageId: string | null;
+    packageName: string | null;
+  }> = {},
+) {
+  return {
+    boostPurchaseId: 'purchase-pay',
+    listingId: 'listing-1',
+    packageId: null as string | null,
+    sellerId: 'seller-1',
+    durationDays: 3,
+    isActive: false,
+    packageName: null as string | null,
+    paymentStatus,
+    placement: 'SEARCH',
+    pricePaid: 1000,
+    endsAt,
+    startsAt,
+    createdAt: startsAt,
+    updatedAt: startsAt,
+    ...overrides,
+  };
+}
+
+function packageBoostWindow(
+  startsAt: string,
+  endsAt: string,
+  paymentStatus: 'PENDING' | 'PAID',
+  createdAt: string,
+) {
+  return boostWindow(startsAt, endsAt, paymentStatus, {
+    createdAt,
+    packageId: 'package-1',
+    packageName: 'One week',
+  });
+}
+
+function purchaseFixture(
+  overrides: Partial<{
+    boosts: ReturnType<typeof boostWindow>[];
+    id: string;
+    status: string;
+  }>,
+) {
+  const createdAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  return {
+    id: 'purchase-pay',
+    amount: 1000,
+    boosts: [boostWindow(createdAt, '2099-01-01T00:00:00.000Z', 'PENDING')],
+    paymentSubmission: null,
+    refundCompletedAt: null,
+    status: 'PENDING_PAYMENT',
+    ...overrides,
+  };
+}
+
+function mockPurchases(data: unknown[]) {
+  listMyBoostPurchasesMock.mockResolvedValue({
+    data,
+    message: 'Boost purchases fetched.',
+    pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      nextPage: null,
+      perPage: 100,
+      prevPage: null,
+      total: data.length,
+    },
+    statusCode: 200,
+  });
+}
+
+describe('seller PayFast boost purchases', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'true');
+    startPayFastBoostCheckoutMock.mockReset().mockResolvedValue({
+      data: {
+        accessToken: 'access-token',
+        amount: 1000,
+        basketId: 'BOOST-purchase-pay',
+        currencyCode: 'PKR',
+        fields: { BASKET_ID: 'BOOST-purchase-pay', TOKEN: 'access-token' },
+        paymentUrl: 'https://payfast.example/checkout',
+      },
+      message: 'PayFast checkout created successfully.',
+      statusCode: 200,
+    });
+    listMyBoostsMock.mockResolvedValue({
+      data: [],
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 0,
+      },
+    });
+    listBoostableListingsMock.mockResolvedValue({
+      data: [
+        {
+          id: 'listing-1',
+          coverImage: { url: '/listing.png' },
+          price: 10_000,
+          title: 'Leather Tote',
+        },
+      ],
+      pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        perPage: 100,
+        prevPage: null,
+        total: 1,
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    for (const form of document.querySelectorAll('body > form')) form.remove();
+  });
+
+  it('pays a pending boost through PayFast before its deadline without any proof upload', async () => {
+    mockPurchases([purchaseFixture({})]);
+    const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+    renderBoostPage();
+
+    expect(await screen.findByText('Awaiting PayFast payment')).toBeInTheDocument();
+    expect(screen.getByText(/Pay by/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pay with PayFast' }));
+
+    await waitFor(() =>
+      expect(startPayFastBoostCheckoutMock).toHaveBeenCalledWith({
+        listingId: 'listing-1',
+        purchaseId: 'purchase-pay',
+      }),
+    );
+    await waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    expect(document.querySelector('input[name="BASKET_ID"]')).toHaveValue('BOOST-purchase-pay');
+    expect(uploadPaymentProofMock).not.toHaveBeenCalled();
+  });
+
+  it('shows a pending boost past its 30 minute deadline as expired with no way to pay', async () => {
+    const createdAt = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({ boosts: [boostWindow(createdAt, '2099-01-01T00:00:00.000Z', 'PENDING')] }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Payment expired')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pay with PayFast' })).not.toBeInTheDocument();
+  });
+
+  it('does not treat a PayFast return as verified payment while the backend still reports pending', async () => {
+    mockPurchases([purchaseFixture({})]);
+    renderBoostPage('/boost?boostPurchaseId=purchase-pay');
+
+    expect(
+      await screen.findByText(/PayFast has not confirmed this payment yet/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/payment (has been )?confirmed/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Awaiting PayFast payment')).toBeInTheDocument();
+  });
+
+  it('shows a returned boost as active only once the backend has verified its payment', async () => {
+    const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({
+        boosts: [boostWindow(startsAt, endsAt, 'PAID')],
+        status: 'APPROVED',
+      }),
+    ]);
+    renderBoostPage('/boost?boostPurchaseId=purchase-pay');
+
+    expect(await screen.findByRole('heading', { name: 'Active Boosts (0)' })).toBeInTheDocument();
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/PayFast has not confirmed this payment yet/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a returned boost that has ended with the ended notice and no PayFast confirmation', async () => {
+    const startsAt = '2026-01-10T00:00:00.000Z';
+    const endsAt = '2026-01-17T00:00:00.000Z';
+    mockPurchases([
+      purchaseFixture({
+        boosts: [packageBoostWindow(startsAt, endsAt, 'PAID', startsAt)],
+        status: 'APPROVED',
+      }),
+    ]);
+    renderBoostPage('/boost?boostPurchaseId=purchase-pay');
+
+    expect(await screen.findByText('This boost has ended.')).toBeInTheDocument();
+    expect(screen.queryByText(/PayFast confirmed payment/)).not.toBeInTheDocument();
+  });
+
+  it('re-checks a payable PayFast purchase again within 5 seconds', async () => {
+    mockPurchases([purchaseFixture({})]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Awaiting PayFast payment')).toBeInTheDocument();
+    const callsBeforePoll = listMyBoostPurchasesMock.mock.calls.length;
+    await waitFor(
+      () => expect(listMyBoostPurchasesMock.mock.calls.length).toBeGreaterThan(callsBeforePoll),
+      {
+        timeout: 7_000,
+      },
+    );
+  }, 10_000);
+
+  it('does not re-check a purchase that is no longer payable', async () => {
+    const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({ boosts: [boostWindow(startsAt, endsAt, 'PAID')], status: 'APPROVED' }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    const callsBeforeWait = listMyBoostPurchasesMock.mock.calls.length;
+    await new Promise(resolve => setTimeout(resolve, 5_500));
+    expect(listMyBoostPurchasesMock.mock.calls.length).toBe(callsBeforeWait);
+  }, 12_000);
+
+  it('shows a custom campaign with its selected dates and marks it ended once the end date passes', async () => {
+    const startsAt = '2026-01-10T00:00:00.000Z';
+    const endsAt = '2026-01-12T00:00:00.000Z';
+    mockPurchases([
+      purchaseFixture({
+        boosts: [boostWindow(startsAt, endsAt, 'PAID')],
+        status: 'APPROVED',
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Ended')).toBeInTheDocument();
+    expect(screen.queryByText('Active')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Active Boosts (0)' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `Runs ${new Date(startsAt).toLocaleDateString()} to ${new Date(endsAt).toLocaleDateString()}`,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a pending custom campaign whose selected end date has passed as ended with no way to pay', async () => {
+    const createdAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const startsAt = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({ boosts: [boostWindow(startsAt, endsAt, 'PENDING', { createdAt })] }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Ended')).toBeInTheDocument();
+    expect(screen.queryByText('Awaiting PayFast payment')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pay with PayFast' })).not.toBeInTheDocument();
+  });
+
+  it('pays a pending package boost through PayFast inside its 30 minute window', async () => {
+    const createdAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const startsAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-package',
+        boosts: [packageBoostWindow(startsAt, '2099-01-01T00:00:00.000Z', 'PENDING', createdAt)],
+      }),
+    ]);
+    const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+    renderBoostPage();
+
+    expect(await screen.findByText('Awaiting PayFast payment')).toBeInTheDocument();
+    expect(screen.getByText(/Pay by/)).toBeInTheDocument();
+    expect(screen.queryByText(/Runs /)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pay with PayFast' }));
+
+    await waitFor(() =>
+      expect(startPayFastBoostCheckoutMock).toHaveBeenCalledWith({
+        listingId: 'listing-1',
+        purchaseId: 'purchase-package',
+      }),
+    );
+    await waitFor(() => expect(submit).toHaveBeenCalledOnce());
+  });
+
+  it('shows a pending package past its 30 minute deadline as expired with no way to pay', async () => {
+    const createdAt = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+    const startsAt = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-package',
+        boosts: [packageBoostWindow(startsAt, '2099-01-01T00:00:00.000Z', 'PENDING', createdAt)],
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Payment expired')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pay with PayFast' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pay by/)).not.toBeInTheDocument();
+  });
+
+  it('shows a paid package as active while inside its window', async () => {
+    const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-package',
+        boosts: [packageBoostWindow(startsAt, endsAt, 'PAID', startsAt)],
+        status: 'APPROVED',
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(screen.queryByText('Awaiting PayFast payment')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pay with PayFast' })).not.toBeInTheDocument();
+  });
+
+  it('shows a paid package as ended after its end date', async () => {
+    const startsAt = '2026-01-10T00:00:00.000Z';
+    const endsAt = '2026-01-17T00:00:00.000Z';
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-package',
+        boosts: [packageBoostWindow(startsAt, endsAt, 'PAID', startsAt)],
+        status: 'APPROVED',
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Ended')).toBeInTheDocument();
+    expect(screen.queryByText('Active')).not.toBeInTheDocument();
   });
 });

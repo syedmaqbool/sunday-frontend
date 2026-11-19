@@ -11,6 +11,7 @@ function renderReturnPath(path: string) {
         <Route element={<PaymentReturn />} path="/payment/cancel" />
         <Route element={<div>Order status page</div>} path="/order-confirmation/:id" />
         <Route element={<div>Buyer order list</div>} path="/profile" />
+        <Route element={<div>Boost status page</div>} path="/boost" />
       </Routes>
     </MemoryRouter>,
   );
@@ -27,6 +28,18 @@ describe('payment return', () => {
     renderReturnPath('/payment/cancel?orderId=order-id');
 
     expect(await screen.findByText('Order status page')).toBeInTheDocument();
+  });
+
+  it('sends a boost success return to the boost status view without treating the redirect as paid', async () => {
+    renderReturnPath('/payment/success?boostPurchaseId=purchase-id');
+
+    expect(await screen.findByText('Boost status page')).toBeInTheDocument();
+  });
+
+  it('sends a cancelled boost return to the boost status view for the same purchase', async () => {
+    renderReturnPath('/payment/cancel?boostPurchaseId=purchase-id');
+
+    expect(await screen.findByText('Boost status page')).toBeInTheDocument();
   });
 
   it('falls back to the buyer order list when the return has no order', async () => {

@@ -524,6 +524,7 @@ function purchaseFixture(
   overrides: Partial<{
     boosts: ReturnType<typeof boostWindow>[];
     id: string;
+    paymentSubmission: { reviewNote: string | null; reviewedAt: string | null; status: string };
     status: string;
   }>,
 ) {
@@ -818,5 +819,45 @@ describe('seller PayFast boost purchases', () => {
 
     expect(await screen.findByText('Ended')).toBeInTheDocument();
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
+  });
+
+  it('keeps requested replacement proof available for an existing manual boost with the flag on', async () => {
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-resubmit',
+        paymentSubmission: {
+          reviewNote: 'Please provide a clearer receipt.',
+          reviewedAt: '2026-10-18T09:00:00.000Z',
+          status: 'RESUBMISSION_REQUESTED',
+        },
+        status: 'RESUBMISSION_REQUESTED',
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Replacement proof requested')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pay with PayFast' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(startPayFastBoostCheckoutMock).not.toHaveBeenCalled();
+  });
+
+  it('offers no PayFast or new proof for a manual boost awaiting review with the flag on', async () => {
+    mockPurchases([
+      purchaseFixture({
+        id: 'purchase-review',
+        paymentSubmission: { reviewNote: null, reviewedAt: null, status: 'SUBMITTED' },
+        status: 'PENDING_REVIEW',
+      }),
+    ]);
+    renderBoostPage();
+
+    expect(await screen.findByText('Awaiting payment review')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /PayFast|Resubmit payment proof/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pay by/)).not.toBeInTheDocument();
+    expect(startPayFastBoostCheckoutMock).not.toHaveBeenCalled();
   });
 });

@@ -731,3 +731,87 @@ describe('order confirmation PayFast checkout', () => {
     expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
   });
 });
+
+describe('order confirmation PayFast launch transition', () => {
+  beforeEach(() => {
+    authState.loading = false;
+    authState.user = { id: 'buyer-id' };
+    testState.currentError = null;
+    startPayFastCheckoutMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each(['true', 'false'])(
+    'shows a pre-launch order cancelled by the transition as cancelled with no payment action (PayFast flag %s)',
+    async flag => {
+      vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', flag);
+      testState.currentOrder = makeOrder({
+        canCancel: false,
+        canResubmit: false,
+        cancellationReason: 'PAYFAST_LAUNCH',
+        cancelledAt: '2026-11-19T10:00:00.000Z',
+        expiresAt: '2099-01-01T00:00:00.000Z',
+        manualPaymentSubmission: null,
+        paymentStatus: 'CANCELLED',
+        status: 'CANCELLED',
+      });
+      renderPage();
+
+      expect(await screen.findByRole('heading', { name: 'Order cancelled' })).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'This unpaid order was cancelled when PayFast checkout launched. No payment is due.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /PayFast|Retry payment|Resubmit|Cancel order/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Pay by/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Payment window expired|Payment status/)).not.toBeInTheDocument();
+      expect(screen.queryByText('Payfast Launch')).not.toBeInTheDocument();
+      expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps requested proof resubmission on the manual path when the PayFast flag is on', async () => {
+    vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'true');
+    testState.currentOrder = makeOrder({
+      canCancel: true,
+      canResubmit: true,
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      manualPaymentSubmission: {
+        ...makeOrder().manualPaymentSubmission!,
+        status: 'RESUBMISSION_REQUESTED',
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Resubmission requested' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /PayFast|Retry payment/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Resubmit payment proof' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByRole('heading', { name: 'Resubmit payment proof' }),
+    ).toBeInTheDocument();
+    expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
+  });
+
+  it('shows a manual proof under review without a new payment action when the PayFast flag is on', async () => {
+    vi.stubEnv('VITE_PAYFAST_CHECKOUT_ENABLED', 'true');
+    testState.currentOrder = makeOrder();
+    renderPage();
+
+    expect(await screen.findByText('Pending review')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /PayFast|Retry payment|Resubmit payment proof/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pay by/)).not.toBeInTheDocument();
+    expect(startPayFastCheckoutMock).not.toHaveBeenCalled();
+  });
+});

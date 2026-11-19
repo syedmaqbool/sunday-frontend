@@ -93,6 +93,13 @@ function getConfirmationCopy(
   }
 
   if (order.status === 'CANCELLED') {
+    if (order.cancellationReason === 'PAYFAST_LAUNCH') {
+      return {
+        description:
+          'This unpaid order was cancelled when PayFast checkout launched. No payment is due.',
+        heading: 'Order cancelled',
+      };
+    }
     return {
       description: order.cancellationReason
         ? formatEnumLabel(order.cancellationReason)

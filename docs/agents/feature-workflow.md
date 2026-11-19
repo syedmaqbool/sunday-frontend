@@ -9,6 +9,12 @@ Use this workflow when a feature has numbered tickets with dependencies.
 3. In each new worktree, install dependencies with `npm ci`, which runs the package `prepare` script. If dependencies already exist, run `npm run prepare`. After `npm ci` or `npm run prepare`, confirm `.vite-hooks/pre-commit` exists and `git config core.hooksPath` points to `.vite-hooks/_` before committing. The local pre-commit hook runs `check:fix` and tests related to staged files.
 4. For a UI port, record the reference repository and commit, exact source paths, Sunday target paths, and adaptations for Sunday routes, API responses, or access control. Include this map in worker prompts and the completion report.
 
+## Worktree setup
+
+- Run `git worktree prune` first to clear records of deleted worktrees.
+- Create each ticket worktree from the repo root with `git worktree add ../sunday-frontend.worktrees/<ticket-branch> -b <ticket-branch> <accepted-HEAD>`.
+- Record the worktree path and base commit in the ticket's Comments when the ticket starts.
+
 ## Delegating tickets and reviews
 
 - Give each ticket worker a self-contained brief with the ticket ID, acceptance criteria, spec, base commit, relevant repository guidance, public test seam, and reference map when applicable.

@@ -3,7 +3,7 @@
 ## Working agreement
 
 - Keep responses short and direct.
-- Never commit without the user's explicit approval.
+- Commit only when the user asks for a commit, or when a user-issued ticket workflow asks for the commit it governs.
 - Never add a `Co-Authored-By` trailer to commit messages, amended commits, or PR descriptions.
 
 ## Worktrees
@@ -65,6 +65,10 @@ When creating or following work tickets, use `.scratch/<feature-slug>/issues/`. 
 ### Multi-ticket feature work
 
 When executing a feature split into numbered tickets, read `docs/agents/feature-workflow.md` for baseline checks, worktree setup, subagent handoffs, and reference UI mapping.
+
+### Code review
+
+When reviewing a diff, read `docs/agents/review-rules.md` for judgement rules. `npm run check:conventions -- --base <ref>` checks the mechanical rules on changed files.
 
 ### Triage labels
 

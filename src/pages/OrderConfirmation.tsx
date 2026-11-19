@@ -42,6 +42,7 @@ import { trackEvent } from '@/lib/analytics';
 import {
   canStartPayFastPayment,
   isPayFastCheckoutEnabled,
+  PAYFAST_LAUNCH_CANCELLATION_REASON,
   startPayFastHandoff,
 } from '@/lib/payfast';
 import { formatEnumLabel } from '@/lib/utilities';
@@ -93,7 +94,7 @@ function getConfirmationCopy(
   }
 
   if (order.status === 'CANCELLED') {
-    if (order.cancellationReason === 'PAYFAST_LAUNCH') {
+    if (order.cancellationReason === PAYFAST_LAUNCH_CANCELLATION_REASON) {
       return {
         description:
           'This unpaid order was cancelled when PayFast checkout launched. No payment is due.',

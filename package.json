@@ -1,6 +1,6 @@
 {
   "name": "vite_react_shadcn_ts",
-  "version": "0.0.73",
+  "version": "0.0.74",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,9 @@
     "preview": "vp preview",
     "test": "vp test run",
     "test:focused": "vp test related --passWithNoTests",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:changed": "node scripts/changed-tests.mjs",
+    "check:conventions": "node scripts/check-conventions.mjs",
     "test:watch": "vp test"
   },
   "dependencies": {

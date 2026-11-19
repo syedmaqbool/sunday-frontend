@@ -33,7 +33,6 @@ export type BoostPurchase = ApiResponseItem<GetMyBoostPurchasesResponses>;
 export type BoostCampaignQuote = ApiResponseData<GetListingBoostCampaignQuoteResponses>;
 export type ActiveListingBoost = ApiResponseItem<GetActiveListingBoostsResponses>;
 export type BoostPlacement = BoostPackage['placement'];
-export type BoostPaymentStatus = ListingBoost['paymentStatus'];
 export type BoostableListingItem = ApiResponseItem<GetMyBoostableListingsResponses>;
 export type AdminBoostListParameters = Partial<ApiRequestQuery<GetAdminBoostsData>>;
 export type ActiveBoostParameters = Partial<ApiRequestQuery<GetActiveListingBoostsData>>;

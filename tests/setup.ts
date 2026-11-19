@@ -7,6 +7,14 @@ if (!Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')) {
   });
 }
 
+// jsdom reports every programmatic link navigation as "Not implemented: navigation". Those are
+// harmless in these tests, and the message hid real output, so only that message is suppressed.
+const consoleError = console.error;
+console.error = (...args: unknown[]) => {
+  if (String(args[0]).includes('Not implemented: navigation')) return;
+  consoleError(...args);
+};
+
 Object.defineProperties(globalThis, {
   matchMedia: {
     value: (query: string) => ({

@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { canUser } from '@/lib/adminAccess';
 
-export interface AdminNavItem {
+interface AdminNavItem {
   path: string;
   adminOnly?: boolean;
   icon: LucideIcon;
@@ -35,12 +35,12 @@ export interface AdminNavItem {
   permission?: PermissionRequirement;
 }
 
-export interface AdminNavSection {
+interface AdminNavSection {
   items: AdminNavItem[];
   label: string;
 }
 
-export const adminNavSections: AdminNavSection[] = [
+const adminNavSections: AdminNavSection[] = [
   {
     items: [
       { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', permission: 'ANALYTICS_READ' },
@@ -170,7 +170,7 @@ export const adminNavSections: AdminNavSection[] = [
   },
 ];
 
-export const adminNavItems = adminNavSections.flatMap(section => section.items);
+const adminNavItems = adminNavSections.flatMap(section => section.items);
 
 export function isNavItemActive(path: string, pathname: string) {
   return path === '/admin' ? pathname === '/admin' : pathname.startsWith(path);

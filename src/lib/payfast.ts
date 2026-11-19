@@ -1,6 +1,10 @@
 import type { PayFastCheckout } from '@/types/checkout.type';
 import type { PayFastPayableOrder } from '@/types/payfast.type';
 
+// Matches the backend cancellation reason written when PayFast launches (order-expiry.repository.ts).
+// The generated API type is string | null, so keep this constant in step with that union.
+export const PAYFAST_LAUNCH_CANCELLATION_REASON = 'PAYFAST_LAUNCH';
+
 export function isPayFastCheckoutEnabled() {
   return import.meta.env.VITE_PAYFAST_CHECKOUT_ENABLED === 'true';
 }

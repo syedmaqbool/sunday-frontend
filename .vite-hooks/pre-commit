@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -e
 
+npm run typecheck
+node scripts/check-conventions.mjs --staged
 npm run staged
 if [ "${SKIP_PACKAGE_VERSION_BUMP:-0}" != "1" ]; then
   vp run bump:patch

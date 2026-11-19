@@ -35,7 +35,7 @@ export const clientBoostQueryKey = {
   packages: () => [...clientBoostQueryKey.all(), 'packages', 'list'] as const,
 };
 
-export type BoostListParams = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
+type BoostListParams = Partial<ApiRequestQuery<GetMyBoostableListingsData>>;
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 

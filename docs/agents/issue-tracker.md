@@ -10,6 +10,7 @@ Issues and specs for this repo live as Markdown files in `.scratch/`.
 - Put the triage role in a `Status:` line near the top of each ticket. Use `docs/agents/triage-labels.md` for the role names.
 - Append comments and conversation history under a `## Comments` heading at the end of the ticket.
 - When a dependency lives in a sibling repo, put its workspace-relative ticket path and title in `Blocked by`. Resolve that reference from the shared `sunday` workspace root.
+- Link runbooks, rollout guides, and contract docs by workspace-relative path in the ticket's Context, so the implementer does not search for them.
 
 ## Publishing tickets
 

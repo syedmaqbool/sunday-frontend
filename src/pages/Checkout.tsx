@@ -307,8 +307,8 @@ function Checkout() {
       return;
     }
 
-    // The cart stays on screen through the handoff; it is cleared once PayFast has the buyer.
-    const handedOff = await startPayFastHandoff(
+    // The cart stays intact through the handoff; PaymentReturn clears it when the buyer returns.
+    await startPayFastHandoff(
       () => startPayFastCheckout(orderId),
       error => {
         setPlacing(false);
@@ -317,7 +317,6 @@ function Checkout() {
         navigate(`/order-confirmation/${orderId}`, { replace: true });
       },
     );
-    if (handedOff) clearCart();
   };
 
   const handlePlaceOrder: SubmitHandler<ShippingFormValues> = async shipping => {

@@ -654,7 +654,7 @@ describe('checkout', () => {
       ]);
     });
 
-    it('keeps the cart in place until the PayFast handoff has started', async () => {
+    it('keeps the cart in place through the PayFast handoff so it only empties once the buyer returns', async () => {
       let resolveStart!: (value: unknown) => void;
       startPayFastCheckoutMock.mockReturnValueOnce(
         new Promise(resolve => {
@@ -683,7 +683,7 @@ describe('checkout', () => {
         },
       });
       await waitFor(() => expect(payFastSubmissions).toHaveLength(1));
-      expect(clearCartMock).toHaveBeenCalledTimes(1);
+      expect(clearCartMock).not.toHaveBeenCalled();
     });
 
     it('keeps the created order and reports an error when PayFast cannot start', async () => {

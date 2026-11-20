@@ -1,7 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import PaymentReturn from '@/pages/PaymentReturn';
+
+const { clearCartMock } = vi.hoisted(() => ({ clearCartMock: vi.fn() }));
+
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ loading: false }) }));
+vi.mock('@/contexts/CartContext', () => ({
+  useCart: () => ({ clearCart: clearCartMock }),
+}));
+
+beforeEach(() => {
+  clearCartMock.mockReset();
+});
 
 function renderReturnPath(path: string) {
   return render(
@@ -28,6 +39,33 @@ describe('payment return', () => {
     renderReturnPath('/payment/cancel?orderId=order-id');
 
     expect(await screen.findByText('Order status page')).toBeInTheDocument();
+  });
+
+  it.each(['/payment/success?orderId=order-id', '/payment/cancel?orderId=order-id'])(
+    'empties the cart before showing the order when the buyer returns on %s',
+    async path => {
+      renderReturnPath(path);
+
+      await screen.findByText('Order status page');
+      expect(clearCartMock).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each([
+    '/payment/success?boostPurchaseId=purchase-id',
+    '/payment/cancel?boostPurchaseId=purchase-id',
+  ])('leaves the cart alone on the boost return %s', async path => {
+    renderReturnPath(path);
+
+    await screen.findByText('Boost status page');
+    expect(clearCartMock).not.toHaveBeenCalled();
+  });
+
+  it('leaves the cart alone when the return names neither an order nor a boost', async () => {
+    renderReturnPath('/payment/success');
+
+    await screen.findByText('Buyer order list');
+    expect(clearCartMock).not.toHaveBeenCalled();
   });
 
   it('sends a boost success return to the boost status view without treating the redirect as paid', async () => {
